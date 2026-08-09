@@ -168,6 +168,7 @@ This checklist tracks the remaining implementation for the dual-engine web archi
 - [x] Updated `BrowserDriverManagerTest`'s Playwright worker fake to implement the visual-session calls now exercised by `Driver` initialization.
 - [x] Split the long BrowserStack web + Android multi-user CI workflow into smaller logical workflows so BrowserStack web-engine, Android multi-user, and Android-web multi-user feedback arrives independently.
 - [x] Fixed Playwright-Java visual checkpoints to use the SDK's explicit named-check API so Applitools records real steps instead of `Empty` sessions.
+- [x] Fixed Playwright-Java visual runtime incompatibility by aligning `eyes-playwright-java5` with the newer Applitools shared core already resolved on teswiz's classpath.
 
 ### Remaining framework-level work
 
