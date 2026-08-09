@@ -64,7 +64,7 @@ jobs:
           tag: "@validatePDF and @browserstack"
           artifact-name: "test-results-PDF-Web"
           is-visual: "true"
-          additional-env: "APPLITOOLS_BATCH_NAME_SUFFIX=' - #${{ github.run_number }}'"
+          additional-env: "WEB_ENGINE=selenium APPLITOOLS_BATCH_NAME_SUFFIX=' - #${{ github.run_number }}'"
           applitools_api_key: ${{ secrets.TESWIZ_APPLITOOLS_API_KEY }}
           browserstack_username: ${{ secrets.BROWSERSTACK_CLOUD_USERNAME }}
           browserstack_key: ${{ secrets.BROWSERSTACK_CLOUD_KEY }}
