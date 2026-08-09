@@ -117,9 +117,17 @@ Use this skill for changes inside the `znsio/teswiz` repo.
   `./gradlew -q compileTestJava`
 - For focused unit tests, prefer:
   `./gradlew -q test --tests <fully.qualified.TestClass>`
+- For GitHub Actions or any other CI flow that installs Node dependencies:
+  - run `actions/setup-node` first
+  - prefer `npm ci` over `npm install`
+  - commit `package.json` and `package-lock.json` together whenever dependencies or `overrides` change
+  - install Playwright browsers only in workflows that actually execute Playwright
 - For stricter screen-contract audits that also flag missing target combinations, use:
   `./gradlew verifyScreenContracts -PincludeMissingScreenTargets=true`
 - Do not treat parallel independent Gradle invocations against the same checkout as a reliable signal. Prefer serial focused runs because shared build outputs/intermediates can produce misleading symbol/compilation failures.
+- GitHub Actions artifact retention policy:
+  - keep only the latest artifact set per workflow per user-created branch
+  - do not retain workflow artifacts for dependency-management branches such as `dependabot/*` or `renovate/*`
 - Useful recent targets:
   - `com.znsio.teswiz.runner.VisualTest`
   - `com.znsio.teswiz.steps.FigmaStepsTest`

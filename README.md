@@ -55,6 +55,24 @@ If you need to force a fresh dependency download, pass the Gradle property:
 
 `./gradlew clean build -PforceUpdate=true`
 
+## CI dependency and artifact policy
+
+For GitHub Actions in this repo:
+
+* use `actions/setup-node` before any step that installs Node dependencies
+* use `npm ci` in CI workflows, not `npm install`
+* use `npm install` locally only when you intentionally want to refresh `package-lock.json`
+* whenever `package.json` dependencies or `overrides` change, commit the matching `package-lock.json` update in the same change
+* install Playwright browsers only in workflows that actually exercise Playwright
+* keep only the latest artifact set per workflow per user-created branch
+* do not retain workflow artifacts for dependency-management branches such as `dependabot/*` or `renovate/*`
+
+This is intentional:
+
+* `npm ci` gives us deterministic CI installs and fails fast when the committed lockfile does not match `package.json`
+* `npm install` is better suited to local development, where the goal may be to update or regenerate the lockfile
+* limiting artifacts to the latest branch run keeps storage predictable while still preserving the newest debugging evidence
+
 # What is this repository about?
 
 This repository implements automated tests for Android & iOS apps, specified using cucumber-jvm and intelligently run

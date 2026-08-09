@@ -18,5 +18,9 @@ When working in this repository:
 - Prefer local mobile device and simulator setup under `com.znsio.teswiz.mobile.device` instead of growing `runner`.
 - Prefer internal Appium server lifecycle code under `com.znsio.teswiz.mobile.server` instead of growing `runner`.
 - Prefer mobile cloud setup and cleanup routing under `com.znsio.teswiz.mobile.provider` instead of growing `runner`.
+- For CI flows that install Node dependencies, run `actions/setup-node` first and prefer `npm ci` over `npm install`.
+- Whenever `package.json` dependencies or `overrides` change, keep the matching `package-lock.json` update in the same change.
+- In CI, install Playwright browsers only in workflows that actually execute Playwright.
+- Keep only the latest artifact set per workflow per user-created branch, and do not retain artifacts for `dependabot/*` or `renovate/*` branches.
 - For stricter screen-contract audits, use `./gradlew verifyScreenContracts -PincludeMissingScreenTargets=true`.
 - Prefer serial focused Gradle verification runs on the same checkout; parallel independent Gradle invocations can produce misleading failures because they share build outputs and intermediates.
