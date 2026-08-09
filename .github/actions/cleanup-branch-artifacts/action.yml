@@ -20,10 +20,14 @@ runs:
   steps:
     - name: Delete older artifacts for this workflow and branch
       uses: actions/github-script@v8
+      env:
+        INPUT_WORKFLOW_FILE: ${{ inputs.workflow-file }}
+        INPUT_BRANCH_NAME: ${{ inputs.branch-name }}
+        INPUT_CURRENT_RUN_ID: ${{ inputs.current-run-id }}
       with:
         script: |
           const actor = context.actor;
-          const branchName = core.getInput("branch-name");
+          const branchName = process.env.INPUT_BRANCH_NAME ?? "";
           const isDependencyBotActor = actor === "dependabot[bot]" || actor === "renovate[bot]";
           const isDependencyBotBranch = branchName.startsWith("dependabot/") || branchName.startsWith("renovate/");
 
@@ -32,10 +36,17 @@ runs:
             return;
           }
 
-          const workflowFile = core.getInput("workflow-file");
-          const currentRunId = Number(core.getInput("current-run-id"));
+          const workflowFile = process.env.INPUT_WORKFLOW_FILE ?? "";
+          const currentRunId = Number(process.env.INPUT_CURRENT_RUN_ID ?? "0");
           const owner = context.repo.owner;
           const repo = context.repo.repo;
+
+          if (!workflowFile || !branchName || !Number.isFinite(currentRunId) || currentRunId <= 0) {
+            core.warning(
+              `Skipping artifact cleanup because required inputs were not resolved. workflow='${workflowFile}', branch='${branchName}', runId='${currentRunId}'`
+            );
+            return;
+          }
 
           core.info(`Keeping artifacts for run ${currentRunId} in workflow ${workflowFile} on branch ${branchName}`);
 
