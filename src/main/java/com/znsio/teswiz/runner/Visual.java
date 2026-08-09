@@ -681,11 +681,12 @@ public class Visual {
         properties.put(Setup.TARGET_ENVIRONMENT, valueOf(getValueFromConfig(Setup.TARGET_ENVIRONMENT)));
         properties.put("OsUtils.getUsername()", OsUtils.getUserName());
         if (Platform.web.equals(platform)) {
+            RectangleSize effectiveViewportSize = resolveEffectiveBrowserViewPortSize(Driver.WEB_DRIVER, innerDriver);
             properties.put(Setup.WEB_ENGINE, Runner.getWebEngine().getConfigValue());
             properties.put("BROWSER_NAME", resolveBrowserName());
             properties.put("CONFIGURED_VIEWPORT_SIZE", formatViewport((RectangleSize) getValueFromConfig(
                     APPLITOOLS.RECTANGLE_SIZE)));
-            properties.put("EFFECTIVE_VIEWPORT_SIZE", formatViewport(getBrowserViewPortSize(Driver.WEB_DRIVER, innerDriver)));
+            properties.put("EFFECTIVE_VIEWPORT_SIZE", formatViewport(effectiveViewportSize));
         }
         return properties;
     }
@@ -693,6 +694,7 @@ public class Visual {
     private PlaywrightVisualSessionRequest createPlaywrightVisualSessionRequest(WebVisualNames visualNames,
             FigmaApplitoolsConfig figmaApplitoolsConfig, boolean isVisualTestingEnabled) {
         BatchInfo batchInfo = (BatchInfo) getValueFromConfig(APPLITOOLS.BATCH_INFO);
+        RectangleSize effectiveViewportSize = resolveEffectiveBrowserViewPortSize(Driver.WEB_DRIVER, innerDriver);
         return new PlaywrightVisualSessionRequest(
                 visualNames.appName(),
                 visualNames.testName(),
@@ -709,7 +711,7 @@ public class Visual {
                 getValueFromConfig(APPLITOOLS.CONCURRENCY, DEFAULT_UFG_CONCURRENCY),
                 (String) applitoolsConfig.get(APPLITOOLS.PROXY_URL),
                 applitoolsLogFileNameForWeb,
-                getBrowserViewPortSize(Driver.WEB_DRIVER, innerDriver),
+                effectiveViewportSize,
                 new PlaywrightVisualSessionRequest.BatchMetadata(batchInfo.getName(), batchInfo.getId(),
                         toBatchPropertyMap(batchInfo)),
                 getWebVisualCustomProperties(Platform.web),
@@ -887,6 +889,17 @@ public class Visual {
             } else {
                 return providedBrowserViewPortSizeFromConfig;
             }
+        }
+    }
+
+    private RectangleSize resolveEffectiveBrowserViewPortSize(String driverType, WebDriver currentDriver) {
+        try {
+            return getBrowserViewPortSize(driverType, currentDriver);
+        } catch (RuntimeException e) {
+            RectangleSize configuredViewportSize = (RectangleSize) getValueFromConfig(APPLITOOLS.RECTANGLE_SIZE);
+            LOGGER.warn(format("Unable to resolve live browser viewport size for visual setup. Using configured viewport: %s. Cause: %s",
+                    configuredViewportSize, e.getMessage()));
+            return configuredViewportSize;
         }
     }
 

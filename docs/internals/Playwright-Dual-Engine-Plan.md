@@ -164,6 +164,8 @@ This checklist tracks the remaining implementation for the dual-engine web archi
 - [x] Fixed ByteBuddy duplicate type injection in `PlaywrightTsScreenBridgeFactory` when multiple tests generate bridges for the same contract class.
 - [x] Added `MissingTestScreen` contract to allow isolated missing screen testing without using production contracts like `HomeScreen` (which is now resolved).
 - [x] Fixed JVM system property contamination (like `CLOUD_USERNAME` and `CLOUD_KEY`) in `LambdaTestSetupTest` by clearing properties in `@BeforeEach` and `@AfterEach` hooks.
+- [x] Hardened Playwright visual-session setup to fall back to configured viewport metadata when live viewport lookup is unavailable during construction.
+- [x] Updated `BrowserDriverManagerTest`'s Playwright worker fake to implement the visual-session calls now exercised by `Driver` initialization.
 
 ### Remaining framework-level work
 

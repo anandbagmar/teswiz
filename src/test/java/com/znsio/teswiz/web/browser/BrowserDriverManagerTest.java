@@ -33,6 +33,7 @@ import com.znsio.teswiz.web.playwright.PlaywrightWorkerManager;
 import com.znsio.teswiz.web.playwright.PlaywrightWorkerSession;
 import com.znsio.teswiz.web.provider.playwright.PlaywrightCloudSessionMetadataResolver;
 import com.znsio.teswiz.web.provider.playwright.PlaywrightExecutionProviderConfig;
+import com.znsio.teswiz.visual.PlaywrightVisualSessionRequest;
 
 class BrowserDriverManagerTest {
     private static final String CONFIG_FILE = "./configs/theapp/theapp_local_web_config.properties";
@@ -176,6 +177,7 @@ class BrowserDriverManagerTest {
         private boolean running;
         private String lastNavigatedUrl;
         private boolean closed;
+        private boolean visualSessionDisabled;
 
         FakePlaywrightWorkerClient() {
             super(Path.of("ignored-worker.mjs"));
@@ -210,6 +212,16 @@ class BrowserDriverManagerTest {
         @Override
         public synchronized void closeSession(String sessionId) {
             closed = true;
+        }
+
+        @Override
+        public synchronized void openVisualSession(String sessionId, PlaywrightVisualSessionRequest request) {
+            visualSessionDisabled = !request.enabled();
+        }
+
+        @Override
+        public synchronized boolean isVisualSessionDisabled(String sessionId) {
+            return visualSessionDisabled;
         }
 
         String lastNavigatedUrl() {
