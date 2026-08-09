@@ -83,6 +83,7 @@ import com.znsio.teswiz.tools.ReportPortalLogger;
 import com.znsio.teswiz.tools.ScreenShotManager;
 import com.znsio.teswiz.tools.Wait;
 import com.znsio.teswiz.visual.PlaywrightVisualCheckSettingsMapper;
+import com.znsio.teswiz.web.playwright.PlaywrightJavaWebDriver;
 import com.znsio.teswiz.web.playwright.PlaywrightWebDriver;
 import javax.imageio.ImageIO;
 
@@ -156,7 +157,7 @@ public class Visual {
         this.userPersona = userPersona;
         appName = appName.equalsIgnoreCase(DEFAULT) ? (String) this.applitoolsConfig.get(
                 APPLITOOLS.APP_NAME) : appName;
-        playwrightVisualCheckSettingsMapper = innerDriver instanceof PlaywrightWebDriver
+        playwrightVisualCheckSettingsMapper = isPlaywrightVisualDriver(innerDriver)
                 ? new PlaywrightVisualCheckSettingsMapper(by -> {
                     org.openqa.selenium.Rectangle rectangle = innerDriver.findElement(by).getRect();
                     return new Region(rectangle.getX(), rectangle.getY(), rectangle.getWidth(), rectangle.getHeight());
@@ -484,7 +485,7 @@ public class Visual {
         }
         LOGGER.debug(format("instantiateWebEyes: isVisualTestingEnabled: %s",
                 isVisualTestingEnabled));
-        if (innerDriver instanceof PlaywrightWebDriver) {
+        if (isPlaywrightVisualDriver(innerDriver)) {
             configureEyesRunnerForWeb(false);
             Eyes disabledEyes = new Eyes(seleniumEyesRunner);
             disabledEyes.setIsDisabled(true);
@@ -542,7 +543,7 @@ public class Visual {
             String appName,
             String testName,
             boolean isVisualTestingEnabled) {
-        if (!(innerDriver instanceof PlaywrightWebDriver) || !driverType.equals(Driver.WEB_DRIVER)) {
+        if (!isPlaywrightVisualDriver(innerDriver) || !driverType.equals(Driver.WEB_DRIVER)) {
             return null;
         }
         FigmaApplitoolsConfig figmaApplitoolsConfig = getFigmaApplitoolsConfig(context);
@@ -1163,6 +1164,10 @@ public class Visual {
         } catch (IOException e) {
             throw new VisualTestSetupException("Unable to decode screenshot for Playwright visual validation", e);
         }
+    }
+
+    private boolean isPlaywrightVisualDriver(WebDriver driver) {
+        return driver instanceof PlaywrightWebDriver || driver instanceof PlaywrightJavaWebDriver;
     }
 
     public static void addMobileCapabilitiesToTestContextForVisualTesting(DesiredCapabilities desiredCapabilities) {

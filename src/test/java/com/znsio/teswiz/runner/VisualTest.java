@@ -10,7 +10,10 @@ import com.znsio.teswiz.entities.Platform;
 import com.znsio.teswiz.entities.TEST_CONTEXT;
 import com.znsio.teswiz.exceptions.InvalidTestDataException;
 import com.znsio.teswiz.exceptions.VisualTestSetupException;
+import com.znsio.teswiz.session.UserPersonaDetails;
 import com.znsio.teswiz.tools.ScreenShotManager;
+import com.znsio.teswiz.web.browser.WebDriverSessionResult;
+import com.znsio.teswiz.web.playwright.PlaywrightJavaDriverManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.pdfbox.Loader;
@@ -180,6 +183,33 @@ class VisualTest {
     }
 
     @Test
+    void shouldUsePlaywrightImageEyesPathForPlaywrightJavaWebDrivers() throws Exception {
+        TestExecutionContext context = createVisualContext("playwright-java-visual-path");
+        enablePlaywrightJavaHeadless();
+        UserPersonaDetails userPersonaDetails = (UserPersonaDetails) context
+                .getTestState(TEST_CONTEXT.CURRENT_USER_PERSONA_DETAILS);
+        userPersonaDetails.addAppName("buyer", Runner.DEFAULT);
+
+        PlaywrightJavaDriverManager manager = new PlaywrightJavaDriverManager();
+        WebDriverSessionResult result = manager.createWebSessionForUser("buyer", "chrome", Platform.web, context);
+
+        try {
+            Visual visual = new Visual(Driver.WEB_DRIVER, Platform.web, result.webDriver(), "playwright-java-visual-path",
+                    "buyer", "theapp");
+
+            Object playwrightEyes = getFieldValue(visual, "eyesOnPlaywrightWeb");
+            com.applitools.eyes.selenium.Eyes seleniumEyes =
+                    (com.applitools.eyes.selenium.Eyes) getFieldValue(visual, "eyesOnWeb");
+
+            assertThat(playwrightEyes).isNotNull();
+            assertThat(seleniumEyes).isNotNull();
+            assertThat(seleniumEyes.getIsDisabled()).isTrue();
+        } finally {
+            result.webDriver().quit();
+        }
+    }
+
+    @Test
     void shouldKeepSeleniumEyesPathForSeleniumWebDrivers() throws Exception {
         createVisualContext("selenium-visual-path");
         Setup.load(WEB_CONFIG_FILE);
@@ -205,12 +235,21 @@ class VisualTest {
         assertThat(seleniumEyes).isNotNull();
     }
 
+    private void enablePlaywrightJavaHeadless() {
+        System.setProperty(Setup.WEB_ENGINE, "playwright-java");
+        System.setProperty("HEADLESS", "true");
+        Setup.load(WEB_CONFIG_FILE);
+        Setup.loadAndUpdateConfigParameters(WEB_CONFIG_FILE);
+        Setup.getExecutionArguments();
+    }
+
     private static TestExecutionContext createVisualContext(String testName) throws IOException {
         TestExecutionContext context = new TestExecutionContext(testName);
         Path scenarioDirectory = Files.createTempDirectory(testName + "-scenario");
         Path screenshotDirectory = Files.createDirectories(scenarioDirectory.resolve("screenshots"));
         context.addTestState(TEST_CONTEXT.SCENARIO_LOG_DIRECTORY, scenarioDirectory.toString());
         context.addTestState(TEST_CONTEXT.SCREENSHOT_DIRECTORY, screenshotDirectory.toString());
+        context.addTestState(TEST_CONTEXT.CURRENT_USER_PERSONA_DETAILS, new UserPersonaDetails());
         context.addTestState(TEST_CONTEXT.SCREENSHOT_MANAGER, new ScreenShotManager());
         return context;
     }
