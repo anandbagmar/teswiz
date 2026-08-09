@@ -13,6 +13,9 @@ jobs:
   HardGate_CI:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      actions: write
+      contents: read
 
     steps:
       - uses: actions/checkout@v7
@@ -81,3 +84,11 @@ jobs:
           else
             echo "✅ All HardGate CI tests passed."
           fi
+
+      - name: Keep latest HardGate artifacts for this branch
+        if: always()
+        uses: ./.github/actions/cleanup-branch-artifacts
+        with:
+          workflow-file: HardGate_CI.yml
+          branch-name: ${{ github.head_ref || github.ref_name }}
+          current-run-id: ${{ github.run_id }}

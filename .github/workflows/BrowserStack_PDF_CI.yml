@@ -13,6 +13,9 @@ jobs:
   BrowserStack_PDF_CI:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      actions: write
+      contents: read
 
     steps:
       - uses: actions/checkout@v7
@@ -112,3 +115,11 @@ jobs:
           else
             echo "✅ All PDF test suites passed"
           fi
+
+      - name: Keep latest BrowserStack PDF artifacts for this branch
+        if: always()
+        uses: ./.github/actions/cleanup-branch-artifacts
+        with:
+          workflow-file: BrowserStack_PDF_CI.yml
+          branch-name: ${{ github.head_ref || github.ref_name }}
+          current-run-id: ${{ github.run_id }}
