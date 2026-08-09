@@ -1,6 +1,20 @@
 # teswiz Architecture Notes
 
-This document describes the current package intent for teswiz after the dual-engine web refactor.
+This document is the design note for the current teswiz runtime shape.
+
+Read this after the main [README](/Users/anand.bagmar/projects/znsio/teswiz/README.md) when you want to understand:
+
+- how Selenium, Playwright-Java, Playwright-TS, and Appium fit together
+- where persona routing and session ownership live
+- how screen resolution works
+- where provider, reporting, and visual responsibilities sit
+
+For upgrade steps, use:
+
+- [Breaking changes](/Users/anand.bagmar/projects/znsio/teswiz/docs/internals/BreakingChanges-README.md)
+- [Playwright migration guide](/Users/anand.bagmar/projects/znsio/teswiz/docs/internals/Playwright-Migration-Guide.md)
+
+This doc focuses on architecture, not migration.
 
 ## Engine architecture
 
