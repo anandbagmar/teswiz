@@ -1,5 +1,11 @@
 package com.znsio.teswiz.businessLayer.pdfValidator;
 
+import org.assertj.core.api.SoftAssertions;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import com.applitools.eyes.TestResults;
 import com.applitools.eyes.TestResultsStatus;
 import com.znsio.teswiz.context.SessionContext;
@@ -10,12 +16,6 @@ import com.znsio.teswiz.runner.Driver;
 import com.znsio.teswiz.runner.Setup;
 import com.znsio.teswiz.runner.Visual;
 import com.znsio.teswiz.session.UserPersonaDetails;
-import org.assertj.core.api.SoftAssertions;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class PDFValidatorBLTest {
     private static final String CONFIG_FILE = "./configs/theapp/theapp_lambdatest_web_config.properties";
@@ -44,7 +44,7 @@ class PDFValidatorBLTest {
         userPersonaDetails.addDriver(TEST_CONTEXT.I, currentDriver);
         userPersonaDetails.addPlatform(TEST_CONTEXT.I, Platform.web);
 
-        new PDFValidatorBL("me", Platform.pdf).validate("src/test/resources/pdf/Teswiz.pdf");
+        new PDFValidatorBL("I", Platform.pdf).validate("src/test/resources/pdf/Teswiz.pdf");
     }
 
     private static void setupConfig() {
