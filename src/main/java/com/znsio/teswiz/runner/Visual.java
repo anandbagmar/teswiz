@@ -86,6 +86,8 @@ import com.znsio.teswiz.tools.ScreenShotManager;
 import com.znsio.teswiz.tools.Wait;
 import com.znsio.teswiz.visual.PlaywrightVisualDriver;
 import com.znsio.teswiz.visual.PlaywrightVisualSessionRequest;
+import com.znsio.teswiz.visual.PlaywrightUfgTargetMapper;
+import com.znsio.teswiz.visual.PlaywrightVisualResults;
 import com.znsio.teswiz.web.playwright.PlaywrightJavaWebDriver;
 import com.znsio.teswiz.web.playwright.PlaywrightWebDriver;
 import javax.imageio.ImageIO;
@@ -112,6 +114,7 @@ public class Visual {
     private final WebDriver innerDriver;
     private final String userPersona;
     private final PlaywrightVisualDriver playwrightVisualDriver;
+    private final PlaywrightUfgTargetMapper playwrightUfgTargetMapper = new PlaywrightUfgTargetMapper();
     private String applitoolsLogFileNameForWeb = NOT_SET;
     private EyesRunner seleniumEyesRunner;
 
@@ -236,7 +239,7 @@ public class Visual {
 
         TestResults testResults = eyesImages.close(false);
 
-        checkEachTestVisualResults(userPersona, Platform.pdf.name(), null, testResults);
+        checkEachTestVisualResults(userPersona, Platform.pdf.name(), (String) null, testResults);
         return testResults;
     }
 
@@ -356,7 +359,7 @@ public class Visual {
     }
 
     @NotNull
-    private static HashMap<String, Object> parseVisualTestResults(RenderBrowserInfo browserInfo, TestResults result) {
+    private static HashMap<String, Object> parseVisualTestResults(String browserInfo, TestResults result) {
         HashMap<String, Object> resultMap = new HashMap<>();
         resultMap.put("Number of steps", result.getSteps());
         resultMap.put("Number of matches", result.getMatches());
@@ -375,7 +378,7 @@ public class Visual {
         resultMap.put("Is new?", result.isNew());
         resultMap.put("Is difference?", result.isDifferent());
         if (null != browserInfo) {
-            resultMap.put("Browser/Device info", browserInfo.toString());
+            resultMap.put("Browser/Device info", browserInfo);
         }
         return resultMap;
     }
@@ -702,7 +705,7 @@ public class Visual {
                 getValueFromConfig(APPLITOOLS.SAVE_NEW_TESTS_AS_BASELINE, true),
                 isVisualTestingEnabled,
                 isVerboseLoggingEnabled,
-                false,
+                getValueFromConfig(APPLITOOLS.USE_UFG, false),
                 getValueFromConfig(APPLITOOLS.CONCURRENCY, DEFAULT_UFG_CONCURRENCY),
                 (String) applitoolsConfig.get(APPLITOOLS.PROXY_URL),
                 applitoolsLogFileNameForWeb,
@@ -710,7 +713,7 @@ public class Visual {
                 new PlaywrightVisualSessionRequest.BatchMetadata(batchInfo.getName(), batchInfo.getId(),
                         toBatchPropertyMap(batchInfo)),
                 getWebVisualCustomProperties(Platform.web),
-                Collections.emptyList());
+                resolvePlaywrightUfgTargets());
     }
 
     private Map<String, String> toBatchPropertyMap(BatchInfo batchInfo) {
@@ -734,6 +737,13 @@ public class Visual {
 
     private String formatViewport(RectangleSize rectangleSize) {
         return rectangleSize.getWidth() + "x" + rectangleSize.getHeight();
+    }
+
+    private List<PlaywrightVisualSessionRequest.UfgTarget> resolvePlaywrightUfgTargets() {
+        if (!getValueFromConfig(APPLITOOLS.USE_UFG, false)) {
+            return Collections.emptyList();
+        }
+        return playwrightUfgTargetMapper.map(addBrowserAndDeviceConfigForUFG(true, new Configuration()));
     }
 
     @NotNull
@@ -1082,9 +1092,11 @@ public class Visual {
                 return;
             }
             LOGGER.info(format("getVisualResultsFromWeb: user: %s", userPersona));
-            TestResults testResults = playwrightVisualDriver.closeVisualSession();
-            if (null != testResults) {
-                checkEachTestVisualResults(userPersona, "web", null, testResults);
+            PlaywrightVisualResults visualResults = playwrightVisualDriver.closeVisualSession();
+            if (null != visualResults) {
+                for (PlaywrightVisualResults.Entry entry : visualResults.entries()) {
+                    checkEachTestVisualResults(userPersona, "web", entry.browserInfo(), entry.testResults());
+                }
             }
             LOGGER.info(format("Applitools logs available here: %s", applitoolsLogFileNameForWeb));
             return;
@@ -1132,7 +1144,7 @@ public class Visual {
         }
         LOGGER.info(format("getVisualResultsFromApp: user: %s", userPersona));
         TestResults allTestResults = eyesOnApp.close(false);
-        checkEachTestVisualResults(userPersona, "app", null, allTestResults);
+        checkEachTestVisualResults(userPersona, "app", (String) null, allTestResults);
     }
 
     private void checkVisualTestResults(TestResultsSummary allTestResults, String userPersona,
@@ -1149,6 +1161,11 @@ public class Visual {
 
     private void checkEachTestVisualResults(String userPersona, String onPlatform,
             RenderBrowserInfo browserInfo, TestResults result) {
+        checkEachTestVisualResults(userPersona, onPlatform, null == browserInfo ? null : browserInfo.toString(), result);
+    }
+
+    private void checkEachTestVisualResults(String userPersona, String onPlatform,
+            String browserInfo, TestResults result) {
         HashMap<String, Object> resultMap = parseVisualTestResults(browserInfo, result);
 
         logVisualTestResults(userPersona, onPlatform, resultMap);

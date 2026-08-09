@@ -99,6 +99,15 @@ class PlaywrightWorkerClientTest {
 
     @Test
     void shouldOpenDisabledVisualSessionThroughWorker(@TempDir Path tempDir) throws IOException {
+        shouldOpenDisabledVisualSessionThroughWorker(tempDir, false);
+    }
+
+    @Test
+    void shouldOpenDisabledUfgVisualSessionThroughWorker(@TempDir Path tempDir) throws IOException {
+        shouldOpenDisabledVisualSessionThroughWorker(tempDir, true);
+    }
+
+    private void shouldOpenDisabledVisualSessionThroughWorker(Path tempDir, boolean useUfg) throws IOException {
         workerClient = new PlaywrightWorkerClient();
         workerClient.start();
 
@@ -118,7 +127,7 @@ class PlaywrightWorkerClientTest {
                 true,
                 false,
                 false,
-                false,
+                useUfg,
                 1,
                 null,
                 tempDir.resolve("applitools-playwright-ts.log").toString(),
@@ -126,7 +135,12 @@ class PlaywrightWorkerClientTest {
                 new PlaywrightVisualSessionRequest.BatchMetadata("teswiz-local-web-playwright-ts",
                         "batch-local-playwright-ts", java.util.Map.of("WEB_ENGINE", "playwright-ts")),
                 java.util.Map.of("WEB_ENGINE", "playwright-ts", "BROWSER_NAME", "chrome"),
-                java.util.List.of()));
+                useUfg
+                        ? java.util.List.of(
+                                new PlaywrightVisualSessionRequest.UfgTarget(1920, 1024, "CHROME", null, null),
+                                new PlaywrightVisualSessionRequest.UfgTarget(null, null, null, "iPhone 15 Pro",
+                                        "PORTRAIT"))
+                        : java.util.List.of()));
 
         assertThat(workerClient.isVisualSessionDisabled(session.sessionId())).isTrue();
         assertThat(workerClient.closeVisualSession(session.sessionId())).isNull();

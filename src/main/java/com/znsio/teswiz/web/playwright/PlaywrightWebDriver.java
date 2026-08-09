@@ -35,6 +35,7 @@ import org.openqa.selenium.logging.Logs;
 import com.znsio.teswiz.exceptions.InvalidTestDataException;
 import com.znsio.teswiz.visual.PlaywrightVisualDriver;
 import com.znsio.teswiz.visual.PlaywrightVisualSessionRequest;
+import com.znsio.teswiz.visual.PlaywrightVisualResults;
 
 public final class PlaywrightWebDriver implements WebDriver, JavascriptExecutor, TakesScreenshot, PlaywrightVisualDriver {
     private final PlaywrightWorkerClient workerClient;
@@ -126,7 +127,7 @@ public final class PlaywrightWebDriver implements WebDriver, JavascriptExecutor,
     }
 
     @Override
-    public com.applitools.eyes.TestResults closeVisualSession() {
+    public PlaywrightVisualResults closeVisualSession() {
         return workerClient.closeVisualSession(session.sessionId());
     }
 

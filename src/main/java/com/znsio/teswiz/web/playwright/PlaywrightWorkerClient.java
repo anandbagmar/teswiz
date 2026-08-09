@@ -27,15 +27,14 @@ import com.applitools.eyes.TestResultsStatus;
 import com.znsio.teswiz.exceptions.CommandLineExecutorException;
 import com.znsio.teswiz.exceptions.InvalidTestDataException;
 import com.znsio.teswiz.tools.cmd.CommandLineExecutor;
-import com.znsio.teswiz.visual.PlaywrightCheckSettingsSupport;
 import com.znsio.teswiz.visual.PlaywrightVisualSessionRequest;
+import com.znsio.teswiz.visual.PlaywrightVisualResults;
 
 public class PlaywrightWorkerClient implements AutoCloseable {
     private static final Logger LOGGER = LogManager.getLogger(PlaywrightWorkerClient.class.getName());
     private static final String NODE_EXECUTABLE = "node";
 
     private final Path workerScriptPath;
-    private final PlaywrightCheckSettingsSupport checkSettingsSupport = new PlaywrightCheckSettingsSupport();
     private Process process;
     private BufferedWriter requestWriter;
     private BufferedReader responseReader;
@@ -419,36 +418,22 @@ public class PlaywrightWorkerClient implements AutoCloseable {
                 .payload().getBoolean("disabled");
     }
 
-    public synchronized TestResults closeVisualSession(String sessionId) {
+    public synchronized PlaywrightVisualResults closeVisualSession(String sessionId) {
         JSONObject payload = sendCommand("visualClose", new JSONObject().put("sessionId", sessionId)).payload();
         if (payload.optBoolean("disabled", false)) {
             return null;
         }
-        TestResults testResults = new TestResults();
-        testResults.setName(payload.optString("name", null));
-        testResults.setAppName(payload.optString("appName", null));
-        testResults.setBatchName(payload.optString("batchName", null));
-        testResults.setBatchId(payload.optString("batchId", null));
-        testResults.setBranchName(payload.optString("branchName", null));
-        testResults.setHostOS(payload.optString("hostOS", null));
-        testResults.setHostApp(payload.optString("hostApp", null));
-        testResults.setStartedAt(Calendar.getInstance());
-        testResults.setDuration(payload.optInt("duration", 0));
-        testResults.setSteps(payload.optInt("steps", 0));
-        testResults.setMatches(payload.optInt("matches", 0));
-        testResults.setMismatches(payload.optInt("mismatches", 0));
-        testResults.setMissing(payload.optInt("missing", 0));
-        testResults.setUrl(payload.optString("url", null));
-        testResults.setNew(payload.has("isNew") ? payload.getBoolean("isNew") : null);
-        testResults.setStatus(TestResultsStatus.valueOf(payload.getString("status")));
-        if (payload.has("appUrls")) {
-            JSONObject appUrls = payload.getJSONObject("appUrls");
-            SessionUrls sessionUrls = new SessionUrls();
-            sessionUrls.setBatch(payload.optString("batchUrl", null));
-            sessionUrls.setSession(appUrls.optString("session", null));
-            testResults.setAppUrls(sessionUrls);
+        JSONArray entries = payload.optJSONArray("entries");
+        if (null == entries) {
+            return PlaywrightVisualResults.single(toTestResults(payload));
         }
-        return testResults;
+        List<PlaywrightVisualResults.Entry> visualEntries = new ArrayList<>();
+        for (int index = 0; index < entries.length(); index++) {
+            JSONObject entry = entries.getJSONObject(index);
+            visualEntries.add(new PlaywrightVisualResults.Entry(entry.optString("browserInfo", null),
+                    toTestResults(entry.getJSONObject("testResults"))));
+        }
+        return new PlaywrightVisualResults(visualEntries);
     }
 
     public synchronized PlaywrightWorkerResponse shutdown() {
@@ -557,6 +542,34 @@ public class PlaywrightWorkerClient implements AutoCloseable {
         }
         json.put("ufgTargets", ufgTargets);
         return json;
+    }
+
+    private TestResults toTestResults(JSONObject payload) {
+        TestResults testResults = new TestResults();
+        testResults.setName(payload.optString("name", null));
+        testResults.setAppName(payload.optString("appName", null));
+        testResults.setBatchName(payload.optString("batchName", null));
+        testResults.setBatchId(payload.optString("batchId", null));
+        testResults.setBranchName(payload.optString("branchName", null));
+        testResults.setHostOS(payload.optString("hostOS", null));
+        testResults.setHostApp(payload.optString("hostApp", null));
+        testResults.setStartedAt(Calendar.getInstance());
+        testResults.setDuration(payload.optInt("duration", 0));
+        testResults.setSteps(payload.optInt("steps", 0));
+        testResults.setMatches(payload.optInt("matches", 0));
+        testResults.setMismatches(payload.optInt("mismatches", 0));
+        testResults.setMissing(payload.optInt("missing", 0));
+        testResults.setUrl(payload.optString("url", null));
+        testResults.setNew(payload.has("isNew") ? payload.getBoolean("isNew") : null);
+        testResults.setStatus(TestResultsStatus.valueOf(payload.getString("status")));
+        if (payload.has("appUrls")) {
+            JSONObject appUrls = payload.getJSONObject("appUrls");
+            SessionUrls sessionUrls = new SessionUrls();
+            sessionUrls.setBatch(payload.optString("batchUrl", null));
+            sessionUrls.setSession(appUrls.optString("session", null));
+            testResults.setAppUrls(sessionUrls);
+        }
+        return testResults;
     }
 
     private PlaywrightWorkerResponse sendElementCommand(String sessionId, PlaywrightLocatorReference locatorReference,

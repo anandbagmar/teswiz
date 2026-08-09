@@ -1,7 +1,6 @@
 package com.znsio.teswiz.visual;
 
 import com.applitools.eyes.MatchLevel;
-import com.applitools.eyes.TestResults;
 import com.applitools.eyes.selenium.fluent.SeleniumCheckSettings;
 
 public interface PlaywrightVisualDriver {
@@ -13,7 +12,7 @@ public interface PlaywrightVisualDriver {
 
     void checkWindow(String tag, MatchLevel matchLevel);
 
-    TestResults closeVisualSession();
+    PlaywrightVisualResults closeVisualSession();
 
     boolean isVisualSessionDisabled();
 }

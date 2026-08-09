@@ -31,6 +31,7 @@ import com.microsoft.playwright.Tracing;
 import com.microsoft.playwright.options.WaitUntilState;
 import com.znsio.teswiz.visual.PlaywrightVisualDriver;
 import com.znsio.teswiz.visual.PlaywrightVisualSessionRequest;
+import com.znsio.teswiz.visual.PlaywrightVisualResults;
 
 public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.selenium.JavascriptExecutor,
         org.openqa.selenium.TakesScreenshot, PlaywrightVisualDriver {
@@ -359,7 +360,7 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
     }
 
     @Override
-    public com.applitools.eyes.TestResults closeVisualSession() {
+    public PlaywrightVisualResults closeVisualSession() {
         return null == visualSession ? null : visualSession.close();
     }
 

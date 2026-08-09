@@ -118,14 +118,16 @@ This keeps Selenium behavior stable while making Playwright visual runs first-cl
   * publishes engine-aware app, test, and batch naming for web visual runs
   * adds `WEB_ENGINE`, `BROWSER_NAME`, `CONFIGURED_VIEWPORT_SIZE`, and `EFFECTIVE_VIEWPORT_SIZE` as Applitools custom properties
   * preserves teswiz Figma naming override, batch identity, baseline environment selection, logs, and visual result handling
+  * supports `useUFG=true` with the same teswiz `UFG_CONFIG` browser/device target model used by Selenium web runs
 * `WEB_ENGINE=playwright-ts`
   * uses the Playwright TS worker-backed official Applitools Playwright SDK path
   * publishes engine-aware app, test, and batch naming for web visual runs
   * adds `WEB_ENGINE`, `BROWSER_NAME`, `CONFIGURED_VIEWPORT_SIZE`, and `EFFECTIVE_VIEWPORT_SIZE` as Applitools custom properties
   * preserves teswiz Figma naming override, batch identity, baseline environment selection, logs, and visual result handling
+  * supports `useUFG=true` with the same teswiz `UFG_CONFIG` browser/device target model used by Selenium web runs
   * supports `checkWindow(...)`, `checkWindow(..., MatchLevel)`, and window-based `visually.check(...)` flows for the current Playwright web screen implementations
   * does not yet support Selenium-specific constructs such as frame-based visual checks, region-based web checks, floating regions, dynamic regions, or accessibility regions
-  * currently runs as Playwright-native Eyes sessions, but does not yet mirror Selenium Ultrafast Grid fan-out semantics
+  * runs as Playwright-native Eyes sessions and now fans out UFG renders from the same teswiz target config model as Selenium
 
 # Using explicit Figma / Applitools naming
 

@@ -11,6 +11,11 @@ import {
   MatchLevel,
   RectangleSize,
   Target,
+  VisualGridRunner,
+  RunnerOptions,
+  BrowserType,
+  DeviceName,
+  ScreenOrientation,
 } from "@applitools/eyes-playwright";
 import { chromium, firefox, webkit } from "playwright";
 import { buildRemoteLaunchDescriptor } from "./worker-provider.mjs";
@@ -140,7 +145,10 @@ function addVisualProperties(eyes, customProperties = {}) {
 }
 
 async function openVisualSession(session, request) {
-  const eyes = new Eyes(new ClassicRunner());
+  const runner = request.useUfg
+    ? new VisualGridRunner(new RunnerOptions().testConcurrency(request.testConcurrency))
+    : new ClassicRunner();
+  const eyes = new Eyes(runner);
   const configuration = new Configuration();
   configuration.setServerUrl(request.serverUrl);
   configuration.setApiKey(request.apiKey);
@@ -152,6 +160,9 @@ async function openVisualSession(session, request) {
     configuration.setBaselineEnvName(request.baselineEnvName);
   }
   configuration.setBatch(new BatchInfo(request.batchMetadata.name));
+  if (request.useUfg) {
+    addUfgTargets(configuration, request.ufgTargets || []);
+  }
   eyes.setConfiguration(configuration);
   eyes.setIsDisabled(!request.enabled);
   addVisualProperties(eyes, request.customProperties);
@@ -163,6 +174,7 @@ async function openVisualSession(session, request) {
   );
   session.visualSession = {
     eyes,
+    runner,
     disabled: !request.enabled,
   };
 }
@@ -186,6 +198,16 @@ async function checkVisualWindow(session, payload) {
   await visualSession.eyes.check(payload.tag, target);
 }
 
+function addUfgTargets(configuration, ufgTargets) {
+  for (const target of ufgTargets) {
+    if (target.browserType) {
+      configuration.addBrowser(target.width, target.height, BrowserType[target.browserType]);
+      continue;
+    }
+    configuration.addDeviceEmulation(target.deviceName, ScreenOrientation[target.screenOrientation || "PORTRAIT"]);
+  }
+}
+
 function toVisualResultPayload(result) {
   return {
     name: result?.name ?? null,
@@ -203,6 +225,13 @@ function toVisualResultPayload(result) {
     url: result?.url ?? null,
     isNew: result?.isNew ?? null,
     status: result?.status ?? "Passed",
+  };
+}
+
+function toVisualResultEntry(container) {
+  return {
+    browserInfo: container.browserInfo ? JSON.stringify(container.browserInfo) : null,
+    testResults: toVisualResultPayload(container.testResults),
   };
 }
 
@@ -981,6 +1010,15 @@ rl.on("line", async (line) => {
         const session = getSession(payload.sessionId);
         if (!session.visualSession || session.visualSession.disabled) {
           process.stdout.write(`${okResponse(requestId, action, { disabled: true })}\n`);
+          break;
+        }
+        if (session.visualSession.runner?.type === "ufg") {
+          await session.visualSession.eyes.close(false);
+          const summary = await session.visualSession.runner.getAllTestResults(false);
+          session.visualSession = null;
+          process.stdout.write(`${okResponse(requestId, action, {
+            entries: summary.getAllResults().map(toVisualResultEntry),
+          })}\n`);
           break;
         }
         const result = await session.visualSession.eyes.close(false);
