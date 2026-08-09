@@ -67,24 +67,24 @@ final class PlaywrightJavaVisualSession {
     }
 
     void checkWindow(String tag) {
-        eyes.check(Target.window().withName(tag));
+        eyes.check(tag, Target.window());
     }
 
     void check(String tag, com.applitools.eyes.selenium.fluent.SeleniumCheckSettings checkSettings) {
         PlaywrightCheckSettingsSupport.PlaywrightCheckOptions checkOptions = checkSettingsSupport.toCheckOptions(
                 checkSettings);
-        PlaywrightCheckSettings target = Target.window().withName(tag);
+        PlaywrightCheckSettings target = Target.window();
         if (checkOptions.fully()) {
             target = target.fully();
         }
         if (null != checkOptions.matchLevel()) {
             target = target.matchLevel(checkOptions.matchLevel());
         }
-        eyes.check(target);
+        eyes.check(tag, target);
     }
 
     void checkWindow(String tag, MatchLevel matchLevel) {
-        eyes.check(Target.window().withName(tag).matchLevel(matchLevel));
+        eyes.check(tag, Target.window().matchLevel(matchLevel));
     }
 
     PlaywrightVisualResults close() {
