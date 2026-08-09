@@ -7,9 +7,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.time.ZoneOffset;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -18,15 +20,22 @@ import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import com.applitools.eyes.MatchLevel;
+import com.applitools.eyes.SessionUrls;
+import com.applitools.eyes.TestResults;
+import com.applitools.eyes.TestResultsStatus;
 import com.znsio.teswiz.exceptions.CommandLineExecutorException;
 import com.znsio.teswiz.exceptions.InvalidTestDataException;
 import com.znsio.teswiz.tools.cmd.CommandLineExecutor;
+import com.znsio.teswiz.visual.PlaywrightCheckSettingsSupport;
+import com.znsio.teswiz.visual.PlaywrightVisualSessionRequest;
 
 public class PlaywrightWorkerClient implements AutoCloseable {
     private static final Logger LOGGER = LogManager.getLogger(PlaywrightWorkerClient.class.getName());
     private static final String NODE_EXECUTABLE = "node";
 
     private final Path workerScriptPath;
+    private final PlaywrightCheckSettingsSupport checkSettingsSupport = new PlaywrightCheckSettingsSupport();
     private Process process;
     private BufferedWriter requestWriter;
     private BufferedReader responseReader;
@@ -388,6 +397,60 @@ public class PlaywrightWorkerClient implements AutoCloseable {
         return payload.has("value") ? payload.get("value") : null;
     }
 
+    public synchronized void openVisualSession(String sessionId, PlaywrightVisualSessionRequest request) {
+        sendCommand("visualOpen", new JSONObject()
+                .put("sessionId", sessionId)
+                .put("request", toJson(request)));
+    }
+
+    public synchronized void checkVisualWindow(String sessionId, String tag, MatchLevel matchLevel, boolean fully) {
+        JSONObject payload = new JSONObject()
+                .put("sessionId", sessionId)
+                .put("tag", tag)
+                .put("fully", fully);
+        if (null != matchLevel) {
+            payload.put("matchLevel", matchLevel.name());
+        }
+        sendCommand("visualCheckWindow", payload);
+    }
+
+    public synchronized boolean isVisualSessionDisabled(String sessionId) {
+        return sendCommand("visualStatus", new JSONObject().put("sessionId", sessionId))
+                .payload().getBoolean("disabled");
+    }
+
+    public synchronized TestResults closeVisualSession(String sessionId) {
+        JSONObject payload = sendCommand("visualClose", new JSONObject().put("sessionId", sessionId)).payload();
+        if (payload.optBoolean("disabled", false)) {
+            return null;
+        }
+        TestResults testResults = new TestResults();
+        testResults.setName(payload.optString("name", null));
+        testResults.setAppName(payload.optString("appName", null));
+        testResults.setBatchName(payload.optString("batchName", null));
+        testResults.setBatchId(payload.optString("batchId", null));
+        testResults.setBranchName(payload.optString("branchName", null));
+        testResults.setHostOS(payload.optString("hostOS", null));
+        testResults.setHostApp(payload.optString("hostApp", null));
+        testResults.setStartedAt(Calendar.getInstance());
+        testResults.setDuration(payload.optInt("duration", 0));
+        testResults.setSteps(payload.optInt("steps", 0));
+        testResults.setMatches(payload.optInt("matches", 0));
+        testResults.setMismatches(payload.optInt("mismatches", 0));
+        testResults.setMissing(payload.optInt("missing", 0));
+        testResults.setUrl(payload.optString("url", null));
+        testResults.setNew(payload.has("isNew") ? payload.getBoolean("isNew") : null);
+        testResults.setStatus(TestResultsStatus.valueOf(payload.getString("status")));
+        if (payload.has("appUrls")) {
+            JSONObject appUrls = payload.getJSONObject("appUrls");
+            SessionUrls sessionUrls = new SessionUrls();
+            sessionUrls.setBatch(payload.optString("batchUrl", null));
+            sessionUrls.setSession(appUrls.optString("session", null));
+            testResults.setAppUrls(sessionUrls);
+        }
+        return testResults;
+    }
+
     public synchronized PlaywrightWorkerResponse shutdown() {
         if (!isRunning()) {
             return new PlaywrightWorkerResponse("shutdown-skipped", "shutdown", true,
@@ -455,6 +518,44 @@ public class PlaywrightWorkerClient implements AutoCloseable {
         if (null != cookie.getSameSite() && !cookie.getSameSite().isBlank()) {
             json.put("sameSite", cookie.getSameSite());
         }
+        return json;
+    }
+
+    private JSONObject toJson(PlaywrightVisualSessionRequest request) {
+        JSONObject json = new JSONObject()
+                .put("appName", request.appName())
+                .put("testName", request.testName())
+                .put("serverUrl", request.serverUrl())
+                .put("apiKey", request.apiKey())
+                .put("branchName", request.branchName())
+                .put("environmentName", request.environmentName())
+                .put("baselineEnvName", request.baselineEnvName())
+                .put("defaultMatchLevel", request.defaultMatchLevel().name())
+                .put("saveNewTests", request.saveNewTests())
+                .put("enabled", request.enabled())
+                .put("verboseLogs", request.verboseLogs())
+                .put("useUfg", request.useUfg())
+                .put("testConcurrency", request.testConcurrency())
+                .put("proxyUrl", request.proxyUrl())
+                .put("logFilePath", request.logFilePath())
+                .put("viewportSize", new JSONObject()
+                        .put("width", request.viewportSize().getWidth())
+                        .put("height", request.viewportSize().getHeight()))
+                .put("batchMetadata", new JSONObject()
+                        .put("name", request.batchMetadata().name())
+                        .put("id", request.batchMetadata().id())
+                        .put("properties", new JSONObject(request.batchMetadata().properties())))
+                .put("customProperties", new JSONObject(request.customProperties()));
+        JSONArray ufgTargets = new JSONArray();
+        for (PlaywrightVisualSessionRequest.UfgTarget ufgTarget : request.ufgTargets()) {
+            ufgTargets.put(new JSONObject()
+                    .put("width", ufgTarget.width())
+                    .put("height", ufgTarget.height())
+                    .put("browserType", ufgTarget.browserType())
+                    .put("deviceName", ufgTarget.deviceName())
+                    .put("screenOrientation", ufgTarget.screenOrientation()));
+        }
+        json.put("ufgTargets", ufgTargets);
         return json;
     }
 

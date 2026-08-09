@@ -3,6 +3,15 @@ import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import {
+  BatchInfo,
+  ClassicRunner,
+  Configuration,
+  Eyes,
+  MatchLevel,
+  RectangleSize,
+  Target,
+} from "@applitools/eyes-playwright";
 import { chromium, firefox, webkit } from "playwright";
 import { buildRemoteLaunchDescriptor } from "./worker-provider.mjs";
 
@@ -122,6 +131,79 @@ async function finalizeSessionArtifacts(session) {
   if (session.tracePath) {
     await session.context.tracing.stop({ path: session.tracePath }).catch(() => {});
   }
+}
+
+function addVisualProperties(eyes, customProperties = {}) {
+  for (const [key, value] of Object.entries(customProperties)) {
+    eyes.addProperty(key, value);
+  }
+}
+
+async function openVisualSession(session, request) {
+  const eyes = new Eyes(new ClassicRunner());
+  const configuration = new Configuration();
+  configuration.setServerUrl(request.serverUrl);
+  configuration.setApiKey(request.apiKey);
+  configuration.setBranchName(request.branchName);
+  configuration.setEnvironmentName(request.environmentName);
+  configuration.setMatchLevel(MatchLevel[request.defaultMatchLevel] || MatchLevel.Strict);
+  configuration.setSaveNewTests(request.saveNewTests);
+  if (request.baselineEnvName) {
+    configuration.setBaselineEnvName(request.baselineEnvName);
+  }
+  configuration.setBatch(new BatchInfo(request.batchMetadata.name));
+  eyes.setConfiguration(configuration);
+  eyes.setIsDisabled(!request.enabled);
+  addVisualProperties(eyes, request.customProperties);
+  await eyes.open(
+    getCurrentPage(session),
+    request.appName,
+    request.testName,
+    new RectangleSize(request.viewportSize.width, request.viewportSize.height),
+  );
+  session.visualSession = {
+    eyes,
+    disabled: !request.enabled,
+  };
+}
+
+function getVisualSession(session) {
+  if (!session.visualSession) {
+    throw new Error("Visual session is not open");
+  }
+  return session.visualSession;
+}
+
+async function checkVisualWindow(session, payload) {
+  const visualSession = getVisualSession(session);
+  let target = Target.window();
+  if (payload.fully) {
+    target = target.fully();
+  }
+  if (payload.matchLevel) {
+    target = target.matchLevel(MatchLevel[payload.matchLevel] || MatchLevel.Strict);
+  }
+  await visualSession.eyes.check(payload.tag, target);
+}
+
+function toVisualResultPayload(result) {
+  return {
+    name: result?.name ?? null,
+    appName: result?.appName ?? null,
+    batchName: result?.batchName ?? null,
+    batchId: result?.batchId ?? null,
+    branchName: result?.branchName ?? null,
+    hostOS: result?.hostOS ?? null,
+    hostApp: result?.hostApp ?? null,
+    duration: result?.duration ?? 0,
+    steps: result?.steps ?? 0,
+    matches: result?.matches ?? 0,
+    mismatches: result?.mismatches ?? 0,
+    missing: result?.missing ?? 0,
+    url: result?.url ?? null,
+    isNew: result?.isNew ?? null,
+    status: result?.status ?? "Passed",
+  };
 }
 
 async function closeSessionResources(session) {
@@ -496,6 +578,7 @@ rl.on("line", async (line) => {
           consoleMessages,
           consoleEntries,
           pendingLambdaTestStatus: null,
+          visualSession: null,
         };
         context.setDefaultNavigationTimeout(session.navigationTimeoutMs);
         context.on("dialog", (dialog) => {
@@ -873,6 +956,36 @@ rl.on("line", async (line) => {
           ...(payload.arguments || []),
         );
         process.stdout.write(`${okResponse(requestId, action, { value: value ?? null })}\n`);
+        break;
+      }
+      case "visualOpen": {
+        const session = getSession(payload.sessionId);
+        await openVisualSession(session, payload.request);
+        process.stdout.write(`${okResponse(requestId, action, { status: "ok" })}\n`);
+        break;
+      }
+      case "visualCheckWindow": {
+        const session = getSession(payload.sessionId);
+        await checkVisualWindow(session, payload);
+        process.stdout.write(`${okResponse(requestId, action, { status: "ok" })}\n`);
+        break;
+      }
+      case "visualStatus": {
+        const session = getSession(payload.sessionId);
+        process.stdout.write(`${okResponse(requestId, action, {
+          disabled: !session.visualSession || session.visualSession.disabled,
+        })}\n`);
+        break;
+      }
+      case "visualClose": {
+        const session = getSession(payload.sessionId);
+        if (!session.visualSession || session.visualSession.disabled) {
+          process.stdout.write(`${okResponse(requestId, action, { disabled: true })}\n`);
+          break;
+        }
+        const result = await session.visualSession.eyes.close(false);
+        session.visualSession = null;
+        process.stdout.write(`${okResponse(requestId, action, toVisualResultPayload(result))}\n`);
         break;
       }
       case "closeSession": {

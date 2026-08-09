@@ -33,8 +33,10 @@ import org.openqa.selenium.logging.LogType;
 import org.openqa.selenium.logging.Logs;
 
 import com.znsio.teswiz.exceptions.InvalidTestDataException;
+import com.znsio.teswiz.visual.PlaywrightVisualDriver;
+import com.znsio.teswiz.visual.PlaywrightVisualSessionRequest;
 
-public final class PlaywrightWebDriver implements WebDriver, JavascriptExecutor, TakesScreenshot {
+public final class PlaywrightWebDriver implements WebDriver, JavascriptExecutor, TakesScreenshot, PlaywrightVisualDriver {
     private final PlaywrightWorkerClient workerClient;
     private final PlaywrightWorkerSession session;
     private Duration implicitWaitTimeout = Duration.ZERO;
@@ -100,6 +102,37 @@ public final class PlaywrightWebDriver implements WebDriver, JavascriptExecutor,
 
     public Object runScreenAction(String screenModule, String actionName, JSONArray arguments) {
         return workerClient.invokeScreenAction(session.sessionId(), screenModule, actionName, arguments);
+    }
+
+    @Override
+    public void openVisualSession(PlaywrightVisualSessionRequest request) {
+        workerClient.openVisualSession(session.sessionId(), request);
+    }
+
+    @Override
+    public void checkWindow(String tag) {
+        workerClient.checkVisualWindow(session.sessionId(), tag, null, false);
+    }
+
+    @Override
+    public void check(String tag, com.applitools.eyes.selenium.fluent.SeleniumCheckSettings checkSettings) {
+        workerClient.checkVisualWindow(session.sessionId(), tag, checkSettings.getMatchLevel(),
+                Boolean.TRUE.equals(checkSettings.getStitchContent()));
+    }
+
+    @Override
+    public void checkWindow(String tag, com.applitools.eyes.MatchLevel matchLevel) {
+        workerClient.checkVisualWindow(session.sessionId(), tag, matchLevel, false);
+    }
+
+    @Override
+    public com.applitools.eyes.TestResults closeVisualSession() {
+        return workerClient.closeVisualSession(session.sessionId());
+    }
+
+    @Override
+    public boolean isVisualSessionDisabled() {
+        return workerClient.isVisualSessionDisabled(session.sessionId());
     }
 
     @Override

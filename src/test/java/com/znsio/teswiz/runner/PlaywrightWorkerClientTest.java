@@ -12,9 +12,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import com.applitools.eyes.MatchLevel;
 import com.znsio.teswiz.web.playwright.PlaywrightWorkerClient;
 import com.znsio.teswiz.web.playwright.PlaywrightWorkerResponse;
 import com.znsio.teswiz.web.playwright.PlaywrightWorkerSession;
+import com.znsio.teswiz.visual.PlaywrightVisualSessionRequest;
 
 class PlaywrightWorkerClientTest {
     private PlaywrightWorkerClient workerClient;
@@ -93,6 +95,41 @@ class PlaywrightWorkerClientTest {
                 .isIn(null, JSONObject.NULL);
         assertThat(workerClient.executeScript(session.sessionId(), "lambda-name=buyer-test"))
                 .isIn(null, JSONObject.NULL);
+    }
+
+    @Test
+    void shouldOpenDisabledVisualSessionThroughWorker(@TempDir Path tempDir) throws IOException {
+        workerClient = new PlaywrightWorkerClient();
+        workerClient.start();
+
+        PlaywrightWorkerSession session = workerClient.createSession("buyer", "chrome");
+        Path pagePath = writeTheAppLikePage(tempDir);
+        workerClient.navigateTo(session.sessionId(), pagePath.toUri().toString());
+
+        workerClient.openVisualSession(session.sessionId(), new PlaywrightVisualSessionRequest(
+                "theapp-web-playwright-ts",
+                "worker-visual-session-playwright-ts",
+                "https://eyes.applitools.com/",
+                "dummykey",
+                "local-branch",
+                "local",
+                null,
+                MatchLevel.STRICT,
+                true,
+                false,
+                false,
+                false,
+                1,
+                null,
+                tempDir.resolve("applitools-playwright-ts.log").toString(),
+                new com.applitools.eyes.RectangleSize(1280, 720),
+                new PlaywrightVisualSessionRequest.BatchMetadata("teswiz-local-web-playwright-ts",
+                        "batch-local-playwright-ts", java.util.Map.of("WEB_ENGINE", "playwright-ts")),
+                java.util.Map.of("WEB_ENGINE", "playwright-ts", "BROWSER_NAME", "chrome"),
+                java.util.List.of()));
+
+        assertThat(workerClient.isVisualSessionDisabled(session.sessionId())).isTrue();
+        assertThat(workerClient.closeVisualSession(session.sessionId())).isNull();
     }
 
     private Path writeTheAppLikePage(Path tempDir) throws IOException {

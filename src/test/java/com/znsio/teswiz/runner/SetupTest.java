@@ -160,6 +160,27 @@ class SetupTest {
         assertThat(batchInfo.getName()).as("Applitools Batch name suffix is not set as expected").endsWith(batchNameSuffix);
     }
 
+    @Test
+    void shouldMakeApplitoolsBatchNameAndPropertiesEngineAwareForWebRuns() {
+        String webConfigFilePath = "./configs/theapp/theapp_local_web_config.properties";
+        System.setProperty(Setup.WEB_ENGINE, "playwright-ts");
+        Setup.load(webConfigFilePath);
+        Setup.loadAndUpdateConfigParameters(webConfigFilePath);
+        Setup.initialiseApplitoolsConfiguration();
+
+        Map applitoolsConfiguration = Runner.getApplitoolsConfiguration();
+        BatchInfo batchInfo = (BatchInfo) applitoolsConfiguration.get(APPLITOOLS.BATCH_INFO);
+
+        assertThat(batchInfo.getName()).contains("-web-playwright-ts");
+        assertThat(batchInfo.getProperties())
+                .anySatisfy(property -> assertThat(property)
+                        .containsEntry("name", Setup.WEB_ENGINE)
+                        .containsEntry("value", "playwright-ts"))
+                .anySatisfy(property -> assertThat(property)
+                        .containsEntry("name", Setup.PLATFORM)
+                        .containsEntry("value", "web"));
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"selenium", "playwright-java", "playwright-ts"})
     void shouldIncludeProviderAndWebEngineInReportPortalAttributesForWebRuns(String webEngine) {

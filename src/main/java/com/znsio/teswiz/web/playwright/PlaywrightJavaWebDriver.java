@@ -29,9 +29,11 @@ import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Page.NavigateOptions;
 import com.microsoft.playwright.Tracing;
 import com.microsoft.playwright.options.WaitUntilState;
+import com.znsio.teswiz.visual.PlaywrightVisualDriver;
+import com.znsio.teswiz.visual.PlaywrightVisualSessionRequest;
 
 public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.selenium.JavascriptExecutor,
-        org.openqa.selenium.TakesScreenshot {
+        org.openqa.selenium.TakesScreenshot, PlaywrightVisualDriver {
     private static final String BROWSERSTACK_EXECUTOR_PREFIX = "browserstack_executor:";
     private static final String LAMBDATEST_ACTION_PREFIX = "lambdatest_action:";
     private static final String LEGACY_LAMBDATEST_NAME_PREFIX = "lambda-name=";
@@ -42,6 +44,7 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
     private Duration pageLoadTimeout = Duration.ofSeconds(30);
     private Duration scriptTimeout = Duration.ofSeconds(30);
     private String pendingLambdaTestStatus;
+    private PlaywrightJavaVisualSession visualSession;
 
     public PlaywrightJavaWebDriver(PlaywrightJavaSession session) {
         this.session = session;
@@ -332,6 +335,37 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
     @Override
     public <X> X getScreenshotAs(OutputType<X> target) {
         return target.convertFromPngBytes(session.page().screenshot());
+    }
+
+    @Override
+    public void openVisualSession(PlaywrightVisualSessionRequest request) {
+        visualSession = new PlaywrightJavaVisualSession(session.page());
+        visualSession.open(request);
+    }
+
+    @Override
+    public void checkWindow(String tag) {
+        visualSession.checkWindow(tag);
+    }
+
+    @Override
+    public void check(String tag, com.applitools.eyes.selenium.fluent.SeleniumCheckSettings checkSettings) {
+        visualSession.check(tag, checkSettings);
+    }
+
+    @Override
+    public void checkWindow(String tag, com.applitools.eyes.MatchLevel matchLevel) {
+        visualSession.checkWindow(tag, matchLevel);
+    }
+
+    @Override
+    public com.applitools.eyes.TestResults closeVisualSession() {
+        return null == visualSession ? null : visualSession.close();
+    }
+
+    @Override
+    public boolean isVisualSessionDisabled() {
+        return null == visualSession || visualSession.isDisabled();
     }
 
     private Object evaluateScript(Page page, String script, Object[] args) {

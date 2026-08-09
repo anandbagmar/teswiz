@@ -574,7 +574,7 @@ public class Setup {
 
     @NotNull
     private static BatchInfo setupApplitoolsBatchInfo() {
-        String batchName = configs.get(LAUNCH_NAME) + "-" + configs.get(TARGET_ENVIRONMENT);
+        String batchName = buildApplitoolsBatchName();
         String batchNameSuffix = getOverriddenStringValue(APPLITOOLS_BATCH_NAME_SUFFIX, "");
         if (!batchNameSuffix.isBlank()) {
             if (!Character.isWhitespace(batchNameSuffix.charAt(0))) {
@@ -587,6 +587,9 @@ public class Setup {
         batchInfo.addProperty(APP_NAME, configs.get(APP_NAME));
         batchInfo.addProperty(BRANCH_NAME, configs.get(BRANCH_NAME));
         batchInfo.addProperty(PLATFORM, currentPlatform.name());
+        if (Platform.web.equals(currentPlatform)) {
+            batchInfo.addProperty(WEB_ENGINE, configs.get(WEB_ENGINE));
+        }
         batchInfo.addProperty(RUN_IN_CI, String.valueOf(configsBoolean.get(RUN_IN_CI)));
         batchInfo.addProperty(TARGET_ENVIRONMENT, configs.get(TARGET_ENVIRONMENT));
         batchInfo.addProperty(REPOSITORY_NAME, new File(System.getProperty("user.dir")).getName());
@@ -595,6 +598,14 @@ public class Setup {
         batchInfo.setId(batchId);
         batchInfo.setNotifyOnCompletion(true);
         return batchInfo;
+    }
+
+    static String buildApplitoolsBatchName() {
+        String batchName = configs.get(LAUNCH_NAME) + "-" + configs.get(TARGET_ENVIRONMENT);
+        if (Platform.web.equals(currentPlatform)) {
+            batchName += "-" + currentPlatform.name() + "-" + configs.get(WEB_ENGINE);
+        }
+        return batchName;
     }
 
     private static void updateApplitoolsProxyUrl() {

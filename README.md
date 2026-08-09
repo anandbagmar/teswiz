@@ -216,6 +216,11 @@ For runs that publish `scenario-session-metadata.json`, the HTML report also agg
 and when available, provider-native cloud session ids, report URLs, and normalized artifact URLs such as console logs,
 network logs, video links, Playwright logs, command logs, and screenshots.
 
+For Applitools web visual runs, teswiz also now publishes engine-aware metadata directly into Eyes:
+* engine-aware app/test naming for Playwright web sessions
+* engine-aware batch naming for web runs
+* custom properties including `WEB_ENGINE`, `BROWSER_NAME`, `CONFIGURED_VIEWPORT_SIZE`, and `EFFECTIVE_VIEWPORT_SIZE`
+
 Test can run on local browsers / devices, or against any cloud provider, such as TestMu AI (formerly LambdaTest), HeadSpin, BrowserStack, SauceLabs, pCloudy.
 
 ## CI Batch Name Suffix for Applitools

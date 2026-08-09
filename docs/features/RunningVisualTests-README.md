@@ -107,21 +107,25 @@ Override it at runtime when you want to validate the same web flow on a Playwrig
 * `WEB_ENGINE=playwright-java`
 * `WEB_ENGINE=playwright-ts`
 
-Internally, Selenium web runs continue to use the Selenium Eyes path, while Playwright web runs use the Playwright-specific image-based visual adapter path.
-This keeps the checked-in Selenium behavior stable while allowing Playwright-specific visual execution to evolve independently.
+Internally, Selenium web runs continue to use the Selenium Eyes path, while Playwright web runs now use the official Applitools Playwright SDK path for the selected Playwright engine.
+This keeps Selenium behavior stable while making Playwright visual runs first-class Eyes sessions instead of screenshot-only image submissions.
 
 * `WEB_ENGINE=selenium`
   * uses the Selenium Applitools SDK path
   * supports Ultrafast Grid (`useUFG`) as documented above
 * `WEB_ENGINE=playwright-java`
-  * uses the Playwright Java visual path
-  * preserves teswiz scenario naming, Figma naming, batch identity, baseline environment selection, logs, and visual result handling
+  * uses the official Applitools Playwright Java SDK path
+  * publishes engine-aware app, test, and batch naming for web visual runs
+  * adds `WEB_ENGINE`, `BROWSER_NAME`, `CONFIGURED_VIEWPORT_SIZE`, and `EFFECTIVE_VIEWPORT_SIZE` as Applitools custom properties
+  * preserves teswiz Figma naming override, batch identity, baseline environment selection, logs, and visual result handling
 * `WEB_ENGINE=playwright-ts`
-  * uses the Playwright TS worker-backed visual path
-  * preserves teswiz scenario naming, Figma naming, batch identity, baseline environment selection, logs, and visual result handling
-  * supports `checkWindow(...)`, `checkWindow(..., MatchLevel)`, selector-based `Target.window().layout/strict/content/ignore(...)`, and simple `Target.region(...)` checks for non-frame web content
-  * does not yet support Selenium-specific constructs such as frame-based visual checks, floating regions, dynamic regions, or accessibility regions
-  * does not reuse Selenium Ultrafast Grid rendering semantics; Playwright visual checks currently validate the captured Playwright screenshot directly
+  * uses the Playwright TS worker-backed official Applitools Playwright SDK path
+  * publishes engine-aware app, test, and batch naming for web visual runs
+  * adds `WEB_ENGINE`, `BROWSER_NAME`, `CONFIGURED_VIEWPORT_SIZE`, and `EFFECTIVE_VIEWPORT_SIZE` as Applitools custom properties
+  * preserves teswiz Figma naming override, batch identity, baseline environment selection, logs, and visual result handling
+  * supports `checkWindow(...)`, `checkWindow(..., MatchLevel)`, and window-based `visually.check(...)` flows for the current Playwright web screen implementations
+  * does not yet support Selenium-specific constructs such as frame-based visual checks, region-based web checks, floating regions, dynamic regions, or accessibility regions
+  * currently runs as Playwright-native Eyes sessions, but does not yet mirror Selenium Ultrafast Grid fan-out semantics
 
 # Using explicit Figma / Applitools naming
 
@@ -171,3 +175,9 @@ To enable Visual test automation using Applitools Visual AI, follow the steps be
 
 For web runs, the report metadata in the generated Cucumber HTML report includes `WEB_ENGINE`, and when scenario session metadata is available it also includes aggregated `SESSION_PERSONAS`, `SESSION_PLATFORMS`, `SESSION_ENGINES`, `SESSION_PROVIDERS`, and provider-side session artifact links such as `SESSION_PROVIDER_REPORT_URLS`, `SESSION_PROVIDER_CONSOLE_LOG_URLS`, and `SESSION_PROVIDER_NETWORK_LOG_URLS`.
 This helps visual report consumers understand mixed persona, platform, engine, and provider coverage for the run.
+
+For Applitools itself, web visual sessions also now carry engine-aware metadata directly in Eyes:
+* engine-aware app naming for Playwright web runs
+* engine-aware test naming for Playwright web runs
+* engine-aware batch naming for web runs
+* custom properties including `WEB_ENGINE`, `BROWSER_NAME`, `CONFIGURED_VIEWPORT_SIZE`, and `EFFECTIVE_VIEWPORT_SIZE`

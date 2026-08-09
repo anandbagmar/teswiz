@@ -56,6 +56,8 @@ class VisualTest {
     void cleanUp() {
         SessionContext.remove(Thread.currentThread().getId());
         System.clearProperty(Setup.WEB_ENGINE);
+        System.clearProperty("BASE_URL");
+        System.clearProperty("HEADLESS");
     }
 
     @Test
@@ -157,7 +159,7 @@ class VisualTest {
     }
 
     @Test
-    void shouldUsePlaywrightImageEyesPathForPlaywrightWebDrivers() throws Exception {
+    void shouldUsePlaywrightVisualDriverPathForPlaywrightWebDrivers() throws Exception {
         TestExecutionContext context = createVisualContext("playwright-visual-path");
         Setup.load(WEB_CONFIG_FILE);
         Setup.loadAndUpdateConfigParameters(WEB_CONFIG_FILE);
@@ -170,7 +172,7 @@ class VisualTest {
             Visual visual = new Visual(Driver.WEB_DRIVER, Platform.web, playwrightDriver, "playwright-visual-path",
                     "buyer", "theapp");
 
-            Object playwrightEyes = getFieldValue(visual, "eyesOnPlaywrightWeb");
+            Object playwrightEyes = getFieldValue(visual, "playwrightVisualDriver");
             com.applitools.eyes.selenium.Eyes seleniumEyes =
                     (com.applitools.eyes.selenium.Eyes) getFieldValue(visual, "eyesOnWeb");
 
@@ -183,9 +185,10 @@ class VisualTest {
     }
 
     @Test
-    void shouldUsePlaywrightImageEyesPathForPlaywrightJavaWebDrivers() throws Exception {
+    void shouldUsePlaywrightVisualDriverPathForPlaywrightJavaWebDrivers() throws Exception {
         TestExecutionContext context = createVisualContext("playwright-java-visual-path");
         enablePlaywrightJavaHeadless();
+        System.setProperty("BASE_URL", createLocalWebFixture("playwright-java-visual-path").toUri().toString());
         UserPersonaDetails userPersonaDetails = (UserPersonaDetails) context
                 .getTestState(TEST_CONTEXT.CURRENT_USER_PERSONA_DETAILS);
         userPersonaDetails.addAppName("buyer", Runner.DEFAULT);
@@ -197,7 +200,7 @@ class VisualTest {
             Visual visual = new Visual(Driver.WEB_DRIVER, Platform.web, result.webDriver(), "playwright-java-visual-path",
                     "buyer", "theapp");
 
-            Object playwrightEyes = getFieldValue(visual, "eyesOnPlaywrightWeb");
+            Object playwrightEyes = getFieldValue(visual, "playwrightVisualDriver");
             com.applitools.eyes.selenium.Eyes seleniumEyes =
                     (com.applitools.eyes.selenium.Eyes) getFieldValue(visual, "eyesOnWeb");
 
@@ -227,12 +230,21 @@ class VisualTest {
         Visual visual = new Visual(Driver.WEB_DRIVER, Platform.web, seleniumDriver, "selenium-visual-path",
                 "buyer", "theapp");
 
-        Object playwrightEyes = getFieldValue(visual, "eyesOnPlaywrightWeb");
+        Object playwrightEyes = getFieldValue(visual, "playwrightVisualDriver");
         com.applitools.eyes.selenium.Eyes seleniumEyes =
                 (com.applitools.eyes.selenium.Eyes) getFieldValue(visual, "eyesOnWeb");
 
         assertThat(playwrightEyes).isNull();
         assertThat(seleniumEyes).isNotNull();
+    }
+
+    @Test
+    void shouldMakeWebVisualNamesEngineAware() {
+        Visual.WebVisualNames visualNames = Visual.resolveWebVisualNames(Platform.web, "theapp", "invalid-login",
+                "playwright-ts", null);
+
+        assertThat(visualNames.appName()).isEqualTo("theapp-web-playwright-ts");
+        assertThat(visualNames.testName()).isEqualTo("invalid-login-playwright-ts");
     }
 
     private void enablePlaywrightJavaHeadless() {
@@ -241,6 +253,23 @@ class VisualTest {
         Setup.load(WEB_CONFIG_FILE);
         Setup.loadAndUpdateConfigParameters(WEB_CONFIG_FILE);
         Setup.getExecutionArguments();
+    }
+
+    private Path createLocalWebFixture(String fixtureName) throws IOException {
+        Path fixture = Files.createTempFile(fixtureName, ".html");
+        Files.writeString(fixture, """
+                <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                  <meta charset="UTF-8" />
+                  <title>Playwright Visual Fixture</title>
+                </head>
+                <body>
+                  <main id="fixture">teswiz visual fixture</main>
+                </body>
+                </html>
+                """);
+        return fixture;
     }
 
     private static TestExecutionContext createVisualContext(String testName) throws IOException {
