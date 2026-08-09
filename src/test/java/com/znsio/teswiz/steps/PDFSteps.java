@@ -30,7 +30,7 @@ public class PDFSteps {
     @Given("I can validate the pdf document {string}")
     public void iCanValidateThePdfDocument(String pdfFileName) {
         LOGGER.info("Validate the pdf document " + pdfFileName);
-        new PDFValidatorBL(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform()).validate(pdfFileName);
+        new PDFValidatorBL(SAMPLE_TEST_CONTEXT.I, Runner.getPlatform()).validate(pdfFileName);
     }
 
     @Given("{string} go to Login")
@@ -60,7 +60,7 @@ public class PDFSteps {
     @Given("I validate the standalone pdf document {string}")
     public void iValidateTheStandalonePdfDocument(String pdfFileName) {
         LOGGER.info("Validate all pages of the standalone pdf: %s".formatted(pdfFileName));
-        Drivers.createPDFDriverFor(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform(), context, pdfFileName);
+        Drivers.createPDFDriverFor(SAMPLE_TEST_CONTEXT.I, Runner.getPlatform(), context, pdfFileName);
         new PDFValidatorBL(SAMPLE_TEST_CONTEXT.I, Runner.getPlatform()).validateStandalonePDFFile();
     }
 
