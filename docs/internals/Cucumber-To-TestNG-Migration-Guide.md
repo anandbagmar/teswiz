@@ -222,3 +222,4 @@ Worth reading before migrating your own:
 | `PDFValidationTestNgTest` | `pdf.feature` | Applitools-backed validation, no Gherkin table |
 | `TheAppInvalidLoginTestNgTest` | `theapp.feature` | Setup/test-flow separation, shown above |
 | `JioMeetMicSettingsTestNgTest` | `jiomeet.feature` | Fluent BL chaining (`AuthBL` → `LandingBL` → `InAMeetingBL`) |
+| `TheAppMultiUserAndroidWebTestNgTest` | `theapp.feature` (android-web multi-user scenario) | Multi-platform orchestration in one test, wired into CI |
