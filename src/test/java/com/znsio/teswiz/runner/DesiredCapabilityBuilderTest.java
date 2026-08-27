@@ -2,6 +2,7 @@ package com.znsio.teswiz.runner;
 
 import com.znsio.teswiz.context.SessionContext;
 import com.znsio.teswiz.tools.JsonFile;
+import org.json.JSONObject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.remote.DesiredCapabilities;
@@ -23,6 +24,7 @@ class DesiredCapabilityBuilderTest {
     void cleanup() {
         SessionContext.remove(Thread.currentThread().getId());
         resetCustomCapabilitiesSingleton();
+        System.clearProperty("CAPS");
         if (createdDefaultCapsFile) {
             try {
                 Files.deleteIfExists(Path.of("caps", "capabilities.json"));
@@ -30,6 +32,22 @@ class DesiredCapabilityBuilderTest {
             }
             createdDefaultCapsFile = false;
         }
+    }
+
+    @Test
+    void shouldFallBackToDefaultCapabilitiesFileWhenCapsSystemPropertyIsTheNotSetSentinel() throws Exception {
+        // Reproduces a real test-order-dependent CI failure: Setup.getExecutionArguments()
+        // (called by many other tests sharing this JVM) sets a JVM-wide "CAPS" system
+        // property, often to the "not-set" sentinel when no capabilities file is
+        // configured. CustomCapabilities must treat that sentinel the same as "no
+        // override provided", not attempt to resolve/read a file literally named "not-set".
+        System.setProperty("CAPS", Runner.NOT_SET);
+        ensureDefaultCapsFileExists();
+        resetCustomCapabilitiesSingleton();
+
+        JSONObject capabilities = CustomCapabilities.getInstance().getCapabilities();
+
+        assertThat(capabilities.has("android")).isTrue();
     }
 
     @Test

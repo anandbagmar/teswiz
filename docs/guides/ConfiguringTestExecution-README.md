@@ -4,6 +4,30 @@ Test execution using teswiz is highly configurable. This enables you to control 
 
 See all the [Configuration parameters here](../features/ConfigurationParameters-README.md)
 
+### Choosing between Cucumber and plain TestNG (`FRAMEWORK`)
+
+By default, teswiz executes Cucumber `.feature` files via step definitions that call into your business/screen layers. If you don't need Gherkin's collaborative/BDD layer, you can instead write plain TestNG tests that call the same business/screen layers directly:
+
+* `FRAMEWORK=cucumber` (default) - runs `.feature` files via Cucumber, as today.
+* `FRAMEWORK=testng` - runs plain TestNG `@Test` classes instead, skipping the step-definition layer entirely.
+
+Sample command:
+
+    CONFIG=configs/cli_local_config.properties FRAMEWORK=testng TAG=@calculator ./gradlew run
+
+A project may contain both Cucumber feature files/step-defs and plain TestNG test classes, but a single execution runs only one mode - whichever `FRAMEWORK` selects. `TAG` filtering works the same way in both modes: in TestNG mode, tags map to TestNG groups (e.g. `@calculator` selects tests declared with `@Test(groups = "calculator")`).
+
+TestNG mode supports the same `TAG` syntax as above, translated to TestNG's include/exclude groups:
+
+* `TAG=@calculator` - runs tests in the `calculator` group.
+* `TAG="@cli @calculator"` or `TAG="@cli or @calculator"` - runs tests in either group.
+* `TAG="@calculator and not @wip"` - runs tests in the `calculator` group, excluding any also tagged `wip`.
+
+One TestNG limitation to be aware of: TestNG's group model can select "any of these groups" and separately exclude "any of these groups", but it cannot require a test belong to two groups at once. So `TAG="@schedule and @signup"` (a true AND of two positive tags) is not supported in TestNG mode and raises a clear error - if you need that combination, give the test a single composite group instead (e.g. `@Test(groups = "scheduleAndSignup")`).
+
+If you have existing Cucumber feature files and want to port some of them to TestNG mode, see the
+[Cucumber to TestNG Migration Guide](../internals/Cucumber-To-TestNG-Migration-Guide.md).
+
 ### Run Android app tests
 
 To run all the tests against the Android platform, run the following command:

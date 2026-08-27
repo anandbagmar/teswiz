@@ -5,6 +5,11 @@ import com.znsio.teswiz.context.TestExecutionContext;
 import com.znsio.teswiz.entities.Platform;
 import com.znsio.teswiz.entities.TEST_CONTEXT;
 import com.znsio.teswiz.exceptions.InvalidTestDataException;
+import com.znsio.teswiz.testng.TestNgExecutionResult;
+import com.znsio.teswiz.testng.TestNgGroupSelection;
+import com.znsio.teswiz.testng.TestNgRunner;
+import com.znsio.teswiz.testng.TestNgTagExpressionParser;
+import com.znsio.teswiz.testng.TestNgTestClassDiscovery;
 import com.znsio.teswiz.web.WebEngine;
 import com.znsio.teswiz.tools.JsonPrettyPrinter;
 import com.znsio.teswiz.tools.SensitiveDataMasker;
@@ -62,6 +67,38 @@ public class Runner {
     }
 
     private void run(List<String> args, String stepDefsDir, String featuresDir) {
+        if (Setup.isTestNgExecutionMode()) {
+            runTestNgMode(stepDefsDir);
+        } else {
+            runCucumberMode(args, stepDefsDir, featuresDir);
+        }
+    }
+
+    private void runTestNgMode(String testClassesPackageDir) {
+        String testClassesPackage = testClassesPackageDir.replace('/', '.');
+        List<String> testClasses = TestNgTestClassDiscovery.discoverTestClassesIn(testClassesPackage);
+        LOGGER.info("Begin running {} TestNG test class(es) discovered in package '{}'", testClasses.size(), testClassesPackage);
+        TestNgGroupSelection groupSelection = TestNgTagExpressionParser.parse(Setup.getRawTagBeforeCucumberInference());
+        TestNgExecutionResult executionResult = TestNgRunner.run(testClasses, groupSelection,
+                Setup.getIntegerValueFromConfigs(PARALLEL));
+        LOGGER.info("TestNG execution: passed={}, failed={}", executionResult.passedCount(), executionResult.failedCount());
+
+        boolean isHardGate = isHardGateSet();
+        byte status;
+        if (isHardGate) {
+            status = getStatus(isRunningFailingTestSuite(), executionResult.totalCount(), executionResult.totalCount(),
+                    executionResult.passedCount(), executionResult.failedCount());
+            LOGGER.info("SET_HARD_GATE is '%s'. Returning status '%s' of hard gate".formatted(isHardGate, status));
+        } else {
+            status = (byte) (executionResult.allTestsPassed() ? 0 : 1);
+            LOGGER.info("SET_HARD_GATE is '%s'. Return actual status '%s' of test execution".formatted(isHardGate, status));
+        }
+
+        Setup.cleanUpExecutionEnvironment();
+        System.exit(status);
+    }
+
+    private void runCucumberMode(List<String> args, String stepDefsDir, String featuresDir) {
         args.add("--glue");
         args.add(stepDefsDir);
         // Always include teswiz's built-in, reusable step definitions (e.g. FigmaSteps,
