@@ -145,7 +145,13 @@ update_version_in_project_files() {
   sed -i '' -E 's/(def teswizVersion = ")[^"]*(")/\1'"$VERSION"'\2/' build.gradle
 
   if [ -f package.json ]; then
-    npm version "$VERSION" --no-git-tag-version
+    local package_version
+    package_version=$(node -p "require('./package.json').version" 2>/dev/null || echo "")
+    if [ "$package_version" = "$VERSION" ]; then
+      echo "  ℹ️ package.json already at version $VERSION; skipping npm version update."
+    else
+      npm version "$VERSION" --no-git-tag-version
+    fi
   fi
 
   if [ -f README.md ]; then
