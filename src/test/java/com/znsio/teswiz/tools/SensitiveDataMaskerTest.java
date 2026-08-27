@@ -144,4 +144,48 @@ class SensitiveDataMaskerTest {
 
         assertThat(SensitiveDataMasker.mask(input)).isEqualTo("password=*** token=***");
     }
+
+    @Test
+    void mask_shouldMaskQueryStringSensitiveValue_andPreserveSubsequentParams() {
+        String input = "GET /authenticate?auth_token=abc123&game_id=42&currency=NZD";
+
+        assertThat(SensitiveDataMasker.mask(input))
+                .isEqualTo("GET /authenticate?auth_token=***&game_id=42&currency=NZD");
+    }
+
+    @Test
+    void mask_shouldMaskSemicolonSeparatedQueryStringSensitiveValue() {
+        String input = "auth_token=abc123;game_id=42";
+
+        assertThat(SensitiveDataMasker.mask(input)).isEqualTo("auth_token=***;game_id=42");
+    }
+
+    @Test
+    void mask_shouldMaskUnderscoreJoinedCompoundSensitiveKey_inQueryString() {
+        String input = "player_auth_token=4aa56fe9-6f6e-4413-a6dc-e6b6999d464a&is_session_supported=true";
+
+        assertThat(SensitiveDataMasker.mask(input))
+                .isEqualTo("player_auth_token=***&is_session_supported=true");
+    }
+
+    @Test
+    void mask_shouldMaskUnderscoreJoinedCompoundSensitiveKey_sessionToken() {
+        String input = "session_token=abc123&next=ok";
+
+        assertThat(SensitiveDataMasker.mask(input)).isEqualTo("session_token=***&next=ok");
+    }
+
+    @Test
+    void mask_shouldNotMaskConcatenatedWordThatMerelyContainsSensitiveSubstring() {
+        String input = "tokenized=abc123&next=ok";
+
+        assertThat(SensitiveDataMasker.mask(input)).isEqualTo(input);
+    }
+
+    @Test
+    void mask_shouldNotMaskCamelCaseWordThatMerelyContainsSensitiveSubstring() {
+        String input = "myUserName=bob&next=ok";
+
+        assertThat(SensitiveDataMasker.mask(input)).isEqualTo(input);
+    }
 }

@@ -75,8 +75,12 @@ public final class SensitiveDataMasker {
     }
 
     private static Pattern buildTextKeyValuePattern(List<String> keys) {
+        // Boundaries use (?<![A-Za-z0-9])/(?![A-Za-z0-9]) rather than \b so that keys joined
+        // by '_' or '-' (e.g. player_auth_token, session_token) are still matched - \b treats
+        // '_' as a word character, so it fails to find a boundary at an underscore junction.
         return Pattern.compile(
-                "(?i)\\b(" + String.join("|", keys) + ")\\b\\s*[:=]\\s*([^,\\s}\\]]+)");
+                "(?i)(?<![A-Za-z0-9])(" + String.join("|", keys) + ")(?![A-Za-z0-9])"
+                + "\\s*[:=]\\s*([^,&;\\s}\\]]+)");
     }
 
     public static String maskSecret(String value) {
