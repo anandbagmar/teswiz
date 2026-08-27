@@ -222,6 +222,8 @@ dependencies {
     api "io.appium:java-client:10.1.1"
     api 'io.cucumber:cucumber-java:7.34.4'
     api 'io.cucumber:cucumber-testng:7.34.4'
+    api "org.testng:testng:7.12.0"
+    api "org.reflections:reflections:0.10.2"
     api "io.rest-assured:rest-assured:5.5.1"
     api "org.assertj:assertj-core:3.27.7"
     api "org.json:json:20250107"
@@ -233,7 +235,6 @@ dependencies {
     // public API surface even though the classes involved happen to be public.
     implementation "com.browserstack:browserstack-local-java:1.1.9"
     implementation 'com.epam.reportportal:agent-java-cucumber6:5.5.7'
-    implementation 'com.epam.reportportal:client-java:5.4.15'
     implementation "com.flipkart.zjsonpatch:zjsonpatch:0.4.16"
     implementation "com.github.erosb:everit-json-schema:1.14.6"
     implementation "com.github.vidstige:jadb:$jadbVersion"
@@ -385,9 +386,12 @@ tasks.register('run', JavaExec) {
 //        configFile = System.getenv("CONFIG") ? System.getenv("CONFIG") : configFile
 
         systemProperties = System.properties as Map<String, ?>
+        def testClassesOrStepDefsPackage = "testng".equalsIgnoreCase(System.getenv("FRAMEWORK"))
+                ? "com/znsio/teswiz/testng"
+                : "com/znsio/teswiz/steps"
         def runnerArgs = [
                 "${configFile}",
-                "com/znsio/teswiz/steps",
+                testClassesOrStepDefsPackage,
                 "./src/test/resources/com/znsio/teswiz/features"
         ]
         args = runnerArgs
@@ -427,6 +431,15 @@ tasks.named('test', Test) {
     }
     println "Using LOG_DIR: ${logDir}"
     systemProperty "LOG_DIR", "${logDir}"
+    // Mirrors what Runner.main() does for a real `run` invocation (System.setProperty
+    // "OUTPUT_DIRECTORY", logDir as its first statement) - without this, FileLocations'
+    // OUTPUT_DIRECTORY (a static field, resolved once per JVM) falls back to its
+    // hardcoded "target/" default for every test, since tests call Setup.load(...)
+    // directly rather than going through Runner.main()'s bootstrapping. That fallback
+    // sends per-test artifacts (TestNgRunner's report output, TestNgTestExecutionContextFactory's
+    // scenario directories) to one shared, ever-growing target/reports/ instead of
+    // this run's own timestamped directory.
+    systemProperty "OUTPUT_DIRECTORY", "${logDir}"
     environment "APPLITOOLS_API_KEY", System.getenv("TESWIZ_APPLITOOLS_API_KEY")
     reports {
         html.required.set(true)
@@ -446,6 +459,10 @@ tasks.register('verifyScreenContracts', JavaExec) {
     if (project.findProperty('includeMissingScreenTargets')?.toString()?.toBoolean()) {
         args "--include-missing-targets"
     }
+    // Without this, any class this task loads that touches Log4j2 (most do, via a
+    // static LOGGER field) resolves the log4j2.properties ${sys:LOG_DIR} placeholder
+    // with nothing set, creating a literal "${sys:LOG_DIR}" directory at the repo root.
+    systemProperty "LOG_DIR", "${logDir}"
 }
 
 tasks.register('reportMissingScreenContracts', JavaExec) {
@@ -455,6 +472,7 @@ tasks.register('reportMissingScreenContracts', JavaExec) {
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "com.znsio.teswiz.screen.ScreenContractCoverageReporter"
     args "src/test/java/com/znsio/teswiz/screen"
+    systemProperty "LOG_DIR", "${logDir}"
 }
 
 tasks.withType(JavaCompile).configureEach {

@@ -13,6 +13,7 @@ Use this skill for changes inside the `znsio/teswiz` repo.
 - Step definitions used by sample tests: `src/main/java/com/znsio/teswiz/steps`
 - Unit tests: `src/test/java/com/znsio/teswiz`
 - Feature files: `src/test/resources/com/znsio/teswiz/features`
+- TestNG-only execution mode (alternative to Cucumber, see `FRAMEWORK` config property): `src/main/java/com/znsio/teswiz/testng`, pilot tests in `src/test/java/com/znsio/teswiz/testng`, docs in `docs/guides/ConfiguringTestExecution-README.md`
 - Playwright TS test-owned screen modules: `src/test/resources/playwright/screens`
 - Execution configs: `configs/<app>/...`
 - Capability files: `caps/<app>/...`
@@ -29,6 +30,7 @@ Use this skill for changes inside the `znsio/teswiz` repo.
 - Keep encapsulation tight: default to package-private or private unless a wider surface is genuinely required.
 - Avoid broad public APIs for internal refactors; prefer narrow facades, small result objects, or package-private collaborators.
 - Whenever code or documentation changes are made, always include a concise suggested commit message in the final response.
+- When authoring TestNG-mode tests (`com.znsio.teswiz.testng`), always use fluent method chaining between business-layer calls wherever the BL API returns a chainable type (e.g. `AuthBL.signIn()` returning `LandingBL`, or a method returning `this`), instead of constructing a new BL instance per call. **Before reusing an already-constructed BL instance instead of re-constructing it, check whether that BL's constructor has side effects** (several call `Runner.setCurrentDriverForUser(...)`, which sets a single thread-scoped "current persona" pointer that screen resolution reads from) — in a multi-persona test, reusing a stale instance after constructing a later persona's BL silently resolves screens against the wrong persona/platform. In that case, reconstruct the BL immediately before each interaction instead (matching what the equivalent Cucumber step-defs already do) rather than holding a reference across other personas' calls. See `docs/internals/Cucumber-To-TestNG-Migration-Guide.md` for worked examples.
 - Keep the repo instructions aligned across Codex, Claude, and Antigravity entry points:
   - `.codex/skills/teswiz-project/SKILL.md`
   - `CLAUDE.md`
@@ -60,6 +62,7 @@ Use this skill for changes inside the `znsio/teswiz` repo.
   - `com.znsio.teswiz.web.provider.selenium`
   - `com.znsio.teswiz.web.playwright`
   - `com.znsio.teswiz.visual`
+  - `com.znsio.teswiz.testng` (TestNG-only execution mode support: `TestNgRunner`, `TeswizTestNgListener`, `TestNgTestExecutionContextFactory`, `TestNgTestClassDiscovery`, `TestNgTagExpressionParser`/`TestNgGroupSelection` - keeps `Runner`/`Hooks`/`Setup` as thin, mode-agnostic dispatchers. Reporting: `TestNgTagCoverageReportWriter` (lightweight coverage table) plus `TestNgStepRecorder`/`TestNgCapturedStep`/`TestNgCucumberJsonBuilder`/`TestNgCucumberStyleReportWriter` (rich masterthought-powered report built from synthetic Cucumber JSON assembled from `TestNgStepCaptureAspect`-captured business-layer/screen calls, in real call order with nesting depth). See `docs/internals/TestNG-Execution-Mode-Plan.md` for the full implementation history and remaining feature-parity task list; ReportPortal integration for this mode is deferred, not built - a real upstream `agent-java-testng` dependency incompatibility, not a gap to silently fill in. For porting an existing Cucumber scenario to this mode, see `docs/internals/Cucumber-To-TestNG-Migration-Guide.md`.)
 - When adding new Playwright, browser-config, session, or visual-helper code, do not place it in `runner` by default.
 - Shared app-path resolution, version detection, and download handling belongs in `com.znsio.teswiz.config.app`; keep `runner` compatibility wrappers only when they help avoid a breaking change.
 - Shared capability lookup and capability-file persistence belongs in `com.znsio.teswiz.config.capability`; keep `runner` compatibility wrappers only when they help avoid a breaking change.

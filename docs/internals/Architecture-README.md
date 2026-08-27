@@ -27,6 +27,7 @@ The complete runtime picture is:
 flowchart LR
     F[Feature file] --> S[Step definitions]
     S --> BL[Java BL]
+    TNG["Plain TestNG @Test class<br/>(FRAMEWORK=testng)"] --> BL
     BL --> SC[Stable screen contract]
     SC --> ROUTER[Runtime screen / engine router]
 
@@ -56,6 +57,8 @@ flowchart LR
     META --> VIS
     META --> CLOUD
 ```
+
+Everything from the screen contract downward is identical regardless of entry point — Cucumber's feature/step-def layer and a plain TestNG `@Test` class both call the same Java BL, so engine routing, persona/session ownership, reporting, and visual validation behave the same either way. See `com.znsio.teswiz.testng` further down for the TestNG-mode-specific plumbing (mode selection, hooks, discovery, tag mapping, reporting).
 
 Execution routing is still persona-scoped, and the same scenario can involve multiple engines or platforms:
 
@@ -351,6 +354,8 @@ Owns reporting-side adapters that turn engine/session state into uniform teswiz 
 Current examples:
 
 * `ScenarioArtifactReporter`
+* `ScenarioSessionMetadataAggregator` — scans a reports directory for `scenario-session-metadata.json` files and aggregates personas/platforms/engines/providers/provider-artifact-URLs across all scenarios in a run
+* `TestExecutionMetadataBuilder` — builds the environment/build/platform metadata map (target environment, platform, host, build ID, hard-gate flags, aggregated session metadata via `ScenarioSessionMetadataAggregator`, etc) shown on a masterthought rich report's Features overview page; shared by both `CustomReports` (Cucumber mode) and `TestNgCucumberStyleReportWriter` (TestNG mode) so the two report writers stay consistent
 
 Current reporting behavior includes:
 
@@ -368,6 +373,24 @@ Owns engine-specific visual helper implementations that support `runner.Visual`.
 Current examples:
 
 * `PlaywrightVisualCheckSettingsMapper`
+
+### `com.znsio.teswiz.testng`
+
+Owns the alternative, non-Cucumber execution mode: consumers write plain TestNG `@Test` classes that call the same business-layer/screen classes Cucumber step defs call, skipping the Gherkin/step-def translation layer entirely. Selected via the `FRAMEWORK` config property (`cucumber` default, or `testng`); `Runner.run(...)` forks between the two modes based on `Setup.isTestNgExecutionMode()`. A project may contain both Cucumber and TestNG-mode code, but a single execution runs only one mode.
+
+Current examples:
+
+* `TestNgRunner` — programmatic `org.testng.TestNG` bootstrap (test classes, groups, parallel mode, thread count, report output directory), entirely in code with no `testng.xml`. Labels the run via `setDefaultSuiteName`/`setDefaultTestName` (both `TestNG` API methods meant for exactly this) using `Setup.LAUNCH_NAME`, instead of TestNG's generic "Command line suite"/"Command line test" defaults
+* `TeswizTestNgListener` — wires TestNG's `ITestListener` lifecycle to `Hooks`, mirroring what `RunCukes`'s Cucumber `@Before`/`@After` do
+* `TestNgTestExecutionContextFactory` — per-test directory scaffolding (screenshot/log directories) equivalent to `CucumberScenarioListener.scenarioStartedHandler`, since `Hooks`/`ScreenShotManager` assume this state exists regardless of mode
+* `TestNgTestClassDiscovery` — `org.reflections`-based classpath scanning for `@Test`-annotated classes, the TestNG-mode equivalent of Cucumber's `--glue` package scanning
+* `TestNgTagExpressionParser` / `TestNgGroupSelection` — translates the same `TAG` config Cucumber mode uses into TestNG include/exclude groups, supporting `and`/`not`/`or`; a true AND of two positive tags is rejected (TestNG's group model can't express it) rather than silently mishandled
+* `TestNgExecutionResult` / `TestNgGroupCoverage` — the outcome of a TestNG-mode run: overall passed/failed counts (feeding the same hard-gate truth table `Runner.getStatus` already uses for Cucumber mode) plus a per-TestNG-group breakdown of which tests passed/failed
+* `TestNgTagCoverageReportWriter` — renders `TestNgGroupCoverage` as a lightweight, dependency-free HTML table (Group | Total | Passed | Failed), written alongside TestNG's own `EmailableReporter2` output
+* `TestNgStepRecorder` / `TestNgCapturedStep` — `ThreadLocal`-based capture buffer for business-layer/screen/steps method calls, populated by the `TestNgStepCaptureAspect` woven around the same package pointcut as `ConsumerLayerAspectLogging` (`&& !within(*..*$AjcClosure*)` to exclude AspectJ's own generated closure classes, needed since this advice is `@Around`), gated by `Setup.isTestNgExecutionMode()` (a no-op in Cucumber mode). Each captured call becomes one synthetic Cucumber-style "step", recorded at call **start** (`beginStep`/`endStep`) with a per-thread nesting depth, so the report reflects the real call sequence and hierarchy (test → BL → screen → ...) rather than a completion-order trace
+* `TestNgScenarioReportData` / `TestNgCucumberJsonBuilder` / `TestNgCucumberStyleReportWriter` — assembles captured steps into a synthetic Cucumber-JSON document (the same schema real Cucumber runs produce, including a `match.location` per step so masterthought's Steps Statistics page groups correctly) and feeds it through the same `net.masterthought:cucumber-reporting` `Configuration`/`ReportBuilder` API `CustomReports` uses for Cucumber mode, producing the same rich Bootstrap/Chart.js HTML report site (tag/feature drill-downs, collapsible step trees) for TestNG-mode runs. Nested step names are indented (non-breaking spaces + a `↳` marker) per depth level to visualize the call hierarchy. Also applies test-execution metadata to the Features overview page via the shared `com.znsio.teswiz.reporting.TestExecutionMetadataBuilder` (see below)
+
+Reporting note: TestNG mode uses TestNG's own built-in `EmailableReporter2` (a flat per-test HTML summary), a custom lightweight coverage-by-tag HTML report (`TestNgTagCoverageReportWriter`), and a rich masterthought-powered report (`TestNgCucumberStyleReportWriter`) built from synthetic Cucumber JSON assembled at runtime from captured business-layer calls — all three are written into the same `testngHtmlReport` output directory on every run. Hard-gate semantics (`SET_HARD_GATE`/`IS_FAILING_TEST_SUITE`) work identically in both modes, feeding the same `Runner.getStatus` truth table. ReportPortal integration for TestNG mode was investigated and found blocked on a genuine upstream `agent-java-testng`/`client-java` binary incompatibility — deferred, not built. See `docs/internals/TestNG-Execution-Mode-Plan.md` for the full implementation history, decisions, and open items, and `docs/internals/Cucumber-To-TestNG-Migration-Guide.md` for how to port an existing Cucumber scenario to this mode.
 
 ## Package rules
 

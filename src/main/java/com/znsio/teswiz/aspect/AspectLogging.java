@@ -12,7 +12,6 @@ public class AspectLogging {
     @Pointcut("execution(public * *.*.*.entities.*.*(..)) " +
             "|| execution(public * *.*.*.listener.*.*(..)) " +
             "|| execution(public * *.*.*.runner.*.*(..)) " +
-            "|| execution(public * *.*.*.steps.*.*(..)) " +
             "|| execution(public * *.*.*.tools.*.*.*(..))")
     public void executionScope(){
     }
