@@ -20,11 +20,12 @@ teswiz is a Java-first automation framework for:
 - visual testing: Applitools Eyes and Ultrafast Grid
 - reporting: Cucumber HTML, ReportPortal, engine-aware artifacts
 
-The test authoring style stays the same:
+Two ways to author and run tests, selected via `FRAMEWORK`:
 
-`feature -> steps -> business layer -> screen contract`
+- `FRAMEWORK=cucumber` (default): `feature -> steps -> business layer -> screen contract`
+- `FRAMEWORK=testng`: plain TestNG `@Test` classes call the business/screen layers directly, skipping the Gherkin/step-def layer
 
-teswiz handles persona routing, session lifecycle, platform selection, cloud execution, and reporting underneath that flow.
+teswiz handles persona routing, session lifecycle, platform selection, cloud execution, and reporting underneath either flow.
 
 ## Important upgrade notes
 
@@ -104,6 +105,32 @@ Examples:
 - [Playwright-TS web example](docs/examples/Web-Playwright-TS-Example.md)
 - [Android example](docs/examples/Android-Example.md)
 - [iOS example](docs/examples/iOS-Example.md)
+
+## Choose your test framework
+
+Set this in your suite config or as an env var:
+
+```properties
+FRAMEWORK=cucumber
+```
+
+Valid values:
+
+- `cucumber` (default) - runs `.feature` files via Cucumber step definitions, as today
+- `testng` - runs plain TestNG `@Test` classes that call the business/screen layers directly, skipping the step-definition layer
+
+`TAG` filtering works the same way in both modes; in TestNG mode tags map to TestNG groups.
+
+```bash
+CONFIG=configs/cli_local_config.properties FRAMEWORK=testng TAG=@calculator ./gradlew run
+```
+
+A project may contain both Cucumber feature files/step-defs and plain TestNG test classes, but a single execution runs only one mode.
+
+Read more:
+
+- [Configure test execution](docs/guides/ConfiguringTestExecution-README.md)
+- [Cucumber to TestNG migration guide](docs/internals/Cucumber-To-TestNG-Migration-Guide.md)
 
 ## Common commands
 
