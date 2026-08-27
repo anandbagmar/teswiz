@@ -459,6 +459,10 @@ tasks.register('verifyScreenContracts', JavaExec) {
     if (project.findProperty('includeMissingScreenTargets')?.toString()?.toBoolean()) {
         args "--include-missing-targets"
     }
+    // Without this, any class this task loads that touches Log4j2 (most do, via a
+    // static LOGGER field) resolves the log4j2.properties ${sys:LOG_DIR} placeholder
+    // with nothing set, creating a literal "${sys:LOG_DIR}" directory at the repo root.
+    systemProperty "LOG_DIR", "${logDir}"
 }
 
 tasks.register('reportMissingScreenContracts', JavaExec) {
@@ -468,6 +472,7 @@ tasks.register('reportMissingScreenContracts', JavaExec) {
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "com.znsio.teswiz.screen.ScreenContractCoverageReporter"
     args "src/test/java/com/znsio/teswiz/screen"
+    systemProperty "LOG_DIR", "${logDir}"
 }
 
 tasks.withType(JavaCompile).configureEach {

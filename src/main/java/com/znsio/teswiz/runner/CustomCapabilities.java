@@ -190,9 +190,10 @@ public class CustomCapabilities {
         String path = System.getProperty("user.dir") + "/caps/"
                       + "capabilities.json";
         String caps = CAPS.get();
-        if (caps != null) {
+        if (caps != null && !Runner.NOT_SET.equalsIgnoreCase(caps)) {
             Path userDefinedCapsPath = FileSystems.getDefault().getPath(caps);
-            if (!userDefinedCapsPath.getParent().isAbsolute()) {
+            Path parent = userDefinedCapsPath.getParent();
+            if (parent == null || !parent.isAbsolute()) {
                 path = userDefinedCapsPath.normalize()
                         .toAbsolutePath().toString();
             } else {
