@@ -104,20 +104,27 @@ prompt_run_tests() {
 
 build_release_notes() {
   local last_tag
+  local raw_release_notes
   last_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
   if [ -z "$last_tag" ]; then
     echo "No previous tags found. Collecting all commits..."
-    RELEASE_NOTES=$(git log --oneline)
+    raw_release_notes=$(git log --pretty=format:'%s')
   else
     echo "Collecting commits since last tag: $last_tag"
-    RELEASE_NOTES=$(git log "$last_tag"..HEAD --oneline)
+    raw_release_notes=$(git log "$last_tag"..HEAD --pretty=format:'%s')
   fi
 
+  # Filter noisy automation/meta commits so release notes stay user-focused.
+  RELEASE_NOTES=$(echo "$raw_release_notes" | sed -E \
+    -e '/^🔄 Update README with latest commit ID[[:space:]]*-[[:space:]]*[a-f0-9]+$/d' \
+    -e '/^Update README with latest commit ID[[:space:]]*-[[:space:]]*[a-f0-9]+$/d' \
+    -e '/^Release [0-9]+\.[0-9]+\.[0-9]+$/d')
+
   if [ -z "$RELEASE_NOTES" ]; then
-    echo "⚠️ Warning: No commits found since the last tag."
+    echo "⚠️ Warning: No user-facing commits found since the last tag."
     RELEASE_NOTES="- Maintenance and dependency updates."
   else
-    RELEASE_NOTES=$(echo "$RELEASE_NOTES" | sed -E 's/^[a-f0-9]+ (.*)/- \1/')
+    RELEASE_NOTES=$(echo "$RELEASE_NOTES" | sed -E 's/^/- /')
   fi
 
   TEMP_NOTES=$(mktemp)
