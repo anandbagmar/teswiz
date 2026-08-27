@@ -30,6 +30,7 @@ Use this skill for changes inside the `znsio/teswiz` repo.
 - Keep encapsulation tight: default to package-private or private unless a wider surface is genuinely required.
 - Avoid broad public APIs for internal refactors; prefer narrow facades, small result objects, or package-private collaborators.
 - Whenever code or documentation changes are made, always include a concise suggested commit message in the final response.
+- When authoring TestNG-mode tests (`com.znsio.teswiz.testng`), always use fluent method chaining between business-layer calls wherever the BL API returns a chainable type (e.g. `AuthBL.signIn()` returning `LandingBL`, or a method returning `this`), instead of constructing a new BL instance per call. Where a call's return type genuinely offers no further methods (a dead-end type), reuse the existing BL instance for later calls on the same object rather than reconstructing it. See `docs/internals/Cucumber-To-TestNG-Migration-Guide.md` for worked examples.
 - Keep the repo instructions aligned across Codex, Claude, and Antigravity entry points:
   - `.codex/skills/teswiz-project/SKILL.md`
   - `CLAUDE.md`

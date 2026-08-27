@@ -10,6 +10,7 @@ When working in this repository:
 - Prefer a short imperative commit message that reflects the main change clearly.
 - Keep changes focused and test-first when the task is a refactor or cleanup.
 - Prefer small, meaningfully named methods, variables, and classes.
+- When authoring TestNG-mode tests (`com.znsio.teswiz.testng`), always use fluent method chaining between business-layer calls wherever the BL API returns a chainable type (e.g. `AuthBL.signIn()` returning `LandingBL`, or a method returning `this`), instead of constructing a new BL instance per call. Where a call's return type genuinely offers no further methods (a dead-end type), reuse the existing BL instance for later calls on the same object rather than reconstructing it. See `docs/internals/Cucumber-To-TestNG-Migration-Guide.md` for worked examples.
 - Keep encapsulation tight; do not widen visibility unless there is a clear framework-facing need.
 - For `playwright-ts`, keep test-owned `.ts` screen modules under `src/test/resources/playwright/screens`.
 - Prefer shared app-path resolution, version detection, and download handling under `com.znsio.teswiz.config.app` instead of growing `runner`.

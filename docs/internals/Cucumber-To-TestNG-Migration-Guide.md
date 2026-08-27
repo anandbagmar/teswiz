@@ -95,10 +95,14 @@ For each scenario you want to migrate:
 3. **Separate setup from test flow.** Where a step-def does driver/context bootstrapping before calling a
    BL method (as above), pull that bootstrapping into a private helper method called first, so the
    `@Test` method's body is just the sequence of BL calls.
-4. **Chain BL calls where the BL supports it.** Several BL classes return the next BL type from a method
-   (e.g. `AuthBL.signIn()` returns `LandingBL`, `LandingBL.startInstantMeeting()` returns `InAMeetingBL`) -
-   use that chaining instead of constructing a fresh BL instance per call. Read the actual BL source before
-   assuming a method's return type; don't guess.
+4. **Always chain BL calls where the BL supports it - this is a standing rule, not a suggestion.** Several
+   BL classes return the next BL type from a method (e.g. `AuthBL.signIn()` returns `LandingBL`,
+   `LandingBL.startInstantMeeting()` returns `InAMeetingBL`) - use that chaining instead of constructing a
+   fresh BL instance per call. Read the actual BL source before assuming a method's return type; don't guess.
+   If a method's return type is a genuine dead end (no further methods on it - check before assuming), you
+   can't chain through it, but you can still avoid redundant construction: hold the *original* BL instance in
+   a local variable and call its other methods on that same instance, rather than constructing a new one each
+   time. Only construct a fresh instance when the BL genuinely requires it (e.g. a different persona/platform).
 5. **Map `Background:` steps** into the same setup helper (or a shared one, if migrating a whole feature
    file into one test class with multiple `@Test` methods).
 6. **Map tags to TestNG groups** - see below.
