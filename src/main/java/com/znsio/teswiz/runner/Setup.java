@@ -77,6 +77,8 @@ public class Setup {
     public static final String SET_HARD_GATE = "SET_HARD_GATE";
     public static final String HEADLESS = "HEADLESS";
     public static final String SHOW_SENSITIVE_DATA = "SHOW_SENSITIVE_DATA";
+    public static final String MASK_ADDITIONAL_KEYS = "MASK_ADDITIONAL_KEYS";
+    public static final String MASK_KEYS_OVERRIDE = "MASK_KEYS_OVERRIDE";
     public static final String FRAMEWORK = "FRAMEWORK";
     public static final String FRAMEWORK_CUCUMBER = "cucumber";
     public static final String FRAMEWORK_TESTNG = "testng";
@@ -136,6 +138,7 @@ public class Setup {
         configsInteger.clear();
         applitoolsConfiguration.clear();
         SensitiveDataMasker.setShowSensitiveData(false);
+        SensitiveDataMasker.resetSensitiveKeysToDefault();
     }
 
     @NotNull
@@ -195,6 +198,20 @@ public class Setup {
         buildMapOfRequiredProperties();
         setBrowserConfigFilePath();
         SensitiveDataMasker.setShowSensitiveData(getBooleanValueFromConfigs(SHOW_SENSITIVE_DATA));
+        SensitiveDataMasker.configureSensitiveKeys(
+                parseCsv(configs.get(MASK_ADDITIONAL_KEYS)),
+                parseCsv(configs.get(MASK_KEYS_OVERRIDE)));
+    }
+
+    @NotNull
+    private static List<String> parseCsv(String csvValue) {
+        if (null == csvValue || NOT_SET.equalsIgnoreCase(csvValue) || csvValue.isBlank()) {
+            return List.of();
+        }
+        return Arrays.stream(csvValue.split(","))
+                .map(String::trim)
+                .filter(value -> !value.isEmpty())
+                .toList();
     }
 
     private static void setupDirectories() {
@@ -404,6 +421,8 @@ public class Setup {
         configsBoolean.put(SHOW_SENSITIVE_DATA, getOverriddenBooleanValue(
                 SHOW_SENSITIVE_DATA,
                 getBooleanValueFromPropertiesIfAvailable(SHOW_SENSITIVE_DATA, false)));
+        configs.put(MASK_ADDITIONAL_KEYS, getOverriddenStringValue(MASK_ADDITIONAL_KEYS, getStringValueFromPropertiesIfAvailable(MASK_ADDITIONAL_KEYS, NOT_SET)));
+        configs.put(MASK_KEYS_OVERRIDE, getOverriddenStringValue(MASK_KEYS_OVERRIDE, getStringValueFromPropertiesIfAvailable(MASK_KEYS_OVERRIDE, NOT_SET)));
     }
 
     public static String getHostMachineName() {

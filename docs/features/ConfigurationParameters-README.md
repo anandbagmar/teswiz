@@ -54,6 +54,8 @@ These can be overridden by providing the same either as environment variables or
     RP_DESCRIPTION=<description of the test execution to be shown in reportportal's launch description. Default: End-2-End scenarios>
     RUN_IN_CI=false -> Are tests running in CI?
     SHOW_SENSITIVE_DATA=false -> If true, do not mask sensitive values in logs. Default is false.
+    MASK_ADDITIONAL_KEYS=<comma-separated list of key names> -> Additional key names (e.g. sessionId,ssn) whose values should be masked in logs, merged with the built-in default list (access_key, api_key, auth_token, token, password, passwd, secret, client_secret, cloud_key, cloud_username, pcloudy_apikey, pcloudy_username, authorization, userName). Not set by default.
+    MASK_KEYS_OVERRIDE=<comma-separated list of key names> -> When set, replaces the built-in default list of masked key names entirely (MASK_ADDITIONAL_KEYS is ignored if this is set). Not set by default.
     SET_HARD_GATE=true -> Enables Hard Gate for test execution. See [Hard Gate](HardGate.md) for more information 
     TARGET_ENVIRONMENT=prod -> Which environment are the tests running against? Should map to envrionments specified in ENVIRONMENT_CONFIG_FILE
     TEST_DATA_FILE=./src/test/resources/testData.json -> Environment specific static test data
