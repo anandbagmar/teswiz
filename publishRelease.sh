@@ -61,6 +61,22 @@ check_working_tree_clean() {
   fi
 }
 
+ensure_on_main_branch() {
+  local current_branch
+  current_branch=$(git rev-parse --abbrev-ref HEAD)
+
+  if [ "$current_branch" != "main" ]; then
+    echo "❌ Error: Releases must be run from 'main'. Current branch: $current_branch"
+    exit 1
+  fi
+}
+
+sync_with_remote_main() {
+  echo "🔄 Rebasing local main with origin/main before release build..."
+  git fetch origin main
+  git rebase origin/main
+}
+
 detect_current_version() {
   CURRENT_VERSION=$(grep -E '^\s*def\s+teswizVersion\s*=\s*' build.gradle | sed -E 's/.*"([^"]+)".*/\1/')
   if [ -z "$CURRENT_VERSION" ]; then
@@ -271,6 +287,7 @@ prune_old_release_artifacts() {
 
 main() {
   parse_args "$@"
+  ensure_on_main_branch
 
   if [ -z "$VERSION" ]; then
     detect_current_version
@@ -285,6 +302,7 @@ main() {
   fi
 
   check_working_tree_clean
+  sync_with_remote_main
   prompt_run_tests
   build_release_notes
   confirm_release
