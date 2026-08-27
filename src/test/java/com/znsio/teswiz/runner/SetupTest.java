@@ -2,6 +2,7 @@ package com.znsio.teswiz.runner;
 
 import com.applitools.eyes.BatchInfo;
 import com.znsio.teswiz.entities.APPLITOOLS;
+import com.znsio.teswiz.tools.SensitiveDataMasker;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeAll;
@@ -29,6 +30,41 @@ class SetupTest {
         System.clearProperty(APPLITOOLS.PROXY_URL);
         System.clearProperty(Setup.APPLITOOLS_BATCH_NAME_SUFFIX);
         System.clearProperty("rp.attributes");
+        System.clearProperty(Setup.MASK_ADDITIONAL_KEYS);
+        System.clearProperty(Setup.MASK_KEYS_OVERRIDE);
+        SensitiveDataMasker.resetSensitiveKeysToDefault();
+    }
+
+    @Test
+    void checkMaskAdditionalKeysIsMergedWithDefaults() {
+        System.setProperty(Setup.MASK_ADDITIONAL_KEYS, "sessionId");
+        Setup.load(configFilePath);
+        Setup.loadAndUpdateConfigParameters(configFilePath);
+
+        String maskedOutput = SensitiveDataMasker.mask("{\"password\": \"p@ss\", \"sessionId\": \"abc123\"}");
+
+        assertThat(maskedOutput).isEqualTo("{\"password\": \"***\", \"sessionId\": \"***\"}");
+    }
+
+    @Test
+    void checkMaskKeysOverrideReplacesDefaults() {
+        System.setProperty(Setup.MASK_KEYS_OVERRIDE, "sessionId");
+        Setup.load(configFilePath);
+        Setup.loadAndUpdateConfigParameters(configFilePath);
+
+        String maskedOutput = SensitiveDataMasker.mask("{\"password\": \"p@ss\", \"sessionId\": \"abc123\"}");
+
+        assertThat(maskedOutput).isEqualTo("{\"password\": \"p@ss\", \"sessionId\": \"***\"}");
+    }
+
+    @Test
+    void checkNoMaskConfigKeepsDefaultMaskingBehaviour() {
+        Setup.load(configFilePath);
+        Setup.loadAndUpdateConfigParameters(configFilePath);
+
+        String maskedOutput = SensitiveDataMasker.mask("{\"password\": \"p@ss\", \"sessionId\": \"abc123\"}");
+
+        assertThat(maskedOutput).isEqualTo("{\"password\": \"***\", \"sessionId\": \"abc123\"}");
     }
 
     @Test

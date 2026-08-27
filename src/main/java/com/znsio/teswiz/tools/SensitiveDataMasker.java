@@ -1,10 +1,18 @@
 package com.znsio.teswiz.tools;
 
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 public final class SensitiveDataMasker {
     private static final String MASK = "***";
     private static volatile boolean showSensitiveData = false;
+
+    private static final List<String> DEFAULT_SENSITIVE_KEYS = List.of(
+            "access[_-]?key", "api[_-]?key", "auth[_-]?token", "token", "password", "passwd", "secret",
+            "client[_-]?secret", "cloud[_-]?key", "cloud[_-]?username", "pcloudy_apikey",
+            "pcloudy_username", "authorization", "userName");
 
     private static final Pattern URL_CREDENTIALS = Pattern.compile(
             "(?i)(https?://)([^:/\\s]+):([^@\\s]+)@");
@@ -12,19 +20,63 @@ public final class SensitiveDataMasker {
             "(?i)(-u\\s+['\"]?)([^:\\s'\"\\\\]+):([^\\s'\"\\\\]+)(['\"]?)");
     private static final Pattern AUTHORIZATION_BEARER = Pattern.compile(
             "(?i)(authorization\\s*[:=]\\s*bearer\\s+)([^,\\s]+)");
-    private static final Pattern JSON_SENSITIVE_KEY_VALUE = Pattern.compile(
-            "(?i)(\"(?:access[_-]?key|api[_-]?key|auth[_-]?token|token|password|passwd|secret|"
-            + "client[_-]?secret|cloud[_-]?key|cloud[_-]?username|pcloudy_apikey|"
-            + "pcloudy_username|authorization|userName)\"\\s*:\\s*\")([^\"]+)(\")");
-    private static final Pattern TEXT_SENSITIVE_KEY_VALUE = Pattern.compile(
-            "(?i)\\b(access[_-]?key|api[_-]?key|auth[_-]?token|token|password|passwd|secret|"
-            + "client[_-]?secret|cloud[_-]?key|cloud[_-]?username|pcloudy_apikey|"
-            + "pcloudy_username|authorization|userName)\\b\\s*[:=]\\s*([^,\\s}\\]]+)");
+
+    private static volatile Pattern jsonSensitiveKeyValue = buildJsonKeyValuePattern(DEFAULT_SENSITIVE_KEYS);
+    private static volatile Pattern textSensitiveKeyValue = buildTextKeyValuePattern(DEFAULT_SENSITIVE_KEYS);
 
     private SensitiveDataMasker() {}
 
     public static void setShowSensitiveData(boolean showSensitiveDataInLogs) {
         showSensitiveData = showSensitiveDataInLogs;
+    }
+
+    /**
+     * Reconfigures which key names are treated as sensitive when masking key/value pairs
+     * found in JSON and plain text (e.g. {@code "password": "..."} or {@code password=...}).
+     * <p>
+     * {@code overrideKeys} (when non-empty) replaces the built-in default key list entirely.
+     * Otherwise, {@code additionalKeys} (when non-empty) is merged with the built-in defaults.
+     * Keys are matched case-insensitively as whole words; they are treated as literal names,
+     * not regular expressions.
+     */
+    public static void configureSensitiveKeys(List<String> additionalKeys, List<String> overrideKeys) {
+        List<String> effectiveKeys = (null != overrideKeys && !overrideKeys.isEmpty())
+                ? literalKeys(overrideKeys)
+                : mergeWithDefaults(additionalKeys);
+        jsonSensitiveKeyValue = buildJsonKeyValuePattern(effectiveKeys);
+        textSensitiveKeyValue = buildTextKeyValuePattern(effectiveKeys);
+    }
+
+    public static void resetSensitiveKeysToDefault() {
+        jsonSensitiveKeyValue = buildJsonKeyValuePattern(DEFAULT_SENSITIVE_KEYS);
+        textSensitiveKeyValue = buildTextKeyValuePattern(DEFAULT_SENSITIVE_KEYS);
+    }
+
+    private static List<String> mergeWithDefaults(List<String> additionalKeys) {
+        if (null == additionalKeys || additionalKeys.isEmpty()) {
+            return DEFAULT_SENSITIVE_KEYS;
+        }
+        Set<String> merged = new LinkedHashSet<>(DEFAULT_SENSITIVE_KEYS);
+        merged.addAll(literalKeys(additionalKeys));
+        return List.copyOf(merged);
+    }
+
+    private static List<String> literalKeys(List<String> keys) {
+        return keys.stream()
+                .map(String::trim)
+                .filter(key -> !key.isEmpty())
+                .map(Pattern::quote)
+                .toList();
+    }
+
+    private static Pattern buildJsonKeyValuePattern(List<String> keys) {
+        return Pattern.compile(
+                "(?i)(\"(?:" + String.join("|", keys) + ")\"\\s*:\\s*\")([^\"]+)(\")");
+    }
+
+    private static Pattern buildTextKeyValuePattern(List<String> keys) {
+        return Pattern.compile(
+                "(?i)\\b(" + String.join("|", keys) + ")\\b\\s*[:=]\\s*([^,\\s}\\]]+)");
     }
 
     public static String maskSecret(String value) {
@@ -55,8 +107,8 @@ public final class SensitiveDataMasker {
         masked = URL_CREDENTIALS.matcher(masked).replaceAll("$1" + MASK + ":" + MASK + "@");
         masked = CURL_USER_CREDENTIALS.matcher(masked).replaceAll("$1" + MASK + ":" + MASK + "$4");
         masked = AUTHORIZATION_BEARER.matcher(masked).replaceAll("$1" + MASK);
-        masked = JSON_SENSITIVE_KEY_VALUE.matcher(masked).replaceAll("$1" + MASK + "$3");
-        masked = TEXT_SENSITIVE_KEY_VALUE.matcher(masked).replaceAll("$1=" + MASK);
+        masked = jsonSensitiveKeyValue.matcher(masked).replaceAll("$1" + MASK + "$3");
+        masked = textSensitiveKeyValue.matcher(masked).replaceAll("$1=" + MASK);
         return masked;
     }
 }
