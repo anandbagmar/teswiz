@@ -99,10 +99,25 @@ For each scenario you want to migrate:
    BL classes return the next BL type from a method (e.g. `AuthBL.signIn()` returns `LandingBL`,
    `LandingBL.startInstantMeeting()` returns `InAMeetingBL`) - use that chaining instead of constructing a
    fresh BL instance per call. Read the actual BL source before assuming a method's return type; don't guess.
-   If a method's return type is a genuine dead end (no further methods on it - check before assuming), you
-   can't chain through it, but you can still avoid redundant construction: hold the *original* BL instance in
-   a local variable and call its other methods on that same instance, rather than constructing a new one each
-   time. Only construct a fresh instance when the BL genuinely requires it (e.g. a different persona/platform).
+
+   **Before reusing an already-constructed BL instance for a later call instead of constructing a fresh one,
+   check whether that BL's constructor has side effects.** Several BL constructors call
+   `Runner.setCurrentDriverForUser(userPersona, forPlatform, context)`, which sets a single thread-scoped
+   "current persona" pointer (`TEST_CONTEXT.CURRENT_USER_PERSONA`) that `ScreenRegistry.getScreen()` reads
+   to resolve which platform's screen implementation to use for the *next* screen interaction, regardless of
+   which persona's method you actually call. In a single-persona flow this is harmless. In a **multi-persona**
+   flow it is a real, silent bug: constructing persona B's BL after persona A's re-points "current persona" to
+   B, so a later call through a *held reference* to persona A's earlier BL instance still resolves screens
+   against B's platform, not A's — the wrong persona's calls quietly execute against the wrong screen
+   implementation, with no compile error and no obvious symptom until assertions start failing for reasons
+   that don't match the code you're reading. (This exact bug shipped once in this repo's own
+   `TheAppMultiUserAndroidWebTestNgTest` pilot and was only caught by a real CI run against BrowserStack,
+   where all four soft assertions failed with each persona's error message swapped.) When a scenario
+   orchestrates more than one persona on the same thread, reconstruct the BL immediately before each
+   interaction (matching what the equivalent Cucumber step-defs already do) rather than holding a reference
+   across another persona's calls. Only reuse an already-constructed instance across multiple calls when
+   you've confirmed via the BL's actual source that its constructor either has no such side effect, or that
+   only one persona is active for the whole flow.
 5. **Map `Background:` steps** into the same setup helper (or a shared one, if migrating a whole feature
    file into one test class with multiple `@Test` methods).
 6. **Map tags to TestNG groups** - see below.

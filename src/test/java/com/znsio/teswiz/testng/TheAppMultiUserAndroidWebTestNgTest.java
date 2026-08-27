@@ -17,19 +17,22 @@ public class TheAppMultiUserAndroidWebTestNgTest {
     public void orchestrateMultipleUsersOnDifferentPlatforms() {
         createDriversForBothPersonas();
 
-        // AppBL.provideInvalidDetailsForSignup()/loginAgain() both return LoginBL, which
-        // currently exposes no further methods - a genuine dead end, so there is nothing
-        // to chain onto. Holding each persona's own AppBL instance and reusing it for
-        // both of its calls (instead of constructing a fresh AppBL per call) is the
-        // closest equivalent this BL API allows.
-        AppBL personaI = new AppBL(PERSONA_I, Platform.android);
-        AppBL personaYou = new AppBL(PERSONA_YOU, Platform.web);
+        // AppBL's constructor is NOT side-effect-free: it calls
+        // Runner.setCurrentDriverForUser(...), which sets a single thread-scoped
+        // "current persona" pointer (TEST_CONTEXT.CURRENT_USER_PERSONA) that
+        // ScreenRegistry.getScreen() reads to resolve which platform's screen
+        // implementation to use. In a multi-persona flow on one thread, holding onto
+        // and reusing an earlier AppBL instance is wrong: constructing "You" repoints
+        // "current persona" away from "I", so a later call through the *reused* "I"
+        // instance would still resolve against whichever persona was constructed most
+        // recently, not "I". Each interaction below reconstructs AppBL immediately
+        // before it runs - matching the original step-def's own behavior - specifically
+        // so "current persona" is correct at the moment each call resolves its screen.
+        new AppBL(PERSONA_I, Platform.android).provideInvalidDetailsForSignup("znsio1", "invalid password");
+        new AppBL(PERSONA_YOU, Platform.web).provideInvalidDetailsForSignup("znsio2", "invalid password");
 
-        personaI.provideInvalidDetailsForSignup("znsio1", "invalid password");
-        personaYou.provideInvalidDetailsForSignup("znsio2", "invalid password");
-
-        personaI.loginAgain("znsio3", "invalid password");
-        personaYou.loginAgain("znsio4", "invalid password");
+        new AppBL(PERSONA_I, Runner.getPlatformForUser(PERSONA_I)).loginAgain("znsio3", "invalid password");
+        new AppBL(PERSONA_YOU, Runner.getPlatformForUser(PERSONA_YOU)).loginAgain("znsio4", "invalid password");
     }
 
     private void createDriversForBothPersonas() {
