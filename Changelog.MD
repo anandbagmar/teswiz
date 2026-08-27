@@ -1,3 +1,13 @@
+## 1.0.34
+- fix(masking): mask compound query-string keys without swallowing adjacent params
+- 🔄 Update README with latest commit ID - cd6a7f3
+- 🔄 Update README with latest commit ID - a72d92d
+- docs(readme): document new TestNG-only FRAMEWORK execution mode
+- 🔄 Update README with latest commit ID - d6dcdda
+- feat(masking): allow configuring additional/override sensitive log keys
+- Add TestNG-only execution mode as an alternative to Cucumber-JVM (#4)
+- 🔄 Update README with latest commit ID - 15ab312
+
 ## 1.0.33
 - Fix duplicated URL in EnvironmentIssueFilter error message
 - 🔄 Update README with latest commit ID - 47400ac
