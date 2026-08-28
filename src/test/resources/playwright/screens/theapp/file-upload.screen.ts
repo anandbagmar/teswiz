@@ -2,7 +2,7 @@ import type { ScreenContext } from "../screen-context.ts";
 
 const LOCATORS = {
   fileUploadLink: 'a[href="/upload"]',
-  fileInput: 'input[name="file"]',
+  fileInput: '#file-upload, input[type="file"]',
   uploadButton: "#file-submit",
   uploadedMessage: "h3",
 } as const;
@@ -17,6 +17,7 @@ export async function navigateToFileUplaodPage(screen: ScreenContext): Promise<v
 
 export async function uploadFile(screen: ScreenContext, file: UploadFile): Promise<void> {
   const filePath = `${process.cwd()}${file.IMAGE_FILE_LOCATION}`;
+  await screen.page.locator(LOCATORS.fileInput).waitFor({ state: "attached" });
   await screen.page.locator(LOCATORS.fileInput).setInputFiles(filePath);
   await screen.page.locator(LOCATORS.uploadButton).click();
 }
