@@ -28,6 +28,25 @@ Options:
 EOF
 }
 
+read_multiline_description() {
+  local line
+  local description=""
+
+  printf 'Paste the release description. Enter END on its own line when finished:\n' >&2
+  while IFS= read -r line; do
+    if [ "$line" = "END" ]; then
+      break
+    fi
+
+    if [ -n "$description" ]; then
+      description+=$'\n'
+    fi
+    description+="$line"
+  done
+
+  printf '%s' "$description"
+}
+
 parse_args() {
   while [ "$#" -gt 0 ]; do
     case "$1" in
@@ -189,6 +208,7 @@ confirm_release_content() {
         local add_bullet
         local new_bullet
         local remove_text
+        local replace_description
 
         read -p "Enter release title [$RELEASE_TITLE]: " updated_title
         if [ -n "$updated_title" ]; then
@@ -198,6 +218,14 @@ confirm_release_content() {
         read -p "Enter release summary [$RELEASE_SUMMARY]: " updated_summary
         if [ -n "$updated_summary" ]; then
           RELEASE_SUMMARY="$updated_summary"
+        fi
+
+        read -p "Replace the full description? [y/N]: " replace_description
+        if [[ "$replace_description" == "y" || "$replace_description" == "Y" ]]; then
+          RELEASE_NOTES=$(read_multiline_description)
+          if [ -z "$RELEASE_NOTES" ]; then
+            RELEASE_NOTES="- Maintenance and dependency updates."
+          fi
         fi
 
         read -p "Remove description bullets containing text (press Enter to skip): " remove_text
