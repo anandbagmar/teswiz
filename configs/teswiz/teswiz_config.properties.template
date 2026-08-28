@@ -14,6 +14,7 @@ FRAMEWORK=cucumber
 #APP_PATH=./temp/<app>.apk
 #BASE_URL_FOR_WEB=BASE_URL
 BROWSER=chrome
+#BROWSER_NAME=safari # Legacy alias used by older sample configurations
 WEB_ENGINE=selenium
 #PLATFORM=android
 
@@ -51,8 +52,12 @@ APPLITOOLS_CONFIGURATION=./configs/applitools_config.json
 # Device and remote execution
 MAX_NUMBER_OF_APPIUM_DRIVERS=5
 MAX_NUMBER_OF_WEB_DRIVERS=5
+#MAX_RETRY_COUNT=2 # Optional provider-specific retry count
 #CLOUD_USERNAME=<cloud-username>
 #CLOUD_KEY=<cloud-access-key>
+#CLOUD_USER=<cloud-user> # Legacy cloud username alias
+#CLOUD_NAME=browserstack # Optional provider name
+#DEVICE_LAB_URL=https://hub.browserstack.com # Optional provider endpoint
 CLOUD_UPLOAD_APP=false
 CLOUD_USE_PROXY=false
 CLOUD_USE_LOCAL_TESTING=false
