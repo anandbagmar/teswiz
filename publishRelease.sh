@@ -13,6 +13,7 @@ JAR_FILE=""
 SOURCES_JAR_FILE=""
 FAT_JAR_FILE=""
 REUPLOAD_MISSING_ARTIFACTS=false
+RELEASE_UPLOAD_URL=""
 
 print_usage() {
   cat <<EOF
@@ -199,6 +200,58 @@ verify_build_outputs() {
   fi
 }
 
+resolve_release_upload_url() {
+  local raw_upload_url
+  raw_upload_url=$(gh release view "$VERSION" --json uploadUrl --jq '.uploadUrl' 2>/dev/null || true)
+  if [ -z "$raw_upload_url" ] || [ "$raw_upload_url" = "null" ]; then
+    echo "❌ Error: Could not resolve release upload URL for '$VERSION'."
+    exit 1
+  fi
+
+  # GitHub returns a templated URL ending in {?name,label}; remove the template.
+  RELEASE_UPLOAD_URL=${raw_upload_url%%\{*}
+}
+
+upload_asset_with_progress() {
+  local artifact="$1"
+  local artifact_name
+  local artifact_size_bytes
+  local artifact_size_mb
+  local gh_token
+
+  artifact_name=$(basename "$artifact")
+  artifact_size_bytes=$(stat -f%z "$artifact" 2>/dev/null || echo "0")
+  artifact_size_mb=$(awk -v bytes="$artifact_size_bytes" 'BEGIN { printf "%.1f", bytes/1024/1024 }')
+
+  echo "  📤 Uploading $artifact_name ($artifact_size_mb MB)..."
+
+  gh release delete-asset "$VERSION" "$artifact_name" -y >/dev/null 2>&1 || true
+
+  gh_token=$(gh auth token)
+  curl --fail --silent --show-error --progress-bar \
+    -X POST \
+    -H "Authorization: Bearer $gh_token" \
+    -H "Content-Type: application/octet-stream" \
+    --data-binary @"$artifact" \
+    "$RELEASE_UPLOAD_URL?name=$artifact_name" \
+    -o /dev/null
+
+  echo "  ✅ Uploaded: $artifact_name"
+}
+
+upload_artifacts_with_progress() {
+  local artifacts=("$JAR_FILE" "$SOURCES_JAR_FILE" "$FAT_JAR_FILE")
+  local total=${#artifacts[@]}
+  local i=1
+
+  resolve_release_upload_url
+  for artifact in "${artifacts[@]}"; do
+    echo "  ($i/$total)"
+    upload_asset_with_progress "$artifact"
+    i=$((i+1))
+  done
+}
+
 reupload_missing_artifacts() {
   echo "🔁 Re-uploading missing artifacts for GitHub Release $VERSION..."
 
@@ -211,6 +264,8 @@ reupload_missing_artifacts() {
   existing_assets=$(gh release view "$VERSION" --json assets --jq '.assets[].name' 2>/dev/null || true)
   local uploaded_any=false
 
+  resolve_release_upload_url
+
   for artifact in "$JAR_FILE" "$SOURCES_JAR_FILE" "$FAT_JAR_FILE"; do
     local artifact_name
     artifact_name=$(basename "$artifact")
@@ -221,7 +276,7 @@ reupload_missing_artifacts() {
     fi
 
     echo "  📤 Missing artifact found, uploading: $artifact_name"
-    gh release upload "$VERSION" "$artifact" --clobber
+    upload_asset_with_progress "$artifact"
     uploaded_any=true
   done
 
@@ -270,15 +325,15 @@ jitpack_is_tag_visible() {
 }
 
 create_github_release() {
-  echo "🚀 Creating GitHub Release $VERSION with the thin and sources jars..."
-  gh release create "$VERSION" "$JAR_FILE" "$SOURCES_JAR_FILE" \
+  echo "🚀 Creating GitHub Release $VERSION..."
+  gh release create "$VERSION" \
     --title "$VERSION" \
     --notes-file "$TEMP_NOTES"
 }
 
 upload_fat_jar() {
-  echo "📤 Uploading fat jar (this can take a while)..."
-  gh release upload "$VERSION" "$FAT_JAR_FILE"
+  echo "📦 Uploading release artifacts with progress indicators..."
+  upload_artifacts_with_progress
 }
 
 prune_old_release_artifacts() {
