@@ -1,4 +1,30 @@
 ## 1.0.35
+- Handle existing release tags safely
+- Make multi-line release paste explicit
+- Support multi-line release descriptions
+- Add opt-in per-scenario API traffic logging; make EnvironmentIssueFilter global
+- Fix Playwright TS file upload selector
+- Fix Playwright Java file upload wait
+- Run config consistency checks across Gradle tasks
+- Enforce execution config template consistency
+- Normalize all execution properties to canonical template
+- Enforce consistency across execution configurations
+- Add inline configuration example
+- Make configuration template the documentation source of truth
+- Add complete Teswiz execution configuration template Consolidate Teswiz configuration templates
+- Add canonical runtime configuration template
+- Centralize driver wait and retry defaults Add validated runtime defaults configuration
+- Make app download tests deterministic Set configurable app timeout default to 15 seconds
+- Bound app artifact HTTP requests with timeouts Make app download timeout configurable
+- Reduce noisy test logging and fix rollover granularity
+- Add logging regression tests
+- Improve logging, diagnostics, and execution summaries
+- Add interactive release content review loop with revise and abort cleanup
+- Improve console and test logging readability
+- Add progress-enabled GitHub asset uploads for release jars
+- Improve release note generation and filter README update commits
+
+## 1.0.35
 - Add opt-in per-scenario API traffic logging; make EnvironmentIssueFilter global
 - Fix Playwright TS file upload selector
 - Fix Playwright Java file upload wait
