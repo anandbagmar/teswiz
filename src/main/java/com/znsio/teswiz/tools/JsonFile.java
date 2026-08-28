@@ -23,7 +23,7 @@ public class JsonFile {
     }
 
     public static void saveJsonToFile(Map<String, Map> jsonMap, String fileName) {
-        LOGGER.info("\tSave the following json to file: {}   with jsonmap:  {}",
+        LOGGER.debug("Save JSON to file: {}\n{}",
                 fileName, SensitiveDataMasker.mask(JsonPrettyPrinter.prettyPrint(jsonMap)));
         File file = new File(fileName);
         if (file.exists()) {
@@ -35,7 +35,7 @@ public class JsonFile {
                         "Unable to delete older, already existing capabilities file: " + fileName);
             }
         } else {
-            LOGGER.info("File " + file + " does not exist. Create it\n");
+            LOGGER.debug("Create JSON file: {}", file);
         }
         try (Writer writer = new FileWriter(fileName)) {
             Gson gson = new GsonBuilder().create();
@@ -61,7 +61,7 @@ public class JsonFile {
     }
 
     public static Map<String, Map> loadJsonFile(String fileName) {
-        LOGGER.info("\tLoading Json file: " + fileName);
+        LOGGER.debug("Loading JSON file: {}", fileName);
         try {
             Gson gson = new Gson();
             Reader reader = Files.newBufferedReader(Paths.get(fileName));

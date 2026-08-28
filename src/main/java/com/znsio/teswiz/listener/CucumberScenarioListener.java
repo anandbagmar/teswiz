@@ -90,8 +90,8 @@ public class CucumberScenarioListener implements ConcurrentEventListener {
         String scenarioName = event.getTestCase().getName();
         Integer currentExampleRowNumberForScenario = getCurrentExampleRowNumberForScenario(scenarioName);
 
-        LOGGER.info("Finished Scenario #" + runningScenarioNumber + "'" + scenarioName + "' started");
-        LOGGER.info("\tCurrent Example Row Number: " + currentExampleRowNumberForScenario);
+        LOGGER.info(String.format("Scenario finished: number=%d, name=\"%s\", exampleRow=%d",
+                runningScenarioNumber, scenarioName, currentExampleRowNumberForScenario));
 
         long threadId = Thread.currentThread().getId();
         TestExecutionContext testExecutionContext = SessionContext.getTestExecutionContext(threadId);
