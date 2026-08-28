@@ -130,6 +130,7 @@ Use this skill for changes inside the `znsio/teswiz` repo.
   `./gradlew verifyScreenContracts -PincludeMissingScreenTargets=true`
 - For execution configuration changes, keep every `configs/**/*.properties` file aligned with
   `configs/teswiz/teswiz_config.properties.template`; run `./gradlew validateConfigurationTemplates`.
+  The validation is also included automatically by `test`, `check`, `build`, and `shadowJar`.
 - Do not treat parallel independent Gradle invocations against the same checkout as a reliable signal. Prefer serial focused runs because shared build outputs/intermediates can produce misleading symbol/compilation failures.
 - GitHub Actions artifact retention policy:
   - keep only the latest artifact set per workflow per user-created branch

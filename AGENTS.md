@@ -11,4 +11,5 @@
 - When adding a supported property, update the canonical template before updating example files.
 - Keep unused properties commented with the default value and useful supported alternatives.
 - Run `./gradlew validateConfigurationTemplates` after configuration changes. The validation is
-  also part of `./gradlew check` and CI builds.
+  also part of `./gradlew test`, `./gradlew check`, `./gradlew build`, `./gradlew shadowJar`,
+  and CI builds.

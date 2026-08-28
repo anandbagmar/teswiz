@@ -229,4 +229,5 @@ When adding or changing a configuration file:
 3. leave unused properties commented with their default or supported values
 4. run `./gradlew validateConfigurationTemplates`
 
-The same validation runs automatically as part of `./gradlew check` and CI builds.
+The same validation runs automatically as part of `./gradlew test`, `./gradlew check`,
+`./gradlew build`, `./gradlew shadowJar`, and CI builds.
