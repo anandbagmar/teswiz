@@ -19,6 +19,9 @@ import com.znsio.teswiz.tools.SensitiveDataMasker;
 
 public final class AppPathResolver {
     private static final Logger LOGGER = LogManager.getLogger(AppPathResolver.class.getName());
+    static final String APP_DOWNLOAD_TIMEOUT_SECONDS_PROPERTY = "TESWIZ_APP_DOWNLOAD_TIMEOUT_SECONDS";
+    private static final int DEFAULT_APP_DOWNLOAD_TIMEOUT_SECONDS = 15;
+    private static final int MILLIS_PER_SECOND = 1_000;
     private static final String LAMBDATEST_APP_PREFIX = "lt://";
     private static final String BROWSERSTACK_APP_PREFIX = "bs://";
 
@@ -114,6 +117,9 @@ public final class AppPathResolver {
         try {
             HttpURLConnection connection = (HttpURLConnection) fileUrl.openConnection();
             connection.setRequestMethod("GET");
+            int timeoutMillis = getAppDownloadTimeoutMillis();
+            connection.setConnectTimeout(timeoutMillis);
+            connection.setReadTimeout(timeoutMillis);
             int responseCode = connection.getResponseCode();
             if (responseCode != HttpURLConnection.HTTP_OK) {
                 throw new InvalidTestDataException(
@@ -146,6 +152,9 @@ public final class AppPathResolver {
         try {
             HttpURLConnection connection = (HttpURLConnection) new URL(appPathUrl).openConnection();
             connection.setRequestMethod("HEAD");
+            int timeoutMillis = getAppDownloadTimeoutMillis();
+            connection.setConnectTimeout(timeoutMillis);
+            connection.setReadTimeout(timeoutMillis);
             int responseCode = connection.getResponseCode();
             connection.disconnect();
             if (responseCode != HttpURLConnection.HTTP_OK) {
@@ -156,6 +165,27 @@ public final class AppPathResolver {
         } catch (IOException e) {
             throw new InvalidTestDataException(
                     String.format("Failed to make a connection using url: '%s'", appPathUrl) + e);
+        }
+    }
+
+    static int getAppDownloadTimeoutMillis() {
+        String configuredTimeout = System.getProperty(APP_DOWNLOAD_TIMEOUT_SECONDS_PROPERTY);
+        if (configuredTimeout == null || configuredTimeout.isBlank()) {
+            configuredTimeout = System.getenv(APP_DOWNLOAD_TIMEOUT_SECONDS_PROPERTY);
+        }
+        if (configuredTimeout == null || configuredTimeout.isBlank()) {
+            return DEFAULT_APP_DOWNLOAD_TIMEOUT_SECONDS * MILLIS_PER_SECOND;
+        }
+        try {
+            int timeoutSeconds = Integer.parseInt(configuredTimeout.trim());
+            if (timeoutSeconds <= 0) {
+                throw new NumberFormatException("timeout must be positive");
+            }
+            return Math.multiplyExact(timeoutSeconds, MILLIS_PER_SECOND);
+        } catch (NumberFormatException | ArithmeticException e) {
+            LOGGER.warn("Invalid {}='{}'. Using default timeout of {} seconds.",
+                    APP_DOWNLOAD_TIMEOUT_SECONDS_PROPERTY, configuredTimeout, DEFAULT_APP_DOWNLOAD_TIMEOUT_SECONDS);
+            return DEFAULT_APP_DOWNLOAD_TIMEOUT_SECONDS * MILLIS_PER_SECOND;
         }
     }
 }

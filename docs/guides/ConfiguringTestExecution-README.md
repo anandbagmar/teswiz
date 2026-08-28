@@ -143,6 +143,15 @@ caps/pcloudy_capabilties.json, the following additional environment variable nee
 
 * `APP_PATH='<path to apk>'`
 
+When `APP_PATH` is a remote URL, teswiz validates the URL and downloads the app when it is not already available
+locally. Each remote operation uses a 15-second connect/read timeout by default. Configure this timeout with the
+`TESWIZ_APP_DOWNLOAD_TIMEOUT_SECONDS` system property or environment variable when larger apps or slower networks
+require more time.
+
+For example:
+
+    TESWIZ_APP_DOWNLOAD_TIMEOUT_SECONDS=60 APP_PATH=https://example.com/app.apk PLATFORM=android ./gradlew run
+
 Sample command:
 
     APP_PATH=~/Downloads/MyLatestApp.apk PLATFORM=android ./gradlew run
