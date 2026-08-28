@@ -24,7 +24,7 @@ public class CommonSteps {
 
     @When("I visually check the {string} at {string}")
     public void iVisuallyCheck(String pageName, String url) {
-            LOGGER.info(System.out.printf("iVisuallyCheck page: '%s', url: '%s'", pageName, url));
+            LOGGER.info(String.format("Visual check: page=\"%s\", url=\"%s\"", pageName, url));
             Driver driver = Drivers.getDriverForCurrentUser(Thread.currentThread().getId());
             driver.getInnerDriver().get(url);
             driver.getVisual().checkWindow(pageName, url);
@@ -32,7 +32,7 @@ public class CommonSteps {
     
     @When("I go to the {string} at {string}")
     public void iGoTo(String pageName, String url) {
-        LOGGER.info(System.out.printf("iGoTo page: '%s', url: '%s'", pageName, url));
+        LOGGER.info(String.format("Navigate: page=\"%s\", url=\"%s\"", pageName, url));
         Driver driver = Drivers.getDriverForCurrentUser(Thread.currentThread().getId());
         driver.getInnerDriver().get(url);
     }

@@ -39,6 +39,7 @@ public final class TestNgRunner {
         }
 
         testNg.run();
+        teswizTestNgListener.logExecutionSummary();
 
         TestNgExecutionResult executionResult = teswizTestNgListener.getExecutionResult();
         TestNgTagCoverageReportWriter.write(executionResult.groupCoverage(), new File(reportDirectory, TAG_COVERAGE_REPORT_FILE_NAME));

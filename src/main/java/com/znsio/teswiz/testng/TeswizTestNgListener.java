@@ -1,6 +1,11 @@
 package com.znsio.teswiz.testng;
 
 import com.znsio.teswiz.steps.Hooks;
+import com.znsio.teswiz.context.TestExecutionContext;
+import com.znsio.teswiz.entities.TEST_CONTEXT;
+import com.znsio.teswiz.tools.LoggingContext;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.testng.ITestListener;
 import org.testng.ITestResult;
 
@@ -14,6 +19,10 @@ public class TeswizTestNgListener implements ITestListener {
     private final AtomicInteger runningTestNumber = new AtomicInteger(0);
     private final AtomicInteger passedCount = new AtomicInteger(0);
     private final AtomicInteger failedCount = new AtomicInteger(0);
+    private final AtomicInteger skippedCount = new AtomicInteger(0);
+    private final AtomicInteger startedCount = new AtomicInteger(0);
+    private final long startedAtNanos = System.nanoTime();
+    private static final Logger LOGGER = LogManager.getLogger(TeswizTestNgListener.class);
     private final Map<String, List<TestOutcome>> outcomesByGroup = new ConcurrentHashMap<>();
     private final List<TestNgScenarioReportData> scenarioReportData = new CopyOnWriteArrayList<>();
 
@@ -21,7 +30,12 @@ public class TeswizTestNgListener implements ITestListener {
 
     @Override
     public void onTestStart(ITestResult result) {
-        TestNgTestExecutionContextFactory.create(result.getName(), runningTestNumber.incrementAndGet());
+        int testNumber = runningTestNumber.incrementAndGet();
+        TestExecutionContext context = TestNgTestExecutionContextFactory.create(result.getName(), testNumber);
+        startedCount.incrementAndGet();
+        LoggingContext.begin(result.getName(), testNumber, 1,
+                context.getTestStateAsString(TEST_CONTEXT.SCENARIO_LOG_DIRECTORY));
+        LOGGER.info(String.format("Test started: number=%d, name=\"%s\"", testNumber, result.getName()));
         TestNgStepRecorder.startCapturingStepsForCurrentThread();
         new Hooks().beforeScenario(result.getName());
     }
@@ -32,6 +46,8 @@ public class TeswizTestNgListener implements ITestListener {
         recordOutcomeByGroup(result, true);
         recordScenarioReportData(result, TestNgCapturedStep.PASSED);
         new Hooks().afterScenario(result.getName(), false);
+        LOGGER.info(String.format("Test finished: name=\"%s\", status=PASSED", result.getName()));
+        LoggingContext.clear();
     }
 
     @Override
@@ -40,12 +56,23 @@ public class TeswizTestNgListener implements ITestListener {
         recordOutcomeByGroup(result, false);
         recordScenarioReportData(result, TestNgCapturedStep.FAILED);
         new Hooks().afterScenario(result.getName(), true);
+        LOGGER.info(String.format("Test finished: name=\"%s\", status=FAILED", result.getName()));
+        LoggingContext.clear();
     }
 
     @Override
     public void onTestSkipped(ITestResult result) {
+        skippedCount.incrementAndGet();
         recordScenarioReportData(result, TestNgCapturedStep.FAILED);
         new Hooks().afterScenario(result.getName(), true);
+        LOGGER.info(String.format("Test finished: name=\"%s\", status=SKIPPED", result.getName()));
+        LoggingContext.clear();
+    }
+
+    void logExecutionSummary() {
+        long durationMillis = java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAtNanos);
+        LOGGER.info(String.format("Test run completed: total=%d, passed=%d, failed=%d, skipped=%d, durationMs=%d",
+                startedCount.get(), passedCount.get(), failedCount.get(), skippedCount.get(), durationMillis));
     }
 
     private void recordScenarioReportData(ITestResult result, String status) {

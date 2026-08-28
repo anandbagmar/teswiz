@@ -42,6 +42,7 @@ These can be overridden by providing the same either as environment variables or
     HEADLESS=false -> If set, run web/electron app tests in HEADLESS mode (overrides the headless value in browser_config.json)
     LOG_DIR=target -> Where should logs be created?
     LOG_PROPERTIES_FILE=./src/test/resources/log4j2.properties -> log4j configuration file
+    TESWIZ_METHOD_LOG_LEVEL=INFO -> Optional JVM system property. Set to DEBUG to enable concise framework method tracing.
     MAX_NUMBER_OF_APPIUM_DRIVERS -> The max number of drivers on cloud to create for multiuser android tests, default value is 5
     MAX_NUMBER_OF_WEB_DRIVERS -> The max number of web drivers on cloud to create for multiuser web tests, default value is 5
     PLATFORM=android -> Run tests against? Supported: android | iOS | windows | web | api
@@ -60,6 +61,14 @@ These can be overridden by providing the same either as environment variables or
     TARGET_ENVIRONMENT=prod -> Which environment are the tests running against? Should map to envrionments specified in ENVIRONMENT_CONFIG_FILE
     TEST_DATA_FILE=./src/test/resources/testData.json -> Environment specific static test data
     BROWSER_CONFIG_FILE=./src/test/resources/com/znsio/teswiz/features/configs/browser_config.json -> json containing browser configurations for Selenium and Playwright web execution
+
+Logging defaults:
+
+    * Console output uses INFO and above.
+    * The primary test log captures DEBUG and above.
+    * The primary log rolls daily or at 50 MB and keeps up to 14 archived files.
+    * Command stdout/stderr is written to a masked `commandOutput/command-####.log` artifact beneath the current scenario directory.
+    * If no scenario is active, command artifacts are written under `LOG_DIR/commandOutput/`.
 
 For Playwright web execution, teswiz reads the same `BROWSER_CONFIG_FILE` and applies engine-specific overrides where present:
 

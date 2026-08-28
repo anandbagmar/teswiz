@@ -104,7 +104,7 @@ public class Setup {
     private static final String LAUNCH_NAME_SUFFIX = "LAUNCH_NAME_SUFFIX";
     private static final String REMOTE_WEBDRIVER_GRID_PORT_KEY = "REMOTE_WEBDRIVER_GRID_PORT_KEY";
     private static final Logger LOGGER = LogManager.getLogger(Setup.class.getName());
-    private static final String DEFAULT_LOG_PROPERTIES_FILE = "/defaultLog4j.properties";
+    private static final String DEFAULT_LOG_PROPERTIES_FILE = "/defaultLog4j2.properties";
     private static final String DEFAULT_WEBDRIVER_GRID_PORT = "4444";
     private static final String DEFAULT_WEBDRIVER_GRID_HOST_NAME = "localhost";
     public static final String BUILD_ID = "BUILD_ID";
@@ -228,32 +228,38 @@ public class Setup {
     }
 
     private static void setLogPropertiesFile() {
-        File file;
         try {
+            java.net.URI configUri;
             if (properties.containsKey(LOG_PROPERTIES_FILE)) {
-                file = new File(properties.getProperty(LOG_PROPERTIES_FILE));
+                File file = new File(properties.getProperty(LOG_PROPERTIES_FILE));
                 String logFilePath = file.getAbsolutePath();
-                System.out.println("Using the provided LOG_PROPERTIES_FILE: '" + logFilePath + "'");
+                LOGGER.info("Using logging configuration: '" + logFilePath + "'");
                 configs.put(LOG_PROPERTIES_FILE, logFilePath);
+                configUri = file.toURI();
             } else {
                 configs.put(LOG_PROPERTIES_FILE, DEFAULT_LOG_PROPERTIES_FILE);
-                file = new File(DEFAULT_LOG_PROPERTIES_FILE);
+                java.net.URL resource = Setup.class.getResource(DEFAULT_LOG_PROPERTIES_FILE);
+                if (resource == null) {
+                    throw new InvalidTestDataException("Default logging configuration not found: " + DEFAULT_LOG_PROPERTIES_FILE);
+                }
+                configUri = resource.toURI();
             }
 
-            String configUri = file.toURI().toString();
+            String configLocation = configUri.toString();
 
             // Always set the system property as a baseline (works if Log4j Core is used and loads config early)
-            System.setProperty("log4j.configurationFile", configUri);
+            System.setProperty("log4j.configurationFile", configLocation);
 
             Object ctx = LogManager.getContext(false);
 
             // Only Log4j Core supports setConfigLocation
             if (ctx instanceof LoggerContext coreCtx) {
-                coreCtx.setConfigLocation(file.toURI());
+                coreCtx.setConfigLocation(configUri);
             } else {
                 // You're on SLF4JLoggerContext or something else (because log4j-to-slf4j is present)
                 // You cannot reconfigure Log4j Core via this context.
-                System.out.printf("Log4j is not using Core LoggerContext (found: %s). Skipping runtime Log4j reconfigure; set system property log4j.configurationFile=%s%n", ctx.getClass().getName(), configUri);
+                LOGGER.warn(String.format("Log4j is not using Core LoggerContext (found: %s). Skipping runtime reconfigure; set system property log4j.configurationFile=%s",
+                        ctx.getClass().getName(), configLocation));
             }
         } catch (Exception e) {
             throw new InvalidTestDataException("There was a problem while setting log properties file", e);
