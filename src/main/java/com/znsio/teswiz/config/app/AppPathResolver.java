@@ -15,12 +15,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.znsio.teswiz.exceptions.InvalidTestDataException;
+import com.znsio.teswiz.config.TeswizRuntimeConfiguration;
 import com.znsio.teswiz.tools.SensitiveDataMasker;
 
 public final class AppPathResolver {
     private static final Logger LOGGER = LogManager.getLogger(AppPathResolver.class.getName());
-    static final String APP_DOWNLOAD_TIMEOUT_SECONDS_PROPERTY = "TESWIZ_APP_DOWNLOAD_TIMEOUT_SECONDS";
-    private static final int DEFAULT_APP_DOWNLOAD_TIMEOUT_SECONDS = 15;
     private static final int MILLIS_PER_SECOND = 1_000;
     private static final String LAMBDATEST_APP_PREFIX = "lt://";
     private static final String BROWSERSTACK_APP_PREFIX = "bs://";
@@ -169,23 +168,8 @@ public final class AppPathResolver {
     }
 
     static int getAppDownloadTimeoutMillis() {
-        String configuredTimeout = System.getProperty(APP_DOWNLOAD_TIMEOUT_SECONDS_PROPERTY);
-        if (configuredTimeout == null || configuredTimeout.isBlank()) {
-            configuredTimeout = System.getenv(APP_DOWNLOAD_TIMEOUT_SECONDS_PROPERTY);
-        }
-        if (configuredTimeout == null || configuredTimeout.isBlank()) {
-            return DEFAULT_APP_DOWNLOAD_TIMEOUT_SECONDS * MILLIS_PER_SECOND;
-        }
-        try {
-            int timeoutSeconds = Integer.parseInt(configuredTimeout.trim());
-            if (timeoutSeconds <= 0) {
-                throw new NumberFormatException("timeout must be positive");
-            }
-            return Math.multiplyExact(timeoutSeconds, MILLIS_PER_SECOND);
-        } catch (NumberFormatException | ArithmeticException e) {
-            LOGGER.warn("Invalid {}='{}'. Using default timeout of {} seconds.",
-                    APP_DOWNLOAD_TIMEOUT_SECONDS_PROPERTY, configuredTimeout, DEFAULT_APP_DOWNLOAD_TIMEOUT_SECONDS);
-            return DEFAULT_APP_DOWNLOAD_TIMEOUT_SECONDS * MILLIS_PER_SECOND;
-        }
+        return Math.multiplyExact(
+                TeswizRuntimeConfiguration.getInt(TeswizRuntimeConfiguration.APP_DOWNLOAD_TIMEOUT_SECONDS),
+                MILLIS_PER_SECOND);
     }
 }

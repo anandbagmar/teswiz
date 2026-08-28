@@ -3,6 +3,7 @@ package com.znsio.teswiz.runner;
 import com.applitools.eyes.BatchInfo;
 import com.applitools.eyes.MatchLevel;
 import com.applitools.eyes.RectangleSize;
+import com.znsio.teswiz.config.TeswizRuntimeConfiguration;
 import com.znsio.teswiz.entities.APPLITOOLS;
 import com.znsio.teswiz.entities.Platform;
 import com.znsio.teswiz.exceptions.EnvironmentSetupException;
@@ -129,6 +130,7 @@ public class Setup {
         configFilePath = providedConfigFilePath;
         reset();
         properties = loadProperties(configFilePath);
+        TeswizRuntimeConfiguration.load(properties);
     }
 
     private static void reset() {
@@ -402,8 +404,12 @@ public class Setup {
         configsBoolean.put(IS_VISUAL, getOverriddenBooleanValue(IS_VISUAL, getBooleanValueFromPropertiesIfAvailable(IS_VISUAL, false)));
         configsBoolean.put(FAIL_TEST_ON_VISUAL_DIFFERENCE, getOverriddenBooleanValue(FAIL_TEST_ON_VISUAL_DIFFERENCE, getBooleanValueFromPropertiesIfAvailable(FAIL_TEST_ON_VISUAL_DIFFERENCE, true)));
         configs.put(LOG_DIR, getOverriddenStringValue(LOG_DIR, getStringValueFromPropertiesIfAvailable(LOG_DIR, DEFAULT_LOG_DIR)));
-        configsInteger.put(MAX_NUMBER_OF_APPIUM_DRIVERS, getOverriddenIntValue(MAX_NUMBER_OF_APPIUM_DRIVERS, Integer.parseInt(getStringValueFromPropertiesIfAvailable(MAX_NUMBER_OF_APPIUM_DRIVERS, "5"))));
-        configsInteger.put(MAX_NUMBER_OF_WEB_DRIVERS, getOverriddenIntValue(MAX_NUMBER_OF_WEB_DRIVERS, Integer.parseInt(getStringValueFromPropertiesIfAvailable(MAX_NUMBER_OF_WEB_DRIVERS, "5"))));
+        configsInteger.put(MAX_NUMBER_OF_APPIUM_DRIVERS, getOverriddenIntValue(MAX_NUMBER_OF_APPIUM_DRIVERS,
+                Integer.parseInt(getStringValueFromPropertiesIfAvailable(MAX_NUMBER_OF_APPIUM_DRIVERS,
+                        String.valueOf(TeswizRuntimeConfiguration.getInt(TeswizRuntimeConfiguration.MAX_NUMBER_OF_APPIUM_DRIVERS))))));
+        configsInteger.put(MAX_NUMBER_OF_WEB_DRIVERS, getOverriddenIntValue(MAX_NUMBER_OF_WEB_DRIVERS,
+                Integer.parseInt(getStringValueFromPropertiesIfAvailable(MAX_NUMBER_OF_WEB_DRIVERS,
+                        String.valueOf(TeswizRuntimeConfiguration.getInt(TeswizRuntimeConfiguration.MAX_NUMBER_OF_WEB_DRIVERS))))));
         currentPlatform = Platform.valueOf(getOverriddenStringValue(PLATFORM, getStringValueFromPropertiesIfAvailable(PLATFORM, Platform.android.name())));
         configsInteger.put(PARALLEL, getOverriddenIntValue(PARALLEL, Integer.parseInt(getStringValueFromPropertiesIfAvailable(PARALLEL, String.valueOf(DEFAULT_PARALLEL)))));
         configs.put(PROXY_KEY, getOverriddenStringValue(PROXY_KEY, getStringValueFromPropertiesIfAvailable(PROXY_KEY, PROXY_KEY)));
@@ -706,12 +712,14 @@ public class Setup {
 
     @NotNull
     static RectangleSize getViewportSize() {
-        RectangleSize viewportSize = new RectangleSize(1280, 960);
+        RectangleSize viewportSize = new RectangleSize(
+                TeswizRuntimeConfiguration.getInt(TeswizRuntimeConfiguration.DRIVER_VIEWPORT_WIDTH),
+                TeswizRuntimeConfiguration.getInt(TeswizRuntimeConfiguration.DRIVER_VIEWPORT_HEIGHT));
         try {
             String[] viewP = ((String) applitoolsConfiguration.get(APPLITOOLS.VIEWPORT_SIZE)).split("x");
             viewportSize = new RectangleSize(Integer.parseInt(viewP[0]), Integer.parseInt(viewP[1]));
         } catch (NullPointerException e) {
-            LOGGER.info(String.format("Unable to get viewport size from Applitools configuration. Using default: " + "1280x960"));
+            LOGGER.info("Unable to get viewport size from Applitools configuration. Using runtime defaults.");
         }
         return viewportSize;
     }

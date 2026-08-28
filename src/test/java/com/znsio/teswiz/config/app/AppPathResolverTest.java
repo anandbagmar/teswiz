@@ -15,6 +15,7 @@ import java.nio.file.Paths;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
+import com.znsio.teswiz.config.TeswizRuntimeConfiguration;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -60,7 +61,7 @@ class AppPathResolverTest {
 
     @AfterEach
     void clearDownloadTimeoutProperty() {
-        System.clearProperty(AppPathResolver.APP_DOWNLOAD_TIMEOUT_SECONDS_PROPERTY);
+        System.clearProperty(TeswizRuntimeConfiguration.APP_DOWNLOAD_TIMEOUT_SECONDS);
     }
 
     @Test
@@ -70,16 +71,16 @@ class AppPathResolverTest {
 
     @Test
     void shouldUseConfiguredAppDownloadTimeoutInSeconds() {
-        System.setProperty(AppPathResolver.APP_DOWNLOAD_TIMEOUT_SECONDS_PROPERTY, "45");
+        System.setProperty(TeswizRuntimeConfiguration.APP_DOWNLOAD_TIMEOUT_SECONDS, "45");
 
         assertEquals(45_000, AppPathResolver.getAppDownloadTimeoutMillis());
     }
 
     @Test
     void shouldUseDefaultForInvalidAppDownloadTimeout() {
-        System.setProperty(AppPathResolver.APP_DOWNLOAD_TIMEOUT_SECONDS_PROPERTY, "-1");
+        System.setProperty(TeswizRuntimeConfiguration.APP_DOWNLOAD_TIMEOUT_SECONDS, "-1");
 
-        assertEquals(15_000, AppPathResolver.getAppDownloadTimeoutMillis());
+        assertThrows(InvalidTestDataException.class, AppPathResolver::getAppDownloadTimeoutMillis);
     }
 
     private static void serveValidApp(HttpExchange exchange) throws IOException {
