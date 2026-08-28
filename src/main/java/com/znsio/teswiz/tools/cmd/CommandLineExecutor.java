@@ -141,18 +141,19 @@ public class CommandLineExecutor {
             response.setDurationMillis(durationMs);
 
             String responseMessage = String.format(
-                    "\tExit code: %d (timedOut=%s, durationMs=%d)%n"
-                    + "\tCommand:%n%s%n"
-                    + "\tStdOut:%n%s%n"
-                    + "\tStdErr:%n%s",
+                    "Command completed: exitCode=%d, timedOut=%s, durationMs=%d, command=\"%s\"",
                     response.getExitCode(),
                     response.isTimedOut(),
                     response.getDurationMillis(),
-                    SensitiveDataMasker.mask(response.getCommand()),
-                    SensitiveDataMasker.mask(prettyPrintIfJson(response.getStdOut())),
-                    SensitiveDataMasker.mask(prettyPrintIfJson(response.getErrOut()))
+                    SensitiveDataMasker.mask(response.getCommand())
             );
             LOGGER.info(responseMessage);
+            if (!response.getStdOut().isBlank()) {
+                LOGGER.debug("Command stdout:\n{}", SensitiveDataMasker.mask(prettyPrintIfJson(response.getStdOut())));
+            }
+            if (!response.getErrOut().isBlank()) {
+                LOGGER.debug("Command stderr:\n{}", SensitiveDataMasker.mask(prettyPrintIfJson(response.getErrOut())));
+            }
 
             return response;
 

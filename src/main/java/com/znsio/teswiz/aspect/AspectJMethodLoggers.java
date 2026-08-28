@@ -23,8 +23,8 @@ public class AspectJMethodLoggers {
             Integer lineNumber = (joinPoint.getSourceLocation() != null) ? joinPoint.getSourceLocation().getLine() : -1;
             Object[] methodArgs = joinPoint.getArgs();
 
-            String message = String.format("\t%n<<<%s%n>>>%n",
-                                           generateBeforeMethodAspectJLogger(className, methodName, lineNumber, methodArgs));
+            String message = String.format("ENTER %s.%s:%d (args=%d)",
+                                           className, methodName, lineNumber, methodArgs.length);
 
             logAtLevel(level, message);
         } catch (Exception e) {
@@ -53,7 +53,7 @@ public class AspectJMethodLoggers {
             String className = joinPoint.getSignature().getDeclaringType().getSimpleName();
             String methodName = joinPoint.getSignature().getName();
 
-            String message = String.format("\t%n<<<%s%n>>>%n", generateAfterMethodAspectJLogger(className, methodName));
+            String message = String.format("EXIT %s.%s", className, methodName);
 
             logAtLevel(level, message);
         } catch (Exception e) {

@@ -15,6 +15,7 @@ Check the values that control where and how the test runs:
 - `LOG_DIR`
 - `LOG_PROPERTIES_FILE`
 - `SHOW_SENSITIVE_DATA`
+- `TESWIZ_METHOD_LOG_LEVEL`
 
 The full list of supported configuration keys is in [ConfigurationParameters-README.md](../features/ConfigurationParameters-README.md).
 
@@ -58,6 +59,13 @@ teswiz already supports several log sources that are useful during investigation
 - ReportPortal logs
 - AspectJ auto-logging
 - Applitools logs when visual testing is enabled
+
+Normal console output is intentionally limited to high-signal `INFO` events. The rolling test log captures `DEBUG` details such as command stdout/stderr and JSON payloads. Enable concise AspectJ method tracing when diagnosing framework flow:
+
+```bash
+CONFIG=configs/theapp/theapp_local_web_config.properties FRAMEWORK=cucumber TAG=@theapp \
+  ./gradlew run -DTESWIZ_METHOD_LOG_LEVEL=DEBUG
+```
 
 Helpful references:
 
