@@ -152,7 +152,7 @@ build_release_notes() {
     RELEASE_NOTES=$(echo "$RELEASE_NOTES" | sed -E 's/^/- /')
   fi
 
-  RELEASE_TITLE="teswiz $VERSION"
+  RELEASE_TITLE="$VERSION"
   RELEASE_SUMMARY="Highlights and improvements for teswiz $VERSION."
 
   TEMP_NOTES=$(mktemp)
