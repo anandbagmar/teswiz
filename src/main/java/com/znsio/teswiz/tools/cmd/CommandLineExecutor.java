@@ -152,7 +152,7 @@ public class CommandLineExecutor {
                 LOGGER.info(responseMessage);
             }
             if (!response.getStdOut().isBlank() || !response.getErrOut().isBlank()) {
-                java.nio.file.Path artifact = CommandOutputArtifactWriter.write(response.getStdOut(), response.getErrOut());
+                java.nio.file.Path artifact = CommandOutputArtifactWriter.write(response.getCommand(), response.getStdOut(), response.getErrOut());
                 if (artifact != null) {
                     LOGGER.debug("Command output artifact: " + artifact);
                 } else {
