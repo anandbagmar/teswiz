@@ -1,9 +1,15 @@
 # Configuration parameters
 
-The config.properties file has the following properties. Highlighting the defaults, and options for each here.
+All supported execution properties, defaults, examples, and optional values are maintained in the canonical
+[Teswiz execution configuration template](../../configs/teswiz/teswiz_config.properties.template). Copy the template
+for a suite, uncomment the values that apply, and override values with environment variables or JVM system properties
+when needed.
 
-These can be overridden by providing the same either as environment variables or system properties.
+Runtime tuning values can be kept in the execution config or moved to an optional external file selected with
+`TESWIZ_RUNTIME_CONFIG_FILE`. Built-in runtime defaults are defined in
+`src/main/resources/defaultTeswizRuntime.properties` and validated at startup.
 
+<!-- The complete property catalog is maintained in the canonical template below.
     # Legacy properties (RUNNER, RUNNER_LEVEL are historical and not read by teswiz)
     RUNNER=distribute -> Historical property. Not read by teswiz.
     RUNNER_LEVEL=methods -> Historical property. Not read by teswiz.
@@ -73,6 +79,8 @@ These can be overridden by providing the same either as environment variables or
     TARGET_ENVIRONMENT=prod -> Which environment are the tests running against? Should map to envrionments specified in ENVIRONMENT_CONFIG_FILE
     TEST_DATA_FILE=./src/test/resources/testData.json -> Environment specific static test data
     BROWSER_CONFIG_FILE=./src/test/resources/com/znsio/teswiz/features/configs/browser_config.json -> json containing browser configurations for Selenium and Playwright web execution
+
+-->
 
 Logging defaults:
 
