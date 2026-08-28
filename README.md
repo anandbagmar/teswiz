@@ -5,7 +5,7 @@
 
 ## Status
 
-[![Release](https://img.shields.io/badge/release-1.0.35-blue.svg)](https://jitpack.io/#anandbagmar/teswiz)
+[![Release](https://img.shields.io/badge/release-1.0.36-blue.svg)](https://jitpack.io/#anandbagmar/teswiz)
 [![CI](https://github.com/anandbagmar/teswiz/actions/workflows/Build_And_Run_Unit_Tests_CI.yml/badge.svg)](https://github.com/anandbagmar/teswiz/actions/workflows/Build_And_Run_Unit_Tests_CI.yml)
 [![CodeQL](https://github.com/anandbagmar/teswiz/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/anandbagmar/teswiz/actions/workflows/codeql-analysis.yml)
 [![Latest Commit](https://img.shields.io/badge/commit-06d3d75-blue.svg)](https://jitpack.io/#anandbagmar/teswiz)

@@ -1,3 +1,7 @@
+## 1.0.36
+- Include the executed command in commandOutput artifact files
+- Use version as default release title
+
 ## 1.0.35
 - Handle existing release tags safely
 - Make multi-line release paste explicit
