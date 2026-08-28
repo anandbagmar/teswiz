@@ -8,6 +8,8 @@ import com.znsio.teswiz.entities.APPLITOOLS;
 import com.znsio.teswiz.entities.Platform;
 import com.znsio.teswiz.exceptions.EnvironmentSetupException;
 import com.znsio.teswiz.exceptions.InvalidTestDataException;
+import com.znsio.teswiz.filters.EnvironmentIssueFilter;
+import com.znsio.teswiz.filters.apitraffic.ApiTrafficLogging;
 import com.znsio.teswiz.web.WebEngine;
 import com.znsio.teswiz.tools.JsonFile;
 import com.znsio.teswiz.tools.JsonPrettyPrinter;
@@ -16,6 +18,7 @@ import com.znsio.teswiz.tools.SensitiveDataMasker;
 import com.znsio.teswiz.tools.StringUtils;
 import com.znsio.teswiz.tools.cmd.CommandLineExecutor;
 import com.znsio.teswiz.tools.cmd.CommandLineResponse;
+import io.restassured.RestAssured;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -80,6 +83,7 @@ public class Setup {
     public static final String SHOW_SENSITIVE_DATA = "SHOW_SENSITIVE_DATA";
     public static final String MASK_ADDITIONAL_KEYS = "MASK_ADDITIONAL_KEYS";
     public static final String MASK_KEYS_OVERRIDE = "MASK_KEYS_OVERRIDE";
+    public static final String API_TRAFFIC_LOGGING = "API_TRAFFIC_LOGGING";
     public static final String FRAMEWORK = "FRAMEWORK";
     public static final String FRAMEWORK_CUCUMBER = "cucumber";
     public static final String FRAMEWORK_TESTNG = "testng";
@@ -315,6 +319,8 @@ public class Setup {
         CUKE_ARGS.addAll(DeviceSetup.setupWindowsExecution());
         CUKE_ARGS.addAll(setupPlatformExecution());
         initialiseApplitoolsConfiguration();
+        ApiTrafficLogging.registerIfEnabled();
+        registerEnvironmentIssueFilterIfEnabled();
 
         String rpAttributes = String.format(
                 "AutomationBranch:%s; ExecutedOn:%s; Installer:%s; OS:%s; ParallelCount:%d; " +
@@ -435,6 +441,9 @@ public class Setup {
                 getBooleanValueFromPropertiesIfAvailable(SHOW_SENSITIVE_DATA, false)));
         configs.put(MASK_ADDITIONAL_KEYS, getOverriddenStringValue(MASK_ADDITIONAL_KEYS, getStringValueFromPropertiesIfAvailable(MASK_ADDITIONAL_KEYS, NOT_SET)));
         configs.put(MASK_KEYS_OVERRIDE, getOverriddenStringValue(MASK_KEYS_OVERRIDE, getStringValueFromPropertiesIfAvailable(MASK_KEYS_OVERRIDE, NOT_SET)));
+        configsBoolean.put(API_TRAFFIC_LOGGING, getOverriddenBooleanValue(
+                API_TRAFFIC_LOGGING,
+                getBooleanValueFromPropertiesIfAvailable(API_TRAFFIC_LOGGING, true)));
     }
 
     public static String getHostMachineName() {
@@ -574,6 +583,12 @@ public class Setup {
         webCukeArgs.add(CUCUMBER_SCENARIO_LISTENER);
         webCukeArgs.add(PLUGIN);
         webCukeArgs.add(CUCUMBER_SCENARIO_REPORTER_LISTENER);
+    }
+
+    static void registerEnvironmentIssueFilterIfEnabled() {
+        if (!getOverriddenBooleanValue("DISABLE_ENVIRONMENT_ISSUE_FILTER", false)) {
+            RestAssured.filters(new EnvironmentIssueFilter());
+        }
     }
 
     static Map<String, Object> initialiseApplitoolsConfiguration() {

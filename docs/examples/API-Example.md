@@ -6,11 +6,23 @@ This guide provides a concrete example of implementing an API-level test in Tesw
 
 ## Environment Issue Detection
 
-Every request made through `RestAssuredService` is automatically checked for `502`, `503`, and `504` responses by `EnvironmentIssueFilter`. These status codes are never a valid test expectation — they mean the target service is unavailable — so the filter throws `EnvironmentSetupException` immediately, before the response reaches your business layer or step definitions. This keeps environment outages from being misreported as test/assertion failures.
+Every RestAssured request in the suite — not just calls made through `RestAssuredService`, any RestAssured client — is automatically checked for `502`, `503`, and `504` responses by `EnvironmentIssueFilter`, which teswiz registers globally during setup. These status codes are never a valid test expectation — they mean the target service is unavailable — so the filter throws `EnvironmentSetupException` immediately, before the response reaches your business layer or step definitions. This keeps environment outages from being misreported as test/assertion failures.
 
 If a specific run genuinely needs to bypass this (e.g. a test that intentionally exercises a mocked gateway returning one of these codes), disable it via an environment variable or system property:
 
     DISABLE_ENVIRONMENT_ISSUE_FILTER=true
+
+---
+
+## API Traffic Logging
+
+teswiz also registers a global `ApiTrafficLoggingFilter` so every RestAssured call in the suite is captured automatically — request and response, headers and body — as a single masked `.log` file per call, written to `api-traffic/` inside the current scenario's report folder (e.g. `api-traffic/03-POST-api-v1-wallet-authenticate.log`). Calls are numbered sequentially per scenario starting at `01`. Masking reuses the same `SensitiveDataMasker` config as the rest of teswiz — `SHOW_SENSITIVE_DATA`, `MASK_ADDITIONAL_KEYS`, and `MASK_KEYS_OVERRIDE` all apply, no separate setup needed.
+
+The feature is on by default. To turn it off:
+
+    API_TRAFFIC_LOGGING=false
+
+A call is still recorded even when `EnvironmentIssueFilter` throws on it — those are exactly the calls worth having a record of.
 
 ---
 

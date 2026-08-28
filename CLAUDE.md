@@ -19,6 +19,7 @@ When working in this repository:
 - Prefer local mobile device and simulator setup under `com.znsio.teswiz.mobile.device` instead of growing `runner`.
 - Prefer internal Appium server lifecycle code under `com.znsio.teswiz.mobile.server` instead of growing `runner`.
 - Prefer mobile cloud setup and cleanup routing under `com.znsio.teswiz.mobile.provider` instead of growing `runner`.
+- Prefer global RestAssured filters under `com.znsio.teswiz.filters` (registered once in `Setup.setupExecutionEnvironment()`, not per-request) instead of growing `runner` or `RestAssuredService`. `EnvironmentIssueFilter` and `com.znsio.teswiz.filters.apitraffic.ApiTrafficLoggingFilter` are both on by default and registered in that order (traffic filter first) so a call's traffic file is still written even when the environment-issue filter throws on it.
 - For CI flows that install Node dependencies, run `actions/setup-node` first and prefer `npm ci` over `npm install`.
 - Whenever `package.json` dependencies or `overrides` change, keep the matching `package-lock.json` update in the same change.
 - In CI, install Playwright browsers only in workflows that actually execute Playwright.

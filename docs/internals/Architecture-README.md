@@ -380,6 +380,17 @@ Current reporting behavior includes:
 * HTML report classifications aggregated from scenario metadata, including personas, platforms, engines, providers,
   and when available, provider-native cloud session ids, report URLs, and normalized provider artifact URLs
 
+### `com.znsio.teswiz.filters`
+
+Owns RestAssured filters that apply to every API call in a suite, regardless of which client built the request. Both are registered globally on `RestAssured` once during `Setup.setupExecutionEnvironment()` — not attached per-request — so they cover any RestAssured usage, not just calls routed through `RestAssuredService`. Both are on by default and opt out via config.
+
+Current examples:
+
+* `EnvironmentIssueFilter` — throws `EnvironmentSetupException` on `502`/`503`/`504` responses so environment outages are never misreported as test failures. Opt out with `DISABLE_ENVIRONMENT_ISSUE_FILTER=true`.
+* `com.znsio.teswiz.filters.apitraffic` (`ApiTrafficLogging`, `ApiTrafficLoggingFilter`, `ApiTrafficRecorder`, `ApiCallContext`, `ApiCallFileNamer`) — writes one masked request/response file per API call into the current scenario's `api-traffic/` report folder, numbered per scenario via `ApiCallContext` (reset/cleared by `CucumberScenarioListener`). Reuses `SensitiveDataMasker` directly; no separate masking config. Opt out with `API_TRAFFIC_LOGGING=false`.
+
+Registration order matters: `ApiTrafficLoggingFilter` is registered before `EnvironmentIssueFilter`, so it wraps around it and still records a call's traffic file even when `EnvironmentIssueFilter` throws instead of returning a response.
+
 ### `com.znsio.teswiz.visual`
 
 Owns engine-specific visual helper implementations that support `runner.Visual`.

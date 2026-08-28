@@ -2,15 +2,21 @@ package com.znsio.teswiz.runner;
 
 import com.applitools.eyes.BatchInfo;
 import com.znsio.teswiz.entities.APPLITOOLS;
+import com.znsio.teswiz.filters.EnvironmentIssueFilter;
+import com.znsio.teswiz.filters.apitraffic.ApiTrafficLogging;
+import com.znsio.teswiz.filters.apitraffic.ApiTrafficLoggingFilter;
 import com.znsio.teswiz.tools.SensitiveDataMasker;
+import io.restassured.RestAssured;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,7 +38,49 @@ class SetupTest {
         System.clearProperty("rp.attributes");
         System.clearProperty(Setup.MASK_ADDITIONAL_KEYS);
         System.clearProperty(Setup.MASK_KEYS_OVERRIDE);
+        System.clearProperty("DISABLE_ENVIRONMENT_ISSUE_FILTER");
+        System.clearProperty(ApiTrafficLogging.API_TRAFFIC_LOGGING);
         SensitiveDataMasker.resetSensitiveKeysToDefault();
+        RestAssured.replaceFiltersWith(List.of());
+    }
+
+    @AfterEach
+    void afterMethod() {
+        System.clearProperty("DISABLE_ENVIRONMENT_ISSUE_FILTER");
+        System.clearProperty(ApiTrafficLogging.API_TRAFFIC_LOGGING);
+        RestAssured.replaceFiltersWith(List.of());
+    }
+
+    @Test
+    void registerEnvironmentIssueFilterIfEnabled_registersFilterByDefault() {
+        Setup.registerEnvironmentIssueFilterIfEnabled();
+
+        assertThat(RestAssured.filters()).hasAtLeastOneElementOfType(EnvironmentIssueFilter.class);
+    }
+
+    @Test
+    void registerEnvironmentIssueFilterIfEnabled_skipsWhenDisabled() {
+        System.setProperty("DISABLE_ENVIRONMENT_ISSUE_FILTER", "true");
+
+        Setup.registerEnvironmentIssueFilterIfEnabled();
+
+        assertThat(RestAssured.filters()).noneMatch(EnvironmentIssueFilter.class::isInstance);
+    }
+
+    @Test
+    void apiTrafficLogging_registersFilterByDefault() {
+        ApiTrafficLogging.registerIfEnabled();
+
+        assertThat(RestAssured.filters()).hasAtLeastOneElementOfType(ApiTrafficLoggingFilter.class);
+    }
+
+    @Test
+    void apiTrafficLogging_skipsWhenExplicitlyDisabled() {
+        System.setProperty(ApiTrafficLogging.API_TRAFFIC_LOGGING, "false");
+
+        ApiTrafficLogging.registerIfEnabled();
+
+        assertThat(RestAssured.filters()).noneMatch(ApiTrafficLoggingFilter.class::isInstance);
     }
 
     @Test
