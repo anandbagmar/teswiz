@@ -9,6 +9,8 @@ CURRENT_VERSION=""
 VERSION=""
 RELEASE_NOTES=""
 TEMP_NOTES=""
+RELEASE_TITLE=""
+RELEASE_SUMMARY=""
 JAR_FILE=""
 SOURCES_JAR_FILE=""
 FAT_JAR_FILE=""
@@ -128,23 +130,103 @@ build_release_notes() {
     RELEASE_NOTES=$(echo "$RELEASE_NOTES" | sed -E 's/^/- /')
   fi
 
+  RELEASE_TITLE="teswiz $VERSION"
+  RELEASE_SUMMARY="Highlights and improvements for teswiz $VERSION."
+
   TEMP_NOTES=$(mktemp)
   trap 'rm -f "$TEMP_NOTES"' EXIT
-  echo "$RELEASE_NOTES" > "$TEMP_NOTES"
 }
 
-confirm_release() {
+write_release_notes_file() {
+  cat > "$TEMP_NOTES" <<EOF
+## Summary
+$RELEASE_SUMMARY
+
+## Description
+$RELEASE_NOTES
+EOF
+}
+
+cleanup_release_changes() {
+  local release_files=("build.gradle" "package.json" "package-lock.json" "README.md" "Changelog.MD")
+  local changed_release_files=()
+  local file
+
+  for file in "${release_files[@]}"; do
+    if [ -f "$file" ] && ! git diff --quiet -- "$file"; then
+      changed_release_files+=("$file")
+    fi
+  done
+
+  if [ ${#changed_release_files[@]} -gt 0 ]; then
+    echo "🧹 Cleaning release-related local changes..."
+    git restore -- "${changed_release_files[@]}"
+  fi
+}
+
+confirm_release_content() {
+  local action
+
+  while true; do
+    write_release_notes_file
+
   echo -e "\n========================================"
-  echo "Proposed Release Version: $VERSION"
+    echo "Proposed Release Version: $VERSION"
+    echo "Proposed Release Title: $RELEASE_TITLE"
+    echo "Proposed Release Summary: $RELEASE_SUMMARY"
   echo "Run unit tests before release: $RUN_UNIT_TESTS"
-  echo -e "Proposed Release Notes:\n$RELEASE_NOTES"
+    echo -e "Proposed Release Description:\n$RELEASE_NOTES"
   echo "========================================\n"
 
-  read -p "Do you want to proceed with building and publishing release $VERSION? (y/n): " confirm
-  if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
-    echo "Release process aborted."
-    exit 0
-  fi
+    read -p "Accept, revise, or abort? [a/r/x]: " action
+    case "$action" in
+      a|A|y|Y)
+        return
+        ;;
+      r|R)
+        local updated_title
+        local updated_summary
+        local add_bullet
+        local new_bullet
+        local remove_text
+
+        read -p "Enter release title [$RELEASE_TITLE]: " updated_title
+        if [ -n "$updated_title" ]; then
+          RELEASE_TITLE="$updated_title"
+        fi
+
+        read -p "Enter release summary [$RELEASE_SUMMARY]: " updated_summary
+        if [ -n "$updated_summary" ]; then
+          RELEASE_SUMMARY="$updated_summary"
+        fi
+
+        read -p "Remove description bullets containing text (press Enter to skip): " remove_text
+        if [ -n "$remove_text" ]; then
+          RELEASE_NOTES=$(echo "$RELEASE_NOTES" | grep -Fiv "$remove_text" || true)
+          if [ -z "$RELEASE_NOTES" ]; then
+            RELEASE_NOTES="- Maintenance and dependency updates."
+          fi
+        fi
+
+        read -p "Add one extra description bullet? [y/N]: " add_bullet
+        if [[ "$add_bullet" == "y" || "$add_bullet" == "Y" ]]; then
+          read -p "Enter bullet text: " new_bullet
+          if [ -n "$new_bullet" ]; then
+            RELEASE_NOTES+=$'\n- '
+            RELEASE_NOTES+="$new_bullet"
+          fi
+        fi
+        ;;
+      x|X|n|N)
+        echo "Release process aborted by user."
+        cleanup_release_changes
+        exit 0
+        ;;
+      *)
+        echo "Invalid choice. Enter 'a' to accept, 'r' to revise, or 'x' to abort."
+        ;;
+    esac
+  done
 }
 
 update_version_in_project_files() {
@@ -327,7 +409,7 @@ jitpack_is_tag_visible() {
 create_github_release() {
   echo "🚀 Creating GitHub Release $VERSION..."
   gh release create "$VERSION" \
-    --title "$VERSION" \
+    --title "$RELEASE_TITLE" \
     --notes-file "$TEMP_NOTES"
 }
 
@@ -373,7 +455,7 @@ main() {
   sync_with_remote_main
   prompt_run_tests
   build_release_notes
-  confirm_release
+  confirm_release_content
 
   update_version_in_project_files
   build_project
