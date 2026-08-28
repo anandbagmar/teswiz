@@ -2,7 +2,7 @@ import type { ScreenContext } from "../screen-context.ts";
 
 const LOCATORS = {
   fileUploadLink: 'a[href="/upload"]',
-  fileInput: '#file-upload, input[type="file"]',
+  fileInput: "#file-upload",
   uploadButton: "#file-submit",
   uploadedMessage: "h3",
 } as const;
