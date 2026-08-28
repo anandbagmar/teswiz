@@ -167,6 +167,20 @@ Read more:
 - [ReportPortal setup](docs/features/ReportPortal-README.md)
 - [Configuration parameters](docs/features/ConfigurationParameters-README.md)
 
+## Logging and diagnostics
+
+Each run writes a primary log under `LOG_DIR/testLogs/teswizSampleTestLog.log`. Console output is kept at high-signal `INFO` level, while the primary file retains `DEBUG` diagnostics. The file rolls daily or when it reaches 50 MB, retaining up to 14 archived files.
+
+Scenario logs include the scenario number, example row, and worker thread so parallel executions can be followed reliably. Command stdout and stderr are masked and written under each scenario's `commandOutput/` directory; the main log records the command result and artifact location.
+
+For framework method tracing, enable it explicitly:
+
+```bash
+./gradlew -DTESWIZ_METHOD_LOG_LEVEL=DEBUG run
+```
+
+See [Debugging tests](docs/guides/DebuggingTests-README.md) and [configuration parameters](docs/features/ConfigurationParameters-README.md) for the logging controls and artifact layout.
+
 ## Architecture
 
 The high-level architecture is documented separately in:

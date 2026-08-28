@@ -233,7 +233,7 @@ public class CustomCapabilities {
             if (e.getCausingExceptions().size() > 1) {
                 e.getCausingExceptions().stream()
                         .map(ValidationException::getMessage)
-                        .forEach(System.out::println);
+                        .forEach(LOGGER::error);
             } else {
                 LOGGER.info(e.getErrorMessage());
             }

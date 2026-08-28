@@ -81,7 +81,6 @@ public final class PlaywrightBrowserConfigMigrationReporter {
         }
 
         LOGGER.warn(message);
-        System.out.println(message);
         ReportPortalLogger.logWarningMessage(message);
     }
 

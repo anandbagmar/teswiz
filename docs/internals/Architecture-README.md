@@ -58,6 +58,20 @@ flowchart LR
     META --> CLOUD
 ```
 
+Logging and diagnostic artifacts follow the execution context rather than the engine:
+
+```mermaid
+flowchart LR
+    LIFE[Scenario / TestNG lifecycle] --> CTX[Thread-bound LoggingContext]
+    CTX --> LOG[Console + rolling test log]
+    CTX --> ART[Scenario commandOutput artifacts]
+    CMD[CommandLineExecutor] --> ART
+    CMD --> LOG
+    LOG --> SUM[Run summary: total, passed, failed, skipped, duration]
+```
+
+The console is intentionally concise. The rolling log keeps `DEBUG` diagnostics, command output is stored as masked per-command artifacts, and scenario number/example row/thread context makes parallel runs searchable. The rolling log uses daily and 50 MB triggers with a 14-file retention limit.
+
 Everything from the screen contract downward is identical regardless of entry point — Cucumber's feature/step-def layer and a plain TestNG `@Test` class both call the same Java BL, so engine routing, persona/session ownership, reporting, and visual validation behave the same either way. See `com.znsio.teswiz.testng` further down for the TestNG-mode-specific plumbing (mode selection, hooks, discovery, tag mapping, reporting).
 
 Execution routing is still persona-scoped, and the same scenario can involve multiple engines or platforms:

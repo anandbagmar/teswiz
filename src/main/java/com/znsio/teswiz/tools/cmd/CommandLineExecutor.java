@@ -2,7 +2,6 @@ package com.znsio.teswiz.tools.cmd;
 
 import com.znsio.teswiz.exceptions.CommandLineExecutorException;
 import com.znsio.teswiz.runner.Runner;
-import com.znsio.teswiz.tools.JsonPrettyPrinter;
 import com.znsio.teswiz.tools.OsUtils;
 import com.znsio.teswiz.tools.SensitiveDataMasker;
 import org.apache.commons.io.IOUtils;
@@ -147,12 +146,18 @@ public class CommandLineExecutor {
                     response.getDurationMillis(),
                     SensitiveDataMasker.mask(response.getCommand())
             );
-            LOGGER.info(responseMessage);
-            if (!response.getStdOut().isBlank()) {
-                LOGGER.debug("Command stdout:\n{}", SensitiveDataMasker.mask(prettyPrintIfJson(response.getStdOut())));
+            if (response.isTimedOut() || response.getExitCode() != 0) {
+                LOGGER.warn(responseMessage);
+            } else {
+                LOGGER.info(responseMessage);
             }
-            if (!response.getErrOut().isBlank()) {
-                LOGGER.debug("Command stderr:\n{}", SensitiveDataMasker.mask(prettyPrintIfJson(response.getErrOut())));
+            if (!response.getStdOut().isBlank() || !response.getErrOut().isBlank()) {
+                java.nio.file.Path artifact = CommandOutputArtifactWriter.write(response.getStdOut(), response.getErrOut());
+                if (artifact != null) {
+                    LOGGER.debug("Command output artifact: " + artifact);
+                } else {
+                    LOGGER.warn("Unable to write command output artifact for command: " + maskedDisplayCommand);
+                }
             }
 
             return response;
@@ -184,21 +189,4 @@ public class CommandLineExecutor {
         }
     }
 
-    private static String prettyPrintIfJson(String rawOutput) {
-        if (rawOutput == null) {
-            return rawOutput;
-        }
-        if (rawOutput.isBlank()) {
-            return rawOutput;
-        }
-        String trimmedOutput = rawOutput.trim();
-        if (!(trimmedOutput.startsWith("{") || trimmedOutput.startsWith("["))) {
-            return rawOutput;
-        }
-        String prettyOutput = JsonPrettyPrinter.prettyPrint(trimmedOutput);
-        if (prettyOutput.startsWith("\u26a0\ufe0f Failed to pretty print JSON")) {
-            return rawOutput;
-        }
-        return prettyOutput;
-    }
 }
