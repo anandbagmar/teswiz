@@ -15,6 +15,9 @@ JAR_FILE=""
 SOURCES_JAR_FILE=""
 FAT_JAR_FILE=""
 REUPLOAD_MISSING_ARTIFACTS=false
+REUSE_EXISTING_TAG=false
+TAG_EXISTS_LOCALLY=false
+TAG_EXISTS_REMOTELY=false
 RELEASE_UPLOAD_URL=""
 
 print_usage() {
@@ -263,6 +266,32 @@ confirm_release_content() {
   done
 }
 
+confirm_existing_tag() {
+  local reuse_tag
+
+  if git rev-parse --verify --quiet "refs/tags/$VERSION" >/dev/null 2>&1; then
+    TAG_EXISTS_LOCALLY=true
+  fi
+  if git ls-remote --exit-code --tags origin "refs/tags/$VERSION" >/dev/null 2>&1; then
+    TAG_EXISTS_REMOTELY=true
+  fi
+
+  if [ "$TAG_EXISTS_LOCALLY" = false ] && [ "$TAG_EXISTS_REMOTELY" = false ]; then
+    return
+  fi
+
+  echo "⚠️ Warning: Tag '$VERSION' already exists."
+  read -p "Release using the existing tag '$VERSION'? [y/N]: " reuse_tag
+  if [[ "$reuse_tag" == "y" || "$reuse_tag" == "Y" ]]; then
+    REUSE_EXISTING_TAG=true
+    echo "♻️ Reusing existing tag '$VERSION'."
+  else
+    echo "Release process aborted by user."
+    cleanup_release_changes
+    exit 0
+  fi
+}
+
 update_version_in_project_files() {
   echo "🔄 Updating version to $VERSION in project files..."
 
@@ -404,6 +433,15 @@ reupload_missing_artifacts() {
 }
 
 commit_tag_and_push() {
+  if [ "$REUSE_EXISTING_TAG" = true ]; then
+    if [ "$TAG_EXISTS_LOCALLY" = true ] && [ "$TAG_EXISTS_REMOTELY" = false ]; then
+      echo "📤 Pushing existing local tag '$VERSION' to origin..."
+      git push origin "$VERSION"
+    fi
+    echo "♻️ Existing tag '$VERSION' approved; skipping commit and tag creation."
+    return
+  fi
+
   echo "📦 Committing, tagging, and pushing changes to GitHub..."
   git add build.gradle package.json package-lock.json README.md Changelog.MD
   git commit -m "Release $VERSION"
@@ -490,6 +528,7 @@ main() {
   prompt_run_tests
   build_release_notes
   confirm_release_content
+  confirm_existing_tag
 
   update_version_in_project_files
   build_project
