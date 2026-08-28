@@ -41,8 +41,8 @@ teswiz ships two separate aspects, each scoped to a different layer, logging at 
 
 | Aspect | Source set | Packages woven | Log level |
 |---|---|---|---|
-| `AspectLogging` | `src/main` (shipped in the published jar) | `entities`, `listener`, `runner`, `tools` — teswiz's own internal framework machinery | `DEBUG` (quiet by default; a consumer normally doesn't need to see this) |
-| `ConsumerLayerAspectLogging` | `src/test` (teswiz-internal only, not shipped) | `steps`, `businessLayer`, `screen` — the layers a teswiz user actually authors | `INFO` (visible by default, since a user wants to see detail about their own implementation without enabling debug logging) |
+| `AspectLogging` | `src/main` (shipped in the published jar) | `entities`, `listener`, `runner`, `tools` — teswiz's own internal framework machinery | `DEBUG` advice level, suppressed by the shared logger's `WARN` default |
+| `ConsumerLayerAspectLogging` | `src/test` (teswiz-internal only, not shipped) | `steps`, `businessLayer`, `screen` — the layers a teswiz user actually authors | `INFO` advice level, suppressed by the shared logger's `WARN` default |
 
 Both aspects delegate their actual log formatting to the shared `AspectJMethodLoggers` helper, differing only in pointcut scope and log level. Method events use compact one-line `ENTER`/`EXIT` messages. Framework tracing is suppressed by default through the `AspectJMethodLoggers` logger and can be enabled with the JVM property `-DTESWIZ_METHOD_LOG_LEVEL=DEBUG`.
 

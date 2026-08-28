@@ -849,12 +849,12 @@ public class Visual {
     private List<RenderBrowserInfo> addBrowserAndDeviceConfigForUFG(boolean isUFG, Configuration ufgConfig) {
         if (null != context.getTestState(APPLITOOLS.UFG_CONFIG)) {
             ufgConfig = (Configuration) context.getTestState(APPLITOOLS.UFG_CONFIG);
-            LOGGER.info(format("Using Browsers and devices in UFG_CONFIG provided by test: %s",
+            LOGGER.debug(format("Using Browsers and devices in UFG_CONFIG provided by test: %s",
                     ufgConfig.getBrowsersInfo()));
             return ufgConfig.getBrowsersInfo();
         } else {
             List<RenderBrowserInfo> defaultBrowserInfo = defaultApplitoolsUFGConfig();
-            LOGGER.info(format("UFG_CONFIG NOT provided by test. Using default Browsers and devices in UFG_CONFIG: %s",
+            LOGGER.debug(format("UFG_CONFIG NOT provided by test. Using default Browsers and devices in UFG_CONFIG: %s",
                     defaultBrowserInfo));
             return defaultBrowserInfo;
         }

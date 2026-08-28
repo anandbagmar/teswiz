@@ -142,7 +142,7 @@ public class SeleniumDriverManager {
     private static WebDriver createNewWebDriver(String forUserPersona, String browserName,
             TestExecutionContext testExecutionContext) {
         JSONObject browserConfig = getBrowserConfig(testExecutionContext);
-        LOGGER.info(String.format("Create new webdriver instance for: %s, on: %s, with browserConfig: %s",
+        LOGGER.debug(String.format("Create new webdriver instance for: %s, on: %s, with browserConfig: %s",
                 forUserPersona, browserName,
                 SensitiveDataMasker.mask(JsonPrettyPrinter.prettyPrint(browserConfig.toMap()))));
 
@@ -218,7 +218,7 @@ public class SeleniumDriverManager {
         setProxyInChromeOptions(chromeOptions, chromeConfiguration);
         setHeadlessInChromeOptions(chromeConfiguration, chromeOptions);
         setEmulationModeInChromeOptions(testExecutionContext, chromeOptions);
-        LOGGER.info(String.format("ChromeOptions: %s", JsonPrettyPrinter.prettyPrint(chromeOptions.asMap())));
+        LOGGER.debug(String.format("ChromeOptions: %s", JsonPrettyPrinter.prettyPrint(chromeOptions.asMap())));
         return chromeOptions;
     }
 
@@ -259,7 +259,7 @@ public class SeleniumDriverManager {
         setLoggingPrefsInFirefoxOptions(firefoxConfiguration, firefoxOptions);
         setProxyInFirefoxOptions(firefoxOptions, firefoxConfiguration);
         setHeadlessInFirefoxOptions(firefoxConfiguration, firefoxOptions);
-        LOGGER.info(String.format("FirefoxOptions: %s", firefoxOptions.asMap()));
+        LOGGER.debug(String.format("FirefoxOptions: %s", firefoxOptions.asMap()));
         return firefoxOptions;
     }
 
@@ -447,7 +447,7 @@ public class SeleniumDriverManager {
         // setUseTechnologyPreview is false by default
         safariOptions.setUseTechnologyPreview(setUseTechnologyPreview); //
         setProxyInSafariOptions(safariOptions);
-        LOGGER.info(String.format("SafariOptions: %s", safariOptions.asMap()));
+        LOGGER.debug(String.format("SafariOptions: %s", safariOptions.asMap()));
         return safariOptions;
     }
 
@@ -588,7 +588,7 @@ public class SeleniumDriverManager {
         String runningOn = Runner.isRunningInCI() ? "CI" : "local";
         context.addTestState(TEST_CONTEXT.ELECTRON_BROWSER_ON, runningOn);
         JSONObject browserConfig = getBrowserConfig(context);
-        LOGGER.info(String.format("Create new electrondriver instance for: %s, on: %s, with browserConfig: %s",
+        LOGGER.debug(String.format("Create new electrondriver instance for: %s, on: %s, with browserConfig: %s",
                 userPersona, browserName,
                 SensitiveDataMasker.mask(JsonPrettyPrinter.prettyPrint(browserConfig.toMap()))));
         JSONObject browserConfigForBrowserType = browserConfig.getJSONObject(browserName.toLowerCase());

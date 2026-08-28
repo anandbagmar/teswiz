@@ -60,7 +60,7 @@ teswiz already supports several log sources that are useful during investigation
 - AspectJ auto-logging
 - Applitools logs when visual testing is enabled
 
-Normal console output is intentionally limited to high-signal `INFO` events. The rolling test log captures `DEBUG` details such as JSON payloads. Command stdout/stderr is preserved as masked files under the scenario's `commandOutput/` directory. Enable concise AspectJ method tracing when diagnosing framework flow:
+Normal console output is intentionally limited to high-signal `INFO` events. The rolling test log captures `DEBUG` details such as JSON payloads. AspectJ method events are suppressed by default; command stdout/stderr is preserved as masked files under the scenario's `commandOutput/` directory. Enable concise AspectJ method tracing when diagnosing framework flow:
 
 ```bash
 CONFIG=configs/theapp/theapp_local_web_config.properties FRAMEWORK=cucumber TAG=@theapp \

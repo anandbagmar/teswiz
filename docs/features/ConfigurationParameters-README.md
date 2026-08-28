@@ -42,7 +42,7 @@ These can be overridden by providing the same either as environment variables or
     HEADLESS=false -> If set, run web/electron app tests in HEADLESS mode (overrides the headless value in browser_config.json)
     LOG_DIR=target -> Where should logs be created?
     LOG_PROPERTIES_FILE=./src/test/resources/log4j2.properties -> log4j configuration file
-    TESWIZ_METHOD_LOG_LEVEL=INFO -> Optional JVM system property. Set to DEBUG to enable concise framework method tracing.
+    TESWIZ_METHOD_LOG_LEVEL=WARN -> Optional JVM system property. Set to DEBUG to enable concise framework method tracing.
     MAX_NUMBER_OF_APPIUM_DRIVERS -> The max number of drivers on cloud to create for multiuser android tests, default value is 5
     MAX_NUMBER_OF_WEB_DRIVERS -> The max number of web drivers on cloud to create for multiuser web tests, default value is 5
     PLATFORM=android -> Run tests against? Supported: android | iOS | windows | web | api
