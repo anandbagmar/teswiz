@@ -449,6 +449,22 @@ tasks.named('test', Test) {
     }
 }
 
+tasks.register('validateConfigurationTemplates', Test) {
+    group = "verification"
+    description = "Validate execution property files against the canonical configuration template."
+    dependsOn testClasses
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform()
+    filter {
+        includeTestsMatching 'com.znsio.teswiz.config.ConfigurationFilesConsistencyTest'
+    }
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('validateConfigurationTemplates')
+}
+
 tasks.register('verifyScreenContracts', JavaExec) {
     group = "verification"
     description = "Validate discovered screen implementations against their shared contracts."

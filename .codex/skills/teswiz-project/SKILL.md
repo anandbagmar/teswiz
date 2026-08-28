@@ -16,6 +16,7 @@ Use this skill for changes inside the `znsio/teswiz` repo.
 - TestNG-only execution mode (alternative to Cucumber, see `FRAMEWORK` config property): `src/main/java/com/znsio/teswiz/testng`, pilot tests in `src/test/java/com/znsio/teswiz/testng`, docs in `docs/guides/ConfiguringTestExecution-README.md`
 - Playwright TS test-owned screen modules: `src/test/resources/playwright/screens`
 - Execution configs: `configs/<app>/...`
+- Canonical execution-config template: `configs/teswiz/teswiz_config.properties.template`
 - Capability files: `caps/<app>/...`
 - Visual-testing docs: `docs/features/RunningVisualTests-README.md`
 - Architecture notes: `docs/internals/Architecture-README.md`
@@ -127,6 +128,8 @@ Use this skill for changes inside the `znsio/teswiz` repo.
   - install Playwright browsers only in workflows that actually execute Playwright
 - For stricter screen-contract audits that also flag missing target combinations, use:
   `./gradlew verifyScreenContracts -PincludeMissingScreenTargets=true`
+- For execution configuration changes, keep every `configs/**/*.properties` file aligned with
+  `configs/teswiz/teswiz_config.properties.template`; run `./gradlew validateConfigurationTemplates`.
 - Do not treat parallel independent Gradle invocations against the same checkout as a reliable signal. Prefer serial focused runs because shared build outputs/intermediates can produce misleading symbol/compilation failures.
 - GitHub Actions artifact retention policy:
   - keep only the latest artifact set per workflow per user-created branch
