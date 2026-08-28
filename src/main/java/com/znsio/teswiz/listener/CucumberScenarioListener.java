@@ -75,6 +75,7 @@ public class CucumberScenarioListener implements ConcurrentEventListener {
         testExecutionContext.addTestState(TEST_CONTEXT.SCENARIO_LOG_DIRECTORY, scenarioLogDirectory);
         testExecutionContext.addTestState(TEST_CONTEXT.SCREENSHOT_DIRECTORY, screenshotDirectory);
         testExecutionContext.addTestState(TEST_CONTEXT.DEVICE_LOGS_DIRECTORY, deviceLogsDirectory);
+        com.znsio.teswiz.filters.apitraffic.ApiCallContext.resetForNewScenario();
         LoggingContext.begin(scenarioName, scenarioNumber, currentExampleRowNumberForScenario, scenarioLogDirectory);
         LOGGER.info(String.format("Scenario started: number=%d, name=\"%s\", exampleRow=%d",
                 scenarioNumber, scenarioName, currentExampleRowNumberForScenario));
@@ -103,6 +104,7 @@ public class CucumberScenarioListener implements ConcurrentEventListener {
         long threadId = Thread.currentThread().getId();
         TestExecutionContext testExecutionContext = SessionContext.getTestExecutionContext(threadId);
 
+        com.znsio.teswiz.filters.apitraffic.ApiCallContext.clear();
         SessionContext.remove(threadId);
         LoggingContext.clear();
     }

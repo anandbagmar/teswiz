@@ -71,6 +71,9 @@ SHOW_SENSITIVE_DATA=false
 #MASK_ADDITIONAL_KEYS=sessionId,customerId
 #MASK_KEYS_OVERRIDE=password,token
 
+# API traffic logging
+#API_TRAFFIC_LOGGING=true
+
 # Runtime defaults. System properties and environment variables override these values.
 #TESWIZ_RUNTIME_CONFIG_FILE=./configs/teswiz/teswiz_runtime.properties
 #TESWIZ_DRIVER_WAIT_TIMEOUT_SECONDS=10
