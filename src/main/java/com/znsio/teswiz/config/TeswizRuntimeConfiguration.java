@@ -62,6 +62,7 @@ public final class TeswizRuntimeConfiguration {
 
     public static synchronized void load(Properties primaryConfiguration) {
         Properties loadedConfiguration = loadBuiltInDefaults();
+        overlaySupportedRuntimeValues(loadedConfiguration, primaryConfiguration);
         String externalConfigFile = firstConfiguredValue(CONFIG_FILE, primaryConfiguration);
         if (externalConfigFile != null && !externalConfigFile.isBlank()) {
             try (InputStream input = new FileInputStream(externalConfigFile.trim())) {
@@ -99,11 +100,23 @@ public final class TeswizRuntimeConfiguration {
         Properties loaded = new Properties();
         loaded.load(input);
         for (String key : loaded.stringPropertyNames()) {
-            if (!BUILT_IN_DEFAULTS.containsKey(key)) {
+            if (key.startsWith("TESWIZ_") && !BUILT_IN_DEFAULTS.containsKey(key)) {
                 LOGGER.warn("Unknown runtime configuration key '{}' in {}", key, source);
             }
         }
         return loaded;
+    }
+
+    private static void overlaySupportedRuntimeValues(Properties target, Properties source) {
+        if (source == null) {
+            return;
+        }
+        for (String key : BUILT_IN_DEFAULTS.keySet()) {
+            String value = source.getProperty(key);
+            if (value != null) {
+                target.setProperty(key, value);
+            }
+        }
     }
 
     private static void validate(Properties configuration) {

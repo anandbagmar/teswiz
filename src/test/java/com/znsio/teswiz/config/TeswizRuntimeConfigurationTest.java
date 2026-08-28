@@ -47,6 +47,17 @@ class TeswizRuntimeConfigurationTest {
     }
 
     @Test
+    void shouldLoadRuntimeOverridesFromPrimaryExecutionConfiguration() {
+        Properties primaryConfiguration = new Properties();
+        primaryConfiguration.setProperty(TeswizRuntimeConfiguration.DRIVER_WAIT_TIMEOUT_SECONDS, "22");
+
+        TeswizRuntimeConfiguration.load(primaryConfiguration);
+
+        assertEquals(22, TeswizRuntimeConfiguration.getInt(
+                TeswizRuntimeConfiguration.DRIVER_WAIT_TIMEOUT_SECONDS));
+    }
+
+    @Test
     void shouldRejectInvalidRuntimeConfiguration() throws IOException {
         Path runtimeConfig = Files.createTempFile("teswiz-runtime", ".properties");
         Files.writeString(runtimeConfig, TeswizRuntimeConfiguration.DRIVER_VIEWPORT_WIDTH + "=0\n");
