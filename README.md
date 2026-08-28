@@ -215,3 +215,18 @@ If you are adding or migrating screen implementations:
 2. add the engine/platform-specific implementation
 3. run `./gradlew verifyScreenContracts`
 4. add or update the relevant sample/docs if user-facing behavior changed
+
+### Configuration files
+
+`configs/teswiz/teswiz_config.properties.template` is the canonical contract for execution
+configuration files. Every `configs/**/*.properties` file must contain every property from the
+template, either active or commented, while preserving values specific to that example.
+
+When adding or changing a configuration file:
+
+1. update the canonical template first when introducing a supported property
+2. keep the property in the same order as the template
+3. leave unused properties commented with their default or supported values
+4. run `./gradlew validateConfigurationTemplates`
+
+The same validation runs automatically as part of `./gradlew check` and CI builds.
