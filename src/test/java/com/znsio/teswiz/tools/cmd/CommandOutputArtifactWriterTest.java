@@ -22,14 +22,28 @@ class CommandOutputArtifactWriterTest {
         LoggingContext.begin("Checkout", 3, 2, tempDir.toString());
 
         Path artifact = CommandOutputArtifactWriter.write(
+                "git rev-parse --abbrev-ref HEAD",
                 "{\"token\":\"secret-value\",\"result\":\"ok\"}",
                 "password=hidden-value");
 
         assertThat(artifact).exists().isRegularFile();
         assertThat(artifact.getParent().getFileName().toString()).isEqualTo("commandOutput");
         String content = Files.readString(artifact);
-        assertThat(content).contains("STDOUT", "STDERR", "result", "***");
+        assertThat(content).contains("COMMAND", "git rev-parse --abbrev-ref HEAD", "STDOUT", "STDERR", "result", "***");
         assertThat(content).doesNotContain("secret-value", "hidden-value");
         assertThat(ThreadContext.get("scenario")).isEqualTo("Checkout");
+    }
+
+    @Test
+    void shouldMaskSensitiveValuesInTheCommandItself(@TempDir Path tempDir) throws Exception {
+        LoggingContext.begin("Login", 1, 1, tempDir.toString());
+
+        Path artifact = CommandOutputArtifactWriter.write(
+                "curl -H 'Authorization: Bearer secret-token-xyz' https://example.com",
+                "ok", "");
+
+        String content = Files.readString(artifact);
+        assertThat(content).contains("COMMAND");
+        assertThat(content).doesNotContain("secret-token-xyz");
     }
 }

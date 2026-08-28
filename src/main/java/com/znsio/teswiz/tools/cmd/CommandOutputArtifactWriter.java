@@ -16,7 +16,7 @@ final class CommandOutputArtifactWriter {
     private CommandOutputArtifactWriter() {
     }
 
-    static Path write(String stdout, String stderr) {
+    static Path write(String command, String stdout, String stderr) {
         String directory = ThreadContext.get("scenarioLogDirectory");
         if (directory == null || directory.isBlank()) {
             directory = System.getProperty("LOG_DIR", "target") + "/commandOutput";
@@ -29,7 +29,8 @@ final class CommandOutputArtifactWriter {
         try {
             Files.createDirectories(artifactDirectory);
             Path artifact = artifactDirectory.resolve(String.format("command-%04d.log", number));
-            String content = "STDOUT\n" + maskAndPrettyPrint(stdout) + "\n\nSTDERR\n" + maskAndPrettyPrint(stderr);
+            String content = "COMMAND\n" + SensitiveDataMasker.mask(command)
+                    + "\n\nSTDOUT\n" + maskAndPrettyPrint(stdout) + "\n\nSTDERR\n" + maskAndPrettyPrint(stderr);
             Files.writeString(artifact, content, StandardCharsets.UTF_8);
             return artifact;
         } catch (IOException e) {
