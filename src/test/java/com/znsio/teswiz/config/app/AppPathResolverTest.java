@@ -1,18 +1,25 @@
 package com.znsio.teswiz.config.app;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpServer;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.AfterEach;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -24,16 +31,31 @@ class AppPathResolverTest {
             + File.separator + "unitTests" + File.separator + "sampleApps";
     private static final String FILE_NAME = "VodQA.apk";
     private static final String EXPECTED_APP_PATH = DIRECTORY_PATH + File.separator + FILE_NAME;
-    private static final String APP_PATH_AS_CORRECT_URL = "https://github.com/anandbagmar/sampleAppsForNativeMobileAutomation/raw/main/VodQA.apk";
-    private static final String APP_PATH_AS_INCORRECT_URL = "https://github.com/anandbagmar/sampleAppsForNativeMobileAutomation/ra/main/VodQA.apk";
     private static final String APP_PATH_AS_CORRECT_FILE_PATH = EXPECTED_APP_PATH;
     private static final String APP_PATH_AS_INCORRECT_FILE_PATH = System.getProperty("user.dir") + File.separator
             + "temp" + File.separator + "unitTests" + File.separator + "smleApps" + File.separator + FILE_NAME;
     private static final String LAMBDATEST_APP_REFERENCE = "lt://APP123";
+    private static HttpServer appServer;
+    private static String appPathAsCorrectUrl;
+    private static String appPathAsIncorrectUrl;
 
     @BeforeAll
-    static void setupBefore() {
+    static void setupBefore() throws IOException {
         LOGGER.info("Running AppPathResolverTest");
+        appServer = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        appServer.createContext("/VodQA.apk", AppPathResolverTest::serveValidApp);
+        appServer.createContext("/invalid.apk", exchange -> sendResponse(exchange, 404, new byte[0]));
+        appServer.start();
+        String serverBaseUrl = "http://127.0.0.1:" + appServer.getAddress().getPort();
+        appPathAsCorrectUrl = serverBaseUrl + "/VodQA.apk";
+        appPathAsIncorrectUrl = serverBaseUrl + "/invalid.apk";
+    }
+
+    @AfterAll
+    static void tearDownAfter() {
+        if (appServer != null) {
+            appServer.stop(0);
+        }
     }
 
     @AfterEach
@@ -43,7 +65,7 @@ class AppPathResolverTest {
 
     @Test
     void shouldUseThirtySecondDefaultForAppDownloadTimeout() {
-        assertEquals(30_000, AppPathResolver.getAppDownloadTimeoutMillis());
+        assertEquals(15_000, AppPathResolver.getAppDownloadTimeoutMillis());
     }
 
     @Test
@@ -60,11 +82,26 @@ class AppPathResolverTest {
         assertEquals(15_000, AppPathResolver.getAppDownloadTimeoutMillis());
     }
 
+    private static void serveValidApp(HttpExchange exchange) throws IOException {
+        sendResponse(exchange, 200, "sample app content".getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static void sendResponse(HttpExchange exchange, int statusCode, byte[] responseBody) throws IOException {
+        try (exchange) {
+            if ("HEAD".equalsIgnoreCase(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(statusCode, -1);
+                return;
+            }
+            exchange.sendResponseHeaders(statusCode, responseBody.length);
+            exchange.getResponseBody().write(responseBody);
+        }
+    }
+
     @Test
     void givenIncorrectUrlWhenDirectoryAndFileDoNotExistThenIOExceptionOccurWhileTryingToDownloadFile() {
         deleteDirectoryUsedForUnitTests();
         assertThrows(InvalidTestDataException.class,
-                () -> AppPathResolver.resolveAppPath(APP_PATH_AS_INCORRECT_URL, DIRECTORY_PATH));
+                () -> AppPathResolver.resolveAppPath(appPathAsIncorrectUrl, DIRECTORY_PATH));
     }
 
     @Test
@@ -72,21 +109,21 @@ class AppPathResolverTest {
         createDirectoryUsedForUnitTests();
         deleteFile(APP_PATH_AS_CORRECT_FILE_PATH);
         assertThrows(InvalidTestDataException.class,
-                () -> AppPathResolver.resolveAppPath(APP_PATH_AS_INCORRECT_URL, DIRECTORY_PATH));
+                () -> AppPathResolver.resolveAppPath(appPathAsIncorrectUrl, DIRECTORY_PATH));
     }
 
     @Test
     void givenIncorrectUrlWhenDirectoryAndFileBothExistThenFileIsReadable() {
         createDirectoryUsedForUnitTests();
-        AppPathResolver.resolveAppPath(APP_PATH_AS_CORRECT_URL, DIRECTORY_PATH);
+        AppPathResolver.resolveAppPath(appPathAsCorrectUrl, DIRECTORY_PATH);
         assertThrows(InvalidTestDataException.class,
-                () -> AppPathResolver.resolveAppPath(APP_PATH_AS_INCORRECT_URL, DIRECTORY_PATH));
+                () -> AppPathResolver.resolveAppPath(appPathAsIncorrectUrl, DIRECTORY_PATH));
     }
 
     @Test
     void givenCorrectUrlWhenDirectoryAndFileDoNotExistThenCreateDirectoryAndDownloadFile() {
         deleteDirectoryUsedForUnitTests();
-        String actualAppPath = AppPathResolver.resolveAppPath(APP_PATH_AS_CORRECT_URL, DIRECTORY_PATH);
+        String actualAppPath = AppPathResolver.resolveAppPath(appPathAsCorrectUrl, DIRECTORY_PATH);
         assertEquals(EXPECTED_APP_PATH, actualAppPath);
         assertTrue(new File(actualAppPath).canRead());
     }
@@ -95,7 +132,7 @@ class AppPathResolverTest {
     void givenCorrectUrlWhenDirectoryExistButFileDoNotExistThenDownloadFile() {
         createDirectoryUsedForUnitTests();
         deleteFile(APP_PATH_AS_CORRECT_FILE_PATH);
-        String actualAppPath = AppPathResolver.resolveAppPath(APP_PATH_AS_CORRECT_URL, DIRECTORY_PATH);
+        String actualAppPath = AppPathResolver.resolveAppPath(appPathAsCorrectUrl, DIRECTORY_PATH);
         assertEquals(EXPECTED_APP_PATH, actualAppPath);
         assertTrue(new File(actualAppPath).canRead());
     }
@@ -103,9 +140,9 @@ class AppPathResolverTest {
     @Test
     void givenCorrectUrlWhenDirectoryAndFileAlreadyExistThenDoNotDownloadFile() {
         createDirectoryUsedForUnitTests();
-        AppPathResolver.resolveAppPath(APP_PATH_AS_CORRECT_URL, DIRECTORY_PATH);
+        AppPathResolver.resolveAppPath(appPathAsCorrectUrl, DIRECTORY_PATH);
         assertTrue(new File(EXPECTED_APP_PATH).canRead());
-        String actualAppPath = AppPathResolver.resolveAppPath(APP_PATH_AS_CORRECT_URL, DIRECTORY_PATH);
+        String actualAppPath = AppPathResolver.resolveAppPath(appPathAsCorrectUrl, DIRECTORY_PATH);
         assertTrue(new File(actualAppPath).canRead());
         assertEquals(EXPECTED_APP_PATH, actualAppPath);
     }
@@ -150,7 +187,7 @@ class AppPathResolverTest {
     @Test
     void givenCorrectFilePathWhenDirectoryAndFileAlreadyExistThenFileIsReadable() {
         createDirectoryUsedForUnitTests();
-        AppPathResolver.resolveAppPath(APP_PATH_AS_CORRECT_URL, DIRECTORY_PATH);
+        AppPathResolver.resolveAppPath(appPathAsCorrectUrl, DIRECTORY_PATH);
         String actualAppPath = AppPathResolver.resolveAppPath(APP_PATH_AS_CORRECT_FILE_PATH, DIRECTORY_PATH);
         assertTrue(new File(actualAppPath).canRead());
         assertEquals(EXPECTED_APP_PATH, actualAppPath);
