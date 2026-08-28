@@ -74,7 +74,7 @@ public class RunTestCukes
         ufgConfig.addBrowser(1600, 1024, BrowserType.FIREFOX);
         ufgConfig.addDeviceEmulation(DeviceName.iPhone_15_Pro, ScreenOrientation.PORTRAIT);
         ufgConfig.addDeviceEmulation(DeviceName.OnePlus_7T_Pro, ScreenOrientation.LANDSCAPE);
-        LOGGER.info("Use the following Browsers and devices in UFG config: " + JsonPrettyPrinter.prettyPrint(ufgConfig.getBrowsersInfo()));
+        LOGGER.debug("Use the following Browsers and devices in UFG config: " + JsonPrettyPrinter.prettyPrint(ufgConfig.getBrowsersInfo()));
         context.addTestState(APPLITOOLS.UFG_CONFIG, ufgConfig);
     }
 
@@ -88,7 +88,7 @@ public class RunTestCukes
                 IosMultiDeviceTarget[] iosTargets = new IosMultiDeviceTarget[]{
                     IosMultiDeviceTarget.iPhone_14(),
                     IosMultiDeviceTarget.iPhone_14_Pro_Max()
-                };  LOGGER.info("Use the following devices in NML config: " + JsonPrettyPrinter.prettyPrint(iosTargets));
+                };  LOGGER.debug("Use the following devices in NML config: " + JsonPrettyPrinter.prettyPrint(iosTargets));
                 context.addTestState(APPLITOOLS.NML_CONFIG, iosTargets);
                 break;
             case android:
@@ -96,7 +96,7 @@ public class RunTestCukes
                     AndroidMultiDeviceTarget.Galaxy_S25(),
                     AndroidMultiDeviceTarget.Galaxy_S25_Ultra(),
                     AndroidMultiDeviceTarget.Pixel_9()
-                };  LOGGER.info("Use the following devices in NML config: " + JsonPrettyPrinter.prettyPrint(androidTargets));
+                };  LOGGER.debug("Use the following devices in NML config: " + JsonPrettyPrinter.prettyPrint(androidTargets));
                 context.addTestState(APPLITOOLS.NML_CONFIG, androidTargets);
                 break;
             default:

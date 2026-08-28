@@ -598,7 +598,7 @@ public class Setup {
                     SensitiveDataMasker.mask(
                             String.valueOf(maskedApplitoolsConfiguration.get(APPLITOOLS.PROXY_URL))));
         }
-        LOGGER.info("applitoolsConfiguration:\n{}",
+        LOGGER.debug("applitoolsConfiguration:\n{}",
                 SensitiveDataMasker.mask(JsonPrettyPrinter.prettyPrint(maskedApplitoolsConfiguration)));
         return applitoolsConfiguration;
     }
