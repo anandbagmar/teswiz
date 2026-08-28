@@ -70,8 +70,6 @@ public class Driver {
     private final boolean isRunningInHeadlessMode;
     private static final String TO = "' to '";
     private Visual visually;
-    private static final int MAX_SCROLL_ATTEMPTS = 15;
-
     public Driver(String testName, Platform forPlatform, String userPersona, String appName, AppiumDriver appiumDriver) {
         this.driver = appiumDriver;
         this.type = APPIUM_DRIVER;
@@ -116,7 +114,7 @@ public class Driver {
     }
 
     public WebElement waitForClickabilityOf(String elementId) {
-        return waitForClickabilityOf(elementId, 10);
+        return waitForClickabilityOf(elementId, DriverDefaults.waitTimeoutSeconds());
     }
 
     public WebElement waitForClickabilityOf(String elementId, int numberOfSecondsToWait) {
@@ -129,7 +127,7 @@ public class Driver {
     }
 
     public void waitForAlert() {
-        waitForAlert(10);
+        waitForAlert(DriverDefaults.waitTimeoutSeconds());
     }
 
     public void waitForAlert(int numberOfSecondsToWait) {
@@ -437,7 +435,8 @@ public class Driver {
     }
 
     public void longPress(By elementId, long durationInSeconds) {
-        WebElement elementToBeLongTapped = new WebDriverWait(driver, Duration.ofSeconds(10))
+        WebElement elementToBeLongTapped = new WebDriverWait(driver,
+                Duration.ofSeconds(DriverDefaults.waitTimeoutSeconds()))
                 .until(ExpectedConditions.elementToBeClickable(elementId));
         final Point location = elementToBeLongTapped.getLocation();
         final PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
@@ -478,7 +477,7 @@ public class Driver {
     }
 
     public WebElement waitForClickabilityOf(By elementId) {
-        return waitForClickabilityOf(elementId, 10);
+        return waitForClickabilityOf(elementId, DriverDefaults.waitTimeoutSeconds());
     }
 
     public WebElement waitForClickabilityOf(By elementId, int numberOfSecondsToWait) {
@@ -491,11 +490,11 @@ public class Driver {
     }
 
     public WebElement waitTillElementIsPresent(By elementId) {
-        return waitTillElementIsPresent(elementId, 10);
+        return waitTillElementIsPresent(elementId, DriverDefaults.waitTimeoutSeconds());
     }
 
     public WebElement waitTillElementIsVisible(By elementId) {
-        return waitTillElementIsVisible(elementId, 10);
+        return waitTillElementIsVisible(elementId, DriverDefaults.waitTimeoutSeconds());
     }
 
     public WebElement waitTillElementIsPresent(By elementId, int numberOfSecondsToWait) {
@@ -509,7 +508,7 @@ public class Driver {
     }
 
     public List<WebElement> waitTillVisibilityOfAllElements(By elementId) {
-        return waitTillVisibilityOfAllElements(elementId, 10);
+        return waitTillVisibilityOfAllElements(elementId, DriverDefaults.waitTimeoutSeconds());
     }
 
     public List<WebElement> waitTillVisibilityOfAllElements(By elementId, int numberOfSecondsToWait) {
@@ -518,7 +517,7 @@ public class Driver {
     }
 
     public WebElement waitTillElementIsVisible(String elementId) {
-        return waitTillElementIsVisible(elementId, 10);
+        return waitTillElementIsVisible(elementId, DriverDefaults.waitTimeoutSeconds());
     }
 
     public WebElement waitTillElementIsVisible(String elementId, int numberOfSecondsToWait) {
@@ -527,7 +526,7 @@ public class Driver {
     }
 
     public List<WebElement> waitTillPresenceOfAllElements(By elementId) {
-        return waitTillPresenceOfAllElements(elementId, 10);
+        return waitTillPresenceOfAllElements(elementId, DriverDefaults.waitTimeoutSeconds());
     }
 
     public List<WebElement> waitTillPresenceOfAllElements(By elementId, int numberOfSecondsToWait) {
@@ -591,7 +590,8 @@ public class Driver {
     }
 
     private void scrollNativeElementIntoView(By elementId) {
-        for (int attempt = 0; attempt < MAX_SCROLL_ATTEMPTS; attempt++) {
+        int maxScrollAttempts = DriverDefaults.scrollMaxAttempts();
+        for (int attempt = 0; attempt < maxScrollAttempts; attempt++) {
             List<WebElement> matches = driver.findElements(elementId);
             if (!matches.isEmpty() && isElementDisplayed(matches.get(0))) {
                 return;
@@ -599,7 +599,7 @@ public class Driver {
             scrollDownByScreenSize();
         }
         throw new NoSuchElementException("scrollTillElementIntoView: element '" + elementId
-                + "' was not visible after " + MAX_SCROLL_ATTEMPTS + " scroll attempts");
+                + "' was not visible after " + maxScrollAttempts + " scroll attempts");
     }
 
     public void scrollTillElementIntoView(WebElement element) {
@@ -915,7 +915,7 @@ public class Driver {
     }
 
     public boolean waitTillElementIsInvisible(By elementId) {
-        return waitTillElementIsInvisible(elementId, 10);
+        return waitTillElementIsInvisible(elementId, DriverDefaults.waitTimeoutSeconds());
     }
 
     public boolean waitTillElementIsInvisible(By elementId, int numberOfSecondsToWait) {
@@ -995,7 +995,8 @@ public class Driver {
     }
 
     public void clickAndWaitForElement(By elementToClick, By elementToWaitFor) {
-        clickAndWaitForElement(elementToClick, elementToWaitFor, 3, 10);
+        clickAndWaitForElement(elementToClick, elementToWaitFor,
+                DriverDefaults.clickRetryAttempts(), DriverDefaults.waitTimeoutSeconds());
     }
 
     public void clickAndWaitForElement(By elementToClick, By elementToWaitFor,
@@ -1008,7 +1009,7 @@ public class Driver {
                 return;
             } catch (RuntimeException e) {
                 lastFailure = e;
-                waitFor(1);
+                waitFor(DriverDefaults.clickRetryDelaySeconds());
             }
         }
         throw new RuntimeException(

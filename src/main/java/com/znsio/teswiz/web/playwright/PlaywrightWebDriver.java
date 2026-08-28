@@ -33,6 +33,7 @@ import org.openqa.selenium.logging.LogType;
 import org.openqa.selenium.logging.Logs;
 
 import com.znsio.teswiz.exceptions.InvalidTestDataException;
+import com.znsio.teswiz.config.TeswizRuntimeConfiguration;
 import com.znsio.teswiz.visual.PlaywrightVisualDriver;
 import com.znsio.teswiz.visual.PlaywrightVisualSessionRequest;
 import com.znsio.teswiz.visual.PlaywrightVisualResults;
@@ -41,8 +42,10 @@ public final class PlaywrightWebDriver implements WebDriver, JavascriptExecutor,
     private final PlaywrightWorkerClient workerClient;
     private final PlaywrightWorkerSession session;
     private Duration implicitWaitTimeout = Duration.ZERO;
-    private Duration pageLoadTimeout = Duration.ofSeconds(30);
-    private Duration scriptTimeout = Duration.ofSeconds(30);
+    private Duration pageLoadTimeout = Duration.ofSeconds(
+            TeswizRuntimeConfiguration.getInt(TeswizRuntimeConfiguration.PLAYWRIGHT_PAGE_LOAD_TIMEOUT_SECONDS));
+    private Duration scriptTimeout = Duration.ofSeconds(
+            TeswizRuntimeConfiguration.getInt(TeswizRuntimeConfiguration.PLAYWRIGHT_SCRIPT_TIMEOUT_SECONDS));
 
     public PlaywrightWebDriver(PlaywrightWorkerClient workerClient, PlaywrightWorkerSession session) {
         this.workerClient = workerClient;

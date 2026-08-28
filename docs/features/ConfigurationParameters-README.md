@@ -44,6 +44,17 @@ These can be overridden by providing the same either as environment variables or
     LOG_DIR=target -> Where should logs be created?
     LOG_PROPERTIES_FILE=./src/test/resources/log4j2.properties -> log4j configuration file
     TESWIZ_METHOD_LOG_LEVEL=WARN -> Optional JVM system property. Set to DEBUG to enable concise framework method tracing.
+    TESWIZ_RUNTIME_CONFIG_FILE=./configs/teswiz/runtime.properties -> Optional runtime-defaults file; system properties and environment variables override file values
+    TESWIZ_DRIVER_WAIT_TIMEOUT_SECONDS=10 -> Default element wait timeout
+    TESWIZ_DRIVER_CLICK_RETRY_ATTEMPTS=3 -> Default click retry count
+    TESWIZ_DRIVER_CLICK_RETRY_DELAY_SECONDS=1 -> Delay between default click retries
+    TESWIZ_DRIVER_SCROLL_MAX_ATTEMPTS=15 -> Maximum default scroll attempts
+    TESWIZ_DRIVER_VIEWPORT_WIDTH=1280 -> Default visual viewport width
+    TESWIZ_DRIVER_VIEWPORT_HEIGHT=960 -> Default visual viewport height
+    TESWIZ_PLAYWRIGHT_PAGE_LOAD_TIMEOUT_SECONDS=30 -> Playwright page-load timeout
+    TESWIZ_PLAYWRIGHT_SCRIPT_TIMEOUT_SECONDS=30 -> Playwright script timeout
+    TESWIZ_MAX_NUMBER_OF_APPIUM_DRIVERS=5 -> Default maximum Appium drivers
+    TESWIZ_MAX_NUMBER_OF_WEB_DRIVERS=5 -> Default maximum web drivers
     MAX_NUMBER_OF_APPIUM_DRIVERS -> The max number of drivers on cloud to create for multiuser android tests, default value is 5
     MAX_NUMBER_OF_WEB_DRIVERS -> The max number of web drivers on cloud to create for multiuser web tests, default value is 5
     PLATFORM=android -> Run tests against? Supported: android | iOS | windows | web | api

@@ -29,6 +29,7 @@ import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Page.NavigateOptions;
 import com.microsoft.playwright.Tracing;
 import com.microsoft.playwright.options.WaitUntilState;
+import com.znsio.teswiz.config.TeswizRuntimeConfiguration;
 import com.znsio.teswiz.runner.Driver;
 import com.znsio.teswiz.runner.Visual;
 import com.znsio.teswiz.visual.PlaywrightVisualDriver;
@@ -45,8 +46,10 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
     private static final String LEGACY_LAMBDATEST_COMMENT_PREFIX = "lambda-comment=";
     private final PlaywrightJavaSession session;
     private Duration implicitWaitTimeout = Duration.ZERO;
-    private Duration pageLoadTimeout = Duration.ofSeconds(30);
-    private Duration scriptTimeout = Duration.ofSeconds(30);
+    private Duration pageLoadTimeout = Duration.ofSeconds(
+            TeswizRuntimeConfiguration.getInt(TeswizRuntimeConfiguration.PLAYWRIGHT_PAGE_LOAD_TIMEOUT_SECONDS));
+    private Duration scriptTimeout = Duration.ofSeconds(
+            TeswizRuntimeConfiguration.getInt(TeswizRuntimeConfiguration.PLAYWRIGHT_SCRIPT_TIMEOUT_SECONDS));
     private String pendingLambdaTestStatus;
     private PlaywrightJavaVisualSession visualSession;
 

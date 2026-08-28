@@ -152,6 +152,17 @@ For example:
 
     TESWIZ_APP_DOWNLOAD_TIMEOUT_SECONDS=60 APP_PATH=https://example.com/app.apk PLATFORM=android ./gradlew run
 
+### Overriding Teswiz runtime defaults
+
+Execution defaults such as wait timeouts, retry counts, viewport dimensions, Playwright timeouts, and driver limits
+can be placed in an external properties file and selected with `TESWIZ_RUNTIME_CONFIG_FILE`:
+
+    TESWIZ_RUNTIME_CONFIG_FILE=./configs/teswiz/runtime.properties ./gradlew run
+
+The built-in defaults are loaded first. Values in the external file override them, and matching system properties or
+environment variables have the highest precedence. Runtime values are validated at startup; invalid or out-of-range
+values fail with the property name and expected type or range.
+
 Sample command:
 
     APP_PATH=~/Downloads/MyLatestApp.apk PLATFORM=android ./gradlew run
