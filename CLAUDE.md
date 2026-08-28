@@ -26,5 +26,6 @@ When working in this repository:
 - For stricter screen-contract audits, use `./gradlew verifyScreenContracts -PincludeMissingScreenTargets=true`.
 - Treat `configs/teswiz/teswiz_config.properties.template` as the canonical execution-config
   contract. Keep every `configs/**/*.properties` file aligned with it and run
-  `./gradlew validateConfigurationTemplates` after config changes.
+  `./gradlew validateConfigurationTemplates` after config changes. The validation is also included
+  automatically by `test`, `check`, `build`, and `shadowJar`.
 - Prefer serial focused Gradle verification runs on the same checkout; parallel independent Gradle invocations can produce misleading failures because they share build outputs and intermediates.

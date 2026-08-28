@@ -461,6 +461,10 @@ tasks.register('validateConfigurationTemplates', Test) {
     }
 }
 
+tasks.named('test') {
+    dependsOn tasks.named('validateConfigurationTemplates')
+}
+
 tasks.named('check') {
     dependsOn tasks.named('validateConfigurationTemplates')
 }
@@ -496,6 +500,7 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 shadowJar.finalizedBy sourcesJar
+shadowJar.dependsOn tasks.named('validateConfigurationTemplates')
 
 // shadowJar bundles native driver/browser binaries for every OS (Playwright driver-bundle,
 // Applitools eyes-universal-core-binaries), producing a 400MB+ artifact. Nothing consumes it -
