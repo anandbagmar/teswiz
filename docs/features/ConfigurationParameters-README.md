@@ -9,6 +9,20 @@ Runtime tuning values can be kept in the execution config or moved to an optiona
 `TESWIZ_RUNTIME_CONFIG_FILE`. Built-in runtime defaults are defined in
 `src/main/resources/defaultTeswizRuntime.properties` and validated at startup.
 
+Common settings look like this:
+
+```properties
+FRAMEWORK=cucumber
+PLATFORM=android
+APP_PATH=./temp/my-app.apk
+WEB_ENGINE=selenium
+TESWIZ_DRIVER_WAIT_TIMEOUT_SECONDS=10
+TESWIZ_APP_DOWNLOAD_TIMEOUT_SECONDS=15
+```
+
+For the complete property list and all available defaults, use the
+[`teswiz_config.properties.template`](../../configs/teswiz/teswiz_config.properties.template).
+
 <!-- The complete property catalog is maintained in the canonical template below.
     # Legacy properties (RUNNER, RUNNER_LEVEL are historical and not read by teswiz)
     RUNNER=distribute -> Historical property. Not read by teswiz.
