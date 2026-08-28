@@ -197,10 +197,16 @@ confirm_release_content() {
     echo -e "Proposed Release Description:\n$RELEASE_NOTES"
   echo "========================================\n"
 
-    read -p "Accept, revise, or abort? [a/r/x]: " action
+    read -p "Accept, revise, paste description, or abort? [a/r/p/x]: " action
     case "$action" in
       a|A|y|Y)
         return
+        ;;
+      p|P)
+        RELEASE_NOTES=$(read_multiline_description)
+        if [ -z "$RELEASE_NOTES" ]; then
+          RELEASE_NOTES="- Maintenance and dependency updates."
+        fi
         ;;
       r|R)
         local updated_title
@@ -251,7 +257,7 @@ confirm_release_content() {
         exit 0
         ;;
       *)
-        echo "Invalid choice. Enter 'a' to accept, 'r' to revise, or 'x' to abort."
+        echo "Invalid choice. Enter 'a' to accept, 'r' to revise, 'p' to paste a description, or 'x' to abort."
         ;;
     esac
   done
