@@ -44,7 +44,7 @@ These can be overridden by providing the same either as environment variables or
     LOG_DIR=target -> Where should logs be created?
     LOG_PROPERTIES_FILE=./src/test/resources/log4j2.properties -> log4j configuration file
     TESWIZ_METHOD_LOG_LEVEL=WARN -> Optional JVM system property. Set to DEBUG to enable concise framework method tracing.
-    TESWIZ_RUNTIME_CONFIG_FILE=./configs/teswiz/runtime.properties -> Optional runtime-defaults file; system properties and environment variables override file values
+    TESWIZ_RUNTIME_CONFIG_FILE=./configs/teswiz/teswiz_runtime.properties -> Optional runtime-defaults file; start from [the complete template](../../configs/teswiz/teswiz_runtime.properties.template)
     TESWIZ_DRIVER_WAIT_TIMEOUT_SECONDS=10 -> Default element wait timeout
     TESWIZ_DRIVER_CLICK_RETRY_ATTEMPTS=3 -> Default click retry count
     TESWIZ_DRIVER_CLICK_RETRY_DELAY_SECONDS=1 -> Delay between default click retries

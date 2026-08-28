@@ -155,7 +155,8 @@ For example:
 ### Overriding Teswiz runtime defaults
 
 Execution defaults such as wait timeouts, retry counts, viewport dimensions, Playwright timeouts, and driver limits
-can be placed in an external properties file and selected with `TESWIZ_RUNTIME_CONFIG_FILE`:
+can be placed in an external properties file and selected with `TESWIZ_RUNTIME_CONFIG_FILE`. Start with the complete
+[`teswiz_runtime.properties.template`](../../configs/teswiz/teswiz_runtime.properties.template) file:
 
     TESWIZ_RUNTIME_CONFIG_FILE=./configs/teswiz/runtime.properties ./gradlew run
 
