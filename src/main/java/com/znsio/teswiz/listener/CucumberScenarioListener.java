@@ -11,6 +11,7 @@ import com.znsio.teswiz.tools.FileUtils;
 import com.znsio.teswiz.tools.OsUtils;
 import com.znsio.teswiz.tools.StringUtils;
 import com.znsio.teswiz.tools.LoggingContext;
+import com.znsio.teswiz.runner.CurrentStep;
 import io.cucumber.plugin.ConcurrentEventListener;
 import io.cucumber.plugin.event.*;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -46,6 +47,8 @@ public class CucumberScenarioListener implements ConcurrentEventListener {
     public void setEventPublisher(EventPublisher eventPublisher) {
         eventPublisher.registerHandlerFor(TestRunStarted.class, this::runStartedHandler);
         eventPublisher.registerHandlerFor(TestCaseStarted.class, this::scenarioStartedHandler);
+        eventPublisher.registerHandlerFor(TestStepStarted.class, this::stepStartedHandler);
+        eventPublisher.registerHandlerFor(TestStepFinished.class, this::stepFinishedHandler);
         eventPublisher.registerHandlerFor(TestCaseFinished.class, this::scenarioFinishedHandler);
         eventPublisher.registerHandlerFor(TestRunFinished.class, this::runFinishedHandler);
     }
@@ -90,6 +93,19 @@ public class CucumberScenarioListener implements ConcurrentEventListener {
         return row == null ? 0 : row.get();
     }
 
+    private void stepStartedHandler(TestStepStarted event) {
+        if (event.getTestStep() instanceof PickleStepTestStep pickleStepTestStep) {
+            String stepText = pickleStepTestStep.getStep().getKeyword() + pickleStepTestStep.getStep().getText();
+            CurrentStep.setStepText(Thread.currentThread().getId(), stepText);
+        }
+    }
+
+    private void stepFinishedHandler(TestStepFinished event) {
+        if (event.getTestStep() instanceof PickleStepTestStep) {
+            CurrentStep.clearStepText(Thread.currentThread().getId());
+        }
+    }
+
     private void scenarioFinishedHandler(TestCaseFinished event) {
         String scenarioName = event.getTestCase().getName();
         Integer currentExampleRowNumberForScenario = getCurrentExampleRowNumberForScenario(scenarioName);
@@ -104,6 +120,7 @@ public class CucumberScenarioListener implements ConcurrentEventListener {
         long threadId = Thread.currentThread().getId();
         TestExecutionContext testExecutionContext = SessionContext.getTestExecutionContext(threadId);
 
+        CurrentStep.remove(threadId);
         com.znsio.teswiz.filters.apitraffic.ApiCallContext.clear();
         SessionContext.remove(threadId);
         LoggingContext.clear();
