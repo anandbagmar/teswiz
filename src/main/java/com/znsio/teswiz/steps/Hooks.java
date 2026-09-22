@@ -1,7 +1,9 @@
 package com.znsio.teswiz.steps;
 
+import com.znsio.teswiz.assertions.StepAttributingErrorCollector;
 import com.znsio.teswiz.context.TestExecutionContext;
 import com.znsio.teswiz.entities.TEST_CONTEXT;
+import com.znsio.teswiz.runner.CurrentStep;
 import com.znsio.teswiz.runner.Drivers;
 import com.znsio.teswiz.runner.Runner;
 import com.znsio.teswiz.session.UserPersonaDetails;
@@ -43,12 +45,16 @@ public class Hooks {
         LOGGER.info("Hooks: beforeScenario: isHooksInitialized: " + isHooksInitialized);
         if (null == isHooksInitialized) {
             LOGGER.info("Hooks: ThreadId : '%d' :: beforeScenario: '%s'".formatted(threadId, testName));
+            CurrentStep.reset(threadId);
             if (!Runner.isAPI() || !Runner.isCLI() || !Runner.isPDF()) {
                 testExecutionContext.addTestState(TEST_CONTEXT.SCREENSHOT_MANAGER, new ScreenShotManager());
             }
             testExecutionContext.addTestState(TEST_CONTEXT.CURRENT_USER_PERSONA_DETAILS,
                                               new UserPersonaDetails());
             SoftAssertions softly = new SoftAssertions();
+            if (Runner.isStepAttributionEnabled()) {
+                softly.setDelegate(new StepAttributingErrorCollector(threadId));
+            }
             testExecutionContext.addTestState(TEST_CONTEXT.SOFT_ASSERTIONS, softly);
             addEnvironmentVariablesToReportPortal();
             addSystemPropertiesToReportPortal();
@@ -71,7 +77,11 @@ public class Hooks {
             closeTheAsyncCommandLineExecutor();
             SoftAssertions softly = Runner.getSoftAssertion(threadId);
             LOGGER.info("Hooks: Assert all soft assertions");
-            softly.assertAll();
+            try {
+                softly.assertAll();
+            } finally {
+                CurrentStep.remove(threadId);
+            }
         }
     }
 

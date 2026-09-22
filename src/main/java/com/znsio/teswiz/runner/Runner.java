@@ -213,6 +213,10 @@ public class Runner {
         return Setup.getBooleanValueFromConfigs(Setup.FAIL_TEST_ON_VISUAL_DIFFERENCE);
     }
 
+    public static boolean isStepAttributionEnabled() {
+        return Setup.getBooleanValueFromConfigs(Setup.STEP_ATTRIBUTION_ENABLED);
+    }
+
     public static String getFromEnvironmentConfiguration(String key) {
         try {
             return Setup.getFromEnvironmentConfiguration(key);

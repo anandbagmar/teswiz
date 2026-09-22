@@ -73,6 +73,7 @@ SHOW_SENSITIVE_DATA=false
 
 # API traffic logging
 #API_TRAFFIC_LOGGING=true
+#STEP_ATTRIBUTION_ENABLED=true
 
 # Runtime defaults. System properties and environment variables override these values.
 #TESWIZ_RUNTIME_CONFIG_FILE=./configs/teswiz/teswiz_runtime.properties

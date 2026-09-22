@@ -2,8 +2,10 @@ package com.znsio.teswiz.steps;
 
 import com.znsio.teswiz.context.SessionContext;
 import com.znsio.teswiz.context.TestExecutionContext;
+import com.znsio.teswiz.runner.CurrentStep;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
+import io.cucumber.java.BeforeStep;
 import io.cucumber.java.Scenario;
 import io.cucumber.testng.AbstractTestNGCucumberTests;
 import org.apache.logging.log4j.LogManager;
@@ -36,6 +38,12 @@ public class RunCukes
         long threadId = Thread.currentThread().getId();
         LOGGER.info("RunCukes: ThreadId : '%d' :: beforeScenario: '%s'".formatted(threadId, scenario.getName()));
         new Hooks().beforeScenario(scenario);
+    }
+
+    @BeforeStep
+    public void beforeStep(Scenario scenario) {
+        long threadId = Thread.currentThread().getId();
+        CurrentStep.advance(threadId);
     }
 
     @After
