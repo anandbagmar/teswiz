@@ -1,3 +1,13 @@
+## 1.0.37
+- updated package-lock.json
+- chore: update Gradle wrapper to version 9.7.1
+- chore: update Gradle wrapper to version 9.7.1
+- chore: update plugin and dependency versions in build.gradle
+- feat: add dependabot configuration for npm and Gradle updates
+- chore: update dependencies to latest versions
+- Update playwright to version 1.62.1 in package.json and package-lock.json
+- Add step attribution for soft assertion failures
+
 ## 1.0.36
 - Include the executed command in commandOutput artifact files
 - Use version as default release title
