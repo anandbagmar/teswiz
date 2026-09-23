@@ -1,12 +1,12 @@
 {
   "dependencies": {
     "@appium/doctor": "2.1.15",
-    "@appium/relaxed-caps-plugin": "2.2.4",
-    "appium": "3.5.2",
-    "appium-device-farm": "11.3.2",
-    "appium-uiautomator2-driver": "8.1.0",
-    "appium-xcuitest-driver": "11.17.6",
-    "go-ios": "1.2.0"
+    "@appium/relaxed-caps-plugin": "3.0.0",
+    "appium": "3.7.0",
+    "appium-device-farm": "12.0.1",
+    "appium-uiautomator2-driver": "8.7.0",
+    "appium-xcuitest-driver": "12.13.1",
+    "go-ios": "1.3.2"
   },
   "overrides": {
     "@appium/support": ">=7.0.6",
@@ -71,7 +71,7 @@
   "author": "Anand Bagmar",
   "license": "ISC",
   "devDependencies": {
-    "@applitools/eyes-playwright": "^1.48.0",
-    "playwright": "1.62.1"
+    "@applitools/eyes-playwright": "^1.49.1",
+    "playwright": "1.63.0"
   }
 }
