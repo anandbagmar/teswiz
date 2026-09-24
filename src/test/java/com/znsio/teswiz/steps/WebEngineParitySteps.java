@@ -1,20 +1,13 @@
 package com.znsio.teswiz.steps;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.util.Set;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.openqa.selenium.Cookie;
-import org.openqa.selenium.Dimension;
-import org.openqa.selenium.JavascriptExecutor;
 
+import com.znsio.teswiz.businessLayer.parity.WebEngineParityBL;
 import com.znsio.teswiz.context.SessionContext;
 import com.znsio.teswiz.context.TestExecutionContext;
 import com.znsio.teswiz.entities.SAMPLE_TEST_CONTEXT;
 import com.znsio.teswiz.entities.TEST_CONTEXT;
-import com.znsio.teswiz.runner.Driver;
 import com.znsio.teswiz.runner.Drivers;
 import com.znsio.teswiz.runner.Runner;
 
@@ -40,58 +33,41 @@ public class WebEngineParitySteps {
 
     @When("I add a session cookie {string} with value {string}")
     public void iAddASessionCookieWithValue(String key, String value) {
-        Driver driver = Drivers.getDriverForUser(SAMPLE_TEST_CONTEXT.ME);
-        driver.getInnerDriver().manage().addCookie(new Cookie(key, value));
+        new WebEngineParityBL().addSessionCookie(key, value);
     }
 
     @Then("the cookie {string} should be present in the browser session")
     public void theCookieShouldBePresentInTheBrowserSession(String key) {
-        Driver driver = Drivers.getDriverForUser(SAMPLE_TEST_CONTEXT.ME);
-        Set<Cookie> cookies = driver.getInnerDriver().manage().getCookies();
-        assertThat(cookies).extracting(Cookie::getName).contains(key);
+        new WebEngineParityBL().verifyCookiePresent(key);
     }
 
     @When("I delete the session cookie {string}")
     public void iDeleteTheSessionCookie(String key) {
-        Driver driver = Drivers.getDriverForUser(SAMPLE_TEST_CONTEXT.ME);
-        driver.getInnerDriver().manage().deleteCookieNamed(key);
+        new WebEngineParityBL().deleteSessionCookie(key);
     }
 
     @Then("the cookie {string} should not exist in the browser session")
     public void theCookieShouldNotExistInTheBrowserSession(String key) {
-        Driver driver = Drivers.getDriverForUser(SAMPLE_TEST_CONTEXT.ME);
-        Set<Cookie> cookies = driver.getInnerDriver().manage().getCookies();
-        assertThat(cookies).extracting(Cookie::getName).doesNotContain(key);
+        new WebEngineParityBL().verifyCookieNotPresent(key);
     }
 
     @When("I set the window viewport size to {int} width and {int} height")
     public void iSetTheWindowViewportSizeToWidthAndHeight(int width, int height) {
-        Driver driver = Drivers.getDriverForUser(SAMPLE_TEST_CONTEXT.ME);
-        driver.getInnerDriver().manage().window().setSize(new Dimension(width, height));
+        new WebEngineParityBL().setViewportSize(width, height);
     }
 
     @Then("the window viewport size should be {int} width and {int} height")
     public void theWindowViewportSizeShouldBeWidthAndHeight(int width, int height) {
-        Driver driver = Drivers.getDriverForUser(SAMPLE_TEST_CONTEXT.ME);
-        Dimension size = driver.getInnerDriver().manage().window().getSize();
-        assertThat(size.getWidth()).isEqualTo(width);
-        assertThat(size.getHeight()).isEqualTo(height);
+        new WebEngineParityBL().verifyViewportSize(width, height);
     }
 
     @When("I execute an async script with {int}ms delay returning {string}")
     public void iExecuteAnAsyncScriptWithMsDelayReturning(int delay, String expectedReturn) {
-        Driver driver = Drivers.getDriverForUser(SAMPLE_TEST_CONTEXT.ME);
-        JavascriptExecutor executor = (JavascriptExecutor) driver.getInnerDriver();
-        String script = String.format(
-                "var callback = arguments[arguments.length - 1];" +
-                "setTimeout(function() { callback('%s'); }, %d);", expectedReturn, delay);
-        Object result = executor.executeAsyncScript(script);
-        context.addTestState("asyncScriptResult", result);
+        new WebEngineParityBL().executeAsyncScript(delay, expectedReturn);
     }
 
     @Then("the async script execution result should be {string}")
     public void theAsyncScriptExecutionResultShouldBe(String expectedReturn) {
-        Object result = context.getTestState("asyncScriptResult");
-        assertThat(result).isEqualTo(expectedReturn);
+        new WebEngineParityBL().verifyAsyncScriptResult(expectedReturn);
     }
 }
