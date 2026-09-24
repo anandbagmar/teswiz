@@ -1,0 +1,165 @@
+package com.znsio.teswiz.api;
+
+import com.microsoft.playwright.APIRequestContext;
+import com.microsoft.playwright.APIResponse;
+import com.microsoft.playwright.options.RequestOptions;
+import com.znsio.teswiz.exceptions.EnvironmentSetupException;
+import com.znsio.teswiz.filters.apitraffic.ApiTrafficLogging;
+import com.znsio.teswiz.filters.apitraffic.ApiTrafficRecord;
+import com.znsio.teswiz.filters.apitraffic.ApiTrafficRecorder;
+import com.znsio.teswiz.filters.apitraffic.TeswizScenarioDirectoryResolver;
+import com.znsio.teswiz.tools.OverriddenVariable;
+import com.znsio.teswiz.tools.SensitiveDataMasker;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class PlaywrightApiEngineClient implements ApiEngineClient {
+    private static final Logger LOGGER = LogManager.getLogger(PlaywrightApiEngineClient.class);
+    private static final int HTTP_BAD_GATEWAY = 502;
+    private static final int HTTP_SERVICE_UNAVAILABLE = 503;
+    private static final int HTTP_GATEWAY_TIMEOUT = 504;
+
+    private APIRequestContext getRequestContext() {
+        return PlaywrightApiManager.getAPIRequestContext();
+    }
+
+    private RequestOptions createRequestOptions(Map<String, String> headers) {
+        RequestOptions options = RequestOptions.create();
+        Map<String, String> mergedHeaders = new HashMap<>();
+        mergedHeaders.put("Accept", "application/json");
+        mergedHeaders.put("content-type", "application/json");
+        if (headers != null && !headers.isEmpty()) {
+            mergedHeaders.putAll(headers);
+        }
+        for (Map.Entry<String, String> entry : mergedHeaders.entrySet()) {
+            options.setHeader(entry.getKey(), entry.getValue());
+        }
+        return options;
+    }
+
+    private String stripTrailingQuestionMark(String url) {
+        return url != null && url.endsWith("?") ? url.substring(0, url.length() - 1) : url;
+    }
+
+    private TeswizApiResponse executeRequest(String method, String url, Object body, Map<String, Object> queryParams, Map<String, String> headers) {
+        LOGGER.info("Processing {} call via Playwright API Engine", method);
+        RequestOptions options = createRequestOptions(headers);
+        String finalUrl = stripTrailingQuestionMark(url);
+
+        if (queryParams != null && !queryParams.isEmpty()) {
+            for (Map.Entry<String, Object> entry : queryParams.entrySet()) {
+                if (entry.getValue() != null) {
+                    options.setQueryParam(entry.getKey(), String.valueOf(entry.getValue()));
+                }
+            }
+        }
+
+        String requestBodyStr = "";
+        if (body != null) {
+            if (body instanceof byte[]) {
+                options.setData((byte[]) body);
+                requestBodyStr = "[binary data]";
+            } else if (body instanceof String) {
+                options.setData((String) body);
+                requestBodyStr = (String) body;
+            } else {
+                String strBody = body.toString();
+                options.setData(strBody);
+                requestBodyStr = strBody;
+            }
+        }
+
+        APIResponse response = null;
+        try {
+            switch (method.toUpperCase()) {
+                case "GET":
+                    response = getRequestContext().get(finalUrl, options);
+                    break;
+                case "POST":
+                    response = getRequestContext().post(finalUrl, options);
+                    break;
+                case "PATCH":
+                    response = getRequestContext().patch(finalUrl, options);
+                    break;
+                case "DELETE":
+                    response = getRequestContext().delete(finalUrl, options);
+                    break;
+                default:
+                    response = getRequestContext().fetch(finalUrl, options.setMethod(method));
+                    break;
+            }
+            int statusCode = response.status();
+            String responseBody = response.text();
+            byte[] responseBytes = response.body();
+            Map<String, String> responseHeaders = response.headers();
+
+            TeswizApiResponse teswizApiResponse = new TeswizApiResponse(statusCode, responseBody, responseBytes, responseHeaders);
+
+            recordTrafficSafely(method, finalUrl, headers != null ? headers.toString() : "{}", requestBodyStr, statusCode, responseHeaders.toString(), responseBody);
+            checkEnvironmentIssue(finalUrl, statusCode, responseBody);
+
+            return teswizApiResponse;
+
+        } catch (EnvironmentSetupException e) {
+            throw e;
+        } catch (Exception e) {
+            if (response != null) {
+                recordTrafficSafely(method, finalUrl, headers != null ? headers.toString() : "{}", requestBodyStr, response.status(), response.headers().toString(), response.text());
+            } else {
+                recordTrafficSafely(method, finalUrl, headers != null ? headers.toString() : "{}", requestBodyStr, -1, "{}", "(no response — call failed: " + e.getMessage() + ")");
+            }
+            throw new RuntimeException("Playwright API request failed for " + method + " " + finalUrl + ": " + e.getMessage(), e);
+        }
+    }
+
+    private void checkEnvironmentIssue(String url, int status, String body) {
+        if (OverriddenVariable.getOverriddenBooleanValue("DISABLE_ENVIRONMENT_ISSUE_FILTER", false)) {
+            return;
+        }
+        if (status == HTTP_BAD_GATEWAY || status == HTTP_SERVICE_UNAVAILABLE || status == HTTP_GATEWAY_TIMEOUT) {
+            String truncatedBody = body != null && body.length() <= 200 ? body : (body != null ? body.substring(0, 200) + "..." : "");
+            throw new EnvironmentSetupException(String.format(
+                    "Environment issue: service at '%s' returned HTTP %d. " +
+                            "This is not a test failure — the service is unavailable. Body: %s",
+                    url, status, truncatedBody));
+        }
+    }
+
+    private void recordTrafficSafely(String method, String endpoint, String reqHeaders, String reqBody, int statusCode, String respHeaders, String respBody) {
+        if (!ApiTrafficLogging.isEnabled()) {
+            return;
+        }
+        try {
+            ApiTrafficRecorder recorder = new ApiTrafficRecorder(new TeswizScenarioDirectoryResolver());
+            ApiTrafficRecord record = new ApiTrafficRecord(method, endpoint, reqHeaders, reqBody, statusCode, respHeaders, respBody);
+            String relativePath = recorder.record(record);
+            LOGGER.info("API call {} {} -> {} | detail: {}",
+                    record.method(), SensitiveDataMasker.mask(record.endpoint()), record.statusCode(), relativePath);
+        } catch (Exception e) {
+            LOGGER.warn("Failed to record api-traffic for {} {}: {}", method, endpoint, e.getMessage());
+        }
+    }
+
+    @Override
+    public TeswizApiResponse get(String url, Map<String, Object> queryParams, Map<String, String> headers) {
+        return executeRequest("GET", url, null, queryParams, headers);
+    }
+
+    @Override
+    public TeswizApiResponse post(String url, Object body, Map<String, String> headers) {
+        return executeRequest("POST", url, body, null, headers);
+    }
+
+    @Override
+    public TeswizApiResponse patch(String url, Object body, Map<String, String> headers) {
+        return executeRequest("PATCH", url, body, null, headers);
+    }
+
+    @Override
+    public TeswizApiResponse delete(String url, Map<String, String> headers) {
+        return executeRequest("DELETE", url, null, null, headers);
+    }
+}

@@ -1,6 +1,6 @@
 # Playwright API Testing Engine (`API_ENGINE`) Implementation & Migration Plan
 
-This document outlines the implementation plan for introducing Playwright API testing capability to **teswiz** as a configurable engine (`API_ENGINE`) alongside the existing `RestAssured` engine, as well as migration guidelines for moving existing test suites between engines.
+This document outlines the implementation plan for introducing Playwright API testing capability to **teswiz** as a configurable engine (`API_ENGINE`) alongside the existing `RestAssured` engine, as well as migration guidelines and Cucumber `@pw-api` sample scenarios.
 
 ---
 
@@ -10,6 +10,7 @@ This document outlines the implementation plan for introducing Playwright API te
 2. **Unified API Engine Facade (`ApiService`):** Rather than forcing users to manage Playwright `APIRequestContext` or RestAssured `RequestSpecification` directly, teswiz will expose a unified `ApiService` facade and normalized response object (`TeswizApiResponse`).
 3. **Legacy Compatibility:** `RestAssuredService` will remain fully supported for legacy code.
 4. **Thread Safety & Lifecycle:** Playwright `APIRequestContext` instances will be thread-isolated using `ThreadLocal` storage and automatically cleaned up per scenario using `CucumberScenarioListener`.
+5. **Cucumber `@pw-api` Support:** Dedicated Cucumber feature scenarios (`@pw-api`) will demonstrate executing API tests via Playwright, validating response codes, headers, and payload structures.
 
 ---
 
@@ -65,7 +66,7 @@ This document outlines the implementation plan for introducing Playwright API te
 
 ---
 
-### Phase 3: Cross-Cutting Concerns Parity (Filters & Traffic Logging)
+### Phase 3: Cross-Cutting Concerns Parity & Cucumber Playwright API Tests
 
 - **[MODIFY] [CucumberScenarioListener.java](file:///Users/anand.bagmar/projects/znsio/teswiz/src/main/java/com/znsio/teswiz/listener/CucumberScenarioListener.java)**
   - Invokes `PlaywrightApiManager.closeContextForCurrentThread()` at scenario finish.
@@ -75,6 +76,10 @@ This document outlines the implementation plan for introducing Playwright API te
 
 - **[NEW] `com.znsio.teswiz.filters.apitraffic.PlaywrightApiTrafficLogger`** ([PlaywrightApiTrafficLogger.java](file:///Users/anand.bagmar/projects/znsio/teswiz/src/main/java/com/znsio/teswiz/filters/apitraffic/PlaywrightApiTrafficLogger.java))
   - Formats Playwright requests/responses and logs them via `ApiTrafficRecorder` and `SensitiveDataMasker` to `target/.../api-traffic/*.log` when `API_TRAFFIC_LOGGING=true`.
+
+- **[NEW] Cucumber Feature & Sample Test Suite for Playwright API (`@pw-api`)**
+  - Add feature file: `src/test/resources/com/znsio/teswiz/features/pw_api.feature` tagged with `@pw-api`.
+  - Add step definitions and business layer using `ApiService` to demonstrate end-to-end execution with Playwright API engine.
 
 ---
 
@@ -151,4 +156,4 @@ To switch a suite back to RestAssured:
    ```
 3. **End-to-End Verification:**
    - Execute sample tests (`WeatherAPIBL`, `JsonPlaceHolderBL`) with `API_ENGINE=rest-assured`.
-   - Execute sample tests with `API_ENGINE=playwright-java` and confirm parity in response verification, environment issue detection, and traffic logging.
+   - Execute Cucumber `@pw-api` sample tests with `API_ENGINE=playwright-java` and confirm parity in response verification, environment issue detection, and traffic logging.

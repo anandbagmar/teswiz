@@ -71,7 +71,8 @@ SHOW_SENSITIVE_DATA=false
 #MASK_ADDITIONAL_KEYS=sessionId,customerId
 #MASK_KEYS_OVERRIDE=password,token
 
-# API traffic logging
+# API execution & traffic logging
+#API_ENGINE=rest-assured
 #API_TRAFFIC_LOGGING=true
 #STEP_ATTRIBUTION_ENABLED=true
 

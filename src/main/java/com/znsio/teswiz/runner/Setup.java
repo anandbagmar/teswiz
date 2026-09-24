@@ -84,6 +84,7 @@ public class Setup {
     public static final String MASK_ADDITIONAL_KEYS = "MASK_ADDITIONAL_KEYS";
     public static final String MASK_KEYS_OVERRIDE = "MASK_KEYS_OVERRIDE";
     public static final String API_TRAFFIC_LOGGING = "API_TRAFFIC_LOGGING";
+    public static final String API_ENGINE = "API_ENGINE";
     public static final String STEP_ATTRIBUTION_ENABLED = "STEP_ATTRIBUTION_ENABLED";
     public static final String FRAMEWORK = "FRAMEWORK";
     public static final String FRAMEWORK_CUCUMBER = "cucumber";
