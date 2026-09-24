@@ -7,10 +7,10 @@ This document outlines the implementation plan for introducing Playwright API te
 ## 1. Executive Summary & Key Architecture Decisions
 
 1. **Engine Selection & Default:** A new property `API_ENGINE` will be introduced in `Setup.java` and canonical configuration templates. It defaults to `rest-assured` to ensure **100% backwards compatibility** for all existing teswiz test suites.
-2. **Unified API Engine Facade (`ApiService`):** Rather than forcing users to manage Playwright `APIRequestContext` or RestAssured `RequestSpecification` directly, teswiz will expose a unified `ApiService` facade and normalized response object (`TeswizApiResponse`).
-3. **Legacy Compatibility:** `RestAssuredService` will remain fully supported for legacy code.
-4. **Thread Safety & Lifecycle:** Playwright `APIRequestContext` instances will be thread-isolated using `ThreadLocal` storage and automatically cleaned up per scenario using `CucumberScenarioListener`.
-5. **Cucumber `@pw-api` Support:** Dedicated Cucumber feature scenarios (`@pw-api`) will demonstrate executing API tests via Playwright, validating response codes, headers, and payload structures.
+2. **Unified API Engine Facade (`ApiService`):** Rather than forcing users to manage Playwright `APIRequestContext` or RestAssured `RequestSpecification` directly, teswiz exposes a unified `ApiService` facade and normalized response object (`TeswizApiResponse`).
+3. **Legacy Compatibility:** `RestAssuredService` remains fully supported for legacy code.
+4. **Thread Safety & Lifecycle:** Playwright `APIRequestContext` instances are thread-isolated using `ThreadLocal` storage and automatically cleaned up per scenario using `CucumberScenarioListener`.
+5. **Cucumber Multi-Engine Support:** Dedicated Cucumber feature scenarios (`@api`, `@pw-api`, `@restassured-api`) demonstrate executing API tests via both Playwright Java and RestAssured engines, validating response codes, headers, HTML/JSON payloads, and all HTTP methods (GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS).
 
 ---
 
@@ -42,10 +42,10 @@ This document outlines the implementation plan for introducing Playwright API te
     - `String getResponseBody()`
     - `byte[] getResponseBodyAsBytes()`
     - `Map<String, String> getHeaders()`
-    - Convenience methods for JSON processing (`getJsonPath()`, `asJsonObject()`).
+    - Convenience methods for JSON processing (`asJsonObject()`, `asJsonArray()`).
 
 - **[NEW] `com.znsio.teswiz.api.ApiEngineClient`** ([ApiEngineClient.java](file:///Users/anand.bagmar/projects/znsio/teswiz/src/main/java/com/znsio/teswiz/api/ApiEngineClient.java))
-  - Common HTTP client interface: `get(...)`, `post(...)`, `patch(...)`, `delete(...)`.
+  - Common HTTP client interface for all standard HTTP methods: `get`, `post`, `put`, `patch`, `delete`, `head`, `options`.
 
 - **[NEW] `com.znsio.teswiz.api.RestAssuredApiEngineClient`** ([RestAssuredApiEngineClient.java](file:///Users/anand.bagmar/projects/znsio/teswiz/src/main/java/com/znsio/teswiz/api/RestAssuredApiEngineClient.java))
   - Implements `ApiEngineClient` delegating to RestAssured.
@@ -77,9 +77,9 @@ This document outlines the implementation plan for introducing Playwright API te
 - **[NEW] `com.znsio.teswiz.filters.apitraffic.PlaywrightApiTrafficLogger`** ([PlaywrightApiTrafficLogger.java](file:///Users/anand.bagmar/projects/znsio/teswiz/src/main/java/com/znsio/teswiz/filters/apitraffic/PlaywrightApiTrafficLogger.java))
   - Formats Playwright requests/responses and logs them via `ApiTrafficRecorder` and `SensitiveDataMasker` to `target/.../api-traffic/*.log` when `API_TRAFFIC_LOGGING=true`.
 
-- **[NEW] Cucumber Feature & Sample Test Suite for Playwright API (`@pw-api`)**
-  - Add feature file: `src/test/resources/com/znsio/teswiz/features/pw_api.feature` tagged with `@pw-api`.
-  - Add step definitions and business layer using `ApiService` to demonstrate end-to-end execution with Playwright API engine.
+- **[NEW] Cucumber Feature & Sample Test Suite for Playwright & RestAssured API Engine (`@api`, `@pw-api`, `@restassured-api`)**
+  - Add feature file: `src/test/resources/com/znsio/teswiz/features/api_engine_parity.feature`.
+  - Add step definitions and business layer using `ApiService` to demonstrate end-to-end execution across engines.
 
 ---
 
@@ -156,4 +156,62 @@ To switch a suite back to RestAssured:
    ```
 3. **End-to-End Verification:**
    - Execute sample tests (`WeatherAPIBL`, `JsonPlaceHolderBL`) with `API_ENGINE=rest-assured`.
-   - Execute Cucumber `@pw-api` sample tests with `API_ENGINE=playwright-java` and confirm parity in response verification, environment issue detection, and traffic logging.
+   - Execute Cucumber `@pw-api` and `@restassured-api` sample tests and confirm parity in response verification, environment issue detection, and traffic logging.
+
+---
+
+## 5. Visual Representation of Execution Flows (`API_ENGINE` & `WEB_ENGINE`)
+
+The diagram below illustrates the end-to-end execution flow starting from Cucumber Feature files down through `API_ENGINE` and `WEB_ENGINE` dispatching to underlying execution clients:
+
+```mermaid
+flowchart TD
+    subgraph FeatureLayer["1. Feature & Step Definition Layer"]
+        FF["Gherkin Feature File<br/>(@api, @web, @pw-api)"]
+        SD["Cucumber Step Definitions<br/>(*Steps.java)"]
+        BL["Business Layer<br/>(*BL.java)"]
+        FF --> SD --> BL
+    end
+
+    subgraph ConfigLayer["2. Configuration & Lifecycle Layer"]
+        CFG["teswiz Configuration<br/>(teswiz_config.properties)"]
+        SETUP["Setup & OverriddenVariable"]
+        CSL["CucumberScenarioListener<br/>(Scenario Lifecycle)"]
+        CFG --> SETUP
+        CSL -->|Teardown Hooks| P_DISPOSE["Dispose ThreadLocal<br/>Playwright & WebDriver"]
+    end
+
+    subgraph RoutingLayer["3. Engine Routing Facades"]
+        BL -->|API Calls| API_FACADE["ApiService"]
+        BL -->|Web Interactions| WEB_FACADE["DriverManager / Driver"]
+        
+        SETUP -->|API_ENGINE| API_FACADE
+        SETUP -->|WEB_ENGINE| WEB_FACADE
+    end
+
+    subgraph ApiEngines["4. API Execution Engines (API_ENGINE)"]
+        API_FACADE -->|API_ENGINE = rest-assured| RA_CLIENT["RestAssuredApiEngineClient"]
+        API_FACADE -->|API_ENGINE = playwright-java| PW_API_CLIENT["PlaywrightApiEngineClient"]
+        
+        RA_CLIENT -->|Execute| RA_CORE["io.restassured.RestAssured"]
+        PW_API_CLIENT -->|Execute| PW_API_CORE["com.microsoft.playwright.APIRequestContext"]
+    end
+
+    subgraph WebEngines["5. Web Execution Engines (WEB_ENGINE)"]
+        WEB_FACADE -->|WEB_ENGINE = selenium| SEL_CLIENT["SeleniumDriver"]
+        WEB_FACADE -->|WEB_ENGINE = playwright-java| PW_WEB_CLIENT["PlaywrightJavaDriver"]
+        WEB_FACADE -->|WEB_ENGINE = playwright-ts| PW_TS_CLIENT["PlaywrightTSDriver"]
+        
+        SEL_CLIENT -->|Execute| SEL_CORE["org.openqa.selenium.WebDriver"]
+        PW_WEB_CLIENT -->|Execute| PW_JAVA_CORE["com.microsoft.playwright.Page"]
+        PW_TS_CLIENT -->|Execute| PW_TS_CORE["Playwright Node Runner"]
+    end
+
+    subgraph CrossCutting["6. Cross-Cutting Services & Reporting"]
+        RA_CORE --> RA_FILTERS["EnvironmentIssueFilter<br/>& ApiTrafficLoggingFilter"]
+        PW_API_CORE --> PW_INTERCEPTORS["PlaywrightEnvironmentIssueInterceptor<br/>& PlaywrightApiTrafficLogger"]
+        
+        RA_FILTERS --> LOGS["api-traffic/*.log<br/>ReportPortal / Cucumber Reports"]
+        PW_INTERCEPTORS --> LOGS
+    end
+```
