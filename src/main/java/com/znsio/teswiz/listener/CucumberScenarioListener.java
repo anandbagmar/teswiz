@@ -122,6 +122,7 @@ public class CucumberScenarioListener implements ConcurrentEventListener {
 
         CurrentStep.remove(threadId);
         com.znsio.teswiz.filters.apitraffic.ApiCallContext.clear();
+        com.znsio.teswiz.api.PlaywrightApiManager.closeContextForCurrentThread();
         SessionContext.remove(threadId);
         LoggingContext.clear();
     }
