@@ -48,6 +48,7 @@ Detailed guidance:
 
 - [Breaking changes](docs/internals/BreakingChanges-README.md)
 - [Playwright migration guide](docs/internals/Playwright-Migration-Guide.md)
+- [Web engine capability & parity guide](docs/web-engine-capabilities.md)
 - [Architecture notes](docs/internals/Architecture-README.md)
 
 ## Get started
