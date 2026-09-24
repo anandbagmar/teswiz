@@ -1,3 +1,10 @@
+## 1.0.38
+- Add web engine capability guide and update README links
+- Refactor parity steps to BL and Screen contracts
+- Add Cucumber BDD scenarios for web engine parity
+- Implement web engine parity and capability registry
+- feat: add Playwright API testing engine implementation and migration plan
+
 ## 1.0.37
 - updated package-lock.json
 - chore: update Gradle wrapper to version 9.7.1
