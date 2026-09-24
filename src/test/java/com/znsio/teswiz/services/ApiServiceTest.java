@@ -4,7 +4,6 @@ import com.znsio.teswiz.api.TeswizApiResponse;
 import com.znsio.teswiz.runner.Setup;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -70,6 +69,20 @@ class ApiServiceTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"rest-assured", "playwright-java"})
+    void executePutCallWithEngine(String apiEngine) {
+        System.setProperty(Setup.API_ENGINE, apiEngine);
+
+        String sampleUrl = "https://jsonplaceholder.typicode.com/posts/1";
+        String putBody = "{\"id\":1,\"title\":\"foo\",\"body\":\"bar\",\"userId\":1}";
+
+        TeswizApiResponse response = ApiService.put(sampleUrl, putBody);
+
+        assertThat(response.getStatusCode()).isEqualTo(200);
+        assertThat(response.asJsonObject().getString("title")).isEqualTo("foo");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"rest-assured", "playwright-java"})
     void executePatchCallWithEngine(String apiEngine) {
         System.setProperty(Setup.API_ENGINE, apiEngine);
 
@@ -92,5 +105,29 @@ class ApiServiceTest {
         TeswizApiResponse response = ApiService.delete(sampleUrl);
 
         assertThat(response.getStatusCode()).isEqualTo(200);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"rest-assured", "playwright-java"})
+    void executeHeadCallWithEngine(String apiEngine) {
+        System.setProperty(Setup.API_ENGINE, apiEngine);
+
+        String sampleUrl = "https://jsonplaceholder.typicode.com/posts/1";
+
+        TeswizApiResponse response = ApiService.head(sampleUrl);
+
+        assertThat(response.getStatusCode()).isEqualTo(200);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"rest-assured", "playwright-java"})
+    void executeOptionsCallWithEngine(String apiEngine) {
+        System.setProperty(Setup.API_ENGINE, apiEngine);
+
+        String sampleUrl = "https://jsonplaceholder.typicode.com/posts";
+
+        TeswizApiResponse response = ApiService.options(sampleUrl);
+
+        assertThat(response.getStatusCode()).isLessThan(400);
     }
 }

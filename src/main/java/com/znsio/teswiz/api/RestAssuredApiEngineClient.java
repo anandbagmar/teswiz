@@ -23,7 +23,7 @@ public class RestAssuredApiEngineClient implements ApiEngineClient {
 
     private Map<String, String> getDefaultHeaders() {
         Map<String, String> defaultHeaders = new HashMap<>();
-        defaultHeaders.put("Accept", "application/json");
+        defaultHeaders.put("Accept", "application/json, text/html, */*");
         defaultHeaders.put("content-type", "application/json");
         return defaultHeaders;
     }
@@ -68,6 +68,17 @@ public class RestAssuredApiEngineClient implements ApiEngineClient {
     }
 
     @Override
+    public TeswizApiResponse put(String url, Object body, Map<String, String> headers) {
+        LOGGER.info("Processing PUT call via RestAssured");
+        RequestSpecification requestSpec = getRequestSpec(headers);
+        if (body != null) {
+            requestSpec.body(body);
+        }
+        Response response = requestSpec.put(url);
+        return convertResponse(response);
+    }
+
+    @Override
     public TeswizApiResponse patch(String url, Object body, Map<String, String> headers) {
         LOGGER.info("Processing PATCH call via RestAssured");
         RequestSpecification requestSpec = getRequestSpec(headers);
@@ -83,6 +94,22 @@ public class RestAssuredApiEngineClient implements ApiEngineClient {
         LOGGER.info("Processing DELETE call via RestAssured");
         RequestSpecification requestSpec = getRequestSpec(headers);
         Response response = requestSpec.delete(url);
+        return convertResponse(response);
+    }
+
+    @Override
+    public TeswizApiResponse head(String url, Map<String, String> headers) {
+        LOGGER.info("Processing HEAD call via RestAssured");
+        RequestSpecification requestSpec = getRequestSpec(headers);
+        Response response = requestSpec.head(url);
+        return convertResponse(response);
+    }
+
+    @Override
+    public TeswizApiResponse options(String url, Map<String, String> headers) {
+        LOGGER.info("Processing OPTIONS call via RestAssured");
+        RequestSpecification requestSpec = getRequestSpec(headers);
+        Response response = requestSpec.options(url);
         return convertResponse(response);
     }
 }

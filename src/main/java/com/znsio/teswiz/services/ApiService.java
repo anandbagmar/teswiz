@@ -49,6 +49,14 @@ public class ApiService {
         return getClient().post(url, body, headers);
     }
 
+    public static TeswizApiResponse put(String url, Object body) {
+        return put(url, body, null);
+    }
+
+    public static TeswizApiResponse put(String url, Object body, Map<String, String> headers) {
+        return getClient().put(url, body, headers);
+    }
+
     public static TeswizApiResponse patch(String url, Object body) {
         return patch(url, body, null);
     }
@@ -63,5 +71,21 @@ public class ApiService {
 
     public static TeswizApiResponse delete(String url, Map<String, String> headers) {
         return getClient().delete(url, headers);
+    }
+
+    public static TeswizApiResponse head(String url) {
+        return head(url, null);
+    }
+
+    public static TeswizApiResponse head(String url, Map<String, String> headers) {
+        return getClient().head(url, headers);
+    }
+
+    public static TeswizApiResponse options(String url) {
+        return options(url, null);
+    }
+
+    public static TeswizApiResponse options(String url, Map<String, String> headers) {
+        return getClient().options(url, headers);
     }
 }

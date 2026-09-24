@@ -29,7 +29,7 @@ public class PlaywrightApiEngineClient implements ApiEngineClient {
     private RequestOptions createRequestOptions(Map<String, String> headers) {
         RequestOptions options = RequestOptions.create();
         Map<String, String> mergedHeaders = new HashMap<>();
-        mergedHeaders.put("Accept", "application/json");
+        mergedHeaders.put("Accept", "application/json, text/html, */*");
         mergedHeaders.put("content-type", "application/json");
         if (headers != null && !headers.isEmpty()) {
             mergedHeaders.putAll(headers);
@@ -81,11 +81,20 @@ public class PlaywrightApiEngineClient implements ApiEngineClient {
                 case "POST":
                     response = getRequestContext().post(finalUrl, options);
                     break;
+                case "PUT":
+                    response = getRequestContext().put(finalUrl, options);
+                    break;
                 case "PATCH":
                     response = getRequestContext().patch(finalUrl, options);
                     break;
                 case "DELETE":
                     response = getRequestContext().delete(finalUrl, options);
+                    break;
+                case "HEAD":
+                    response = getRequestContext().fetch(finalUrl, options.setMethod("HEAD"));
+                    break;
+                case "OPTIONS":
+                    response = getRequestContext().fetch(finalUrl, options.setMethod("OPTIONS"));
                     break;
                 default:
                     response = getRequestContext().fetch(finalUrl, options.setMethod(method));
@@ -154,6 +163,11 @@ public class PlaywrightApiEngineClient implements ApiEngineClient {
     }
 
     @Override
+    public TeswizApiResponse put(String url, Object body, Map<String, String> headers) {
+        return executeRequest("PUT", url, body, null, headers);
+    }
+
+    @Override
     public TeswizApiResponse patch(String url, Object body, Map<String, String> headers) {
         return executeRequest("PATCH", url, body, null, headers);
     }
@@ -161,5 +175,15 @@ public class PlaywrightApiEngineClient implements ApiEngineClient {
     @Override
     public TeswizApiResponse delete(String url, Map<String, String> headers) {
         return executeRequest("DELETE", url, null, null, headers);
+    }
+
+    @Override
+    public TeswizApiResponse head(String url, Map<String, String> headers) {
+        return executeRequest("HEAD", url, null, null, headers);
+    }
+
+    @Override
+    public TeswizApiResponse options(String url, Map<String, String> headers) {
+        return executeRequest("OPTIONS", url, null, null, headers);
     }
 }
