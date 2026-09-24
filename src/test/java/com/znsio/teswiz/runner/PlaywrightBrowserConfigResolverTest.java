@@ -222,4 +222,18 @@ class PlaywrightBrowserConfigResolverTest {
         assertThat(config.headless()).isTrue();
         assertThat(config.launchArgs()).contains("--disable-gpu");
     }
+
+    @Test
+    void shouldDefaultViewportInContextOptionsFromRuntimeConfigWhenOmitted() {
+        Setup.load(CONFIG_FILE);
+        Setup.loadAndUpdateConfigParameters(CONFIG_FILE);
+        TestExecutionContext context = new TestExecutionContext("playwright-browser-config-default-viewport");
+
+        PlaywrightBrowserConfig config = new PlaywrightBrowserConfigResolver().resolve("chrome", context);
+
+        assertThat(config.contextOptions()).containsKey("viewport");
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, Object> viewport = (java.util.Map<String, Object>) config.contextOptions().get("viewport");
+        assertThat(viewport).containsEntry("width", 1280).containsEntry("height", 960);
+    }
 }

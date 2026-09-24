@@ -54,6 +54,16 @@ public final class PlaywrightBrowserConfigResolver {
         if (null != playwrightContextOptions) {
             contextOptions.putAll(playwrightContextOptions.toMap());
         }
+        if (!contextOptions.containsKey("viewport")) {
+            int defaultWidth = com.znsio.teswiz.config.TeswizRuntimeConfiguration
+                    .getInt(com.znsio.teswiz.config.TeswizRuntimeConfiguration.DRIVER_VIEWPORT_WIDTH);
+            int defaultHeight = com.znsio.teswiz.config.TeswizRuntimeConfiguration
+                    .getInt(com.znsio.teswiz.config.TeswizRuntimeConfiguration.DRIVER_VIEWPORT_HEIGHT);
+            Map<String, Object> viewport = new LinkedHashMap<>();
+            viewport.put("width", defaultWidth);
+            viewport.put("height", defaultHeight);
+            contextOptions.put("viewport", viewport);
+        }
         boolean ignoreHttpErrors = browserConfigForBrowserType.optBoolean("acceptInsecureCerts", false);
         if (null != playwrightContextOptions && playwrightContextOptions.has("ignoreHTTPSErrors")) {
             ignoreHttpErrors = playwrightContextOptions.getBoolean("ignoreHTTPSErrors");

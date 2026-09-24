@@ -370,6 +370,18 @@ public class PlaywrightWorkerClient implements AutoCloseable {
         return payload.has("value") ? payload.get("value") : null;
     }
 
+    public synchronized Object executeAsyncScript(String sessionId, String script, JSONArray args, Duration timeout) {
+        JSONObject commandPayload = new JSONObject()
+                .put("sessionId", sessionId)
+                .put("script", script)
+                .put("args", args);
+        if (null != timeout && !timeout.isZero()) {
+            commandPayload.put("timeoutMs", timeout.toMillis());
+        }
+        JSONObject payload = sendCommand("executeAsyncScript", commandPayload).payload();
+        return payload.has("value") ? payload.get("value") : null;
+    }
+
     public synchronized void closeSession(String sessionId) {
         sendCommand("closeSession", new JSONObject().put("sessionId", sessionId));
     }

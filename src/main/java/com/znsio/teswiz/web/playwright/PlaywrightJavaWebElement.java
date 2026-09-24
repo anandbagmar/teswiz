@@ -164,6 +164,10 @@ final class PlaywrightJavaWebElement implements WebElement {
         return target.convertFromPngBytes(locator.screenshot());
     }
 
+    Locator locator() {
+        return locator;
+    }
+
     ElementHandle elementHandle() {
         return locator.elementHandle();
     }

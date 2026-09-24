@@ -60,7 +60,7 @@ class DocumentationLinksTest {
     }
 
     private boolean isExternalOrNonFileLink(String url) {
-        return url.startsWith("http://") || url.startsWith("https://") || url.startsWith("mailto:");
+        return url.startsWith("http://") || url.startsWith("https://") || url.startsWith("mailto:") || url.startsWith("file://");
     }
 
     private String formatViolation(Path markdownFile, int lineNumber, String url, String reason) {
