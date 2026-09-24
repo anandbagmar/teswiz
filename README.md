@@ -8,7 +8,7 @@
 [![Release](https://img.shields.io/badge/release-1.0.37-blue.svg)](https://jitpack.io/#anandbagmar/teswiz)
 [![CI](https://github.com/anandbagmar/teswiz/actions/workflows/Build_And_Run_Unit_Tests_CI.yml/badge.svg)](https://github.com/anandbagmar/teswiz/actions/workflows/Build_And_Run_Unit_Tests_CI.yml)
 [![CodeQL](https://github.com/anandbagmar/teswiz/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/anandbagmar/teswiz/actions/workflows/codeql-analysis.yml)
-[![Latest Commit](https://img.shields.io/badge/commit-c3d0373-blue.svg)](https://jitpack.io/#anandbagmar/teswiz)
+[![Latest Commit](https://img.shields.io/badge/commit-3e53db3-blue.svg)](https://jitpack.io/#anandbagmar/teswiz)
 
 # teswiz
 
