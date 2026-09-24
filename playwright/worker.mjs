@@ -955,6 +955,34 @@ rl.on("line", async (line) => {
         process.stdout.write(`${okResponse(requestId, action, { value })}\n`);
         break;
       }
+      case "executeAsyncScript": {
+        const session = getSession(payload.sessionId);
+        const root = getCurrentRoot(session);
+        const timeoutMs = payload.timeoutMs || 30000;
+        const scriptArgs = await Promise.all((payload.args || []).map((arg) => resolveScriptArg(root, arg)));
+
+        const scriptPromise = root.evaluate(
+          ([script, args]) => {
+            return new Promise((resolve) => {
+              const callback = (res) => resolve(res);
+              const executor = new Function("args", `return (function() { ${script} }).apply(null, args);`);
+              executor(args.concat([callback]));
+            });
+          },
+          [payload.script, scriptArgs],
+        );
+
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(
+            () => reject(new Error(`ScriptTimeoutException: async script did not return within ${timeoutMs}ms`)),
+            timeoutMs,
+          ),
+        );
+
+        const value = await Promise.race([scriptPromise, timeoutPromise]);
+        process.stdout.write(`${okResponse(requestId, action, { value })}\n`);
+        break;
+      }
       case "goBack": {
         const session = getSession(payload.sessionId);
         await getCurrentPage(session).goBack();

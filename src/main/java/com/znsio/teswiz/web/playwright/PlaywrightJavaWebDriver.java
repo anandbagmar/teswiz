@@ -52,9 +52,11 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
             TeswizRuntimeConfiguration.getInt(TeswizRuntimeConfiguration.PLAYWRIGHT_SCRIPT_TIMEOUT_SECONDS));
     private String pendingLambdaTestStatus;
     private PlaywrightJavaVisualSession visualSession;
+    private PlaywrightSearchRoot currentSearchRoot;
 
     public PlaywrightJavaWebDriver(PlaywrightJavaSession session) {
         this.session = session;
+        this.currentSearchRoot = new PlaywrightSearchRoot.PageSearchRoot(session.page());
     }
 
     public PlaywrightJavaScreenContext createScreenContext(Driver driver, Visual visual) {
@@ -80,7 +82,7 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
 
     @Override
     public List<WebElement> findElements(By by) {
-        com.microsoft.playwright.Locator locator = session.page().locator(PlaywrightJavaBy.toSelector(by));
+        com.microsoft.playwright.Locator locator = currentSearchRoot.locator(PlaywrightJavaBy.toSelector(by));
         int count = PlaywrightJavaWait.untilCountAtLeast(locator, implicitWaitTimeout, 0);
         return java.util.stream.IntStream.range(0, count)
                 .mapToObj(index -> new PlaywrightJavaWebElement(locator.nth(index), implicitWaitTimeout))
@@ -90,7 +92,7 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
 
     @Override
     public WebElement findElement(By by) {
-        com.microsoft.playwright.Locator locator = session.page().locator(PlaywrightJavaBy.toSelector(by));
+        com.microsoft.playwright.Locator locator = currentSearchRoot.locator(PlaywrightJavaBy.toSelector(by));
         if (PlaywrightJavaWait.untilCountAtLeast(locator, implicitWaitTimeout, 1) <= 0) {
             throw new NoSuchElementException("Unable to locate element: " + by);
         }
@@ -127,34 +129,63 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
         return new TargetLocator() {
             @Override
             public WebDriver frame(int index) {
-                throw unsupported("frame(int)");
+                List<com.microsoft.playwright.Frame> frames = session.page().frames();
+                if (index < 0 || (index + 1) >= frames.size()) {
+                    throw new org.openqa.selenium.NoSuchFrameException("No frame found for index: " + index);
+                }
+                currentSearchRoot = new PlaywrightSearchRoot.FrameSearchRoot(frames.get(index + 1));
+                return PlaywrightJavaWebDriver.this;
             }
 
             @Override
             public WebDriver frame(String nameOrId) {
-                throw unsupported("frame(String)");
+                com.microsoft.playwright.Frame frame = session.page().frame(nameOrId);
+                if (null != frame) {
+                    currentSearchRoot = new PlaywrightSearchRoot.FrameSearchRoot(frame);
+                } else {
+                    String selector = String.format("iframe[name='%s'], iframe#%s, frame[name='%s'], frame#%s",
+                            nameOrId, nameOrId, nameOrId, nameOrId);
+                    currentSearchRoot = new PlaywrightSearchRoot.FrameLocatorSearchRoot(session.page().frameLocator(selector));
+                }
+                return PlaywrightJavaWebDriver.this;
             }
 
             @Override
             public WebDriver frame(WebElement frameElement) {
-                throw unsupported("frame(WebElement)");
+                if (frameElement instanceof PlaywrightJavaWebElement playwrightElement) {
+                    currentSearchRoot = new PlaywrightSearchRoot.FrameLocatorSearchRoot(playwrightElement.locator().contentFrame());
+                } else {
+                    currentSearchRoot = new PlaywrightSearchRoot.FrameLocatorSearchRoot(session.page().frameLocator("iframe, frame"));
+                }
+                return PlaywrightJavaWebDriver.this;
             }
 
             @Override
             public WebDriver parentFrame() {
-                throw unsupported("parentFrame()");
+                if (currentSearchRoot instanceof PlaywrightSearchRoot.FrameSearchRoot frameRoot) {
+                    com.microsoft.playwright.Frame parent = frameRoot.frame().parentFrame();
+                    if (null != parent) {
+                        currentSearchRoot = new PlaywrightSearchRoot.FrameSearchRoot(parent);
+                    } else {
+                        currentSearchRoot = new PlaywrightSearchRoot.PageSearchRoot(session.page());
+                    }
+                } else {
+                    currentSearchRoot = new PlaywrightSearchRoot.PageSearchRoot(session.page());
+                }
+                return PlaywrightJavaWebDriver.this;
             }
 
             @Override
             public WebDriver window(String nameOrHandle) {
                 if (!getWindowHandle().equals(nameOrHandle)) {
-                    throw unsupported("window(String)");
+                    throw unsupported(com.znsio.teswiz.web.WebCapability.MULTIPLE_WINDOWS, "window(String)");
                 }
                 return PlaywrightJavaWebDriver.this;
             }
 
             @Override
             public WebDriver defaultContent() {
+                currentSearchRoot = new PlaywrightSearchRoot.PageSearchRoot(session.page());
                 return PlaywrightJavaWebDriver.this;
             }
 
@@ -170,7 +201,7 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
 
             @Override
             public WebDriver newWindow(WindowType typeHint) {
-                throw unsupported("newWindow(WindowType)");
+                throw unsupported(com.znsio.teswiz.web.WebCapability.MULTIPLE_WINDOWS, "newWindow(WindowType)");
             }
         };
     }
@@ -210,32 +241,62 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
         return new Options() {
             @Override
             public void addCookie(Cookie cookie) {
-                throw unsupported("manage().addCookie");
+                com.microsoft.playwright.options.Cookie pwCookie = new com.microsoft.playwright.options.Cookie(
+                        cookie.getName(), cookie.getValue());
+                if (null != cookie.getDomain()) {
+                    pwCookie.setDomain(cookie.getDomain());
+                }
+                if (null != cookie.getPath()) {
+                    pwCookie.setPath(cookie.getPath());
+                }
+                if (null != cookie.getExpiry()) {
+                    pwCookie.setExpires((double) cookie.getExpiry().getTime() / 1000);
+                }
+                pwCookie.setSecure(cookie.isSecure());
+                pwCookie.setHttpOnly(cookie.isHttpOnly());
+                session.browserContext().addCookies(List.of(pwCookie));
             }
 
             @Override
             public void deleteCookieNamed(String name) {
-                throw unsupported("manage().deleteCookieNamed");
+                List<com.microsoft.playwright.options.Cookie> remaining = session.browserContext().cookies().stream()
+                        .filter(c -> !c.name.equals(name))
+                        .toList();
+                session.browserContext().clearCookies();
+                if (!remaining.isEmpty()) {
+                    session.browserContext().addCookies(remaining);
+                }
             }
 
             @Override
             public void deleteCookie(Cookie cookie) {
-                throw unsupported("manage().deleteCookie");
+                deleteCookieNamed(cookie.getName());
             }
 
             @Override
             public void deleteAllCookies() {
-                throw unsupported("manage().deleteAllCookies");
+                session.browserContext().clearCookies();
             }
 
             @Override
             public Set<Cookie> getCookies() {
-                return Collections.emptySet();
+                return session.browserContext().cookies().stream()
+                        .map(c -> new Cookie.Builder(c.name, c.value)
+                                .domain(c.domain)
+                                .path(c.path)
+                                .expiresOn(null != c.expires ? new Date((long) (c.expires * 1000)) : null)
+                                .isSecure(Boolean.TRUE.equals(c.secure))
+                                .isHttpOnly(Boolean.TRUE.equals(c.httpOnly))
+                                .build())
+                        .collect(java.util.stream.Collectors.toSet());
             }
 
             @Override
             public Cookie getCookieNamed(String name) {
-                return null;
+                return getCookies().stream()
+                        .filter(c -> c.getName().equals(name))
+                        .findFirst()
+                        .orElse(null);
             }
 
             @Override
@@ -281,17 +342,18 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
                 return new Window() {
                     @Override
                     public void setSize(Dimension targetSize) {
-                        throw unsupported("manage().window().setSize");
+                        session.page().setViewportSize(targetSize.getWidth(), targetSize.getHeight());
                     }
 
                     @Override
                     public void setPosition(Point targetPosition) {
-                        throw unsupported("manage().window().setPosition");
+                        throw unsupported(com.znsio.teswiz.web.WebCapability.WINDOW_POSITION, "manage().window().setPosition");
                     }
 
                     @Override
                     public Dimension getSize() {
-                        return new Dimension(1280, 720);
+                        com.microsoft.playwright.options.ViewportSize size = session.page().viewportSize();
+                        return null != size ? new Dimension(size.width, size.height) : new Dimension(1280, 720);
                     }
 
                     @Override
@@ -335,12 +397,21 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
         if (isCloudControlScript(script)) {
             return executeCloudControlScript(script);
         }
-        return evaluateScript(session.page(), script, args);
+        return evaluateScript(script, args);
     }
 
     @Override
     public Object executeAsyncScript(String script, Object... args) {
-        throw unsupported("executeAsyncScript");
+        String expression = "([script, args]) => new Promise((resolve) => {\n" +
+                "  const callback = (res) => resolve(res);\n" +
+                "  const executor = new Function('args', 'return (function() { ' + script + ' }).apply(null, args);');\n" +
+                "  executor.apply(null, [...args, callback]);\n" +
+                "})";
+        try {
+            return currentSearchRoot.evaluate(expression, List.of(PlaywrightJavaScript.adapt(script), PlaywrightJavaScript.adaptArguments(args)));
+        } catch (RuntimeException exception) {
+            throw new WebDriverException("Unable to execute Playwright Java async script: " + script, exception);
+        }
     }
 
     @Override
@@ -379,10 +450,10 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
         return null == visualSession || visualSession.isDisabled();
     }
 
-    private Object evaluateScript(Page page, String script, Object[] args) {
+    private Object evaluateScript(String script, Object[] args) {
         String expression = "(args) => { " + PlaywrightJavaScript.adapt(script) + " }";
         try {
-            return page.evaluate(expression, PlaywrightJavaScript.adaptArguments(args));
+            return currentSearchRoot.evaluate(expression, PlaywrightJavaScript.adaptArguments(args));
         } catch (RuntimeException exception) {
             throw new WebDriverException("Unable to execute Playwright Java script: " + script, exception);
         }
@@ -478,8 +549,11 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
         }
     }
 
+    private UnsupportedOperationException unsupported(com.znsio.teswiz.web.WebCapability capability, String operation) {
+        return new UnsupportedOperationException(com.znsio.teswiz.web.WebEngineCapabilities.formatDiagnosticMessage(
+                com.znsio.teswiz.web.WebEngine.PLAYWRIGHT_JAVA, capability, operation));
+    }
     private UnsupportedOperationException unsupported(String operation) {
-        return new UnsupportedOperationException(
-                "Playwright Java WebDriver does not support " + operation + " yet");
+        return unsupported(com.znsio.teswiz.web.WebCapability.FRAMES, operation);
     }
 }

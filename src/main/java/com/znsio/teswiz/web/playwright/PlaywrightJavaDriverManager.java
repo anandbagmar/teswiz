@@ -206,6 +206,34 @@ public final class PlaywrightJavaDriverManager {
                     && !baseUrl.isBlank()) {
                 options.setBaseURL(baseUrl);
             }
+            if (contextOptions.containsKey("viewport") && contextOptions.get("viewport") instanceof Map<?, ?> viewportMap) {
+                Object w = viewportMap.get("width");
+                Object h = viewportMap.get("height");
+                if (null != w && null != h) {
+                    options.setViewportSize(Integer.parseInt(String.valueOf(w)), Integer.parseInt(String.valueOf(h)));
+                }
+            }
+            if (contextOptions.containsKey("locale") && contextOptions.get("locale") instanceof String locale
+                    && !locale.isBlank()) {
+                options.setLocale(locale);
+            }
+            if (contextOptions.containsKey("timezoneId") && contextOptions.get("timezoneId") instanceof String timezoneId
+                    && !timezoneId.isBlank()) {
+                options.setTimezoneId(timezoneId);
+            }
+            if (contextOptions.containsKey("userAgent") && contextOptions.get("userAgent") instanceof String userAgent
+                    && !userAgent.isBlank()) {
+                options.setUserAgent(userAgent);
+            }
+            if (contextOptions.containsKey("deviceScaleFactor") && null != contextOptions.get("deviceScaleFactor")) {
+                options.setDeviceScaleFactor(Double.parseDouble(String.valueOf(contextOptions.get("deviceScaleFactor"))));
+            }
+            if (contextOptions.containsKey("extraHTTPHeaders")
+                    && contextOptions.get("extraHTTPHeaders") instanceof Map<?, ?> rawHeaders) {
+                Map<String, String> headers = new java.util.LinkedHashMap<>();
+                rawHeaders.forEach((k, v) -> headers.put(String.valueOf(k), String.valueOf(v)));
+                options.setExtraHTTPHeaders(headers);
+            }
             options.setRecordHarPath(harFile);
             return options;
         }

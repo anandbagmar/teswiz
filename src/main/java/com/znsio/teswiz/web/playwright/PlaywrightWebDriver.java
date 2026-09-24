@@ -435,7 +435,7 @@ public final class PlaywrightWebDriver implements WebDriver, JavascriptExecutor,
 
     @Override
     public Object executeAsyncScript(String script, Object... args) {
-        return executeScript(script, args);
+        return workerClient.executeAsyncScript(session.sessionId(), script, serializeScriptArguments(args), scriptTimeout);
     }
 
     @Override
