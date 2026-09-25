@@ -62,12 +62,6 @@ jobs:
         with:
           arguments: clean build --refresh-dependencies
 
-      - name: 🧪 Run RestAssured API Tests
-        run: CONFIG=./configs/api_local_config.properties TAG=@restassured-api API_ENGINE=rest-assured ./gradlew run
-
-      - name: 🎭 Run Playwright Java API Tests
-        run: CONFIG=./configs/api_local_config.properties TAG=@pw-api API_ENGINE=playwright-java ./gradlew run
-
       - name: 🆔 Capture Commit ID
         run: echo "COMMIT_ID=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
 

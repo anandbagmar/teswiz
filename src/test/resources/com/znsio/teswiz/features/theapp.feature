@@ -21,22 +21,13 @@ Feature: Scenarios for "The App"
 #  RUN_IN_CI=true CONFIG=./configs/theapp/theapp_lambdatest_android_config.properties CLOUD_USERNAME=$LT_CLOUD_USERNAME CLOUD_KEY=$LT_CLOUD_KEY PLATFORM=android TAG="@theapp2 and @invalidLogin1 and @lambdatest" ./gradlew run
 #  RUN_IN_CI=true CONFIG=./configs/theapp/theapp_lambdatest_ios_config.properties CLOUD_USERNAME=$LT_CLOUD_USERNAME CLOUD_KEY=$LT_CLOUD_KEY PLATFORM=iOS TAG="@theapp2 and @invalidLogin1 and @lambdatest" ./gradlew run
 #  RUN_IN_CI=true CONFIG=./configs/theapp/theapp_headspin_android_config.properties CLOUD_KEY=$HEADSPIN_CLOUD_KEY PLATFORM=android TAG="@theapp2 and @invalidLogin1 and @headspin" ./gradlew run
-#  RUN_IN_CI=true CONFIG=./configs/theapp/theapp_headspin_ios_config.properties CLOUD_KEY=$HEADSPIN_CLOUD_KEY PLATFORM=iOS TAG="@theapp2 and @invalidLogin1 and @headspin" ./gradlew run
-  @android @web @iOS @headspin @browserstack @lambdatest @invalidLogin @invalidLogin1 @theapp2 @playwright-phase1
+  # WEB_ENGINE=selenium HEADLESS=true CONFIG=./configs/theapp/theapp_local_web_config.properties PLATFORM=web TAG="@invalidLogin1" ./gradlew run
+  # WEB_ENGINE=playwright-java HEADLESS=true CONFIG=./configs/theapp/theapp_local_web_config.properties PLATFORM=web TAG="@invalidLogin1" ./gradlew run
+  # WEB_ENGINE=playwright-ts HEADLESS=true CONFIG=./configs/theapp/theapp_local_web_config.properties PLATFORM=web TAG="@invalidLogin1" ./gradlew run
+  @android @web @iOS @headspin @browserstack @lambdatest @invalidLogin @invalidLogin1 @theapp2 @playwright-phase1 @selenium @playwright-java @playwright-ts
   Scenario: Verify error message on invalid login
     Given I login with invalid credentials - "znsio1", "invalid password"
-#    Then I try to login again with invalid credentials - "znsio2", "another invalid password"
-
-  #  IS_VISUAL=true APP_NAME=vodqa CONFIG=./configs/theapp/theapp_local_web_config.properties PLATFORM=web TAG="@vodqa and @invalidLogin1" ./gradlew run
-  @web @invalidLogin @invalidLogin1 @vodqa
-  Scenario: vodqa_screens
-    Given I login with invalid credentials - "znsio1", "invalid password"
-
-  # WEB_ENGINE=playwright-java HEADLESS=true CONFIG=./configs/theapp/theapp_local_web_config.properties PLATFORM=web TAG="@theapp-playwright-java" ./gradlew run
-  @web @theapp-playwright-java @playwright-java
-  Scenario: Verify Playwright Java engine execution on login flow
-    Given I login with invalid credentials - "playwright_user", "invalid_password"
-    Then I try to login again with invalid credentials - "playwright_user_2", "another_invalid_password"
+    Then I try to login again with invalid credentials - "znsio2", "another invalid password"
 
 #  CONFIG=./configs/theapp/theapp_local_web_config.properties PLATFORM=web TAG="@theapp3 and @invalidLogin2" ./gradlew run
 #  CONFIG=./configs/theapp/theapp_local_android_config.properties PLATFORM=android TAG="@theapp3 and @invalidLogin2" ./gradlew run
