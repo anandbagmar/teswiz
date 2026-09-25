@@ -159,3 +159,40 @@ tasks.register('verifyScreenContracts', JavaExec) {
     args "src/test/java/com/acme/tests/screen"
 }
 ```
+
+---
+
+## 7. Migrating API Execution from RestAssured to Playwright-Java (`API_ENGINE`)
+
+### Option A: Standard Migration (Using `ApiService` Facade)
+
+If your test codebase already uses the engine-agnostic `ApiService` facade (`ApiService.get()`, `ApiService.post()`, etc.), **zero code changes are needed**.
+
+Simply change `API_ENGINE` in your suite configuration or environment variables:
+
+```properties
+# Change from rest-assured (default) to playwright-java
+API_ENGINE=playwright-java
+```
+
+Or via command line execution:
+
+```bash
+API_ENGINE=playwright-java CONFIG=./configs/api_local_config.properties TAG=@api PLATFORM=api ./gradlew run
+```
+
+### Option B: Porting Legacy Direct RestAssured Calls
+
+If legacy test code calls `io.restassured.RestAssured` directly in step definitions or business layers:
+
+1. **Replace RestAssured invocations with `ApiService`**:
+   - `RestAssured.given().headers(...).get(url)` $\rightarrow$ `ApiService.get(url, queryParams, headers)`
+   - `RestAssured.given().body(jsonMap).post(url)` $\rightarrow$ `ApiService.post(url, jsonMap, headers)`
+
+2. **Update response assertions to `TeswizApiResponse`**:
+   - `response.getStatusCode()` $\rightarrow$ `response.getStatusCode()`
+   - `response.getBody().asString()` $\rightarrow$ `response.getResponseText()` or `response.asJsonObject()`
+   - `response.getTime()` $\rightarrow$ `response.getResponseTimeInMs()`
+   - `response.getHeaders()` $\rightarrow$ `response.getHeaders()`
+
+3. **Set `API_ENGINE=playwright-java` in suite configuration.**

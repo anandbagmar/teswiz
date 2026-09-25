@@ -75,3 +75,39 @@ rp.launch=teswiz
 rp.project=teswiz
 rp.enable=false
 ```
+
+## Migration Guide: Moving from RestAssured to Playwright Java (`API_ENGINE`)
+
+### 1. Suites using `ApiService` Facade (Recommended)
+
+If your test suite uses `ApiService` (`ApiService.get()`, `ApiService.post()`, etc.), **no code changes are required**.
+
+To migrate execution:
+
+Set `API_ENGINE=playwright-java` in your suite `.properties` file:
+
+```properties
+API_ENGINE=playwright-java
+```
+
+Or pass it as a command-line environment variable:
+
+```bash
+API_ENGINE=playwright-java CONFIG=./configs/api_local_config.properties TAG=@api PLATFORM=api ./gradlew run
+```
+
+### 2. Suites using Direct `RestAssured` Calls
+
+If legacy code directly invokes `io.restassured.RestAssured`:
+
+1. **Replace RestAssured calls with `ApiService`**:
+   - `RestAssured.given().headers(...).get(url)` $\rightarrow$ `ApiService.get(url, queryParams, headers)`
+   - `RestAssured.given().body(mapBody).post(url)` $\rightarrow$ `ApiService.post(url, mapBody, headers)`
+
+2. **Update Response Assertions**:
+   - Change `io.restassured.response.Response` to `com.znsio.teswiz.api.TeswizApiResponse`.
+   - `response.getStatusCode()` $\rightarrow$ `response.getStatusCode()`
+   - `response.getBody().asString()` $\rightarrow$ `response.getResponseText()` or `response.asJsonObject()`
+   - `response.getTime()` $\rightarrow$ `response.getResponseTimeInMs()`
+
+3. **Enable `API_ENGINE=playwright-java` in suite configuration.**
