@@ -30,7 +30,11 @@ public class PlaywrightApiEngineClient implements ApiEngineClient {
 
     private RequestOptions createRequestOptions(Map<String, String> headers, boolean hasBody) {
         RequestOptions options = RequestOptions.create();
+        int timeoutMs = OverriddenVariable.getOverriddenIntValue("TESWIZ_API_TIMEOUT_SECONDS", 60) * 1000;
+        options.setTimeout(timeoutMs);
+
         Map<String, String> mergedHeaders = new HashMap<>();
+        mergedHeaders.put("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
         mergedHeaders.put("Accept", "application/json, text/html, */*");
         if (hasBody) {
             mergedHeaders.put("content-type", "application/json");
