@@ -6,8 +6,8 @@ When working in this repository:
   - `.codex/skills/teswiz-project/SKILL.md`
   - `CLAUDE.md`
   - `ANTIGRAVITY.md`
-- When you change code or documentation, include a concise suggested commit message in the final response.
-- Prefer a short imperative commit message that reflects the main change clearly.
+- Always include a suggested Git commit message at the end of the final response after completing any change or when requested.
+- Prefer a short imperative summary line (max 50 chars), a blank line, and bulleted descriptions of modified files.
 - Keep changes focused and test-first when the task is a refactor or cleanup.
 - Prefer small, meaningfully named methods, variables, and classes.
 - When authoring TestNG-mode tests (`com.znsio.teswiz.testng`), always use fluent method chaining between business-layer calls wherever the BL API returns a chainable type (e.g. `AuthBL.signIn()` returning `LandingBL`, or a method returning `this`), instead of constructing a new BL instance per call. **Before reusing an already-constructed BL instance instead of re-constructing it, check whether that BL's constructor has side effects** (several call `Runner.setCurrentDriverForUser(...)`, which sets a single thread-scoped "current persona" pointer that screen resolution reads from) — in a multi-persona test, reusing a stale instance after constructing a later persona's BL silently resolves screens against the wrong persona/platform. In that case, reconstruct the BL immediately before each interaction instead (matching what the equivalent Cucumber step-defs already do) rather than holding a reference across other personas' calls. See `docs/internals/Cucumber-To-TestNG-Migration-Guide.md` for worked examples.
