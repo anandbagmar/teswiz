@@ -60,12 +60,28 @@ public class RestAssuredApiEngineClient implements ApiEngineClient {
         return convertResponse(response, responseTime);
     }
 
+    private Object processBody(Object body) {
+        if (body == null || body instanceof String || body instanceof byte[] || body instanceof File) {
+            return body;
+        }
+        if (body instanceof Map) {
+            return new org.json.JSONObject((Map<?, ?>) body).toString();
+        }
+        if (body instanceof java.util.Collection) {
+            return new org.json.JSONArray((java.util.Collection<?>) body).toString();
+        }
+        if (body instanceof org.json.JSONObject || body instanceof org.json.JSONArray) {
+            return body.toString();
+        }
+        return body;
+    }
+
     @Override
     public TeswizApiResponse post(String url, Object body, Map<String, String> headers) {
         LOGGER.info("Processing POST call via RestAssured");
         RequestSpecification requestSpec = getRequestSpec(headers);
         if (body != null) {
-            requestSpec.body(body);
+            requestSpec.body(processBody(body));
         }
         long startTime = System.currentTimeMillis();
         Response response = requestSpec.post(url);
@@ -101,7 +117,7 @@ public class RestAssuredApiEngineClient implements ApiEngineClient {
         LOGGER.info("Processing PUT call via RestAssured");
         RequestSpecification requestSpec = getRequestSpec(headers);
         if (body != null) {
-            requestSpec.body(body);
+            requestSpec.body(processBody(body));
         }
         long startTime = System.currentTimeMillis();
         Response response = requestSpec.put(url);
@@ -114,7 +130,7 @@ public class RestAssuredApiEngineClient implements ApiEngineClient {
         LOGGER.info("Processing PATCH call via RestAssured");
         RequestSpecification requestSpec = getRequestSpec(headers);
         if (body != null) {
-            requestSpec.body(body);
+            requestSpec.body(processBody(body));
         }
         long startTime = System.currentTimeMillis();
         Response response = requestSpec.patch(url);
