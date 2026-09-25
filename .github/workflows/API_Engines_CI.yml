@@ -58,7 +58,18 @@ jobs:
           TAG: "${{ matrix.tag }}"
           API_ENGINE: "${{ matrix.api_engine }}"
           WEB_ENGINE: "${{ matrix.web_engine }}"
-        run: ./gradlew run
+        run: |
+          echo "============================================================"
+          echo "🧪 Test Execution Details: ${{ matrix.name }}"
+          echo "============================================================"
+          echo "🚀 Command Line: ./gradlew run"
+          echo "📊 Active Overridden Configuration & Environment Variables:"
+          echo "   - CONFIG:     ${CONFIG}"
+          echo "   - TAG:        ${TAG}"
+          echo "   - API_ENGINE: ${API_ENGINE}"
+          echo "   - WEB_ENGINE: ${WEB_ENGINE}"
+          echo "============================================================"
+          ./gradlew run
 
       - name: 📦 Upload API Traffic & Execution Reports
         if: always()

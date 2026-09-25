@@ -66,6 +66,31 @@ runs:
           eval "export ${{ inputs.additional-env }}"
         fi
 
+        echo "============================================================"
+        echo "🧪 Test Execution Details: ${{ inputs.display-name }}"
+        echo "============================================================"
+        echo "🚀 Command Line: ./gradlew run"
+        echo "📊 Active Overridden Configuration & Environment Variables:"
+        echo "   - CONFIG:                       ${CONFIG:-<not set>}"
+        echo "   - TAG:                          ${TAG:-<not set>}"
+        echo "   - PLATFORM:                     ${PLATFORM:-<not set>}"
+        echo "   - API_ENGINE:                   ${API_ENGINE:-<not set (default: rest-assured)>}"
+        echo "   - WEB_ENGINE:                   ${WEB_ENGINE:-<not set (default: selenium)>}"
+        echo "   - FRAMEWORK:                    ${FRAMEWORK:-<not set (default: cucumber)>}"
+        echo "   - HEADLESS:                     ${HEADLESS:-<not set>}"
+        echo "   - IS_VISUAL:                    ${IS_VISUAL:-<not set>}"
+        echo "   - RUN_IN_CI:                    ${RUN_IN_CI:-<not set>}"
+        if [[ -n "${SET_HARD_GATE}" ]]; then
+          echo "   - SET_HARD_GATE:                ${SET_HARD_GATE}"
+        fi
+        if [[ -n "${IS_FAILING_TEST_SUITE}" ]]; then
+          echo "   - IS_FAILING_TEST_SUITE:        ${IS_FAILING_TEST_SUITE}"
+        fi
+        if [[ -n "${APPLITOOLS_BATCH_NAME_SUFFIX}" ]]; then
+          echo "   - APPLITOOLS_BATCH_NAME_SUFFIX: ${APPLITOOLS_BATCH_NAME_SUFFIX}"
+        fi
+        echo "============================================================"
+
         EXIT_CODE=0
         ./gradlew run || EXIT_CODE=$?
         echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
