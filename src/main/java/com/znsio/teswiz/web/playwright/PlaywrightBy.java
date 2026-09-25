@@ -23,6 +23,22 @@ public final class PlaywrightBy {
         return new CustomPlaywrightBy("testId", testId, "PlaywrightBy.testId: " + testId);
     }
 
+    public static By placeholder(String placeholder) {
+        return new CustomPlaywrightBy("placeholder", placeholder, "PlaywrightBy.placeholder: " + placeholder);
+    }
+
+    public static By label(String label) {
+        return new CustomPlaywrightBy("label", label, "PlaywrightBy.label: " + label);
+    }
+
+    public static By title(String title) {
+        return new CustomPlaywrightBy("title", title, "PlaywrightBy.title: " + title);
+    }
+
+    public static By altText(String altText) {
+        return new CustomPlaywrightBy("altText", altText, "PlaywrightBy.altText: " + altText);
+    }
+
     private static final class CustomPlaywrightBy extends By {
         private final String strategy;
         private final String value;
