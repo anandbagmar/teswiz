@@ -1,3 +1,24 @@
+## 1.0.39
+- docs: add RestAssured to Playwright API migration
+- fix: set Connection close for Playwright API
+- fix: set User-Agent and timeout for Playwright API
+- fix: resolve crypto 451 and Playwright GET timeout
+- fix: restore @api tag on negative tests and exclude
+- feat: support playwright-ts & align commit rules
+- fix: isolate mock failing test suites from @api
+- fix: resolve API failures & payload serialization
+- ci: log test command & config overrides in GHA
+- feat: expand PlaywrightBy with native Playwright locator strategies
+- feat: add web_api_hybrid_workflow & update engine docs
+- ci: add API_Engines_CI workflow & consolidate web scenarios
+- refactor: consolidate API parity test into multi-tagged scenario
+- docs: add pw-ts Cucumber scenario and CLI examples
+- ci: add API workflow chaining scenarios & CI execution
+- feat: enhance ApiService feature parity & migrate BLs
+- feat: add multi-engine Cucumber tests and architecture docs
+- feat: add PUT, HEAD, OPTIONS and HTML support to ApiService
+- feat: add Playwright API testing engine capability
+
 ## 1.0.38
 - Add web engine capability guide and update README links
 - Refactor parity steps to BL and Screen contracts
