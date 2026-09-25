@@ -2,6 +2,7 @@ package com.znsio.teswiz.api;
 
 import com.microsoft.playwright.APIRequestContext;
 import com.microsoft.playwright.APIResponse;
+import com.microsoft.playwright.options.FormData;
 import com.microsoft.playwright.options.RequestOptions;
 import com.znsio.teswiz.exceptions.EnvironmentSetupException;
 import com.znsio.teswiz.filters.apitraffic.ApiTrafficLogging;
@@ -13,6 +14,7 @@ import com.znsio.teswiz.tools.SensitiveDataMasker;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -73,6 +75,7 @@ public class PlaywrightApiEngineClient implements ApiEngineClient {
         }
 
         APIResponse response = null;
+        long startTime = System.currentTimeMillis();
         try {
             switch (method.toUpperCase()) {
                 case "GET":
@@ -100,12 +103,13 @@ public class PlaywrightApiEngineClient implements ApiEngineClient {
                     response = getRequestContext().fetch(finalUrl, options.setMethod(method));
                     break;
             }
+            long responseTime = System.currentTimeMillis() - startTime;
             int statusCode = response.status();
             String responseBody = response.text();
             byte[] responseBytes = response.body();
             Map<String, String> responseHeaders = response.headers();
 
-            TeswizApiResponse teswizApiResponse = new TeswizApiResponse(statusCode, responseBody, responseBytes, responseHeaders);
+            TeswizApiResponse teswizApiResponse = new TeswizApiResponse(statusCode, responseBody, responseBytes, responseHeaders, responseTime);
 
             recordTrafficSafely(method, finalUrl, headers != null ? headers.toString() : "{}", requestBodyStr, statusCode, responseHeaders.toString(), responseBody);
             checkEnvironmentIssue(finalUrl, statusCode, responseBody);
@@ -160,6 +164,46 @@ public class PlaywrightApiEngineClient implements ApiEngineClient {
     @Override
     public TeswizApiResponse post(String url, Object body, Map<String, String> headers) {
         return executeRequest("POST", url, body, null, headers);
+    }
+
+    @Override
+    public TeswizApiResponse postMultipart(String url, Map<String, Object> formFields, Map<String, File> files, Map<String, String> headers) {
+        LOGGER.info("Processing POST multipart call via Playwright API Engine");
+        RequestOptions options = RequestOptions.create();
+        if (headers != null && !headers.isEmpty()) {
+            for (Map.Entry<String, String> entry : headers.entrySet()) {
+                options.setHeader(entry.getKey(), entry.getValue());
+            }
+        }
+        FormData formData = FormData.create();
+        if (formFields != null && !formFields.isEmpty()) {
+            for (Map.Entry<String, Object> entry : formFields.entrySet()) {
+                formData.set(entry.getKey(), String.valueOf(entry.getValue()));
+            }
+        }
+        if (files != null && !files.isEmpty()) {
+            for (Map.Entry<String, File> entry : files.entrySet()) {
+                formData.set(entry.getKey(), entry.getValue().toPath());
+            }
+        }
+        options.setMultipart(formData);
+
+        String finalUrl = stripTrailingQuestionMark(url);
+        long startTime = System.currentTimeMillis();
+        APIResponse response = getRequestContext().post(finalUrl, options);
+        long responseTime = System.currentTimeMillis() - startTime;
+
+        int statusCode = response.status();
+        String responseBody = response.text();
+        byte[] responseBytes = response.body();
+        Map<String, String> responseHeaders = response.headers();
+
+        TeswizApiResponse teswizApiResponse = new TeswizApiResponse(statusCode, responseBody, responseBytes, responseHeaders, responseTime);
+
+        recordTrafficSafely("POST", finalUrl, headers != null ? headers.toString() : "{}", "[multipart data]", statusCode, responseHeaders.toString(), responseBody);
+        checkEnvironmentIssue(finalUrl, statusCode, responseBody);
+
+        return teswizApiResponse;
     }
 
     @Override

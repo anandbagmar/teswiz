@@ -1,8 +1,8 @@
 package com.znsio.teswiz.businessLayer.weatherAPI;
 
+import com.znsio.teswiz.api.TeswizApiResponse;
 import com.znsio.teswiz.runner.Runner;
-import com.znsio.teswiz.services.RestAssuredService;
-import io.restassured.response.Response;
+import com.znsio.teswiz.services.ApiService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
@@ -20,36 +20,36 @@ public class WeatherAPIBL {
 
     public JSONObject getCurrentWeatherJSON() {
         LOGGER.info("Getting current weather data for given location coordinates");
-        HashMap<String, Object> queryString= new HashMap<>(){{
-            put("latitude",testData.get("latitude").toString());
-            put("longitude",testData.get("longitude").toString());
-            put("current_weather",true);
+        HashMap<String, Object> queryString = new HashMap<>() {{
+            put("latitude", testData.get("latitude").toString());
+            put("longitude", testData.get("longitude").toString());
+            put("current_weather", true);
         }};
-        Response jsonResponse= RestAssuredService.getHttpResponseWithQueryMap(base_URL,queryString);
-        assertThat(jsonResponse.getStatusCode()).as("API status code incorrect!")
+        TeswizApiResponse response = ApiService.get(base_URL, queryString);
+        assertThat(response.getStatusCode()).as("API status code incorrect!")
                 .isEqualTo(200);
-        return new JSONObject(jsonResponse.getBody().asString()).getJSONObject("current_weather");
+        return response.asJsonObject().getJSONObject("current_weather");
     }
 
     public WeatherAPIBL verifyCurrentTemperature(JSONObject jsonResponse, int lowerLimit, int upperLimit) {
-        LOGGER.info("Verifying weather is in range "+lowerLimit+" and "+upperLimit+" C");
+        LOGGER.info("Verifying weather is in range " + lowerLimit + " and " + upperLimit + " C");
         assertThat(((int) jsonResponse.getDouble("temperature"))).as("Temperature value incorrect!")
-                .isBetween(lowerLimit,upperLimit);
+                .isBetween(lowerLimit, upperLimit);
         return this;
     }
 
     public JSONObject getForecastForInvalidDays() {
         LOGGER.info("Getting temperature forecast");
-        HashMap<String, Object> queryString= new HashMap<>(){{
-            put("latitude",testData.get("latitude").toString());
-            put("longitude",testData.get("longitude").toString());
-            put("hourly",testData.get("hourly").toString());
-            put("forecast_days",testData.get("days").toString());
+        HashMap<String, Object> queryString = new HashMap<>() {{
+            put("latitude", testData.get("latitude").toString());
+            put("longitude", testData.get("longitude").toString());
+            put("hourly", testData.get("hourly").toString());
+            put("forecast_days", testData.get("days").toString());
         }};
-        Response jsonResponse= RestAssuredService.getHttpResponseWithQueryMap(base_URL,queryString);
-        assertThat(jsonResponse.getStatusCode()).as("API status code incorrect!")
+        TeswizApiResponse response = ApiService.get(base_URL, queryString);
+        assertThat(response.getStatusCode()).as("API status code incorrect!")
                 .isEqualTo(400);
-        return new JSONObject(jsonResponse.getBody().asString());
+        return response.asJsonObject();
     }
 
     public WeatherAPIBL verifyErrorForInvalidForecastDays(JSONObject jsonObject, String errorMessage) {
@@ -62,31 +62,33 @@ public class WeatherAPIBL {
 
     public JSONObject getCurrentWeatherJSON(String latitude, String longitude) {
         LOGGER.info("Getting current weather data for given location coordinates");
-        HashMap<String, Object> queryString= new HashMap<>(){{
-            put("latitude",latitude);
-            put("longitude",longitude);
-            put("current_weather",true);
+        HashMap<String, Object> queryString = new HashMap<>() {{
+            put("latitude", latitude);
+            put("longitude", longitude);
+            put("current_weather", true);
         }};
-        Response jsonResponse= RestAssuredService.getHttpResponseWithQueryMap(base_URL,queryString);
-        assertThat(jsonResponse.getStatusCode()).as("API status code incorrect!")
+        TeswizApiResponse response = ApiService.get(base_URL, queryString);
+        assertThat(response.getStatusCode()).as("API status code incorrect!")
                 .isEqualTo(200);
-        return new JSONObject(jsonResponse.getBody().asString()).getJSONObject("current_weather");
+        return response.asJsonObject().getJSONObject("current_weather");
     }
 
     public WeatherAPIBL verifyCurrentWindSpeed(JSONObject jsonResponse, int lowerLimit, int upperLimit) {
-        LOGGER.info("Verifying wind speed is in range "+lowerLimit+" and "+upperLimit);
+        LOGGER.info("Verifying wind speed is in range " + lowerLimit + " and " + upperLimit);
         assertThat(((int) jsonResponse.getDouble("windspeed"))).as("Wind speed value incorrect!")
-                .isBetween(lowerLimit,upperLimit);
+                .isBetween(lowerLimit, upperLimit);
         return this;
     }
 
     public JSONObject getLocationCoordinatesFor(String city) {
-        LOGGER.info("Getting coordinates for city "+city);
+        LOGGER.info("Getting coordinates for city " + city);
         String geocode_url = testData.get("geocode_url").toString();
-        Response jsonResponse= RestAssuredService.getHttpResponseWithQueryParameter(geocode_url, "q", city);
-        assertThat(jsonResponse.getStatusCode()).as("API status code incorrect!")
+        Map<String, Object> queryParams = new HashMap<>();
+        queryParams.put("q", city);
+        TeswizApiResponse response = ApiService.get(geocode_url, queryParams);
+        assertThat(response.getStatusCode()).as("API status code incorrect!")
                 .isEqualTo(200);
-        return new JSONArray(jsonResponse.getBody().asString()).getJSONObject(0);
+        return new JSONArray(response.getResponseBody()).getJSONObject(0);
     }
 
     public String getLatitudeFromJSON(JSONObject jsonObject) {
@@ -106,7 +108,7 @@ public class WeatherAPIBL {
     }
 
     public WeatherAPIBL verifyCurrentWindDirection(JSONObject jsonObject, int maxWindDirection) {
-        LOGGER.info("Verifying maximum wind direction is less than: "+maxWindDirection + " from response: " + jsonObject);
+        LOGGER.info("Verifying maximum wind direction is less than: " + maxWindDirection + " from response: " + jsonObject);
         assertThat((Integer) jsonObject.get("winddirection"))
                 .as("Wind direction above maximum limit!").isLessThan(maxWindDirection);
         return this;
