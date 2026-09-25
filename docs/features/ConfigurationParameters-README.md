@@ -75,6 +75,7 @@ For the complete property list and all available defaults, use the
     TESWIZ_DRIVER_VIEWPORT_HEIGHT=960 -> Default visual viewport height
     TESWIZ_PLAYWRIGHT_PAGE_LOAD_TIMEOUT_SECONDS=30 -> Playwright page-load timeout
     TESWIZ_PLAYWRIGHT_SCRIPT_TIMEOUT_SECONDS=30 -> Playwright script timeout
+    TESWIZ_API_TIMEOUT_SECONDS=60 -> Playwright API engine request timeout in seconds (default is 60)
     TESWIZ_MAX_NUMBER_OF_APPIUM_DRIVERS=5 -> Default maximum Appium drivers
     TESWIZ_MAX_NUMBER_OF_WEB_DRIVERS=5 -> Default maximum web drivers
     MAX_NUMBER_OF_APPIUM_DRIVERS -> The max number of drivers on cloud to create for multiuser android tests, default value is 5
