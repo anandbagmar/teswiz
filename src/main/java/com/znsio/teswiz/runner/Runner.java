@@ -205,6 +205,22 @@ public class Runner {
         return Setup.getBooleanValueFromConfigs(Setup.IS_VISUAL);
     }
 
+    public static boolean isOcrEnabled() {
+        return Setup.getBooleanValueFromConfigs(Setup.IS_OCR_ENABLED);
+    }
+
+    public static double getVisualConfidenceThreshold() {
+        String val = Setup.getFromConfigs(Setup.VISUAL_CONFIDENCE_THRESHOLD);
+        if (val == null || val.isBlank()) {
+            return 0.85;
+        }
+        try {
+            return Double.parseDouble(val);
+        } catch (NumberFormatException e) {
+            return 0.85;
+        }
+    }
+
     public static boolean isRunningInHeadlessMode() {
         return Setup.getBooleanValueFromConfigs(Setup.HEADLESS);
     }
