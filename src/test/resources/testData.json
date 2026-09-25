@@ -14,14 +14,14 @@
     },
     "Weather_API":{
       "url": "https://api.open-meteo.com/v1/forecast?",
-      "geocode_url": "https://geocode.maps.co/search?",
+      "geocode_url": "https://nominatim.openstreetmap.org/search?format=json&",
       "latitude": "28.6139",
       "longitude": "77.2090",
       "hourly": "temperature_2m",
       "days": "17"
     },
     "Crypto_API":{
-      "url": "https://data.binance.com/api/v3/ticker/24hr?"
+      "url": "https://api.binance.com/api/v3/ticker/24hr?"
     },
     "RestUser_API":{
       "url": "https://jsonplaceholder.typicode.com/posts",

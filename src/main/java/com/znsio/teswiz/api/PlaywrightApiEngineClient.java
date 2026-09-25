@@ -67,6 +67,18 @@ public class PlaywrightApiEngineClient implements ApiEngineClient {
             } else if (body instanceof String) {
                 options.setData((String) body);
                 requestBodyStr = (String) body;
+            } else if (body instanceof Map) {
+                String jsonStr = new org.json.JSONObject((Map<?, ?>) body).toString();
+                options.setData(jsonStr);
+                requestBodyStr = jsonStr;
+            } else if (body instanceof java.util.Collection) {
+                String jsonStr = new org.json.JSONArray((java.util.Collection<?>) body).toString();
+                options.setData(jsonStr);
+                requestBodyStr = jsonStr;
+            } else if (body instanceof org.json.JSONObject || body instanceof org.json.JSONArray) {
+                String jsonStr = body.toString();
+                options.setData(jsonStr);
+                requestBodyStr = jsonStr;
             } else {
                 String strBody = body.toString();
                 options.setData(strBody);
