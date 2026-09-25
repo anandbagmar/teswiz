@@ -18,15 +18,15 @@ jobs:
           - name: "RestAssured API Engine"
             api_engine: "rest-assured"
             web_engine: "selenium"
-            tag: "@api and not @negateResults"
+            tag: "@api"
           - name: "Playwright Java API Engine"
             api_engine: "playwright-java"
             web_engine: "selenium"
-            tag: "@api and not @negateResults"
+            tag: "@api"
           - name: "Playwright TypeScript Engine Suite"
             api_engine: "playwright-java"
             web_engine: "playwright-ts"
-            tag: "@api and not @negateResults and @playwright-ts"
+            tag: "@api and @playwright-ts"
 
     name: ${{ matrix.name }}
 

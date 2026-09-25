@@ -1,4 +1,4 @@
-@api @negateResults
+@negateResults
 Feature: Failing test suite - feature 1
 
   @failing
