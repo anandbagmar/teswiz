@@ -322,11 +322,12 @@ public class Visual {
                     !eyesImages.getIsDisabled()));
         } catch (IllegalArgumentException | EyesException e) {
             String message = format(
-                    "Exception in instantiating Applitools for Web: '%s', Closing Web-driver " +
-                            "instance",
+                    "Exception in instantiating Applitools for PDF: '%s'",
                     e.getMessage());
             LOGGER.error(message);
-            innerDriver.quit();
+            if (null != innerDriver) {
+                innerDriver.quit();
+            }
             throw new VisualTestSetupException(message, e);
         }
     }
@@ -419,12 +420,14 @@ public class Visual {
             appEyes.open(innerDriver, appName, testName);
             LOGGER.debug(format("instantiateAppiumEyes: Is Applitools Visual Testing enabled? - %s",
                     !appEyes.getIsDisabled()));
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | EyesException e) {
             String message = format(
                     "Exception in instantiating Applitools for App: '%s', Closing driver instance",
                     e.getMessage());
             LOGGER.error(message);
-            innerDriver.quit();
+            if (null != innerDriver) {
+                innerDriver.quit();
+            }
             throw new VisualTestSetupException(message, e);
         }
 
@@ -531,7 +534,9 @@ public class Visual {
                             "instance",
                     e.getMessage());
             LOGGER.error(message);
-            innerDriver.quit();
+            if (null != innerDriver) {
+                innerDriver.quit();
+            }
             throw new VisualTestSetupException(message, e);
 
         }
@@ -562,7 +567,9 @@ public class Visual {
                     "Exception in instantiating Applitools for Playwright Web: '%s', Closing Web-driver instance",
                     e.getMessage());
             LOGGER.error(message);
-            innerDriver.quit();
+            if (null != innerDriver) {
+                innerDriver.quit();
+            }
             throw new VisualTestSetupException(message, e);
         }
         return visualDriver;
