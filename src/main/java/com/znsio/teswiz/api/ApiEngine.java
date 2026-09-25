@@ -6,7 +6,8 @@ import java.util.Arrays;
 
 public enum ApiEngine {
     REST_ASSURED("rest-assured"),
-    PLAYWRIGHT_JAVA("playwright-java");
+    PLAYWRIGHT_JAVA("playwright-java"),
+    PLAYWRIGHT_TS("playwright-ts");
 
     private final String configValue;
 
@@ -26,7 +27,7 @@ public enum ApiEngine {
                 .filter(engine -> engine.configValue.equalsIgnoreCase(rawValue.trim()))
                 .findFirst()
                 .orElseThrow(() -> new InvalidTestDataException(
-                        String.format("Unsupported API_ENGINE: '%s'. Supported values are: rest-assured, playwright-java",
+                        String.format("Unsupported API_ENGINE: '%s'. Supported values are: rest-assured, playwright-java, playwright-ts",
                                 rawValue)));
     }
 }

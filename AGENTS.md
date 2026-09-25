@@ -1,5 +1,12 @@
 # Teswiz Repository Rules
 
+## Commit Message (required)
+
+- Always provide a suggested Git commit message at the end of your response after completing any change or when requested.
+- Use a concise, imperative mood summary line (max 50 chars).
+- Include a blank line after the summary line.
+- Provide a bulleted description of the files changed and what was modified.
+
 ## Execution configuration files
 
 - Treat `configs/teswiz/teswiz_config.properties.template` as the canonical contract.

@@ -24,7 +24,7 @@ public class ApiService {
         ApiEngine engine = ApiEngine.from(configuredEngine);
         LOGGER.debug("Selected API engine: {}", engine.getConfigValue());
 
-        if (engine == ApiEngine.PLAYWRIGHT_JAVA) {
+        if (engine == ApiEngine.PLAYWRIGHT_JAVA || engine == ApiEngine.PLAYWRIGHT_TS) {
             return new PlaywrightApiEngineClient();
         }
         return new RestAssuredApiEngineClient();
