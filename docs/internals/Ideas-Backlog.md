@@ -13,10 +13,6 @@ Captured ideas for future teswiz exploration.
   - Explore image recognition for locating and interacting with UI elements such as a spinner icon or other visual controls.
   - Keep Applitools as the validation layer for image comparison and visual testing.
 
-- API test support using Playwright
-  - Explore using Playwright for API-level test support alongside the existing web and mobile flows.
-  - Consider how API checks could reuse teswiz configuration, reporting, and execution patterns.
-
 ## High-Level Plan
 
 ### 1. Shared foundations
@@ -41,14 +37,7 @@ Captured ideas for future teswiz exploration.
 - Add image recognition as an interaction layer so tests can target visual controls without using it for visual validation.
 - Support both local execution and constrained-network execution by allowing offline engines or preconfigured local services.
 
-### 4. Playwright API test support
-
-- Add an API-testing path that fits alongside the existing Playwright and runner architecture instead of becoming a separate framework.
-- Reuse teswiz configuration, secrets handling, reporting, and execution lifecycle where practical.
-- Keep the API layer usable on all supported desktop operating systems with no platform-specific behavior in the core flow.
-- Support restricted networks by allowing base URLs, proxies, certificates, and mocks/stubs to be configured locally.
-
-### 5. Validation and rollout
+### 4. Validation and rollout
 
 - Add focused tests for each new capability before widening the surface area.
 - Validate the same feature set on Windows, macOS, and Linux before calling the work complete.
