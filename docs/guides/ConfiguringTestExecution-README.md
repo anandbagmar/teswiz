@@ -101,6 +101,15 @@ or
 
     PLATFORM=api ./gradlew run
 
+All checked-in sample API config files default `API_ENGINE=rest-assured`.
+To run API scenarios with a specific engine, override `API_ENGINE` on the command line:
+
+    PLATFORM=api API_ENGINE=playwright-java ./gradlew run
+
+or
+
+    PLATFORM=api API_ENGINE=playwright-ts ./gradlew run
+
 ### Running Multi-User simulations
 
 The framework now supports running multiuser scenarios. This means 1 cucumber scenario can orchestrate the interaction between multiple instances of the application-under-test in multiple platforms - ex: Android and Web

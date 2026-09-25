@@ -28,11 +28,13 @@ public class PlaywrightApiEngineClient implements ApiEngineClient {
         return PlaywrightApiManager.getAPIRequestContext();
     }
 
-    private RequestOptions createRequestOptions(Map<String, String> headers) {
+    private RequestOptions createRequestOptions(Map<String, String> headers, boolean hasBody) {
         RequestOptions options = RequestOptions.create();
         Map<String, String> mergedHeaders = new HashMap<>();
         mergedHeaders.put("Accept", "application/json, text/html, */*");
-        mergedHeaders.put("content-type", "application/json");
+        if (hasBody) {
+            mergedHeaders.put("content-type", "application/json");
+        }
         if (headers != null && !headers.isEmpty()) {
             mergedHeaders.putAll(headers);
         }
@@ -48,7 +50,7 @@ public class PlaywrightApiEngineClient implements ApiEngineClient {
 
     private TeswizApiResponse executeRequest(String method, String url, Object body, Map<String, Object> queryParams, Map<String, String> headers) {
         LOGGER.info("Processing {} call via Playwright API Engine", method);
-        RequestOptions options = createRequestOptions(headers);
+        RequestOptions options = createRequestOptions(headers, body != null);
         String finalUrl = stripTrailingQuestionMark(url);
 
         if (queryParams != null && !queryParams.isEmpty()) {

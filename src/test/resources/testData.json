@@ -21,7 +21,7 @@
       "days": "17"
     },
     "Crypto_API":{
-      "url": "https://api.binance.com/api/v3/ticker/24hr?"
+      "url": "https://api.binance.us/api/v3/ticker/24hr?"
     },
     "RestUser_API":{
       "url": "https://jsonplaceholder.typicode.com/posts",
