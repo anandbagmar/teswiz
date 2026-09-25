@@ -15,6 +15,7 @@
 teswiz is a Java-first automation framework for:
 
 - web: Selenium, Playwright-Java, Playwright-TS
+- api: RestAssured, Playwright-Java, Playwright-TS
 - mobile: Appium Java for Android and iOS
 - desktop/web-adjacent: Electron, Windows apps, PDF validation
 - visual testing: Applitools Eyes and Ultrafast Grid
@@ -106,6 +107,26 @@ Examples:
 - [Playwright-TS web example](docs/examples/Web-Playwright-TS-Example.md)
 - [Android example](docs/examples/Android-Example.md)
 - [iOS example](docs/examples/iOS-Example.md)
+- [API example](docs/examples/API-Example.md)
+
+## Choose your API engine
+
+Set this in your suite config or environment variable:
+
+```properties
+API_ENGINE=rest-assured
+```
+
+Valid values:
+
+- `rest-assured` (default) - uses RestAssured for HTTP execution
+- `playwright-java` - uses Playwright Java APIRequestContext for HTTP execution
+- `playwright-ts` - uses Playwright TypeScript worker protocol for HTTP execution
+
+Read more:
+
+- [API test execution guide](docs/features/RunningApiTests-README.md)
+- [API implementation example](docs/examples/API-Example.md)
 
 ## Choose your test framework
 

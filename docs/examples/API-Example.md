@@ -9,7 +9,7 @@ This guide provides concrete examples of implementing API-level tests in Teswiz 
 Engine selection is governed by the `API_ENGINE` property in your configuration properties file or environment variable:
 
 ```properties
-# Supported values: rest-assured (default), playwright-java
+# Supported values: rest-assured (default), playwright-java, playwright-ts
 API_ENGINE=playwright-java
 ```
 
