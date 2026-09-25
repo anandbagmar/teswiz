@@ -13,6 +13,11 @@ public class ApiEngineParitySteps {
         parityBL.setEngine(engine);
     }
 
+    @Given("I use the configured API engine")
+    public void useConfiguredApiEngine() {
+        parityBL.useConfiguredEngine();
+    }
+
     @When("I send a GET request for post 1")
     public void sendGetRequest() {
         parityBL.sendGetRequest();

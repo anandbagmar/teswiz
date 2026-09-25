@@ -3,6 +3,7 @@ package com.znsio.teswiz.businessLayer.apiParity;
 import com.znsio.teswiz.api.TeswizApiResponse;
 import com.znsio.teswiz.runner.Setup;
 import com.znsio.teswiz.services.ApiService;
+import com.znsio.teswiz.tools.OverriddenVariable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -21,6 +22,12 @@ public class ApiEngineParityBL {
     public ApiEngineParityBL setEngine(String engine) {
         LOGGER.info("Setting API_ENGINE to {}", engine);
         System.setProperty(Setup.API_ENGINE, engine);
+        return this;
+    }
+
+    public ApiEngineParityBL useConfiguredEngine() {
+        String currentEngine = OverriddenVariable.getOverriddenStringValue(Setup.API_ENGINE, "rest-assured");
+        LOGGER.info("Using active configured API_ENGINE: {}", currentEngine);
         return this;
     }
 
