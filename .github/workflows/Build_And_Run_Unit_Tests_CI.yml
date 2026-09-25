@@ -55,6 +55,14 @@ jobs:
       - name: 🎭 Install Playwright Chromium
         run: npx playwright install chromium
 
+      - name: 🚀 Log Execution Parameters
+        run: |
+          echo "============================================================"
+          echo "🧪 Unit Test Execution Details"
+          echo "============================================================"
+          echo "🚀 Command Line: ./gradlew clean build --refresh-dependencies"
+          echo "============================================================"
+
       - name: 🧪 Build with Gradle and Run Unit Tests
         uses: gradle/gradle-build-action@v3
         env:
