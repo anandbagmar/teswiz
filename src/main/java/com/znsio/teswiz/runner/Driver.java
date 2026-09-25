@@ -1035,4 +1035,32 @@ public class Driver {
             throw new RuntimeException("Unable to dismiss dialog: " + elementToDisappear, e);
         }
     }
+
+    public VisualElement findByText(String text) {
+        return this.visually.findByText(text);
+    }
+
+    public VisualElement findByImage(String... imageTemplatePaths) {
+        return findByImage(Arrays.asList(imageTemplatePaths));
+    }
+
+    public VisualElement findByImage(List<String> imageTemplatePaths) {
+        return this.visually.findByImage(imageTemplatePaths);
+    }
+
+    public VisualElement findByImage(List<String> imageTemplatePaths, double confidenceThreshold) {
+        return this.visually.findByImage(imageTemplatePaths, confidenceThreshold);
+    }
+
+    public VisualElement findByTextOrImage(String text, String... imageTemplatePaths) {
+        return findByTextOrImage(text, Arrays.asList(imageTemplatePaths));
+    }
+
+    public VisualElement findByTextOrImage(String text, List<String> imageTemplatePaths) {
+        return this.visually.findByTextOrImage(text, imageTemplatePaths);
+    }
+
+    public VisualElement findByImageOrText(List<String> imageTemplatePaths, String text) {
+        return this.visually.findByImageOrText(imageTemplatePaths, text);
+    }
 }

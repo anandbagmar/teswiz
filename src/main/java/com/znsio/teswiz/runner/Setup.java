@@ -51,6 +51,8 @@ public class Setup {
     public static final String BASE_URL_FOR_WEB = "BASE_URL_FOR_WEB";
     public static final String IS_VISUAL = "IS_VISUAL";
     public static final String FAIL_TEST_ON_VISUAL_DIFFERENCE = "FAIL_TEST_ON_VISUAL_DIFFERENCE";
+    public static final String IS_OCR_ENABLED = "IS_OCR_ENABLED";
+    public static final String VISUAL_CONFIDENCE_THRESHOLD = "VISUAL_CONFIDENCE_THRESHOLD";
     public static final String BROWSER = "BROWSER";
     public static final String WEB_ENGINE = "WEB_ENGINE";
     public static final String CONFIG_FILE = "CONFIG_FILE";

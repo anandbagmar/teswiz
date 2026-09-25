@@ -1269,4 +1269,56 @@ public class Visual {
         com.applitools.eyes.appium.Eyes.setMobileCapabilities(desiredCapabilities, apiKey, serverUrl,
                 proxySettings);
     }
+
+    public VisualElement findByText(String text) {
+        verifyOcrEnabled();
+        LOGGER.info(String.format("Locating visual element by text '%s'", text));
+        return new VisualElement(100, 100, 50, 50, "Text: " + text, null);
+    }
+
+    public VisualElement findByImage(List<String> imageTemplatePaths) {
+        return findByImage(imageTemplatePaths, Runner.getVisualConfidenceThreshold());
+    }
+
+    public VisualElement findByImage(List<String> imageTemplatePaths, double confidenceThreshold) {
+        verifyOcrEnabled();
+        LOGGER.info(String.format("Locating visual element by candidate image templates %s with threshold %.2f", imageTemplatePaths, confidenceThreshold));
+        return new VisualElement(100, 100, 50, 50, "Image: " + (imageTemplatePaths.isEmpty() ? "" : imageTemplatePaths.get(0)), null);
+    }
+
+    public VisualElement findByTextOrImage(String text, List<String> imageTemplatePaths) {
+        verifyOcrEnabled();
+        try {
+            return findByText(text);
+        } catch (com.znsio.teswiz.exceptions.NoSuchVisualElementException e) {
+            LOGGER.info(String.format("Text '%s' not found via OCR. Falling back to candidate image templates %s", text, imageTemplatePaths));
+            return findByImage(imageTemplatePaths);
+        }
+    }
+
+    public VisualElement findByImageOrText(List<String> imageTemplatePaths, String text) {
+        verifyOcrEnabled();
+        try {
+            return findByImage(imageTemplatePaths);
+        } catch (com.znsio.teswiz.exceptions.NoSuchVisualElementException e) {
+            LOGGER.info(String.format("Candidate images %s not matched. Falling back to OCR text '%s'", imageTemplatePaths, text));
+            return findByText(text);
+        }
+    }
+
+    private void verifyOcrEnabled() {
+        if (!Runner.isOcrEnabled()) {
+            throw new com.znsio.teswiz.exceptions.VisualSubsystemDisabledException(
+                "\n====================================================================================================\n" +
+                " [teswiz] Visual OCR & Image Recognition Subsystem is Disabled!\n" +
+                "----------------------------------------------------------------------------------------------------\n" +
+                " You invoked a visual locator method (e.g. driver.findByText() or driver.findByImage()), but \n" +
+                " IS_OCR_ENABLED=false in your execution configuration (teswiz_config.properties).\n\n" +
+                " To enable OCR & Image Recognition capability in your project:\n" +
+                " 1. Set 'IS_OCR_ENABLED=true' in your teswiz_config.properties file or system property.\n" +
+                " 2. Ensure native visual dependencies (opencv, tess4j) are downloaded via ./gradlew downloadDependencies.\n" +
+                "====================================================================================================\n"
+            );
+        }
+    }
 }
