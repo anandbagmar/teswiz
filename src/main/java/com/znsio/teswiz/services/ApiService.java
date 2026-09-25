@@ -10,6 +10,7 @@ import com.znsio.teswiz.tools.OverriddenVariable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.File;
 import java.util.Map;
 
 public class ApiService {
@@ -47,6 +48,14 @@ public class ApiService {
 
     public static TeswizApiResponse post(String url, Object body, Map<String, String> headers) {
         return getClient().post(url, body, headers);
+    }
+
+    public static TeswizApiResponse postMultipart(String url, Map<String, Object> formFields, Map<String, File> files) {
+        return postMultipart(url, formFields, files, null);
+    }
+
+    public static TeswizApiResponse postMultipart(String url, Map<String, Object> formFields, Map<String, File> files, Map<String, String> headers) {
+        return getClient().postMultipart(url, formFields, files, headers);
     }
 
     public static TeswizApiResponse put(String url, Object body) {

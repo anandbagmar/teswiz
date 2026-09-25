@@ -1,7 +1,7 @@
 package com.znsio.teswiz.testng;
 
+import com.znsio.teswiz.api.TeswizApiResponse;
 import com.znsio.teswiz.businessLayer.cryptoAPI.CryptoAPIBL;
-import io.restassured.response.Response;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -20,7 +20,7 @@ public class CryptoApiPriceChangeDataDrivenTestNgTest {
     @Test(dataProvider = "cryptoSymbolsAndMaxPriceChange", groups = {"api", "cryptoAPI", "priceChange"})
     public void validatePriceChangeInLast24Hrs(String symbol, int maxPriceChange) {
         CryptoAPIBL cryptoApi = new CryptoAPIBL();
-        Response jsonResponse = cryptoApi.getDataUsingCryptoSymbol(symbol);
-        cryptoApi.verifypriceChange(jsonResponse, maxPriceChange);
+        TeswizApiResponse response = cryptoApi.getDataUsingCryptoSymbol(symbol);
+        cryptoApi.verifypriceChange(response, maxPriceChange);
     }
 }
