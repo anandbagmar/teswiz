@@ -177,14 +177,15 @@ src/test/resources/visualTemplates/
 
 ---
 
-## 7. Implementation Roadmap
+## 7. Implementation Roadmap & Status
 
-| Phase | Milestone | Deliverables |
-| :--- | :--- | :--- |
-| **Phase 1** | Dependencies & Config | Add `tess4j` and `opencv` to `build.gradle`; update `teswiz_config.properties.template`. |
-| **Phase 2** | Service Layer | Implement `OcrService` and `ImageRecognitionService` with multi-scale matching. |
-| **Phase 3** | Driver Facade & Actions | Implement `VisualElement` and action dispatchers for Selenium, Playwright Java, Playwright TS, and Appium. |
-| **Phase 4** | Verification & Docs | Add sample Google Maps & Game Control tests; publish `docs/features/OCR-and-Image-Recognition-README.md`. |
+| Phase | Milestone | Deliverables | Status |
+| :--- | :--- | :--- | :---: |
+| **Phase 1** | Configuration Contracts | Added `IS_OCR_ENABLED` & `VISUAL_CONFIDENCE_THRESHOLD` to canonical `teswiz_config.properties.template` and all 50+ example configs; verified template consistency (`./gradlew validateConfigurationTemplates`). | ✅ **COMPLETED** |
+| **Phase 2** | Facade API & Exceptions | Implemented `Driver.findByText()`, `findByImage()`, `findByTextOrImage()`, `findByImageOrText()`, `VisualElement` interaction wrapper, `VisualSubsystemDisabledException`, and `NoSuchVisualElementException`. | ✅ **COMPLETED** |
+| **Phase 3** | Core Engine Services | Implement `OcrService.java` (Tess4J 5 / PaddleOCR ONNX text region detector) and `ImageRecognitionService.java` (OpenCV Multi-Scale Image Pyramid template matcher). | 🚀 **IN PROGRESS** |
+| **Phase 4** | Action Dispatcher Wiring | Wire real element bounding boxes `(x, y, width, height)` to Selenium W3C Actions, Playwright Mouse API, and Appium Touch Gesture API. | ⏳ **PLANNED** |
+| **Phase 5** | Verification & README | Add BDD test scenarios for Google Maps canvas & game controls; publish `docs/features/OCR-and-Image-Recognition-README.md`. | ⏳ **PLANNED** |
 
 ---
 
