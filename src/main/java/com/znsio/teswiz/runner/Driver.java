@@ -383,6 +383,10 @@ public class Driver {
         return driver;
     }
 
+    public Platform getPlatformName() {
+        return driverForPlatform;
+    }
+
     public Path printAndSavePageSourceDump() {
         String pageSource = capturePageSource();
         int dumpIndex = getNextPageSourceDumpIndex();

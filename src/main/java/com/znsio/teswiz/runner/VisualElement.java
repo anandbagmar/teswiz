@@ -1,5 +1,8 @@
 package com.znsio.teswiz.runner;
 
+import java.time.Duration;
+import java.util.List;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.Dimension;
@@ -7,9 +10,13 @@ import org.openqa.selenium.Point;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.Actions;
+import org.openqa.selenium.interactions.PointerInput;
+import org.openqa.selenium.interactions.Sequence;
 
 import com.znsio.teswiz.entities.Direction;
 import com.znsio.teswiz.entities.Platform;
+
+import io.appium.java_client.AppiumDriver;
 
 public class VisualElement {
     private static final Logger LOGGER = LogManager.getLogger(VisualElement.class.getName());
@@ -62,8 +69,12 @@ public class VisualElement {
         Point center = getCenter();
         LOGGER.info(String.format("Clicking visual element '%s' at center coordinates (%d, %d)", label, center.getX(), center.getY()));
         if (driverFacade.getInnerDriver() != null) {
-            Actions actions = new Actions(driverFacade.getInnerDriver());
-            actions.moveToLocation(center.getX(), center.getY()).click().perform();
+            if (Driver.APPIUM_DRIVER.equals(driverFacade.getType())) {
+                performMobileTap(center.getX(), center.getY());
+            } else {
+                Actions actions = new Actions(driverFacade.getInnerDriver());
+                actions.moveToLocation(center.getX(), center.getY()).click().perform();
+            }
         } else {
             LOGGER.warn(String.format("Unable to click visual element '%s': inner driver is null", label));
         }
@@ -73,8 +84,14 @@ public class VisualElement {
         Point center = getCenter();
         LOGGER.info(String.format("Double-clicking visual element '%s' at (%d, %d)", label, center.getX(), center.getY()));
         if (driverFacade.getInnerDriver() != null) {
-            Actions actions = new Actions(driverFacade.getInnerDriver());
-            actions.moveToLocation(center.getX(), center.getY()).doubleClick().perform();
+            if (Driver.APPIUM_DRIVER.equals(driverFacade.getType())) {
+                performMobileTap(center.getX(), center.getY());
+                try { Thread.sleep(100); } catch (InterruptedException ignored) {}
+                performMobileTap(center.getX(), center.getY());
+            } else {
+                Actions actions = new Actions(driverFacade.getInnerDriver());
+                actions.moveToLocation(center.getX(), center.getY()).doubleClick().perform();
+            }
         }
     }
 
@@ -126,7 +143,46 @@ public class VisualElement {
     }
 
     public void swipe(Direction direction) {
-        LOGGER.info(String.format("Swiping '%s' on visual element '%s'", direction, label));
+        Point center = getCenter();
+        LOGGER.info(String.format("Swiping '%s' on visual element '%s' at (%d, %d)", direction, label, center.getX(), center.getY()));
+        if (driverFacade.getInnerDriver() instanceof AppiumDriver appiumDriver) {
+            int startX = center.getX();
+            int startY = center.getY();
+            int endX = startX;
+            int endY = startY;
+
+            int deltaX = width / 2;
+            int deltaY = height / 2;
+            if (deltaX < 50) deltaX = 100;
+            if (deltaY < 50) deltaY = 100;
+
+            switch (direction) {
+                case UP -> endY = startY - deltaY;
+                case DOWN -> endY = startY + deltaY;
+                case LEFT -> endX = startX - deltaX;
+                case RIGHT -> endX = startX + deltaX;
+            }
+
+            PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
+            Sequence swipeSequence = new Sequence(finger, 1);
+            swipeSequence.addAction(finger.createPointerMove(Duration.ofMillis(0), PointerInput.Origin.viewport(), startX, startY));
+            swipeSequence.addAction(finger.createPointerDown(PointerInput.MouseButton.LEFT.asArg()));
+            swipeSequence.addAction(finger.createPointerMove(Duration.ofMillis(600), PointerInput.Origin.viewport(), endX, endY));
+            swipeSequence.addAction(finger.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
+            appiumDriver.perform(List.of(swipeSequence));
+        }
+    }
+
+    private void performMobileTap(int tapX, int tapY) {
+        if (driverFacade.getInnerDriver() instanceof AppiumDriver appiumDriver) {
+            PointerInput touch = new PointerInput(PointerInput.Kind.TOUCH, "touch");
+            Sequence clickPosition = new Sequence(touch, 1);
+            clickPosition
+                    .addAction(touch.createPointerMove(Duration.ofMillis(0), PointerInput.Origin.viewport(), tapX, tapY))
+                    .addAction(touch.createPointerDown(PointerInput.MouseButton.LEFT.asArg()))
+                    .addAction(touch.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
+            appiumDriver.perform(List.of(clickPosition));
+        }
     }
 
     @Override

@@ -875,7 +875,7 @@ public class Visual {
         LOGGER.info(format("Provided browser dimensions: %s",
                 providedBrowserViewPortSizeFromConfig));
 
-        if (driverType.equals(Driver.APPIUM_DRIVER)) {
+        if (driverType.equals(Driver.APPIUM_DRIVER) || null == innerDriver) {
             return providedBrowserViewPortSizeFromConfig;
         } else {
             JavascriptExecutor js = (JavascriptExecutor) innerDriver;
@@ -1273,7 +1273,13 @@ public class Visual {
     public VisualElement findByText(String text) {
         verifyOcrEnabled();
         LOGGER.info(String.format("Locating visual element by text '%s'", text));
-        return new VisualElement(100, 100, 50, 50, "Text: " + text, null);
+        byte[] screenshot = captureScreenshotBytes();
+        VisualElement match = com.znsio.teswiz.visual.OcrService.findTextMatch(screenshot, text, null);
+        if (match != null) {
+            return match;
+        }
+        throw new com.znsio.teswiz.exceptions.NoSuchVisualElementException(
+                String.format("Visual element with text '%s' not found via OCR.", text));
     }
 
     public VisualElement findByImage(List<String> imageTemplatePaths) {
@@ -1283,7 +1289,13 @@ public class Visual {
     public VisualElement findByImage(List<String> imageTemplatePaths, double confidenceThreshold) {
         verifyOcrEnabled();
         LOGGER.info(String.format("Locating visual element by candidate image templates %s with threshold %.2f", imageTemplatePaths, confidenceThreshold));
-        return new VisualElement(100, 100, 50, 50, "Image: " + (imageTemplatePaths.isEmpty() ? "" : imageTemplatePaths.get(0)), null);
+        byte[] screenshot = captureScreenshotBytes();
+        VisualElement match = com.znsio.teswiz.visual.ImageRecognitionService.findTemplateMatch(screenshot, imageTemplatePaths, confidenceThreshold, null);
+        if (match != null) {
+            return match;
+        }
+        throw new com.znsio.teswiz.exceptions.NoSuchVisualElementException(
+                String.format("Visual element matching candidate image templates %s not found (confidence threshold: %.2f).", imageTemplatePaths, confidenceThreshold));
     }
 
     public VisualElement findByTextOrImage(String text, List<String> imageTemplatePaths) {
@@ -1304,6 +1316,14 @@ public class Visual {
             LOGGER.info(String.format("Candidate images %s not matched. Falling back to OCR text '%s'", imageTemplatePaths, text));
             return findByText(text);
         }
+    }
+
+    private byte[] captureScreenshotBytes() {
+        if (this.innerDriver instanceof TakesScreenshot) {
+            return ((TakesScreenshot) this.innerDriver).getScreenshotAs(OutputType.BYTES);
+        }
+        LOGGER.warn("Inner driver does not implement TakesScreenshot.");
+        return null;
     }
 
     private void verifyOcrEnabled() {
