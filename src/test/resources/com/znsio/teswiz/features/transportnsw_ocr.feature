@@ -1,7 +1,7 @@
 @transportnsw @ocr @web
 Feature: Visual OCR and Image Recognition map navigation on Transport NSW Metro page
 
-  #CONFIG=./configs/transportnsw_ocr_config.properties ./gradlew run
+  #CONFIG=./configs/transportnsw_ocr_config.properties TAG="@transportnsw and @ocr" ./gradlew run
   @web @positive
   Scenario: Visually navigate Metro interactive map using image matching and OCR callouts
     Given I navigate to the Transport NSW Metro page at "https://transportnsw.info/travel-info/ways-to-get-around/metro"

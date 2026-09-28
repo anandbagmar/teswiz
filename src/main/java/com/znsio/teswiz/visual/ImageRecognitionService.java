@@ -28,16 +28,22 @@ public class ImageRecognitionService {
 
     static {
         try {
-            nu.pattern.OpenCV.loadShared();
+            nu.pattern.OpenCV.loadLocally();
             openCvNativeLoaded = true;
-            LOGGER.info("OpenCV native library loaded successfully via OpenPnP.");
+            LOGGER.info("OpenCV native library loaded successfully via OpenPnP loadLocally.");
         } catch (Throwable t) {
             try {
-                System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+                nu.pattern.OpenCV.loadShared();
                 openCvNativeLoaded = true;
-                LOGGER.info("OpenCV native library loaded via System.loadLibrary.");
-            } catch (Throwable e) {
-                LOGGER.warn("Failed to load OpenCV native shared library: " + e.getMessage());
+                LOGGER.info("OpenCV native library loaded successfully via OpenPnP loadShared.");
+            } catch (Throwable t2) {
+                try {
+                    System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+                    openCvNativeLoaded = true;
+                    LOGGER.info("OpenCV native library loaded via System.loadLibrary.");
+                } catch (Throwable e) {
+                    LOGGER.warn("Failed to load OpenCV native shared library: " + e.getMessage());
+                }
             }
         }
     }
