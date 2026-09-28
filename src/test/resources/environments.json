@@ -9,7 +9,9 @@
     "INDIGO_BASE_URL": "https://www.goindigo.in/",
     "DINEOUT_BASE_URL": "https://www.dineout.co.in/",
     "TESWIZ_BASE_URL": "https://github.com/znsio/teswiz",
-    "CHROME-WEB_BASE_URL": "https://github.com/znsio/teswiz"
+    "CHROME-WEB_BASE_URL": "https://github.com/znsio/teswiz",
+    "COVIDTRACKING_BASE_URL": "https://covidtracking.in/",
+    "TRANSPORTNSW_BASE_URL": "https://transportnsw.info/travel-info/ways-to-get-around/metro"
   },
   "dev": {
     "CONFENGINE_BASE_URL": "https://www.dev.confengine.com/"
