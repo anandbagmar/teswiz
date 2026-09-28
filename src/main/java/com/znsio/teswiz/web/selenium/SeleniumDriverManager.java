@@ -206,7 +206,7 @@ public class SeleniumDriverManager {
         chromeOptions.setAcceptInsecureCerts(chromeConfiguration.getBoolean(ACCEPT_INSECURE_CERTS));
 
         String browserVersion = getOverriddenStringValue(BROWSER_VERSION,
-                chromeConfiguration.getString("browserVersion"));
+                chromeConfiguration.optString("browserVersion", "latest"));
         if ((Runner.getPlatform().equals(Platform.web) || Runner.getPlatform().equals(Platform.electron))
                 && !browserVersion.equalsIgnoreCase("latest")) {
             chromeOptions.setBrowserVersion(browserVersion);

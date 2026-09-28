@@ -20,3 +20,12 @@
 - Run `./gradlew validateConfigurationTemplates` after configuration changes. The validation is
   also part of `./gradlew test`, `./gradlew check`, `./gradlew build`, `./gradlew shadowJar`,
   and CI builds.
+
+## Cucumber BDD Test Architecture
+
+- Always follow the strict **Feature -> Step -> Business Layer (BL) -> Screen** design pattern for all Cucumber BDD test code generation:
+  1. **Feature File** (`src/test/resources/com/znsio/teswiz/features/*.feature`): Gherkin BDD scenario definitions.
+  2. **Step Definitions** (`src/test/java/com/znsio/teswiz/steps/*Steps.java`): Maps Gherkin steps to Business Layer (`*BL`) invocations.
+  3. **Business Layer (BL)** (`src/test/java/com/znsio/teswiz/businessLayer/*/*BL.java`): Orchestrates business flow and assertions using abstract screen class `ScreenClass.get()`.
+  4. **Screen Contract & Platform Concrete Classes** (`src/test/java/com/znsio/teswiz/screen/*/*Screen.java` and `src/test/java/com/znsio/teswiz/screen/<platform>/*/*Screen<Platform>.java`): Defines screen interaction contracts and platform-specific element interactions.
+
