@@ -451,6 +451,12 @@ public class Setup {
         configsBoolean.put(STEP_ATTRIBUTION_ENABLED, getOverriddenBooleanValue(
                 STEP_ATTRIBUTION_ENABLED,
                 getBooleanValueFromPropertiesIfAvailable(STEP_ATTRIBUTION_ENABLED, true)));
+        configsBoolean.put(IS_OCR_ENABLED, getOverriddenBooleanValue(
+                IS_OCR_ENABLED,
+                getBooleanValueFromPropertiesIfAvailable(IS_OCR_ENABLED, false)));
+        configs.put(VISUAL_CONFIDENCE_THRESHOLD, getOverriddenStringValue(
+                VISUAL_CONFIDENCE_THRESHOLD,
+                getStringValueFromPropertiesIfAvailable(VISUAL_CONFIDENCE_THRESHOLD, "0.85")));
     }
 
     public static String getHostMachineName() {
