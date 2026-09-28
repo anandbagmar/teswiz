@@ -27,6 +27,7 @@ public class CovidTrackingScreenWeb extends CovidTrackingScreen {
     public CovidTrackingScreen navigateTo(String url) {
         LOGGER.info("Navigating to COVID tracking dashboard URL: " + url);
         driver.getInnerDriver().get(url);
+        com.znsio.teswiz.tools.Wait.waitFor(3);
         return this;
     }
 

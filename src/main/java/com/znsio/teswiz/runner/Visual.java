@@ -1273,10 +1273,16 @@ public class Visual {
     public VisualElement findByText(String text) {
         verifyOcrEnabled();
         LOGGER.info(String.format("Locating visual element by text '%s'", text));
-        byte[] screenshot = captureScreenshotBytes();
-        VisualElement match = com.znsio.teswiz.visual.OcrService.findTextMatch(screenshot, text, null);
-        if (match != null) {
-            return match;
+        int maxAttempts = 5;
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            byte[] screenshot = captureScreenshotBytes();
+            VisualElement match = com.znsio.teswiz.visual.OcrService.findTextMatch(screenshot, text, null);
+            if (match != null) {
+                return match;
+            }
+            if (attempt < maxAttempts) {
+                try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
+            }
         }
         throw new com.znsio.teswiz.exceptions.NoSuchVisualElementException(
                 String.format("Visual element with text '%s' not found via OCR.", text));
@@ -1289,10 +1295,16 @@ public class Visual {
     public VisualElement findByImage(List<String> imageTemplatePaths, double confidenceThreshold) {
         verifyOcrEnabled();
         LOGGER.info(String.format("Locating visual element by candidate image templates %s with threshold %.2f", imageTemplatePaths, confidenceThreshold));
-        byte[] screenshot = captureScreenshotBytes();
-        VisualElement match = com.znsio.teswiz.visual.ImageRecognitionService.findTemplateMatch(screenshot, imageTemplatePaths, confidenceThreshold, null);
-        if (match != null) {
-            return match;
+        int maxAttempts = 5;
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            byte[] screenshot = captureScreenshotBytes();
+            VisualElement match = com.znsio.teswiz.visual.ImageRecognitionService.findTemplateMatch(screenshot, imageTemplatePaths, confidenceThreshold, null);
+            if (match != null) {
+                return match;
+            }
+            if (attempt < maxAttempts) {
+                try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
+            }
         }
         throw new com.znsio.teswiz.exceptions.NoSuchVisualElementException(
                 String.format("Visual element matching candidate image templates %s not found (confidence threshold: %.2f).", imageTemplatePaths, confidenceThreshold));

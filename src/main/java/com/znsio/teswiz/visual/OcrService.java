@@ -16,7 +16,8 @@ import com.znsio.teswiz.runner.Setup;
 import com.znsio.teswiz.runner.VisualElement;
 
 import net.sourceforge.tess4j.Word;
-import net.sourceforge.tess4j.ITessAPI.TessPageIteratorLevel;
+import static net.sourceforge.tess4j.ITessAPI.TessPageIteratorLevel.RIL_TEXTLINE;
+import static net.sourceforge.tess4j.ITessAPI.TessPageIteratorLevel.RIL_WORD;
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
 
@@ -62,14 +63,25 @@ public class OcrService {
         }
 
         try {
-            List<Word> words = tesseract.getWords(bufferedImage, TessPageIteratorLevel.RIL_WORD);
             String normalizedSearch = searchText.trim().toLowerCase();
 
+            List<Word> lines = tesseract.getWords(bufferedImage, RIL_TEXTLINE);
+            for (Word line : lines) {
+                String lineText = line.getText();
+                if (lineText != null && lineText.trim().toLowerCase().contains(normalizedSearch)) {
+                    Rectangle rect = line.getBoundingBox();
+                    LOGGER.info(String.format("Found OCR text line match '%s' for search '%s' at bounds [x=%d, y=%d, w=%d, h=%d]",
+                            lineText, searchText, rect.x, rect.y, rect.width, rect.height));
+                    return new VisualElement(rect.x, rect.y, rect.width, rect.height, "OCR: " + lineText, driverFacade);
+                }
+            }
+
+            List<Word> words = tesseract.getWords(bufferedImage, RIL_WORD);
             for (Word word : words) {
                 String wordText = word.getText();
                 if (wordText != null && wordText.trim().toLowerCase().contains(normalizedSearch)) {
                     Rectangle rect = word.getBoundingBox();
-                    LOGGER.info(String.format("Found OCR text match '%s' for search '%s' at bounds [x=%d, y=%d, w=%d, h=%d]",
+                    LOGGER.info(String.format("Found OCR word match '%s' for search '%s' at bounds [x=%d, y=%d, w=%d, h=%d]",
                             wordText, searchText, rect.x, rect.y, rect.width, rect.height));
                     return new VisualElement(rect.x, rect.y, rect.width, rect.height, "OCR: " + wordText, driverFacade);
                 }
