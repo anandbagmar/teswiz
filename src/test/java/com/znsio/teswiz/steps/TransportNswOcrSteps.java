@@ -35,20 +35,7 @@ public class TransportNswOcrSteps {
         new TransportNswOcrBL(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform()).scrollToExploreRouteMap();
     }
 
-    @When("I visually click a station solid green dot on the map using image template {string}")
-    public void iVisuallyClickAStationSolidGreenDotOnTheMapUsingImageTemplate(String greenDotImageTemplatePath) {
-        new TransportNswOcrBL(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform()).clickSolidGreenDotOnMap(greenDotImageTemplatePath);
-    }
 
-    @When("I visually click the callout action using OCR text {string}")
-    public void iVisuallyClickTheCalloutActionUsingOcrText(String optionText) {
-        new TransportNswOcrBL(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform()).clickCalloutOption(optionText);
-    }
-
-    @When("I visually click the station name on the map using OCR text {string}")
-    public void iVisuallyClickTheStationNameOnTheMapUsingOcrText(String stationName) {
-        new TransportNswOcrBL(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform()).clickStationNameOnMap(stationName);
-    }
 
     @Then("I verify the station departures page for {string} is displayed")
     public void iVerifyTheStationDeparturesPageForIsDisplayed(String stationName) {

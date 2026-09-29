@@ -51,6 +51,7 @@ public class Setup {
     public static final String BASE_URL_FOR_WEB = "BASE_URL_FOR_WEB";
     public static final String IS_VISUAL = "IS_VISUAL";
     public static final String FAIL_TEST_ON_VISUAL_DIFFERENCE = "FAIL_TEST_ON_VISUAL_DIFFERENCE";
+    public static final String HIGHLIGHT_ELEMENTS = "HIGHLIGHT_ELEMENTS";
     public static final String IS_OCR_ENABLED = "IS_OCR_ENABLED";
     public static final String VISUAL_CONFIDENCE_THRESHOLD = "VISUAL_CONFIDENCE_THRESHOLD";
     public static final String BROWSER = "BROWSER";
@@ -451,6 +452,9 @@ public class Setup {
         configsBoolean.put(STEP_ATTRIBUTION_ENABLED, getOverriddenBooleanValue(
                 STEP_ATTRIBUTION_ENABLED,
                 getBooleanValueFromPropertiesIfAvailable(STEP_ATTRIBUTION_ENABLED, true)));
+        configsBoolean.put(HIGHLIGHT_ELEMENTS, getOverriddenBooleanValue(
+                HIGHLIGHT_ELEMENTS,
+                getBooleanValueFromPropertiesIfAvailable(HIGHLIGHT_ELEMENTS, true)));
         configsBoolean.put(IS_OCR_ENABLED, getOverriddenBooleanValue(
                 IS_OCR_ENABLED,
                 getBooleanValueFromPropertiesIfAvailable(IS_OCR_ENABLED, false)));

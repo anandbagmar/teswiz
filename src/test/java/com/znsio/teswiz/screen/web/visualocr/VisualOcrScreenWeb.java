@@ -26,24 +26,28 @@ public class VisualOcrScreenWeb extends VisualOcrScreen {
     @Override
     public VisualElement findVisualElementByText(String text) {
         LOGGER.info("Finding visual element by text: " + text);
+        visually.checkWindow(SCREEN_NAME, "Find visual element by text: " + text);
         return driver.findByText(text);
     }
 
     @Override
     public VisualElement findVisualElementByImage(List<String> imagePaths) {
         LOGGER.info("Finding visual element by image: " + imagePaths);
+        visually.checkWindow(SCREEN_NAME, "Find visual element by image: " + imagePaths);
         return driver.findByImage(imagePaths);
     }
 
     @Override
     public VisualElement findVisualElementByTextOrImage(String text, List<String> imagePaths) {
         LOGGER.info("Finding visual element by text or image: " + text + " / " + imagePaths);
+        visually.checkWindow(SCREEN_NAME, "Find visual element by text/image: " + text);
         return driver.findByTextOrImage(text, imagePaths);
     }
 
     @Override
     public VisualElement findVisualElementByImageOrText(List<String> imagePaths, String text) {
         LOGGER.info("Finding visual element by image or text: " + imagePaths + " / " + text);
+        visually.checkWindow(SCREEN_NAME, "Find visual element by image/text: " + text);
         return driver.findByImageOrText(imagePaths, text);
     }
 }
