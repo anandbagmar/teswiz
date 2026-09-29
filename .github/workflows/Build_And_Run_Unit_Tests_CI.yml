@@ -67,6 +67,7 @@ jobs:
         uses: gradle/gradle-build-action@v3
         env:
           TESWIZ_APPLITOOLS_API_KEY: ${{ secrets.TESWIZ_APPLITOOLS_API_KEY }}
+          HIGHLIGHT_ELEMENTS: "false"
         with:
           arguments: clean build --refresh-dependencies
 

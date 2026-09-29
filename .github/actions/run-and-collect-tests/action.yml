@@ -60,6 +60,7 @@ runs:
         export CONFIG="${{ inputs.config-path }}"
         export TAG="${{ inputs.tag }}"
         export RUN_IN_CI=true
+        export HIGHLIGHT_ELEMENTS=false
 
         if [[ -n "${{ inputs.additional-env }}" ]]; then
           echo "Setting additional environment: ${{ inputs.additional-env }}"
@@ -80,6 +81,7 @@ runs:
         echo "   - HEADLESS:                     ${HEADLESS:-<not set>}"
         echo "   - IS_VISUAL:                    ${IS_VISUAL:-<not set>}"
         echo "   - RUN_IN_CI:                    ${RUN_IN_CI:-<not set>}"
+        echo "   - HIGHLIGHT_ELEMENTS:           ${HIGHLIGHT_ELEMENTS:-<not set>}"
         if [[ -n "${SET_HARD_GATE}" ]]; then
           echo "   - SET_HARD_GATE:                ${SET_HARD_GATE}"
         fi
