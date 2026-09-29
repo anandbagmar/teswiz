@@ -33,8 +33,27 @@ final class PlaywrightWebElement implements WebElement {
         this.implicitWaitTimeout = implicitWaitTimeout;
     }
 
+    private void highlight() {
+        if (com.znsio.teswiz.runner.Setup.getBooleanValueFromConfigs(com.znsio.teswiz.runner.Setup.HIGHLIGHT_ELEMENTS)) {
+            try {
+                workerClient.executeScript(session.sessionId(),
+                    "let visualBox = document.getElementById('teswiz-visual-highlight');" +
+                    "if (visualBox) { visualBox.remove(); }" +
+                    "if (window.teswizLastHighlightedElement) {" +
+                    "  try {" +
+                    "    window.teswizLastHighlightedElement.style.outline = window.teswizLastOutline || '';" +
+                    "    window.teswizLastHighlightedElement.style.outlineOffset = window.teswizLastOutlineOffset || '';" +
+                    "    window.teswizLastHighlightedElement.style.boxShadow = window.teswizLastBoxShadow || '';" +
+                    "  } catch(e) {}" +
+                    "}"
+                );
+            } catch (Exception ignored) {}
+        }
+    }
+
     @Override
     public void click() {
+        highlight();
         workerClient.click(session.sessionId(), locatorReference);
     }
 
@@ -45,6 +64,7 @@ final class PlaywrightWebElement implements WebElement {
 
     @Override
     public void sendKeys(CharSequence... keysToSend) {
+        highlight();
         String value = java.util.Arrays.stream(keysToSend)
                 .map(String::valueOf)
                 .collect(Collectors.joining());
@@ -53,6 +73,7 @@ final class PlaywrightWebElement implements WebElement {
 
     @Override
     public void clear() {
+        highlight();
         workerClient.clear(session.sessionId(), locatorReference);
     }
 
