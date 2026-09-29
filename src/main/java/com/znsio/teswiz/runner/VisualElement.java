@@ -65,10 +65,18 @@ public class VisualElement {
         return new Dimension(width, height);
     }
 
+    public VisualElement highlight() {
+        if (driverFacade != null) {
+            driverFacade.highlightVisualElement(this);
+        }
+        return this;
+    }
+
     public void click() {
+        highlight();
         Point center = getCenter();
         LOGGER.info(String.format("Clicking visual element '%s' at center coordinates (%d, %d)", label, center.getX(), center.getY()));
-        if (driverFacade.getInnerDriver() != null) {
+        if (driverFacade != null && driverFacade.getInnerDriver() != null) {
             if (Driver.APPIUM_DRIVER.equals(driverFacade.getType())) {
                 performMobileTap(center.getX(), center.getY());
             } else {
@@ -76,14 +84,15 @@ public class VisualElement {
                 actions.moveToLocation(center.getX(), center.getY()).click().perform();
             }
         } else {
-            LOGGER.warn(String.format("Unable to click visual element '%s': inner driver is null", label));
+            LOGGER.warn(String.format("Unable to click visual element '%s': driverFacade or inner driver is null", label));
         }
     }
 
     public void doubleClick() {
+        highlight();
         Point center = getCenter();
         LOGGER.info(String.format("Double-clicking visual element '%s' at (%d, %d)", label, center.getX(), center.getY()));
-        if (driverFacade.getInnerDriver() != null) {
+        if (driverFacade != null && driverFacade.getInnerDriver() != null) {
             if (Driver.APPIUM_DRIVER.equals(driverFacade.getType())) {
                 performMobileTap(center.getX(), center.getY());
                 try { Thread.sleep(100); } catch (InterruptedException ignored) {}
@@ -96,9 +105,10 @@ public class VisualElement {
     }
 
     public void hover() {
+        highlight();
         Point center = getCenter();
         LOGGER.info(String.format("Hovering over visual element '%s' at (%d, %d)", label, center.getX(), center.getY()));
-        if (driverFacade.getInnerDriver() != null) {
+        if (driverFacade != null && driverFacade.getInnerDriver() != null) {
             Actions actions = new Actions(driverFacade.getInnerDriver());
             actions.moveToLocation(center.getX(), center.getY()).perform();
         }
@@ -107,7 +117,7 @@ public class VisualElement {
     public void sendKeys(CharSequence... keysToSend) {
         click();
         LOGGER.info(String.format("Sending keys '%s' to visual element '%s'", String.join("", keysToSend), label));
-        if (driverFacade.getInnerDriver() != null) {
+        if (driverFacade != null && driverFacade.getInnerDriver() != null) {
             Actions actions = new Actions(driverFacade.getInnerDriver());
             actions.sendKeys(keysToSend).perform();
         }
@@ -124,7 +134,7 @@ public class VisualElement {
     public void dragAndDropTo(WebElement target) {
         Point center = getCenter();
         LOGGER.info(String.format("Dragging visual element '%s' from (%d, %d) to target element", label, center.getX(), center.getY()));
-        if (driverFacade.getInnerDriver() != null) {
+        if (driverFacade != null && driverFacade.getInnerDriver() != null) {
             Actions actions = new Actions(driverFacade.getInnerDriver());
             actions.moveToLocation(center.getX(), center.getY())
                     .clickAndHold()
@@ -145,7 +155,7 @@ public class VisualElement {
     public void swipe(Direction direction) {
         Point center = getCenter();
         LOGGER.info(String.format("Swiping '%s' on visual element '%s' at (%d, %d)", direction, label, center.getX(), center.getY()));
-        if (driverFacade.getInnerDriver() instanceof AppiumDriver appiumDriver) {
+        if (driverFacade != null && driverFacade.getInnerDriver() instanceof AppiumDriver appiumDriver) {
             int startX = center.getX();
             int startY = center.getY();
             int endX = startX;
@@ -174,7 +184,7 @@ public class VisualElement {
     }
 
     private void performMobileTap(int tapX, int tapY) {
-        if (driverFacade.getInnerDriver() instanceof AppiumDriver appiumDriver) {
+        if (driverFacade != null && driverFacade.getInnerDriver() instanceof AppiumDriver appiumDriver) {
             PointerInput touch = new PointerInput(PointerInput.Kind.TOUCH, "touch");
             Sequence clickPosition = new Sequence(touch, 1);
             clickPosition

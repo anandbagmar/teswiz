@@ -59,6 +59,7 @@ For the complete property list and all available defaults, use the
     ENVIRONMENT_CONFIG_FILE=./src/test/resources/environments.json -> Environment specific configuration file
     IS_FAILING_TEST_SUITE=false -> Do not run failing tests. Refer to [Hard Gate](HardGate.md) for more information
     IS_VISUAL=false -> Should enable Applitools Visual Testing? If yes, set to true
+    HIGHLIGHT_ELEMENTS=true -> Should interactive UI elements (Selenium, Playwright-Java, Playwright-TS, Appium, OCR/Visual) be highlighted with an orange-red box during test execution? Default is true. Previous highlights are automatically cleared before the next action.
     FAIL_TEST_ON_VISUAL_DIFFERENCE=true -> 
         If visual testing is enabled, and this is set to true, then the test will fail if there are any visual differences found
         If this is set to false, then a message will be logged about the visual differences, and the test will not fail for this reason 

@@ -37,24 +37,18 @@ public class TransportNswOcrBL {
         return this;
     }
 
-    public TransportNswOcrBL clickSolidGreenDotOnMap(String greenDotImageTemplatePath) {
-        LOGGER.info("Visually clicking solid green dot on map using image template: " + greenDotImageTemplatePath);
-        VisualElement greenDot = TransportNswOcrScreen.get().clickStationGreenDotOnMap(greenDotImageTemplatePath);
-        assertThat(greenDot).as("Solid green dot visual element should be found and clicked").isNotNull();
+    public TransportNswOcrBL clickElementUsingImageTemplate(String elementName, String imageTemplatePath) {
+        LOGGER.info(String.format("Visually clicking element '%s' using image template: %s", elementName, imageTemplatePath));
+        VisualElement visualElement = TransportNswOcrScreen.get().clickElementByImage(elementName, imageTemplatePath);
+        assertThat(visualElement).as("Visual element '" + elementName + "' should be found and clicked").isNotNull();
         return this;
     }
 
-    public TransportNswOcrBL clickCalloutOption(String optionText) {
-        LOGGER.info("Visually clicking callout option by OCR text: " + optionText);
-        VisualElement optionElement = TransportNswOcrScreen.get().clickCalloutOptionByText(optionText);
-        assertThat(optionElement).as("Callout option '" + optionText + "' should be found and clicked").isNotNull();
-        return this;
-    }
-
-    public TransportNswOcrBL clickStationNameOnMap(String stationName) {
-        LOGGER.info("Visually clicking station name on map by OCR text: " + stationName);
-        VisualElement stationElement = TransportNswOcrScreen.get().clickStationNameOnMapByText(stationName);
-        assertThat(stationElement).as("Station name element '" + stationName + "' should be found and clicked").isNotNull();
+    public TransportNswOcrBL clickElementUsingOcrText(String elementName, String ocrText) {
+        LOGGER.info(String.format("Visually clicking element '%s' using OCR text: %s", elementName, ocrText));
+        VisualElement visualElement = TransportNswOcrScreen.get().clickElementByOcrText(elementName, ocrText);
+        assertThat(visualElement).as("Visual element '" + elementName + "' with OCR text '" + ocrText + "' should be found and clicked")
+                .isNotNull();
         return this;
     }
 

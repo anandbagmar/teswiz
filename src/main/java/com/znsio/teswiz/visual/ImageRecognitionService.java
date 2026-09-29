@@ -136,7 +136,17 @@ public class ImageRecognitionService {
 
         if (bestVal >= threshold && bestLoc != null) {
             LOGGER.info(String.format("Template '%s' matched with score %.4f >= threshold %.2f", templateName, bestVal, threshold));
-            return new VisualElement((int) bestLoc.x, (int) bestLoc.y, bestW, bestH, templateName, driverFacade);
+            double scaleFactor = 1.0;
+            if (driverFacade != null) {
+                scaleFactor = driverFacade.getViewportScaleFactor(sceneWidth);
+            }
+            int logicalX = (int) Math.round(bestLoc.x / scaleFactor);
+            int logicalY = (int) Math.round(bestLoc.y / scaleFactor);
+            int logicalW = (int) Math.round(bestW / scaleFactor);
+            int logicalH = (int) Math.round(bestH / scaleFactor);
+            LOGGER.info(String.format("Template '%s' matched at screenshot bounds [x=%d, y=%d, w=%d, h=%d] -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
+                    templateName, (int) bestLoc.x, (int) bestLoc.y, bestW, bestH, logicalX, logicalY, logicalW, logicalH, scaleFactor));
+            return new VisualElement(logicalX, logicalY, logicalW, logicalH, templateName, driverFacade);
         }
 
         LOGGER.debug(String.format("Template '%s' best match score was %.4f (below threshold %.2f)", templateName, bestVal, threshold));

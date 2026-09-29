@@ -117,6 +117,15 @@ public class Visual {
     private final PlaywrightUfgTargetMapper playwrightUfgTargetMapper = new PlaywrightUfgTargetMapper();
     private String applitoolsLogFileNameForWeb = NOT_SET;
     private EyesRunner seleniumEyesRunner;
+    private Driver driverFacade;
+
+    public void setDriverFacade(Driver driverFacade) {
+        this.driverFacade = driverFacade;
+    }
+
+    public Driver getDriverFacade() {
+        return this.driverFacade;
+    }
 
     record WebVisualNames(String appName, String testName) {
     }
@@ -1276,7 +1285,7 @@ public class Visual {
         int maxAttempts = 5;
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             byte[] screenshot = captureScreenshotBytes();
-            VisualElement match = com.znsio.teswiz.visual.OcrService.findTextMatch(screenshot, text, null);
+            VisualElement match = com.znsio.teswiz.visual.OcrService.findTextMatch(screenshot, text, this.driverFacade);
             if (match != null) {
                 return match;
             }
@@ -1298,7 +1307,7 @@ public class Visual {
         int maxAttempts = 5;
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             byte[] screenshot = captureScreenshotBytes();
-            VisualElement match = com.znsio.teswiz.visual.ImageRecognitionService.findTemplateMatch(screenshot, imageTemplatePaths, confidenceThreshold, null);
+            VisualElement match = com.znsio.teswiz.visual.ImageRecognitionService.findTemplateMatch(screenshot, imageTemplatePaths, confidenceThreshold, this.driverFacade);
             if (match != null) {
                 return match;
             }

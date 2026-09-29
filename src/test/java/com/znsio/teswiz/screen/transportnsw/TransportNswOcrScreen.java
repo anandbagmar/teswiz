@@ -13,7 +13,9 @@ public abstract class TransportNswOcrScreen {
 
     public abstract TransportNswOcrScreen scrollToExploreRouteMap();
 
-    public abstract VisualElement clickStationGreenDotOnMap(String greenDotImageTemplatePath);
+    public abstract VisualElement clickElementByImage(String elementName, String imagePath);
+
+    public abstract VisualElement clickElementByOcrText(String elementName, String ocrText);
 
     public abstract VisualElement clickCalloutOptionByText(String text);
 

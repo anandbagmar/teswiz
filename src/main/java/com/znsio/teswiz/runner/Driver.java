@@ -103,14 +103,17 @@ public class Driver {
 
     private void instantiateEyes(String testName, String pdfFileName) {
         this.visually = new Visual(this.type, this.driverForPlatform, testName, userPersona, pdfFileName);
+        this.visually.setDriverFacade(this);
     }
 
     private void instantiateEyes(String testName, AppiumDriver innerDriver) {
         this.visually = new Visual(this.type, this.driverForPlatform, innerDriver, testName, userPersona, appName);
+        this.visually.setDriverFacade(this);
     }
 
     private void instantiateEyes(String testName, WebDriver innerDriver) {
         this.visually = new Visual(this.type, this.driverForPlatform, innerDriver, testName, userPersona, appName);
+        this.visually.setDriverFacade(this);
     }
 
     public WebElement waitForClickabilityOf(String elementId) {
@@ -548,6 +551,110 @@ public class Driver {
         Actions actions = new Actions(driver);
         actions.moveToElement(driver.findElement(moveToElementLocator)).build().perform();
         waitFor(1);
+    }
+
+    public void clearHighlight() {
+        if (driver instanceof JavascriptExecutor js) {
+            try {
+                js.executeScript(
+                    "let visualBox = document.getElementById('teswiz-visual-highlight');" +
+                    "if (visualBox) { visualBox.remove(); }" +
+                    "if (window.teswizLastHighlightedElement) {" +
+                    "  try {" +
+                    "    window.teswizLastHighlightedElement.style.outline = window.teswizLastOutline || '';" +
+                    "    window.teswizLastHighlightedElement.style.outlineOffset = window.teswizLastOutlineOffset || '';" +
+                    "    window.teswizLastHighlightedElement.style.boxShadow = window.teswizLastBoxShadow || '';" +
+                    "  } catch(e) {}" +
+                    "  delete window.teswizLastHighlightedElement;" +
+                    "  delete window.teswizLastOutline;" +
+                    "  delete window.teswizLastOutlineOffset;" +
+                    "  delete window.teswizLastBoxShadow;" +
+                    "}"
+                );
+            } catch (Exception ignored) {}
+        }
+    }
+
+    public void highlightElement(WebElement element) {
+        if (!Setup.getBooleanValueFromConfigs(Setup.HIGHLIGHT_ELEMENTS)) {
+            return;
+        }
+        clearHighlight();
+        if (driver instanceof JavascriptExecutor js) {
+            try {
+                js.executeScript(
+                    "window.teswizLastHighlightedElement = arguments[0];" +
+                    "window.teswizLastOutline = arguments[0].style.outline;" +
+                    "window.teswizLastOutlineOffset = arguments[0].style.outlineOffset;" +
+                    "window.teswizLastBoxShadow = arguments[0].style.boxShadow;" +
+                    "arguments[0].style.outline = '3px solid #FF4500';" +
+                    "arguments[0].style.outlineOffset = '-2px';" +
+                    "arguments[0].style.boxShadow = '0 0 10px #FF4500';"
+                , element);
+                LOGGER.info("Highlighted WebElement visually with orange-red outline");
+            } catch (Exception e) {
+                LOGGER.warn("Could not highlight web element: " + e.getMessage());
+            }
+        }
+    }
+
+    public void highlightVisualElement(int x, int y, int width, int height) {
+        if (!Setup.getBooleanValueFromConfigs(Setup.HIGHLIGHT_ELEMENTS)) {
+            return;
+        }
+        clearHighlight();
+        if (driver instanceof JavascriptExecutor js) {
+            try {
+                js.executeScript(
+                    "let id = 'teswiz-visual-highlight';" +
+                    "let box = document.createElement('div');" +
+                    "box.id = id;" +
+                    "document.body.appendChild(box);" +
+                    "box.style.position = 'fixed';" +
+                    "box.style.left = '" + x + "px';" +
+                    "box.style.top = '" + y + "px';" +
+                    "box.style.width = '" + width + "px';" +
+                    "box.style.height = '" + height + "px';" +
+                    "box.style.border = '3px solid #FF4500';" +
+                    "box.style.backgroundColor = 'rgba(255, 69, 0, 0.25)';" +
+                    "box.style.boxShadow = '0 0 10px rgba(255, 69, 0, 0.8)';" +
+                    "box.style.zIndex = '2147483647';" +
+                    "box.style.pointerEvents = 'none';" +
+                    "box.style.boxSizing = 'border-box';" +
+                    "box.style.transition = 'all 0.1s ease-in-out';"
+                );
+                LOGGER.info(String.format("Highlighted visual element at viewport bounds [x=%d, y=%d, w=%d, h=%d]", x, y, width, height));
+            } catch (Exception e) {
+                LOGGER.warn("Could not highlight visual element at (" + x + ", " + y + "): " + e.getMessage());
+            }
+        }
+    }
+
+    public void highlightVisualElement(VisualElement visualElement) {
+        if (visualElement != null) {
+            highlightVisualElement(visualElement.getX(), visualElement.getY(), visualElement.getWidth(), visualElement.getHeight());
+        }
+    }
+
+    public double getViewportScaleFactor(int screenshotImageWidth) {
+        if (screenshotImageWidth <= 0) {
+            return 1.0;
+        }
+        if (driver instanceof JavascriptExecutor js) {
+            try {
+                Object result = js.executeScript("return window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;");
+                if (result instanceof Number num && num.doubleValue() > 0) {
+                    double viewportWidth = num.doubleValue();
+                    double scale = (double) screenshotImageWidth / viewportWidth;
+                    LOGGER.info(String.format("Calculated viewport scale factor: %.2f (screenshot width: %d px, viewport width: %.0f px)",
+                            scale, screenshotImageWidth, viewportWidth));
+                    return scale;
+                }
+            } catch (Exception e) {
+                LOGGER.warn("Failed to retrieve viewport width via JavaScript: " + e.getMessage());
+            }
+        }
+        return 1.0;
     }
 
     public boolean isDriverRunningInHeadlessMode() {

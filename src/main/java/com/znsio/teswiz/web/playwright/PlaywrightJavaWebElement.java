@@ -28,8 +28,34 @@ final class PlaywrightJavaWebElement implements WebElement {
         this.implicitWaitTimeout = implicitWaitTimeout;
     }
 
+    private void highlight() {
+        if (com.znsio.teswiz.runner.Setup.getBooleanValueFromConfigs(com.znsio.teswiz.runner.Setup.HIGHLIGHT_ELEMENTS)) {
+            try {
+                locator.evaluate("el => {" +
+                    "let visualBox = document.getElementById('teswiz-visual-highlight');" +
+                    "if (visualBox) { visualBox.remove(); }" +
+                    "if (window.teswizLastHighlightedElement) {" +
+                    "  try {" +
+                    "    window.teswizLastHighlightedElement.style.outline = window.teswizLastOutline || '';" +
+                    "    window.teswizLastHighlightedElement.style.outlineOffset = window.teswizLastOutlineOffset || '';" +
+                    "    window.teswizLastHighlightedElement.style.boxShadow = window.teswizLastBoxShadow || '';" +
+                    "  } catch(e) {}" +
+                    "}" +
+                    "window.teswizLastHighlightedElement = el;" +
+                    "window.teswizLastOutline = el.style.outline;" +
+                    "window.teswizLastOutlineOffset = el.style.outlineOffset;" +
+                    "window.teswizLastBoxShadow = el.style.boxShadow;" +
+                    "el.style.outline = '3px solid #FF4500';" +
+                    "el.style.outlineOffset = '-2px';" +
+                    "el.style.boxShadow = '0 0 10px #FF4500';" +
+                    "}");
+            } catch (Exception ignored) {}
+        }
+    }
+
     @Override
     public void click() {
+        highlight();
         locator.click();
     }
 
@@ -40,6 +66,7 @@ final class PlaywrightJavaWebElement implements WebElement {
 
     @Override
     public void sendKeys(CharSequence... keysToSend) {
+        highlight();
         String value = java.util.Arrays.stream(keysToSend)
                 .map(String::valueOf)
                 .collect(Collectors.joining());
@@ -52,6 +79,7 @@ final class PlaywrightJavaWebElement implements WebElement {
 
     @Override
     public void clear() {
+        highlight();
         locator.clear();
     }
 

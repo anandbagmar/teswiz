@@ -34,23 +34,63 @@ public class TransportNswOcrScreenWeb extends TransportNswOcrScreen {
     @Override
     public TransportNswOcrScreen scrollToExploreRouteMap() {
         LOGGER.info("Scrolling down to 'Explore the new route' interactive map section");
-        driver.scrollToBottom();
+        By exploreSectionLocator = By.xpath("//*[contains(text(), 'Explore the new route')]");
+        if (driver.isElementPresent(exploreSectionLocator)) {
+            org.openqa.selenium.WebElement element = driver.findElement(exploreSectionLocator);
+            ((org.openqa.selenium.JavascriptExecutor) driver.getInnerDriver())
+                    .executeScript("arguments[0].scrollIntoView({block: 'center', inline: 'nearest'});", element);
+        } else {
+            LOGGER.warn("'Explore the new route' text element not found; performing moderate window scroll");
+            ((org.openqa.selenium.JavascriptExecutor) driver.getInnerDriver())
+                    .executeScript("window.scrollBy(0, 400);");
+        }
+        try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
+        visually.checkWindow(SCREEN_NAME, "'Explore the new route' map section");
         return this;
     }
 
     @Override
-    public VisualElement clickStationGreenDotOnMap(String greenDotImageTemplatePath) {
-        LOGGER.info("Finding and clicking solid green dot on map using image template: " + greenDotImageTemplatePath);
-        VisualElement greenDot = driver.findByImage(List.of(greenDotImageTemplatePath));
-        greenDot.click();
-        return greenDot;
+    public VisualElement clickElementByImage(String elementName, String imagePath) {
+        LOGGER.info(String.format("Finding and clicking '%s' using image template: %s", elementName, imagePath));
+        VisualElement visualElement = driver.findByImage(List.of(imagePath));
+        if (visualElement != null) {
+            visualElement.highlight();
+        }
+        visually.checkWindow(SCREEN_NAME, "Before clicking: " + elementName);
+        if (visualElement != null) {
+            visualElement.click();
+        }
+        visually.checkWindow(SCREEN_NAME, "After clicking: " + elementName);
+        return visualElement;
+    }
+
+    @Override
+    public VisualElement clickElementByOcrText(String elementName, String ocrText) {
+        LOGGER.info(String.format("Finding and clicking '%s' using OCR text: %s", elementName, ocrText));
+        VisualElement stationElement = driver.findByText(ocrText);
+        if (stationElement != null) {
+            stationElement.highlight();
+        }
+        visually.checkWindow(SCREEN_NAME, "Before clicking: " + elementName);
+        if (stationElement != null) {
+            stationElement.click();
+        }
+        visually.checkWindow(SCREEN_NAME, "After clicking: " + elementName);
+        return stationElement;
     }
 
     @Override
     public VisualElement clickCalloutOptionByText(String text) {
         LOGGER.info("Finding and clicking callout option using OCR text: " + text);
         VisualElement calloutOption = driver.findByText(text);
-        calloutOption.click();
+        if (calloutOption != null) {
+            calloutOption.highlight();
+        }
+        visually.checkWindow(SCREEN_NAME, "Callout popup option: " + text);
+        if (calloutOption != null) {
+            calloutOption.click();
+        }
+        visually.checkWindow(SCREEN_NAME, "Clicked callout option: " + text);
         return calloutOption;
     }
 
@@ -58,7 +98,14 @@ public class TransportNswOcrScreenWeb extends TransportNswOcrScreen {
     public VisualElement clickStationNameOnMapByText(String stationName) {
         LOGGER.info("Finding and clicking station name on map using OCR text: " + stationName);
         VisualElement stationElement = driver.findByText(stationName);
-        stationElement.click();
+        if (stationElement != null) {
+            stationElement.highlight();
+        }
+        visually.checkWindow(SCREEN_NAME, "Station map view: " + stationName);
+        if (stationElement != null) {
+            stationElement.click();
+        }
+        visually.checkWindow(SCREEN_NAME, "Clicked station name on map: " + stationName);
         return stationElement;
     }
 
@@ -67,6 +114,11 @@ public class TransportNswOcrScreenWeb extends TransportNswOcrScreen {
         LOGGER.info("Verifying station page display for: " + stationName);
         String currentUrl = driver.getInnerDriver().getCurrentUrl();
         String pageTitle = driver.getInnerDriver().getTitle();
-        return currentUrl.toLowerCase().contains(stationName.toLowerCase()) || pageTitle.toLowerCase().contains(stationName.toLowerCase());
+        if (currentUrl.toLowerCase().contains(stationName.toLowerCase())
+                || pageTitle.toLowerCase().contains(stationName.toLowerCase())) {
+            return true;
+        }
+        By stationTextLocator = By.xpath("//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '" + stationName.toLowerCase() + "')]");
+        return driver.isElementPresent(stationTextLocator);
     }
 }

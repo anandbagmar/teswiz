@@ -11,6 +11,40 @@
 1. **Zero Core Footprint**: `teswiz` core JAR declares `opencv`, `tess4j`, and `onnxruntime` as `compileOnly` dependencies. Downstream projects using `teswiz` carry **0 MB additional weight** by default.
 2. **On-Demand Enablement**: When `IS_OCR_ENABLED=true` is set in configuration properties or environment variables, visual recognition capability is activated, and runtime dependencies are downloaded on demand if needed.
 3. **Graceful Subsystem Protection**: When `IS_OCR_ENABLED=false` (default), invoking visual element locator methods throws a descriptive `VisualSubsystemDisabledException` explaining how to enable OCR capability in `config.properties`.
+4. **Automatic Element Highlighting & Highlight Removal**: Visual/DOM interactions draw an orange-red translucent bounding box around target elements (`HIGHLIGHT_ELEMENTS=true`, default `true`). Before the next element interaction or visual check runs, previous highlights are automatically removed (`clearHighlight()`).
+
+---
+
+## Subsystem Interaction Flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Step as Test / Step Definition
+    participant Driver as Driver / VisualElement
+    participant OCR as OcrService / OpenCV
+    participant Browser as Browser DOM / Engine
+
+    Step->>Driver: findByText("Search") / findByImage(template)
+    Driver->>OCR: Screenshot buffer & search criteria
+    OCR->>OCR: Multi-scale matching / Tesseract OCR
+    OCR-->>Driver: Return screenshot match bounds
+    Driver->>Driver: Convert bounds via getViewportScaleFactor()
+    Driver->>Browser: clearHighlight() (remove previous overlay)
+    Driver->>Browser: Inject highlight div / CSS outline
+    Step->>Driver: click() / sendKeys() / checkWindow()
+    Driver->>Browser: Perform native W3C / Playwright interaction
+```
+
+---
+
+## High-DPI / Retina Display Scaling & Portability
+
+The visual subsystem handles screen resolutions, High-DPI displays (macOS Retina 2x/3x, Windows 125%/150%/200% scale factor), and headless browser modes (`HEADLESS=true`):
+
+- **Dynamic Scale Factor**: `driver.getViewportScaleFactor(screenshotImageWidth)` calculates `scaleFactor = screenshotImageWidth / window.innerWidth` at runtime.
+- **Logical CSS Viewport Bounding**: OCR physical screenshot bounds `(x, y, w, h)` are dynamically divided by `scaleFactor` to produce logical CSS viewport coordinates.
+- **Universal Portability**: Highlight overlay `<div>` elements use CSS `position: fixed` and `pointer-events: none`, guaranteeing 100% accurate visual alignment across macOS, Windows, Linux, headed browsers, and headless CI execution.
 
 ---
 
@@ -32,12 +66,16 @@ IS_OCR_ENABLED=false
 
 # Visual match confidence threshold (0.0 to 1.0, default 0.85)
 VISUAL_CONFIDENCE_THRESHOLD=0.85
+
+# Enable/Disable interactive element highlighting (default true)
+HIGHLIGHT_ELEMENTS=true
 ```
 
 ### Environment Variable Overrides
 System properties or environment variables take precedence over configuration files:
 - `IS_OCR_ENABLED=true`
 - `VISUAL_CONFIDENCE_THRESHOLD=0.90`
+- `HIGHLIGHT_ELEMENTS=true`
 
 ---
 
@@ -86,9 +124,9 @@ cartBtn.click();
 
 ---
 
-## VisualElement Actions
+## VisualElement & Web Actions with Auto-Highlighting
 
-Once a `VisualElement` is located, standard interaction methods automatically dispatch native actions across Web (Selenium/Playwright) and Mobile (Appium W3C PointerInput actions):
+When `HIGHLIGHT_ELEMENTS=true` (default), standard interaction methods across Selenium, Playwright-Java, Playwright-TS, and Appium automatically clear existing highlights, apply orange-red outlines, and dispatch native actions:
 
 ```java
 VisualElement element = driver.findByText("Settings");
