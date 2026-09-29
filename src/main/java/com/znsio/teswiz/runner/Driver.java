@@ -23,6 +23,11 @@ import java.util.Set;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.util.stream.Collectors;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.JavascriptExecutor;
@@ -30,6 +35,7 @@ import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.Point;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.WrapsElement;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.interactions.Pause;
 import org.openqa.selenium.interactions.PointerInput;
@@ -121,12 +127,12 @@ public class Driver {
     }
 
     public WebElement waitForClickabilityOf(String elementId, int numberOfSecondsToWait) {
-        return (new WebDriverWait(driver, Duration.ofSeconds(numberOfSecondsToWait)))
-                .until(ExpectedConditions.elementToBeClickable(findElementByAccessibilityId(elementId)));
+        return decorateElement((new WebDriverWait(driver, Duration.ofSeconds(numberOfSecondsToWait)))
+                .until(ExpectedConditions.elementToBeClickable(findElementByAccessibilityId(elementId))));
     }
 
     public WebElement findElementByAccessibilityId(String locator) {
-        return driver.findElement(AppiumBy.accessibilityId(locator));
+        return decorateElement(driver.findElement(AppiumBy.accessibilityId(locator)));
     }
 
     public void waitForAlert() {
@@ -139,7 +145,7 @@ public class Driver {
     }
 
     public WebElement findElement(By elementId) {
-        return driver.findElement(elementId);
+        return decorateElement(driver.findElement(elementId));
     }
 
     public void hideKeyboard() {
@@ -147,15 +153,15 @@ public class Driver {
     }
 
     public List<WebElement> findElements(By element) {
-        return this.driver.findElements(element);
+        return decorateElements(this.driver.findElements(element));
     }
 
     public WebElement findElementById(String locator) {
-        return driver.findElement(By.id(locator));
+        return decorateElement(driver.findElement(By.id(locator)));
     }
 
     public WebElement findElementByXpath(String locator) {
-        return driver.findElement(By.xpath(locator));
+        return decorateElement(driver.findElement(By.xpath(locator)));
     }
 
     public void scroll(Point fromPoint, Point toPoint) {
@@ -488,12 +494,12 @@ public class Driver {
     }
 
     public WebElement waitForClickabilityOf(By elementId, int numberOfSecondsToWait) {
-        return (new WebDriverWait(driver, Duration.ofSeconds(numberOfSecondsToWait))
-                .until(ExpectedConditions.elementToBeClickable(elementId)));
+        return decorateElement((new WebDriverWait(driver, Duration.ofSeconds(numberOfSecondsToWait))
+                .until(ExpectedConditions.elementToBeClickable(elementId))));
     }
 
     public List<WebElement> findElementsByAccessibilityId(String elementId) {
-        return ((AppiumDriver) driver).findElements(AppiumBy.accessibilityId(elementId));
+        return decorateElements(((AppiumDriver) driver).findElements(AppiumBy.accessibilityId(elementId)));
     }
 
     public WebElement waitTillElementIsPresent(By elementId) {
@@ -505,13 +511,13 @@ public class Driver {
     }
 
     public WebElement waitTillElementIsPresent(By elementId, int numberOfSecondsToWait) {
-        return (new WebDriverWait(driver, Duration.ofSeconds(numberOfSecondsToWait))
-                .until(ExpectedConditions.presenceOfElementLocated(elementId)));
+        return decorateElement((new WebDriverWait(driver, Duration.ofSeconds(numberOfSecondsToWait))
+                .until(ExpectedConditions.presenceOfElementLocated(elementId))));
     }
 
     public WebElement waitTillElementIsVisible(By elementId, int numberOfSecondsToWait) {
-        return (new WebDriverWait(driver, Duration.ofSeconds(numberOfSecondsToWait))
-                .until(ExpectedConditions.visibilityOfElementLocated(elementId)));
+        return decorateElement((new WebDriverWait(driver, Duration.ofSeconds(numberOfSecondsToWait))
+                .until(ExpectedConditions.visibilityOfElementLocated(elementId))));
     }
 
     public List<WebElement> waitTillVisibilityOfAllElements(By elementId) {
@@ -519,8 +525,8 @@ public class Driver {
     }
 
     public List<WebElement> waitTillVisibilityOfAllElements(By elementId, int numberOfSecondsToWait) {
-        return (new WebDriverWait(driver, Duration.ofSeconds(numberOfSecondsToWait))
-                .until(ExpectedConditions.visibilityOfAllElementsLocatedBy(elementId)));
+        return decorateElements((new WebDriverWait(driver, Duration.ofSeconds(numberOfSecondsToWait))
+                .until(ExpectedConditions.visibilityOfAllElementsLocatedBy(elementId))));
     }
 
     public WebElement waitTillElementIsVisible(String elementId) {
@@ -528,8 +534,8 @@ public class Driver {
     }
 
     public WebElement waitTillElementIsVisible(String elementId, int numberOfSecondsToWait) {
-        return (new WebDriverWait(driver, Duration.ofSeconds(numberOfSecondsToWait))
-                .until(ExpectedConditions.visibilityOf(findElementByAccessibilityId(elementId))));
+        return decorateElement((new WebDriverWait(driver, Duration.ofSeconds(numberOfSecondsToWait))
+                .until(ExpectedConditions.visibilityOf(findElementByAccessibilityId(elementId)))));
     }
 
     public List<WebElement> waitTillPresenceOfAllElements(By elementId) {
@@ -537,8 +543,8 @@ public class Driver {
     }
 
     public List<WebElement> waitTillPresenceOfAllElements(By elementId, int numberOfSecondsToWait) {
-        return (new WebDriverWait(driver, Duration.ofSeconds(numberOfSecondsToWait))
-                .until(ExpectedConditions.presenceOfAllElementsLocatedBy(elementId)));
+        return decorateElements((new WebDriverWait(driver, Duration.ofSeconds(numberOfSecondsToWait))
+                .until(ExpectedConditions.presenceOfAllElementsLocatedBy(elementId))));
     }
 
     public void setWindowSize(int width, int height) {
@@ -633,6 +639,54 @@ public class Driver {
     public void highlightVisualElement(VisualElement visualElement) {
         if (visualElement != null) {
             highlightVisualElement(visualElement.getX(), visualElement.getY(), visualElement.getWidth(), visualElement.getHeight());
+        }
+    }
+
+    private WebElement decorateElement(WebElement element) {
+        if (element == null) {
+            return null;
+        }
+        if (Proxy.isProxyClass(element.getClass()) && Proxy.getInvocationHandler(element) instanceof ElementInvocationHandler) {
+            return element;
+        }
+        if (element.getClass().getName().contains("Playwright")) {
+            return element;
+        }
+        return (WebElement) Proxy.newProxyInstance(
+                Driver.class.getClassLoader(),
+                new Class<?>[]{WebElement.class, WrapsElement.class},
+                new ElementInvocationHandler(element)
+        );
+    }
+
+    private List<WebElement> decorateElements(List<WebElement> elements) {
+        if (elements == null) {
+            return Collections.emptyList();
+        }
+        return elements.stream().map(this::decorateElement).collect(Collectors.toList());
+    }
+
+    private class ElementInvocationHandler implements InvocationHandler {
+        private final WebElement target;
+
+        ElementInvocationHandler(WebElement target) {
+            this.target = target;
+        }
+
+        @Override
+        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+            String methodName = method.getName();
+            if ("getWrappedElement".equals(methodName) && (args == null || args.length == 0)) {
+                return target;
+            }
+            if ("click".equals(methodName) || "sendKeys".equals(methodName) || "clear".equals(methodName) || "submit".equals(methodName)) {
+                highlightElement(target);
+            }
+            try {
+                return method.invoke(target, args);
+            } catch (InvocationTargetException e) {
+                throw e.getCause();
+            }
         }
     }
 
@@ -884,7 +938,11 @@ public class Driver {
     }
 
     public void horizontalSwipeWithGesture(WebElement element, Direction direction) {
-        RemoteWebElement remoteWebElement = (RemoteWebElement) element;
+        WebElement targetElement = element;
+        if (element instanceof WrapsElement wrapsElement) {
+            targetElement = wrapsElement.getWrappedElement();
+        }
+        RemoteWebElement remoteWebElement = (RemoteWebElement) targetElement;
         if ((direction.equals(Direction.LEFT)) || direction.equals(Direction.RIGHT)) {
             ((JavascriptExecutor) driver).executeScript("mobile: swipeGesture", Map.of("elementId",
                     remoteWebElement.getId(), "direction", direction.toString(), "percent", 1, "speed", 80));
