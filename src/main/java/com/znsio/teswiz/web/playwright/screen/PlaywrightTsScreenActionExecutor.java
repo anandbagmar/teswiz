@@ -62,10 +62,31 @@ public final class PlaywrightTsScreenActionExecutor {
         if (isScreenContract(returnType)) {
             return adaptScreenResult(currentScreen, returnType, actionResult);
         }
+        if (com.znsio.teswiz.runner.VisualElement.class.isAssignableFrom(returnType)) {
+            return adaptVisualElement(actionResult);
+        }
         if (List.class.isAssignableFrom(returnType) && actionResult instanceof JSONArray jsonArray) {
-            return jsonArray.toList();
+            List<?> rawList = jsonArray.toList();
+            if (!rawList.isEmpty() && rawList.get(0) instanceof java.util.Map<?, ?>) {
+                return rawList.stream()
+                        .map(item -> adaptVisualElement(new JSONObject((java.util.Map<?, ?>) item)))
+                        .toList();
+            }
+            return rawList;
         }
         return actionResult;
+    }
+
+    private com.znsio.teswiz.runner.VisualElement adaptVisualElement(Object actionResult) {
+        if (actionResult instanceof JSONObject json) {
+            int x = json.optInt("x", 0);
+            int y = json.optInt("y", 0);
+            int width = json.optInt("width", 100);
+            int height = json.optInt("height", 30);
+            String label = json.optString("label", json.optString("text", "visual-element"));
+            return new com.znsio.teswiz.runner.VisualElement(x, y, width, height, label, driver);
+        }
+        return new com.znsio.teswiz.runner.VisualElement(0, 0, 100, 30, "visual-element", driver);
     }
 
     private Object adaptScreenResult(Object currentScreen, Class<?> returnType, Object actionResult) {

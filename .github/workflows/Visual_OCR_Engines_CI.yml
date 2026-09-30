@@ -1,0 +1,87 @@
+name: Visual_OCR_Engines_CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  APPLITOOLS_BATCH_NAME_SUFFIX: " - #${{ github.run_number }}"
+
+jobs:
+  visual_ocr_matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      actions: write
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: "transportnsw-selenium"
+            display-name: "Transport NSW Visual OCR - Selenium Web"
+            web-engine: "selenium"
+            tag: "@transportnsw and @proximity"
+            artifact: "test-results-visual-ocr-selenium"
+          - id: "transportnsw-playwright-java"
+            display-name: "Transport NSW Visual OCR - Playwright Java"
+            web-engine: "playwright-java"
+            tag: "@transportnsw and @region"
+            artifact: "test-results-visual-ocr-playwright-java"
+          - id: "transportnsw-playwright-ts"
+            display-name: "Transport NSW Visual OCR - Playwright TS"
+            web-engine: "playwright-ts"
+            tag: "@transportnsw and @region"
+            artifact: "test-results-visual-ocr-playwright-ts"
+
+    steps:
+      - name: ⬇️ Checkout Repository
+        uses: actions/checkout@v7
+
+      - name: ☕ Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          java-version: "17"
+          distribution: "temurin"
+
+      - name: 🟢 Set up Node.js 22
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: 📦 Install npm dependencies & Playwright Chromium
+        run: |
+          npm ci
+          npx playwright install chromium --with-deps
+
+      - name: 🔤 Install Tesseract OCR native engine
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tesseract-ocr libtesseract-dev tesseract-ocr-eng
+
+      - name: 🚀 Run Visual OCR scenario with ${{ matrix.display-name }}
+        id: run_ocr_test
+        uses: ./.github/actions/run-and-collect-tests
+        with:
+          id: ${{ matrix.id }}
+          display-name: ${{ matrix.display-name }}
+          config-path: "./configs/transportnsw_ocr_config.properties"
+          platform: "web"
+          tag: ${{ matrix.tag }}
+          artifact-name: ${{ matrix.artifact }}
+          is-visual: "false"
+          additional-env: "WEB_ENGINE=${{ matrix.web-engine }} IS_OCR_ENABLED=true HEADLESS=true"
+          applitools_api_key: ${{ secrets.TESWIZ_APPLITOOLS_API_KEY }}
+          browserstack_username: ${{ secrets.BROWSERSTACK_CLOUD_USERNAME }}
+          browserstack_key: ${{ secrets.BROWSERSTACK_CLOUD_KEY }}
+
+      - name: ❌ Fail workflow if test execution failed
+        if: steps.run_ocr_test.outputs.exit_code != '0'
+        run: |
+          echo "Test suite failed with exit code: ${{ steps.run_ocr_test.outputs.exit_code }}"
+          exit ${{ steps.run_ocr_test.outputs.exit_code }}

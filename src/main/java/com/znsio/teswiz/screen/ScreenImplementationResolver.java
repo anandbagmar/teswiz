@@ -16,9 +16,6 @@ public final class ScreenImplementationResolver {
     }
 
     public static <T> Class<? extends T> resolve(Class<T> screenContract, Platform platform, WebEngine webEngine) {
-        if (isPlaywrightTs(platform, webEngine)) {
-            throw missingPlaywrightTsModule(screenContract);
-        }
         Class<?> override = OVERRIDES.get(new ScreenKey(screenContract, platform, webEngine));
         if (null == override) {
             override = OVERRIDES.get(new ScreenKey(screenContract, platform, null));
@@ -26,13 +23,18 @@ public final class ScreenImplementationResolver {
         if (null != override) {
             return castOverride(screenContract, override);
         }
+        WebEngine resolutionEngine = isPlaywrightTs(platform, webEngine) ? WebEngine.PLAYWRIGHT_JAVA : webEngine;
         try {
-            return loadClass(screenContract, resolveByConvention(screenContract, platform, webEngine));
+            return loadClass(screenContract, resolveByConvention(screenContract, platform, resolutionEngine));
         } catch (NotImplementedException e) {
-            if (WebEngine.PLAYWRIGHT_JAVA.equals(webEngine)) {
+            try {
                 return loadClass(screenContract, resolveByConvention(screenContract, platform, WebEngine.SELENIUM));
+            } catch (NotImplementedException ex) {
+                if (isPlaywrightTs(platform, webEngine)) {
+                    throw missingPlaywrightTsModule(screenContract);
+                }
+                throw e;
             }
-            throw e;
         }
     }
 
@@ -71,9 +73,7 @@ public final class ScreenImplementationResolver {
     private static String webPackageSegment(WebEngine webEngine) {
         return switch (webEngine) {
             case SELENIUM -> "web";
-            case PLAYWRIGHT_JAVA -> "web.playwrightjava";
-            case PLAYWRIGHT_TS -> throw new InvalidTestDataException(
-                    "playwright-ts screen resolution is module-based and should not resolve Java implementation packages");
+            case PLAYWRIGHT_JAVA, PLAYWRIGHT_TS -> "web.playwrightjava";
         };
     }
 
@@ -85,9 +85,7 @@ public final class ScreenImplementationResolver {
             case pdf -> "PDF";
             case web, electron -> switch (webEngine) {
                 case SELENIUM -> "Web";
-                case PLAYWRIGHT_JAVA -> "PlaywrightJava";
-                case PLAYWRIGHT_TS -> throw new InvalidTestDataException(
-                        "playwright-ts screen resolution is module-based and should not resolve Java implementation suffixes");
+                case PLAYWRIGHT_JAVA, PLAYWRIGHT_TS -> "PlaywrightJava";
             };
             default -> throw new NotImplementedException("Unsupported platform: " + platform);
         };

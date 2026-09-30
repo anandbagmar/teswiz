@@ -36,7 +36,7 @@ Feature: Visual OCR and Image Recognition map navigation on Transport NSW Metro 
     When I visually click the "first" element matching image template "src/test/resources/images/solid_green_dot.png"
     And I visually click "Departures from here" using fallback OCR text "Departures from here" or image template "src/test/resources/images/departures_from_here.png"
 
-  @web @proximity @positive
+  @web @proximity @positive3
   Scenario: Visually inspect and click element using spatial proximity relative to anchor text
     Given I navigate to the Transport NSW Metro page at "https://transportnsw.info/travel-info/ways-to-get-around/metro"
     When I scroll to the "Explore the new route" interactive map section
@@ -55,5 +55,3 @@ Feature: Visual OCR and Image Recognition map navigation on Transport NSW Metro 
     Given I navigate to the Transport NSW Metro page at "https://transportnsw.info/travel-info/ways-to-get-around/metro"
     When I scroll to the "Explore the new route" interactive map section
     Then I verify visual element "Explore the new route section heading" is present using OCR text "Explore" within region 0 0 1920 1080
-
-
