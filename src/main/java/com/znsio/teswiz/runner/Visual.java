@@ -1290,6 +1290,7 @@ public class Visual {
                 return match;
             }
             if (attempt < maxAttempts) {
+                LOGGER.info(String.format("Attempt %d of %d: Text '%s' not found via OCR, retrying after 1s...", attempt, maxAttempts, text));
                 try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
             }
         }
@@ -1308,6 +1309,7 @@ public class Visual {
                 return match;
             }
             if (attempt < maxAttempts) {
+                LOGGER.info(String.format("Attempt %d of %d: Text '%s' not found via OCR in region %s, retrying after 1s...", attempt, maxAttempts, text, region));
                 try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
             }
         }
@@ -1338,6 +1340,7 @@ public class Visual {
                 return match;
             }
             if (attempt < maxAttempts) {
+                LOGGER.info(String.format("Attempt %d of %d: Image templates %s not matched in region %s, retrying after 1s...", attempt, maxAttempts, imageTemplatePaths, region));
                 try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
             }
         }

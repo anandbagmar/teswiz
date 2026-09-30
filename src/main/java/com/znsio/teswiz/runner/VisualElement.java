@@ -86,9 +86,22 @@ public class VisualElement {
         if (driverFacade != null && driverFacade.getInnerDriver() != null) {
             if (Driver.APPIUM_DRIVER.equals(driverFacade.getType())) {
                 performMobileTap(center.getX(), center.getY());
-            } else {
+            } else if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.interactions.Interactive) {
                 Actions actions = new Actions(driverFacade.getInnerDriver());
                 actions.moveToLocation(center.getX(), center.getY()).click().perform();
+            } else if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.JavascriptExecutor js) {
+                js.executeScript(
+                        "var el = document.elementFromPoint(arguments[0], arguments[1]); " +
+                        "if (el) { " +
+                        "  el.dispatchEvent(new MouseEvent('mousedown', {bubbles: true, cancelable: true, clientX: arguments[0], clientY: arguments[1]})); " +
+                        "  el.dispatchEvent(new MouseEvent('mouseup', {bubbles: true, cancelable: true, clientX: arguments[0], clientY: arguments[1]})); " +
+                        "  el.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true, clientX: arguments[0], clientY: arguments[1]})); " +
+                        "  if (typeof el.click === 'function') { el.click(); } " +
+                        "}",
+                        center.getX(), center.getY()
+                );
+            } else {
+                LOGGER.warn(String.format("Unable to perform click on visual element '%s': driver does not support Interactive or JavascriptExecutor", label));
             }
         } else {
             LOGGER.warn(String.format("Unable to click visual element '%s': driverFacade or inner driver is null", label));
@@ -104,9 +117,17 @@ public class VisualElement {
                 performMobileTap(center.getX(), center.getY());
                 try { Thread.sleep(100); } catch (InterruptedException ignored) {}
                 performMobileTap(center.getX(), center.getY());
-            } else {
+            } else if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.interactions.Interactive) {
                 Actions actions = new Actions(driverFacade.getInnerDriver());
                 actions.moveToLocation(center.getX(), center.getY()).doubleClick().perform();
+            } else if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.JavascriptExecutor js) {
+                js.executeScript(
+                        "var el = document.elementFromPoint(arguments[0], arguments[1]); " +
+                        "if (el) { " +
+                        "  el.dispatchEvent(new MouseEvent('dblclick', {bubbles: true, cancelable: true, clientX: arguments[0], clientY: arguments[1]})); " +
+                        "}",
+                        center.getX(), center.getY()
+                );
             }
         }
     }
@@ -116,8 +137,19 @@ public class VisualElement {
         Point center = getCenter();
         LOGGER.info(String.format("Hovering over visual element '%s' at (%d, %d)", label, center.getX(), center.getY()));
         if (driverFacade != null && driverFacade.getInnerDriver() != null) {
-            Actions actions = new Actions(driverFacade.getInnerDriver());
-            actions.moveToLocation(center.getX(), center.getY()).perform();
+            if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.interactions.Interactive) {
+                Actions actions = new Actions(driverFacade.getInnerDriver());
+                actions.moveToLocation(center.getX(), center.getY()).perform();
+            } else if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.JavascriptExecutor js) {
+                js.executeScript(
+                        "var el = document.elementFromPoint(arguments[0], arguments[1]); " +
+                        "if (el) { " +
+                        "  el.dispatchEvent(new MouseEvent('mousemove', {bubbles: true, cancelable: true, clientX: arguments[0], clientY: arguments[1]})); " +
+                        "  el.dispatchEvent(new MouseEvent('mouseover', {bubbles: true, cancelable: true, clientX: arguments[0], clientY: arguments[1]})); " +
+                        "}",
+                        center.getX(), center.getY()
+                );
+            }
         }
     }
 
@@ -125,8 +157,21 @@ public class VisualElement {
         click();
         LOGGER.info(String.format("Sending keys '%s' to visual element '%s'", String.join("", keysToSend), label));
         if (driverFacade != null && driverFacade.getInnerDriver() != null) {
-            Actions actions = new Actions(driverFacade.getInnerDriver());
-            actions.sendKeys(keysToSend).perform();
+            if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.interactions.Interactive) {
+                Actions actions = new Actions(driverFacade.getInnerDriver());
+                actions.sendKeys(keysToSend).perform();
+            } else if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.JavascriptExecutor js) {
+                String keys = String.join("", keysToSend);
+                js.executeScript(
+                        "var el = document.activeElement; " +
+                        "if (el) { " +
+                        "  if ('value' in el) { el.value += arguments[0]; } " +
+                        "  el.dispatchEvent(new Event('input', {bubbles: true})); " +
+                        "  el.dispatchEvent(new Event('change', {bubbles: true})); " +
+                        "}",
+                        keys
+                );
+            }
         }
     }
 
@@ -142,12 +187,24 @@ public class VisualElement {
         Point center = getCenter();
         LOGGER.info(String.format("Dragging visual element '%s' from (%d, %d) to target element", label, center.getX(), center.getY()));
         if (driverFacade != null && driverFacade.getInnerDriver() != null) {
-            Actions actions = new Actions(driverFacade.getInnerDriver());
-            actions.moveToLocation(center.getX(), center.getY())
-                    .clickAndHold()
-                    .moveToElement(target)
-                    .release()
-                    .perform();
+            if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.interactions.Interactive) {
+                Actions actions = new Actions(driverFacade.getInnerDriver());
+                actions.moveToLocation(center.getX(), center.getY())
+                        .clickAndHold()
+                        .moveToElement(target)
+                        .release()
+                        .perform();
+            } else if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.JavascriptExecutor js) {
+                js.executeScript(
+                        "var source = document.elementFromPoint(arguments[0], arguments[1]); " +
+                        "if (source && arguments[2]) { " +
+                        "  source.dispatchEvent(new MouseEvent('dragstart', {bubbles: true})); " +
+                        "  arguments[2].dispatchEvent(new MouseEvent('drop', {bubbles: true})); " +
+                        "  source.dispatchEvent(new MouseEvent('dragend', {bubbles: true})); " +
+                        "}",
+                        center.getX(), center.getY(), target
+                );
+            }
         }
     }
 
