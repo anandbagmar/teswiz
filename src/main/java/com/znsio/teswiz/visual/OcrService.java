@@ -1,6 +1,10 @@
 package com.znsio.teswiz.visual;
 
+import java.awt.Graphics2D;
+import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.RenderingHints;
+import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -88,7 +92,12 @@ public class OcrService {
                 return wordMatch;
             }
 
-            return searchLineMatch(tesseract, bufferedImage, normalizedSearch, searchText, scaleFactor, driverFacade);
+            VisualElement lineMatch = searchLineMatch(tesseract, bufferedImage, normalizedSearch, searchText, scaleFactor, driverFacade);
+            if (lineMatch != null) {
+                return lineMatch;
+            }
+
+            return searchRotatedTextMatch(tesseract, bufferedImage, normalizedSearch, searchText, scaleFactor, driverFacade);
         } catch (UnsatisfiedLinkError e) {
             LOGGER.error("Native Tesseract shared library (libtesseract) could not be loaded: " + e.getMessage());
             throwNativeLibraryNotFoundException(e);
@@ -228,6 +237,105 @@ public class OcrService {
             }
         }
         return null;
+    }
+
+    private static VisualElement searchRotatedTextMatch(Tesseract tesseract, BufferedImage originalImage, String normalizedSearch, String searchText, double scaleFactor, Driver driverFacade) {
+        double[] candidateAngles = {90.0, 270.0, 45.0, -45.0, 30.0, -30.0, 180.0};
+        int origW = originalImage.getWidth();
+        int origH = originalImage.getHeight();
+
+        for (double angle : candidateAngles) {
+            BufferedImage rotatedImage = rotateImage(originalImage, angle);
+            if (rotatedImage == null) {
+                continue;
+            }
+
+            List<Word> rotatedWords = tesseract.getWords(rotatedImage, RIL_WORD);
+            VisualElement rawMatch = matchTextInWords(rotatedWords, normalizedSearch, searchText, 1.0, null);
+            if (rawMatch != null) {
+                Rectangle rotRect = new Rectangle(rawMatch.getX(), rawMatch.getY(), rawMatch.getWidth(), rawMatch.getHeight());
+                Rectangle mappedRect = mapRotatedRectToOriginal(rotRect, angle, origW, origH, rotatedImage.getWidth(), rotatedImage.getHeight());
+
+                String matchedLabel = rawMatch.getLabel().startsWith("OCR: ") ? rawMatch.getLabel().substring(5) : rawMatch.getLabel();
+                VisualElement element = buildScaledVisualElement(mappedRect.x, mappedRect.y, mappedRect.width, mappedRect.height, scaleFactor, matchedLabel, driverFacade);
+                LOGGER.info(String.format("Found rotated OCR match '%s' for search '%s' at angle %.1f° -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
+                        matchedLabel, searchText, angle, element.getX(), element.getY(), element.getWidth(), element.getHeight(), scaleFactor));
+                return element;
+            }
+        }
+        return null;
+    }
+
+    private static Rectangle mapRotatedRectToOriginal(Rectangle rotRect, double angleDegrees, int origW, int origH, int rotW, int rotH) {
+        int x1 = rotRect.x;
+        int y1 = rotRect.y;
+        int x2 = rotRect.x + rotRect.width;
+        int y2 = rotRect.y + rotRect.height;
+
+        Point p1 = mapRotatedPointToOriginal(x1, y1, angleDegrees, origW, origH, rotW, rotH);
+        Point p2 = mapRotatedPointToOriginal(x2, y1, angleDegrees, origW, origH, rotW, rotH);
+        Point p3 = mapRotatedPointToOriginal(x1, y2, angleDegrees, origW, origH, rotW, rotH);
+        Point p4 = mapRotatedPointToOriginal(x2, y2, angleDegrees, origW, origH, rotW, rotH);
+
+        int minX = Math.min(Math.min(p1.x, p2.x), Math.min(p3.x, p4.x));
+        int minY = Math.min(Math.min(p1.y, p2.y), Math.min(p3.y, p4.y));
+        int maxX = Math.max(Math.max(p1.x, p2.x), Math.max(p3.x, p4.x));
+        int maxY = Math.max(Math.max(p1.y, p2.y), Math.max(p3.y, p4.y));
+
+        minX = Math.max(0, Math.min(minX, origW - 1));
+        minY = Math.max(0, Math.min(minY, origH - 1));
+        int rectW = Math.max(1, Math.min(maxX - minX, origW - minX));
+        int rectH = Math.max(1, Math.min(maxY - minY, origH - minY));
+
+        return new Rectangle(minX, minY, rectW, rectH);
+    }
+
+    private static Point mapRotatedPointToOriginal(int rotX, int rotY, double angleDegrees, int origW, int origH, int rotW, int rotH) {
+        double radians = Math.toRadians(-angleDegrees);
+        double rotCenterX = rotW / 2.0;
+        double rotCenterY = rotH / 2.0;
+        double origCenterX = origW / 2.0;
+        double origCenterY = origH / 2.0;
+
+        double xRel = rotX - rotCenterX;
+        double yRel = rotY - rotCenterY;
+
+        double origXRel = xRel * Math.cos(radians) - yRel * Math.sin(radians);
+        double origYRel = xRel * Math.sin(radians) + yRel * Math.cos(radians);
+
+        int origX = (int) Math.round(origXRel + origCenterX);
+        int origY = (int) Math.round(origYRel + origCenterY);
+
+        return new Point(origX, origY);
+    }
+
+    private static BufferedImage rotateImage(BufferedImage src, double angleDegrees) {
+        try {
+            double radians = Math.toRadians(angleDegrees);
+            double sin = Math.abs(Math.sin(radians));
+            double cos = Math.abs(Math.cos(radians));
+            int srcW = src.getWidth();
+            int srcH = src.getHeight();
+            int newW = (int) Math.floor(srcW * cos + srcH * sin);
+            int newH = (int) Math.floor(srcW * sin + srcH * cos);
+
+            BufferedImage result = new BufferedImage(newW, newH, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g2d = result.createGraphics();
+            g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            AffineTransform at = new AffineTransform();
+            at.translate((newW - srcW) / 2.0, (newH - srcH) / 2.0);
+            at.rotate(radians, srcW / 2.0, srcH / 2.0);
+            g2d.drawRenderedImage(src, at);
+            g2d.dispose();
+
+            return result;
+        } catch (Exception e) {
+            LOGGER.warn("Failed to rotate image by " + angleDegrees + "°: " + e.getMessage());
+            return null;
+        }
     }
 
     private static VisualElement buildScaledVisualElement(int rawX, int rawY, int rawWidth, int rawHeight, double scaleFactor, String labelText, Driver driverFacade) {
