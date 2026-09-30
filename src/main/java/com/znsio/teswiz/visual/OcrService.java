@@ -143,6 +143,41 @@ public class OcrService {
                 }
             }
 
+            // First pass: Exact single-word match
+            for (Word word : words) {
+                String wordText = word.getText();
+                if (wordText != null) {
+                    String cleaned = wordText.trim().replaceAll("^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$", "");
+                    if (wordText.trim().equalsIgnoreCase(normalizedSearch) || cleaned.equalsIgnoreCase(normalizedSearch)) {
+                        Rectangle rect = word.getBoundingBox();
+                        int logicalX = (int) Math.round(rect.x / scaleFactor);
+                        int logicalY = (int) Math.round(rect.y / scaleFactor);
+                        int logicalW = (int) Math.round(rect.width / scaleFactor);
+                        int logicalH = (int) Math.round(rect.height / scaleFactor);
+                        LOGGER.info(String.format("Found exact OCR word match '%s' for search '%s' at screenshot bounds [x=%d, y=%d, w=%d, h=%d] -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
+                                wordText.trim(), searchText, rect.x, rect.y, rect.width, rect.height, logicalX, logicalY, logicalW, logicalH, scaleFactor));
+                        return new VisualElement(logicalX, logicalY, logicalW, logicalH, "OCR: " + wordText.trim(), driverFacade);
+                    }
+                }
+            }
+
+            // Second pass: Word-boundary regex match
+            java.util.regex.Pattern wordBoundaryPattern = java.util.regex.Pattern.compile("\\b" + java.util.regex.Pattern.quote(normalizedSearch) + "\\b", java.util.regex.Pattern.CASE_INSENSITIVE);
+            for (Word word : words) {
+                String wordText = word.getText();
+                if (wordText != null && wordBoundaryPattern.matcher(wordText.trim()).find()) {
+                    Rectangle rect = word.getBoundingBox();
+                    int logicalX = (int) Math.round(rect.x / scaleFactor);
+                    int logicalY = (int) Math.round(rect.y / scaleFactor);
+                    int logicalW = (int) Math.round(rect.width / scaleFactor);
+                    int logicalH = (int) Math.round(rect.height / scaleFactor);
+                    LOGGER.info(String.format("Found word-boundary OCR match '%s' for search '%s' at screenshot bounds [x=%d, y=%d, w=%d, h=%d] -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
+                            wordText.trim(), searchText, rect.x, rect.y, rect.width, rect.height, logicalX, logicalY, logicalW, logicalH, scaleFactor));
+                    return new VisualElement(logicalX, logicalY, logicalW, logicalH, "OCR: " + wordText.trim(), driverFacade);
+                }
+            }
+
+            // Third pass: Substring contains match
             for (Word word : words) {
                 String wordText = word.getText();
                 if (wordText != null && wordText.trim().toLowerCase().contains(normalizedSearch)) {
@@ -151,9 +186,9 @@ public class OcrService {
                     int logicalY = (int) Math.round(rect.y / scaleFactor);
                     int logicalW = (int) Math.round(rect.width / scaleFactor);
                     int logicalH = (int) Math.round(rect.height / scaleFactor);
-                    LOGGER.info(String.format("Found OCR word match '%s' for search '%s' at screenshot bounds [x=%d, y=%d, w=%d, h=%d] -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
-                            wordText, searchText, rect.x, rect.y, rect.width, rect.height, logicalX, logicalY, logicalW, logicalH, scaleFactor));
-                    return new VisualElement(logicalX, logicalY, logicalW, logicalH, "OCR: " + wordText, driverFacade);
+                    LOGGER.info(String.format("Found OCR word substring match '%s' for search '%s' at screenshot bounds [x=%d, y=%d, w=%d, h=%d] -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
+                            wordText.trim(), searchText, rect.x, rect.y, rect.width, rect.height, logicalX, logicalY, logicalW, logicalH, scaleFactor));
+                    return new VisualElement(logicalX, logicalY, logicalW, logicalH, "OCR: " + wordText.trim(), driverFacade);
                 }
             }
 
@@ -167,8 +202,8 @@ public class OcrService {
                     int logicalW = (int) Math.round(rect.width / scaleFactor);
                     int logicalH = (int) Math.round(rect.height / scaleFactor);
                     LOGGER.info(String.format("Found OCR text line match '%s' for search '%s' at screenshot bounds [x=%d, y=%d, w=%d, h=%d] -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
-                            lineText, searchText, rect.x, rect.y, rect.width, rect.height, logicalX, logicalY, logicalW, logicalH, scaleFactor));
-                    return new VisualElement(logicalX, logicalY, logicalW, logicalH, "OCR: " + lineText, driverFacade);
+                            lineText.trim(), searchText, rect.x, rect.y, rect.width, rect.height, logicalX, logicalY, logicalW, logicalH, scaleFactor));
+                    return new VisualElement(logicalX, logicalY, logicalW, logicalH, "OCR: " + lineText.trim(), driverFacade);
                 }
             }
         } catch (UnsatisfiedLinkError e) {
