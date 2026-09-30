@@ -240,11 +240,21 @@ public class OcrService {
     }
 
     private static VisualElement searchRotatedTextMatch(Tesseract tesseract, BufferedImage originalImage, String normalizedSearch, String searchText, double scaleFactor, Driver driverFacade) {
-        double[] candidateAngles = {90.0, 270.0, 45.0, -45.0, 30.0, -30.0, 180.0};
+        double[] primaryAngles = {90.0, 270.0, 45.0, -45.0, 30.0, -30.0, 180.0};
+        VisualElement match = searchAngles(tesseract, originalImage, primaryAngles, normalizedSearch, searchText, scaleFactor, driverFacade, "Primary");
+        if (match != null) {
+            return match;
+        }
+
+        double[] fineGrainedAngles = {15.0, -15.0, 60.0, -60.0, 75.0, -75.0, 105.0, 120.0, 135.0, 150.0, 210.0, 225.0, 240.0, 300.0, 315.0, 330.0};
+        return searchAngles(tesseract, originalImage, fineGrainedAngles, normalizedSearch, searchText, scaleFactor, driverFacade, "Fine-grained intermediate");
+    }
+
+    private static VisualElement searchAngles(Tesseract tesseract, BufferedImage originalImage, double[] angles, String normalizedSearch, String searchText, double scaleFactor, Driver driverFacade, String passName) {
         int origW = originalImage.getWidth();
         int origH = originalImage.getHeight();
 
-        for (double angle : candidateAngles) {
+        for (double angle : angles) {
             BufferedImage rotatedImage = rotateImage(originalImage, angle);
             if (rotatedImage == null) {
                 continue;
@@ -258,8 +268,8 @@ public class OcrService {
 
                 String matchedLabel = rawMatch.getLabel().startsWith("OCR: ") ? rawMatch.getLabel().substring(5) : rawMatch.getLabel();
                 VisualElement element = buildScaledVisualElement(mappedRect.x, mappedRect.y, mappedRect.width, mappedRect.height, scaleFactor, matchedLabel, driverFacade);
-                LOGGER.info(String.format("Found rotated OCR match '%s' for search '%s' at angle %.1f° -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
-                        matchedLabel, searchText, angle, element.getX(), element.getY(), element.getWidth(), element.getHeight(), scaleFactor));
+                LOGGER.info(String.format("Found rotated OCR match '%s' for search '%s' during %s pass at angle %.1f° -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
+                        matchedLabel, searchText, passName, angle, element.getX(), element.getY(), element.getWidth(), element.getHeight(), scaleFactor));
                 return element;
             }
         }
