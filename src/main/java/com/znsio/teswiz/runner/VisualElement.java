@@ -227,15 +227,18 @@ public class VisualElement {
             String methodName = method.getName();
             switch (methodName) {
                 case "click":
-                    int retries = 3;
+                    int retries = Setup.getIntegerValueFromConfigs(Setup.VISUAL_ELEMENT_RETRY_ATTEMPTS);
+                    if (retries < 1) retries = 3;
+                    int delaySeconds = Setup.getIntegerValueFromConfigs(Setup.VISUAL_ELEMENT_RETRY_DELAY_SECONDS);
+                    if (delaySeconds < 1) delaySeconds = 1;
                     for (int i = 1; i <= retries; i++) {
                         try {
                             visualElement.click();
                             return null;
                         } catch (Exception e) {
                             if (i == retries) throw e;
-                            LOGGER.warn("Visual element click failed on attempt " + i + ", retrying interaction: " + e.getMessage());
-                            try { Thread.sleep(500); } catch (InterruptedException ignored) {}
+                            LOGGER.warn(String.format("Visual element click failed on attempt %d of %d, retrying after %ds: %s", i, retries, delaySeconds, e.getMessage()));
+                            try { Thread.sleep(delaySeconds * 1000L); } catch (InterruptedException ignored) {}
                         }
                     }
                     return null;

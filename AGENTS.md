@@ -29,3 +29,11 @@
   3. **Business Layer (BL)** (`src/test/java/com/znsio/teswiz/businessLayer/*/*BL.java`): Orchestrates business flow and assertions using abstract screen class `ScreenClass.get()`.
   4. **Screen Contract & Platform Concrete Classes** (`src/test/java/com/znsio/teswiz/screen/*/*Screen.java` and `src/test/java/com/znsio/teswiz/screen/<platform>/*/*Screen<Platform>.java`): Defines screen interaction contracts and platform-specific element interactions.
 
+## Code Quality & Method Decomposition
+
+- Write clean, maintainable, self-documenting code with low cyclomatic complexity.
+- Maintain small, single-responsibility methods (prefer < 25-30 lines per method).
+- Decompose complex logic, multi-nested loops, and long conditional blocks into private helper methods with descriptive names.
+- Use explicit, meaningful class, method, variable, and constant names (avoid single-letter or cryptic abbreviations).
+
+

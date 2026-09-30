@@ -54,6 +54,8 @@ public class Setup {
     public static final String HIGHLIGHT_ELEMENTS = "HIGHLIGHT_ELEMENTS";
     public static final String HIGHLIGHT_COLOR = "HIGHLIGHT_COLOR";
     public static final String HIGHLIGHT_BORDER_WIDTH = "HIGHLIGHT_BORDER_WIDTH";
+    public static final String VISUAL_ELEMENT_RETRY_ATTEMPTS = "VISUAL_ELEMENT_RETRY_ATTEMPTS";
+    public static final String VISUAL_ELEMENT_RETRY_DELAY_SECONDS = "VISUAL_ELEMENT_RETRY_DELAY_SECONDS";
     public static final String IS_OCR_ENABLED = "IS_OCR_ENABLED";
     public static final String VISUAL_CONFIDENCE_THRESHOLD = "VISUAL_CONFIDENCE_THRESHOLD";
     public static final String BROWSER = "BROWSER";
@@ -469,6 +471,12 @@ public class Setup {
         configs.put(HIGHLIGHT_BORDER_WIDTH, getOverriddenStringValue(
                 HIGHLIGHT_BORDER_WIDTH,
                 getStringValueFromPropertiesIfAvailable(HIGHLIGHT_BORDER_WIDTH, "3px")));
+        configsInteger.put(VISUAL_ELEMENT_RETRY_ATTEMPTS, getOverriddenIntValue(
+                VISUAL_ELEMENT_RETRY_ATTEMPTS,
+                Integer.parseInt(getStringValueFromPropertiesIfAvailable(VISUAL_ELEMENT_RETRY_ATTEMPTS, "3"))));
+        configsInteger.put(VISUAL_ELEMENT_RETRY_DELAY_SECONDS, getOverriddenIntValue(
+                VISUAL_ELEMENT_RETRY_DELAY_SECONDS,
+                Integer.parseInt(getStringValueFromPropertiesIfAvailable(VISUAL_ELEMENT_RETRY_DELAY_SECONDS, "1"))));
     }
 
     public static String getHostMachineName() {
