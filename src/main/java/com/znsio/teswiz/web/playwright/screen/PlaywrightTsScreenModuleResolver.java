@@ -13,6 +13,7 @@ public class PlaywrightTsScreenModuleResolver {
 
     public PlaywrightTsScreenModuleResolver() {
         this(List.of(
+                Path.of("src", "main", "resources", "playwright", "screens").toAbsolutePath(),
                 Path.of("src", "test", "resources", "playwright", "screens").toAbsolutePath(),
                 Path.of("playwright", "screens").toAbsolutePath()));
     }
