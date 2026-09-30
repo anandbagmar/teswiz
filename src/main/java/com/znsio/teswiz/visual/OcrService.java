@@ -81,18 +81,7 @@ public class OcrService {
         }
 
         double scaleFactor = (driverFacade != null) ? driverFacade.getViewportScaleFactor(bufferedImage.getWidth()) : 1.0;
-
-        int offsetX = 0;
-        int offsetY = 0;
-        if (region != null) {
-            offsetX = Math.max(0, Math.min(region.getX(), bufferedImage.getWidth() - 1));
-            offsetY = Math.max(0, Math.min(region.getY(), bufferedImage.getHeight() - 1));
-            int w = Math.min(region.getWidth(), bufferedImage.getWidth() - offsetX);
-            int h = Math.min(region.getHeight(), bufferedImage.getHeight() - offsetY);
-            if (w > 0 && h > 0) {
-                bufferedImage = bufferedImage.getSubimage(offsetX, offsetY, w, h);
-            }
-        }
+        CroppedRegion cropped = cropRegion(bufferedImage, region);
 
         applyCustomJnaLibraryPath();
         String tessDataPath = resolveTessDataPath();
@@ -103,20 +92,20 @@ public class OcrService {
         try {
             Tesseract tesseract = createTesseractInstance(tessDataPath);
             String normalizedSearch = searchText.trim().toLowerCase();
-            List<Word> words = tesseract.getWords(bufferedImage, RIL_WORD);
+            List<Word> words = tesseract.getWords(cropped.image, RIL_WORD);
 
             VisualElement wordMatch = matchTextInWords(words, normalizedSearch, searchText, scaleFactor, driverFacade);
             if (wordMatch != null) {
-                return wordMatch.withOffset(offsetX, offsetY);
+                return wordMatch.withOffset(cropped.offsetX, cropped.offsetY);
             }
 
-            VisualElement lineMatch = searchLineMatch(tesseract, bufferedImage, normalizedSearch, searchText, scaleFactor, driverFacade);
+            VisualElement lineMatch = searchLineMatch(tesseract, cropped.image, normalizedSearch, searchText, scaleFactor, driverFacade);
             if (lineMatch != null) {
-                return lineMatch.withOffset(offsetX, offsetY);
+                return lineMatch.withOffset(cropped.offsetX, cropped.offsetY);
             }
 
-            VisualElement rotatedMatch = searchRotatedTextMatch(tesseract, bufferedImage, normalizedSearch, searchText, scaleFactor, driverFacade);
-            return rotatedMatch != null ? rotatedMatch.withOffset(offsetX, offsetY) : null;
+            VisualElement rotatedMatch = searchRotatedTextMatch(tesseract, cropped.image, normalizedSearch, searchText, scaleFactor, driverFacade);
+            return rotatedMatch != null ? rotatedMatch.withOffset(cropped.offsetX, cropped.offsetY) : null;
         } catch (UnsatisfiedLinkError e) {
             LOGGER.error("Native Tesseract shared library (libtesseract) could not be loaded: " + e.getMessage());
             throwNativeLibraryNotFoundException(e);
@@ -142,18 +131,7 @@ public class OcrService {
         }
 
         double scaleFactor = (driverFacade != null) ? driverFacade.getViewportScaleFactor(bufferedImage.getWidth()) : 1.0;
-
-        int offsetX = 0;
-        int offsetY = 0;
-        if (region != null) {
-            offsetX = Math.max(0, Math.min(region.getX(), bufferedImage.getWidth() - 1));
-            offsetY = Math.max(0, Math.min(region.getY(), bufferedImage.getHeight() - 1));
-            int w = Math.min(region.getWidth(), bufferedImage.getWidth() - offsetX);
-            int h = Math.min(region.getHeight(), bufferedImage.getHeight() - offsetY);
-            if (w > 0 && h > 0) {
-                bufferedImage = bufferedImage.getSubimage(offsetX, offsetY, w, h);
-            }
-        }
+        CroppedRegion cropped = cropRegion(bufferedImage, region);
 
         applyCustomJnaLibraryPath();
         String tessDataPath = resolveTessDataPath();
@@ -165,14 +143,14 @@ public class OcrService {
         try {
             Tesseract tesseract = createTesseractInstance(tessDataPath);
             String normalizedSearch = searchText.trim().toLowerCase();
-            List<Word> words = tesseract.getWords(bufferedImage, RIL_WORD);
+            List<Word> words = tesseract.getWords(cropped.image, RIL_WORD);
 
             for (Word word : words) {
                 String wordText = word.getText();
                 if (wordText != null && isWordMatchingSearch(wordText, normalizedSearch)) {
                     Rectangle rect = word.getBoundingBox();
                     VisualElement element = buildScaledVisualElement(rect.x, rect.y, rect.width, rect.height, scaleFactor, wordText.trim(), driverFacade);
-                    matches.add(element.withOffset(offsetX, offsetY));
+                    matches.add(element.withOffset(cropped.offsetX, cropped.offsetY));
                 }
             }
         } catch (Throwable e) {
@@ -563,5 +541,29 @@ public class OcrService {
             LOGGER.debug("Could not extract tessdata via LoadLibs: " + t.getMessage());
         }
         return null;
+    }
+
+    private static class CroppedRegion {
+        final BufferedImage image;
+        final int offsetX;
+        final int offsetY;
+
+        CroppedRegion(BufferedImage image, int offsetX, int offsetY) {
+            this.image = image;
+            this.offsetX = offsetX;
+            this.offsetY = offsetY;
+        }
+    }
+
+    private static CroppedRegion cropRegion(BufferedImage bufferedImage, com.znsio.teswiz.entities.VisualRegion region) {
+        if (region == null) {
+            return new CroppedRegion(bufferedImage, 0, 0);
+        }
+        int offsetX = Math.max(0, Math.min(region.getX(), bufferedImage.getWidth() - 1));
+        int offsetY = Math.max(0, Math.min(region.getY(), bufferedImage.getHeight() - 1));
+        int w = Math.min(region.getWidth(), bufferedImage.getWidth() - offsetX);
+        int h = Math.min(region.getHeight(), bufferedImage.getHeight() - offsetY);
+        BufferedImage subimage = (w > 0 && h > 0) ? bufferedImage.getSubimage(offsetX, offsetY, w, h) : bufferedImage;
+        return new CroppedRegion(subimage, offsetX, offsetY);
     }
 }

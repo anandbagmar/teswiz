@@ -26,7 +26,14 @@ public final class ScreenImplementationResolver {
         if (null != override) {
             return castOverride(screenContract, override);
         }
-        return loadClass(screenContract, resolveByConvention(screenContract, platform, webEngine));
+        try {
+            return loadClass(screenContract, resolveByConvention(screenContract, platform, webEngine));
+        } catch (NotImplementedException e) {
+            if (WebEngine.PLAYWRIGHT_JAVA.equals(webEngine)) {
+                return loadClass(screenContract, resolveByConvention(screenContract, platform, WebEngine.SELENIUM));
+            }
+            throw e;
+        }
     }
 
     private static boolean isPlaywrightTs(Platform platform, WebEngine webEngine) {
