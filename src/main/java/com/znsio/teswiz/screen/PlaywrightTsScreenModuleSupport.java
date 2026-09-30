@@ -59,6 +59,10 @@ final class PlaywrightTsScreenModuleSupport {
 
     private Path resolveModuleFile(String contractClassName) {
         String modulePath = expectedModulePathFor(contractClassName);
+        Path mainResourcesModule = Path.of("src", "main", "resources", "playwright", "screens").resolve(modulePath);
+        if (Files.exists(mainResourcesModule)) {
+            return mainResourcesModule;
+        }
         Path testResourcesModule = Path.of("src", "test", "resources", "playwright", "screens").resolve(modulePath);
         if (Files.exists(testResourcesModule)) {
             return testResourcesModule;
