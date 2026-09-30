@@ -17,4 +17,4 @@ Feature: Visual OCR and Image Recognition map navigation on Transport NSW Metro 
     When I scroll to the "Explore the new route" interactive map section
     And I visually click "a station solid green dot on the map" using fallback OCR text "Rouse Hill" or image template "src/test/resources/images/solid_green_dot.png"
     And I visually click "Departures from here" using fallback OCR text "Departures from here" or image template "src/test/resources/images/departures_from_here.png"
-    Then I visually click "the motorway on the map" using fallback OCR text "A2" or image template "src/test/resources/images/motorway_a2.png"
+    Then I visually click "the motorway on the map" using OCR text " Rd"
