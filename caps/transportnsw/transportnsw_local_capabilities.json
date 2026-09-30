@@ -1,0 +1,17 @@
+{
+  "web": {
+    "browserName": "chrome"
+  },
+  "serverConfig": {
+    "server": {
+      "plugin": {
+        "device-farm": {
+          "cloud": {
+            "cloudName": "browserstack",
+            "devices": []
+          }
+        }
+      }
+    }
+  }
+}
