@@ -50,3 +50,10 @@ Feature: Visual OCR and Image Recognition map navigation on Transport NSW Metro 
     And I visually find all instances of "Metro map elements" using fallback OCR text "Rouse Hill" or image template "src/test/resources/images/solid_green_dot.png"
     When I visually click the "last" element matching image template "src/test/resources/images/solid_green_dot.png"
 
+  @web @region @positive
+  Scenario: Visually verify element within region-restricted bounding box
+    Given I navigate to the Transport NSW Metro page at "https://transportnsw.info/travel-info/ways-to-get-around/metro"
+    When I scroll to the "Explore the new route" interactive map section
+    Then I verify visual element "Explore the new route section heading" is present using OCR text "Explore" within region 0 0 1920 1080
+
+

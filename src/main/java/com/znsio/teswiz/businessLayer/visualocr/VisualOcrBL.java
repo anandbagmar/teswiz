@@ -546,6 +546,14 @@ public class VisualOcrBL {
         return this;
     }
 
+    public VisualOcrBL verifyVisualElementIsPresentInRegion(String elementName, String ocrText, int x, int y, int width, int height) {
+        com.znsio.teswiz.entities.VisualRegion region = com.znsio.teswiz.entities.VisualRegion.inRegion(x, y, width, height);
+        LOGGER.info(String.format("Verifying visual element '%s' with OCR text '%s' is present in region %s", elementName, ocrText, region));
+        VisualElement element = VisualOcrScreen.get().findVisualElementByTextInRegion(ocrText, region);
+        assertThat(element).as("Visual element '" + elementName + "' in region " + region + " should be present").isNotNull();
+        return this;
+    }
+
     private String resolveMatchedOption(VisualElement element, String ocrText, String imageTemplatePath, boolean ocrIsPrimary) {
         boolean matchedByOcr = element.getLabel().startsWith("OCR:");
         if (ocrIsPrimary) {

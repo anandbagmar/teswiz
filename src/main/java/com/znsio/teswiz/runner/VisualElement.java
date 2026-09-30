@@ -41,6 +41,13 @@ public class VisualElement {
         return x;
     }
 
+    public VisualElement withOffset(int offsetX, int offsetY) {
+        if (offsetX == 0 && offsetY == 0) {
+            return this;
+        }
+        return new VisualElement(x + offsetX, y + offsetY, width, height, label, driverFacade);
+    }
+
     public int getY() {
         return y;
     }
@@ -220,7 +227,17 @@ public class VisualElement {
             String methodName = method.getName();
             switch (methodName) {
                 case "click":
-                    visualElement.click();
+                    int retries = 3;
+                    for (int i = 1; i <= retries; i++) {
+                        try {
+                            visualElement.click();
+                            return null;
+                        } catch (Exception e) {
+                            if (i == retries) throw e;
+                            LOGGER.warn("Visual element click failed on attempt " + i + ", retrying interaction: " + e.getMessage());
+                            try { Thread.sleep(500); } catch (InterruptedException ignored) {}
+                        }
+                    }
                     return null;
                 case "sendKeys":
                     if (args != null && args.length > 0 && args[0] instanceof CharSequence[]) {

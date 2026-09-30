@@ -31,5 +31,9 @@ public abstract class VisualOcrScreen {
     public abstract VisualElement findVisualElementRelativeByText(String targetText, com.znsio.teswiz.entities.SpatialDirection direction, String anchorText);
 
     public abstract VisualElement findVisualElementRelativeByImage(List<String> imagePaths, com.znsio.teswiz.entities.SpatialDirection direction, String anchorText);
+
+    public abstract VisualElement findVisualElementByTextInRegion(String text, com.znsio.teswiz.entities.VisualRegion region);
+
+    public abstract VisualElement findVisualElementByImageInRegion(List<String> imagePaths, com.znsio.teswiz.entities.VisualRegion region);
 }
 

@@ -83,5 +83,17 @@ public class VisualOcrScreenWeb extends VisualOcrScreen {
         LOGGER.info(String.format("Finding visual element matching image %s %s anchor text '%s'", imagePaths, direction.getDirection(), anchorText));
         return driver.findRelativeByImage(imagePaths, direction, anchorText);
     }
+
+    @Override
+    public VisualElement findVisualElementByTextInRegion(String text, com.znsio.teswiz.entities.VisualRegion region) {
+        LOGGER.info(String.format("Finding visual element '%s' in region %s", text, region));
+        return driver.findByText(text, region);
+    }
+
+    @Override
+    public VisualElement findVisualElementByImageInRegion(List<String> imagePaths, com.znsio.teswiz.entities.VisualRegion region) {
+        LOGGER.info(String.format("Finding visual element matching image %s in region %s", imagePaths, region));
+        return driver.findByImage(imagePaths, region);
+    }
 }
 

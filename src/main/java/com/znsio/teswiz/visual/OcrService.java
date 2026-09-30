@@ -67,6 +67,10 @@ public class OcrService {
     }
 
     public static VisualElement findTextMatch(byte[] screenshotBytes, String searchText, Driver driverFacade) {
+        return findTextMatch(screenshotBytes, searchText, null, driverFacade);
+    }
+
+    public static VisualElement findTextMatch(byte[] screenshotBytes, String searchText, com.znsio.teswiz.entities.VisualRegion region, Driver driverFacade) {
         if (!isTess4jAvailable() || screenshotBytes == null || searchText == null || searchText.isBlank()) {
             return null;
         }
@@ -74,6 +78,20 @@ public class OcrService {
         BufferedImage bufferedImage = parseScreenshot(screenshotBytes);
         if (bufferedImage == null) {
             return null;
+        }
+
+        double scaleFactor = (driverFacade != null) ? driverFacade.getViewportScaleFactor(bufferedImage.getWidth()) : 1.0;
+
+        int offsetX = 0;
+        int offsetY = 0;
+        if (region != null) {
+            offsetX = Math.max(0, Math.min(region.getX(), bufferedImage.getWidth() - 1));
+            offsetY = Math.max(0, Math.min(region.getY(), bufferedImage.getHeight() - 1));
+            int w = Math.min(region.getWidth(), bufferedImage.getWidth() - offsetX);
+            int h = Math.min(region.getHeight(), bufferedImage.getHeight() - offsetY);
+            if (w > 0 && h > 0) {
+                bufferedImage = bufferedImage.getSubimage(offsetX, offsetY, w, h);
+            }
         }
 
         applyCustomJnaLibraryPath();
@@ -84,21 +102,21 @@ public class OcrService {
 
         try {
             Tesseract tesseract = createTesseractInstance(tessDataPath);
-            double scaleFactor = (driverFacade != null) ? driverFacade.getViewportScaleFactor(bufferedImage.getWidth()) : 1.0;
             String normalizedSearch = searchText.trim().toLowerCase();
             List<Word> words = tesseract.getWords(bufferedImage, RIL_WORD);
 
             VisualElement wordMatch = matchTextInWords(words, normalizedSearch, searchText, scaleFactor, driverFacade);
             if (wordMatch != null) {
-                return wordMatch;
+                return wordMatch.withOffset(offsetX, offsetY);
             }
 
             VisualElement lineMatch = searchLineMatch(tesseract, bufferedImage, normalizedSearch, searchText, scaleFactor, driverFacade);
             if (lineMatch != null) {
-                return lineMatch;
+                return lineMatch.withOffset(offsetX, offsetY);
             }
 
-            return searchRotatedTextMatch(tesseract, bufferedImage, normalizedSearch, searchText, scaleFactor, driverFacade);
+            VisualElement rotatedMatch = searchRotatedTextMatch(tesseract, bufferedImage, normalizedSearch, searchText, scaleFactor, driverFacade);
+            return rotatedMatch != null ? rotatedMatch.withOffset(offsetX, offsetY) : null;
         } catch (UnsatisfiedLinkError e) {
             LOGGER.error("Native Tesseract shared library (libtesseract) could not be loaded: " + e.getMessage());
             throwNativeLibraryNotFoundException(e);
@@ -110,6 +128,10 @@ public class OcrService {
     }
 
     public static List<VisualElement> findAllTextMatches(byte[] screenshotBytes, String searchText, Driver driverFacade) {
+        return findAllTextMatches(screenshotBytes, searchText, null, driverFacade);
+    }
+
+    public static List<VisualElement> findAllTextMatches(byte[] screenshotBytes, String searchText, com.znsio.teswiz.entities.VisualRegion region, Driver driverFacade) {
         if (!isTess4jAvailable() || screenshotBytes == null || searchText == null || searchText.isBlank()) {
             return Collections.emptyList();
         }
@@ -117,6 +139,20 @@ public class OcrService {
         BufferedImage bufferedImage = parseScreenshot(screenshotBytes);
         if (bufferedImage == null) {
             return Collections.emptyList();
+        }
+
+        double scaleFactor = (driverFacade != null) ? driverFacade.getViewportScaleFactor(bufferedImage.getWidth()) : 1.0;
+
+        int offsetX = 0;
+        int offsetY = 0;
+        if (region != null) {
+            offsetX = Math.max(0, Math.min(region.getX(), bufferedImage.getWidth() - 1));
+            offsetY = Math.max(0, Math.min(region.getY(), bufferedImage.getHeight() - 1));
+            int w = Math.min(region.getWidth(), bufferedImage.getWidth() - offsetX);
+            int h = Math.min(region.getHeight(), bufferedImage.getHeight() - offsetY);
+            if (w > 0 && h > 0) {
+                bufferedImage = bufferedImage.getSubimage(offsetX, offsetY, w, h);
+            }
         }
 
         applyCustomJnaLibraryPath();
@@ -128,7 +164,6 @@ public class OcrService {
         List<VisualElement> matches = new ArrayList<>();
         try {
             Tesseract tesseract = createTesseractInstance(tessDataPath);
-            double scaleFactor = (driverFacade != null) ? driverFacade.getViewportScaleFactor(bufferedImage.getWidth()) : 1.0;
             String normalizedSearch = searchText.trim().toLowerCase();
             List<Word> words = tesseract.getWords(bufferedImage, RIL_WORD);
 
@@ -137,7 +172,7 @@ public class OcrService {
                 if (wordText != null && isWordMatchingSearch(wordText, normalizedSearch)) {
                     Rectangle rect = word.getBoundingBox();
                     VisualElement element = buildScaledVisualElement(rect.x, rect.y, rect.width, rect.height, scaleFactor, wordText.trim(), driverFacade);
-                    matches.add(element);
+                    matches.add(element.withOffset(offsetX, offsetY));
                 }
             }
         } catch (Throwable e) {

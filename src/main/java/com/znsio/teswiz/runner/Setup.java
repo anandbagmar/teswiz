@@ -52,6 +52,8 @@ public class Setup {
     public static final String IS_VISUAL = "IS_VISUAL";
     public static final String FAIL_TEST_ON_VISUAL_DIFFERENCE = "FAIL_TEST_ON_VISUAL_DIFFERENCE";
     public static final String HIGHLIGHT_ELEMENTS = "HIGHLIGHT_ELEMENTS";
+    public static final String HIGHLIGHT_COLOR = "HIGHLIGHT_COLOR";
+    public static final String HIGHLIGHT_BORDER_WIDTH = "HIGHLIGHT_BORDER_WIDTH";
     public static final String IS_OCR_ENABLED = "IS_OCR_ENABLED";
     public static final String VISUAL_CONFIDENCE_THRESHOLD = "VISUAL_CONFIDENCE_THRESHOLD";
     public static final String BROWSER = "BROWSER";
@@ -461,6 +463,12 @@ public class Setup {
         configs.put(VISUAL_CONFIDENCE_THRESHOLD, getOverriddenStringValue(
                 VISUAL_CONFIDENCE_THRESHOLD,
                 getStringValueFromPropertiesIfAvailable(VISUAL_CONFIDENCE_THRESHOLD, "0.85")));
+        configs.put(HIGHLIGHT_COLOR, getOverriddenStringValue(
+                HIGHLIGHT_COLOR,
+                getStringValueFromPropertiesIfAvailable(HIGHLIGHT_COLOR, "#FF4500")));
+        configs.put(HIGHLIGHT_BORDER_WIDTH, getOverriddenStringValue(
+                HIGHLIGHT_BORDER_WIDTH,
+                getStringValueFromPropertiesIfAvailable(HIGHLIGHT_BORDER_WIDTH, "3px")));
     }
 
     public static String getHostMachineName() {
@@ -795,6 +803,10 @@ public class Setup {
 
     public static void addBooleanValueToConfigs(String key, boolean value) {
         configsBoolean.put(key, value);
+    }
+
+    public static String getStringValueFromConfigs(String key, String defaultValue) {
+        return configs.getOrDefault(key, defaultValue);
     }
 
     public static void addToConfigs(String key, String value) {

@@ -118,6 +118,38 @@ class VisualSubsystemTest {
         assertThat(bl.parsePositionIndex("4th", 5)).isEqualTo(3);
         assertThat(bl.parsePositionIndex("2", 5)).isEqualTo(2);
     }
+
+    @Test
+    void testVisualRegionCreationAndOffsets() {
+        com.znsio.teswiz.entities.VisualRegion region = com.znsio.teswiz.entities.VisualRegion.inRegion(100, 200, 400, 300);
+        assertThat(region.getX()).isEqualTo(100);
+        assertThat(region.getY()).isEqualTo(200);
+        assertThat(region.getWidth()).isEqualTo(400);
+        assertThat(region.getHeight()).isEqualTo(300);
+
+        com.znsio.teswiz.runner.VisualElement element = new com.znsio.teswiz.runner.VisualElement(10, 20, 50, 30, "SubMatch", null);
+        com.znsio.teswiz.runner.VisualElement offsetElement = element.withOffset(region.getX(), region.getY());
+        assertThat(offsetElement.getX()).isEqualTo(110);
+        assertThat(offsetElement.getY()).isEqualTo(220);
+        assertThat(offsetElement.getWidth()).isEqualTo(50);
+        assertThat(offsetElement.getHeight()).isEqualTo(30);
+    }
+
+    @Test
+    void testVisualByWithRegion() {
+        com.znsio.teswiz.entities.VisualRegion region = com.znsio.teswiz.entities.VisualRegion.inRegion(50, 50, 200, 100);
+        com.znsio.teswiz.runner.VisualBy ocrRegionBy = com.znsio.teswiz.runner.VisualBy.ocr("Header", region);
+        assertThat(ocrRegionBy.getRegion()).isEqualTo(region);
+        assertThat(ocrRegionBy.toString()).contains("VisualBy.ocr: Header in VisualRegion");
+    }
+
+    @Test
+    void testConfigurableHighlightProperties() {
+        Setup.addToConfigs(Setup.HIGHLIGHT_COLOR, "#00FF00");
+        Setup.addToConfigs(Setup.HIGHLIGHT_BORDER_WIDTH, "5px");
+        assertThat(Setup.getStringValueFromConfigs(Setup.HIGHLIGHT_COLOR, "#FF4500")).isEqualTo("#00FF00");
+        assertThat(Setup.getStringValueFromConfigs(Setup.HIGHLIGHT_BORDER_WIDTH, "3px")).isEqualTo("5px");
+    }
 }
 
 

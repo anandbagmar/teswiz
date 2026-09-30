@@ -1297,17 +1297,13 @@ public class Visual {
                 String.format("Visual element with text '%s' not found via OCR.", text));
     }
 
-    public VisualElement findByImage(List<String> imageTemplatePaths) {
-        return findByImage(imageTemplatePaths, Runner.getVisualConfidenceThreshold());
-    }
-
-    public VisualElement findByImage(List<String> imageTemplatePaths, double confidenceThreshold) {
+    public VisualElement findByText(String text, com.znsio.teswiz.entities.VisualRegion region) {
         verifyOcrEnabled();
-        LOGGER.info(String.format("Locating visual element by candidate image templates %s with threshold %.2f", imageTemplatePaths, confidenceThreshold));
+        LOGGER.info(String.format("Locating visual element by text '%s' within region %s", text, region));
         int maxAttempts = 5;
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             byte[] screenshot = captureScreenshotBytes();
-            VisualElement match = com.znsio.teswiz.visual.ImageRecognitionService.findTemplateMatch(screenshot, imageTemplatePaths, confidenceThreshold, this.driverFacade);
+            VisualElement match = com.znsio.teswiz.visual.OcrService.findTextMatch(screenshot, text, region, this.driverFacade);
             if (match != null) {
                 return match;
             }
@@ -1316,16 +1312,50 @@ public class Visual {
             }
         }
         throw new com.znsio.teswiz.exceptions.NoSuchVisualElementException(
-                String.format("Visual element matching candidate image templates %s not found (confidence threshold: %.2f).", imageTemplatePaths, confidenceThreshold));
+                String.format("Visual element with text '%s' not found via OCR in region %s.", text, region));
+    }
+
+    public VisualElement findByImage(List<String> imageTemplatePaths) {
+        return findByImage(imageTemplatePaths, Runner.getVisualConfidenceThreshold());
+    }
+
+    public VisualElement findByImage(List<String> imageTemplatePaths, double confidenceThreshold) {
+        return findByImage(imageTemplatePaths, confidenceThreshold, null);
+    }
+
+    public VisualElement findByImage(List<String> imageTemplatePaths, com.znsio.teswiz.entities.VisualRegion region) {
+        return findByImage(imageTemplatePaths, Runner.getVisualConfidenceThreshold(), region);
+    }
+
+    public VisualElement findByImage(List<String> imageTemplatePaths, double confidenceThreshold, com.znsio.teswiz.entities.VisualRegion region) {
+        verifyOcrEnabled();
+        LOGGER.info(String.format("Locating visual element by candidate image templates %s with threshold %.2f within region %s", imageTemplatePaths, confidenceThreshold, region));
+        int maxAttempts = 5;
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            byte[] screenshot = captureScreenshotBytes();
+            VisualElement match = com.znsio.teswiz.visual.ImageRecognitionService.findTemplateMatch(screenshot, imageTemplatePaths, confidenceThreshold, region, this.driverFacade);
+            if (match != null) {
+                return match;
+            }
+            if (attempt < maxAttempts) {
+                try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
+            }
+        }
+        throw new com.znsio.teswiz.exceptions.NoSuchVisualElementException(
+                String.format("Visual element matching candidate image templates %s not found in region %s (confidence threshold: %.2f).", imageTemplatePaths, region, confidenceThreshold));
     }
 
     public VisualElement findByTextOrImage(String text, List<String> imageTemplatePaths) {
+        return findByTextOrImage(text, imageTemplatePaths, null);
+    }
+
+    public VisualElement findByTextOrImage(String text, List<String> imageTemplatePaths, com.znsio.teswiz.entities.VisualRegion region) {
         verifyOcrEnabled();
         try {
-            return findByText(text);
+            return findByText(text, region);
         } catch (com.znsio.teswiz.exceptions.NoSuchVisualElementException e) {
-            LOGGER.info(String.format("Text '%s' not found via OCR. Falling back to candidate image templates %s", text, imageTemplatePaths));
-            return findByImage(imageTemplatePaths);
+            LOGGER.info(String.format("Text '%s' not found via OCR in region %s. Falling back to candidate image templates %s", text, region, imageTemplatePaths));
+            return findByImage(imageTemplatePaths, region);
         }
     }
 
@@ -1340,10 +1370,14 @@ public class Visual {
     }
 
     public List<VisualElement> findAllByText(String text) {
+        return findAllByText(text, (com.znsio.teswiz.entities.VisualRegion) null);
+    }
+
+    public List<VisualElement> findAllByText(String text, com.znsio.teswiz.entities.VisualRegion region) {
         verifyOcrEnabled();
-        LOGGER.info(String.format("Locating all visual elements matching text '%s'", text));
+        LOGGER.info(String.format("Locating all visual elements matching text '%s' within region %s", text, region));
         byte[] screenshot = captureScreenshotBytes();
-        return com.znsio.teswiz.visual.OcrService.findAllTextMatches(screenshot, text, this.driverFacade);
+        return com.znsio.teswiz.visual.OcrService.findAllTextMatches(screenshot, text, region, this.driverFacade);
     }
 
     public List<VisualElement> findAllByImage(List<String> imageTemplatePaths) {
@@ -1351,10 +1385,18 @@ public class Visual {
     }
 
     public List<VisualElement> findAllByImage(List<String> imageTemplatePaths, double confidenceThreshold) {
+        return findAllByImage(imageTemplatePaths, confidenceThreshold, null);
+    }
+
+    public List<VisualElement> findAllByImage(List<String> imageTemplatePaths, com.znsio.teswiz.entities.VisualRegion region) {
+        return findAllByImage(imageTemplatePaths, Runner.getVisualConfidenceThreshold(), region);
+    }
+
+    public List<VisualElement> findAllByImage(List<String> imageTemplatePaths, double confidenceThreshold, com.znsio.teswiz.entities.VisualRegion region) {
         verifyOcrEnabled();
-        LOGGER.info(String.format("Locating all visual elements matching image templates %s with threshold %.2f", imageTemplatePaths, confidenceThreshold));
+        LOGGER.info(String.format("Locating all visual elements matching image templates %s with threshold %.2f within region %s", imageTemplatePaths, confidenceThreshold, region));
         byte[] screenshot = captureScreenshotBytes();
-        return com.znsio.teswiz.visual.ImageRecognitionService.findAllTemplateMatches(screenshot, imageTemplatePaths, confidenceThreshold, this.driverFacade);
+        return com.znsio.teswiz.visual.ImageRecognitionService.findAllTemplateMatches(screenshot, imageTemplatePaths, confidenceThreshold, region, this.driverFacade);
     }
 
     public List<VisualElement> findAllByTextOrImage(String text, List<String> imageTemplatePaths) {

@@ -586,6 +586,8 @@ public class Driver {
             return;
         }
         clearHighlight();
+        String color = Setup.getStringValueFromConfigs(Setup.HIGHLIGHT_COLOR, "#FF4500");
+        String borderWidth = Setup.getStringValueFromConfigs(Setup.HIGHLIGHT_BORDER_WIDTH, "3px");
         if (driver instanceof JavascriptExecutor js) {
             try {
                 js.executeScript(
@@ -593,11 +595,11 @@ public class Driver {
                     "window.teswizLastOutline = arguments[0].style.outline;" +
                     "window.teswizLastOutlineOffset = arguments[0].style.outlineOffset;" +
                     "window.teswizLastBoxShadow = arguments[0].style.boxShadow;" +
-                    "arguments[0].style.outline = '3px solid #FF4500';" +
+                    "arguments[0].style.outline = '" + borderWidth + " solid " + color + "';" +
                     "arguments[0].style.outlineOffset = '-2px';" +
-                    "arguments[0].style.boxShadow = '0 0 10px #FF4500';"
+                    "arguments[0].style.boxShadow = '0 0 10px " + color + "';"
                 , element);
-                LOGGER.info("Highlighted WebElement visually with orange-red outline");
+                LOGGER.info("Highlighted WebElement visually with outline color: " + color);
             } catch (Exception e) {
                 LOGGER.warn("Could not highlight web element: " + e.getMessage());
             }
@@ -609,6 +611,8 @@ public class Driver {
             return;
         }
         clearHighlight();
+        String color = Setup.getStringValueFromConfigs(Setup.HIGHLIGHT_COLOR, "#FF4500");
+        String borderWidth = Setup.getStringValueFromConfigs(Setup.HIGHLIGHT_BORDER_WIDTH, "3px");
         if (driver instanceof JavascriptExecutor js) {
             try {
                 js.executeScript(
@@ -621,15 +625,15 @@ public class Driver {
                     "box.style.top = '" + y + "px';" +
                     "box.style.width = '" + width + "px';" +
                     "box.style.height = '" + height + "px';" +
-                    "box.style.border = '3px solid #FF4500';" +
+                    "box.style.border = '" + borderWidth + " solid " + color + "';" +
                     "box.style.backgroundColor = 'rgba(255, 69, 0, 0.25)';" +
-                    "box.style.boxShadow = '0 0 10px rgba(255, 69, 0, 0.8)';" +
+                    "box.style.boxShadow = '0 0 10px " + color + "';" +
                     "box.style.zIndex = '2147483647';" +
                     "box.style.pointerEvents = 'none';" +
                     "box.style.boxSizing = 'border-box';" +
                     "box.style.transition = 'all 0.1s ease-in-out';"
                 );
-                LOGGER.info(String.format("Highlighted visual element at viewport bounds [x=%d, y=%d, w=%d, h=%d]", x, y, width, height));
+                LOGGER.info(String.format("Highlighted visual element at viewport bounds [x=%d, y=%d, w=%d, h=%d] with color %s", x, y, width, height, color));
             } catch (Exception e) {
                 LOGGER.warn("Could not highlight visual element at (" + x + ", " + y + "): " + e.getMessage());
             }
@@ -1221,12 +1225,20 @@ public class Driver {
         return this.visually.findByImage(imageTemplatePaths, confidenceThreshold);
     }
 
+    public VisualElement findByImage(List<String> imageTemplatePaths, double confidenceThreshold, com.znsio.teswiz.entities.VisualRegion region) {
+        return this.visually.findByImage(imageTemplatePaths, confidenceThreshold, region);
+    }
+
     public VisualElement findByTextOrImage(String text, String... imageTemplatePaths) {
         return findByTextOrImage(text, Arrays.asList(imageTemplatePaths));
     }
 
     public VisualElement findByTextOrImage(String text, List<String> imageTemplatePaths) {
         return this.visually.findByTextOrImage(text, imageTemplatePaths);
+    }
+
+    public VisualElement findByTextOrImage(String text, List<String> imageTemplatePaths, com.znsio.teswiz.entities.VisualRegion region) {
+        return this.visually.findByTextOrImage(text, imageTemplatePaths, region);
     }
 
     public VisualElement findByImageOrText(List<String> imageTemplatePaths, String text) {
@@ -1277,20 +1289,36 @@ public class Driver {
         return this.visually.findRelativeByImage(targetImagePaths, direction, anchor);
     }
 
+    public VisualElement findByText(String text, com.znsio.teswiz.entities.VisualRegion region) {
+        return this.visually.findByText(text, region);
+    }
+
+    public VisualElement findByImage(List<String> imageTemplatePaths, com.znsio.teswiz.entities.VisualRegion region) {
+        return this.visually.findByImage(imageTemplatePaths, region);
+    }
+
+    public List<VisualElement> findAllByText(String text, com.znsio.teswiz.entities.VisualRegion region) {
+        return this.visually.findAllByText(text, region);
+    }
+
+    public List<VisualElement> findAllByImage(List<String> imageTemplatePaths, com.znsio.teswiz.entities.VisualRegion region) {
+        return this.visually.findAllByImage(imageTemplatePaths, region);
+    }
+
     public WebElement findElement(VisualBy visualBy) {
         if (visualBy == null) {
             return null;
         }
         switch (visualBy.getType()) {
             case OCR_TEXT:
-                VisualElement ocrElement = findByText(visualBy.getText());
+                VisualElement ocrElement = visualBy.getRegion() != null ? findByText(visualBy.getText(), visualBy.getRegion()) : findByText(visualBy.getText());
                 return ocrElement != null ? ocrElement.toWebElement() : null;
             case IMAGE_TEMPLATE:
-                VisualElement imageElement = findByImage(List.of(visualBy.getImagePath()), visualBy.getConfidenceThreshold());
+                VisualElement imageElement = visualBy.getRegion() != null ? findByImage(List.of(visualBy.getImagePath()), visualBy.getConfidenceThreshold(), visualBy.getRegion()) : findByImage(List.of(visualBy.getImagePath()), visualBy.getConfidenceThreshold());
                 return imageElement != null ? imageElement.toWebElement() : null;
             case FALLBACK_TEXT_IMAGE:
             default:
-                VisualElement fallbackElement = findByTextOrImage(visualBy.getText(), List.of(visualBy.getImagePath()));
+                VisualElement fallbackElement = visualBy.getRegion() != null ? findByTextOrImage(visualBy.getText(), List.of(visualBy.getImagePath()), visualBy.getRegion()) : findByTextOrImage(visualBy.getText(), List.of(visualBy.getImagePath()));
                 return fallbackElement != null ? fallbackElement.toWebElement() : null;
         }
     }

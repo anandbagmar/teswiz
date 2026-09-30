@@ -151,5 +151,10 @@ public class VisualOcrSteps {
     public void iVerifyVisualElementIsPresentUsingOcrTextRelative(String elementName, String targetText, String directionText, String anchorText) {
         new VisualOcrBL().verifyVisualElementIsPresentRelativeByText(elementName, targetText, directionText, anchorText);
     }
+
+    @Then("I verify visual element {string} is present using OCR text {string} within region {int} {int} {int} {int}")
+    public void iVerifyVisualElementIsPresentUsingOcrTextInRegion(String elementName, String ocrText, int x, int y, int width, int height) {
+        new VisualOcrBL().verifyVisualElementIsPresentInRegion(elementName, ocrText, x, y, width, height);
+    }
 }
 
