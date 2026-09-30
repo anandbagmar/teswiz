@@ -152,4 +152,110 @@ public class ImageRecognitionService {
         LOGGER.debug(String.format("Template '%s' best match score was %.4f (below threshold %.2f)", templateName, bestVal, threshold));
         return null;
     }
+
+    public static List<VisualElement> findAllTemplateMatches(byte[] screenshotBytes, List<String> templatePaths, double confidenceThreshold, Driver driverFacade) {
+        if (!isOpenCvAvailable() || screenshotBytes == null || templatePaths == null || templatePaths.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+
+        Mat sceneMat = Imgcodecs.imdecode(new MatOfByte(screenshotBytes), Imgcodecs.IMREAD_COLOR);
+        if (sceneMat.empty()) {
+            LOGGER.warn("Failed to decode screenshot frame buffer for template matching.");
+            return java.util.Collections.emptyList();
+        }
+
+        List<VisualElement> matches = new java.util.ArrayList<>();
+        try {
+            for (String templatePath : templatePaths) {
+                File templateFile = new File(templatePath);
+                if (!templateFile.exists()) {
+                    continue;
+                }
+
+                Mat templateMat = Imgcodecs.imread(templateFile.getAbsolutePath(), Imgcodecs.IMREAD_COLOR);
+                if (templateMat.empty()) {
+                    continue;
+                }
+
+                try {
+                    List<VisualElement> templateMatches = matchAllMultiScale(sceneMat, templateMat, templateFile.getName(), confidenceThreshold, driverFacade);
+                    matches.addAll(templateMatches);
+                } finally {
+                    templateMat.release();
+                }
+            }
+        } finally {
+            sceneMat.release();
+        }
+
+        return applyNonMaximumSuppression(matches);
+    }
+
+    private static List<VisualElement> matchAllMultiScale(Mat scene, Mat template, String templateName, double threshold, Driver driverFacade) {
+        List<VisualElement> results = new java.util.ArrayList<>();
+        double[] scaleFactors = {1.0, 0.75, 0.5, 1.25, 1.5, 2.0};
+        int sceneWidth = scene.cols();
+        int sceneHeight = scene.rows();
+
+        for (double scale : scaleFactors) {
+            int scaledW = (int) (template.cols() * scale);
+            int scaledH = (int) (template.rows() * scale);
+
+            if (scaledW > sceneWidth || scaledH > sceneHeight || scaledW < 5 || scaledH < 5) {
+                continue;
+            }
+
+            Mat scaledTemplate = new Mat();
+            try {
+                Imgproc.resize(template, scaledTemplate, new Size(scaledW, scaledH));
+                Mat resultMat = new Mat();
+                try {
+                    Imgproc.matchTemplate(scene, scaledTemplate, resultMat, Imgproc.TM_CCOEFF_NORMED);
+                    double scaleFactor = (driverFacade != null) ? driverFacade.getViewportScaleFactor(sceneWidth) : 1.0;
+
+                    for (int y = 0; y < resultMat.rows(); y++) {
+                        for (int x = 0; x < resultMat.cols(); x++) {
+                            double matchVal = resultMat.get(y, x)[0];
+                            if (matchVal >= threshold) {
+                                int logicalX = (int) Math.round(x / scaleFactor);
+                                int logicalY = (int) Math.round(y / scaleFactor);
+                                int logicalW = (int) Math.round(scaledW / scaleFactor);
+                                int logicalH = (int) Math.round(scaledH / scaleFactor);
+                                results.add(new VisualElement(logicalX, logicalY, logicalW, logicalH, templateName, driverFacade));
+                            }
+                        }
+                    }
+                } finally {
+                    resultMat.release();
+                }
+            } finally {
+                scaledTemplate.release();
+            }
+        }
+        return results;
+    }
+
+    private static List<VisualElement> applyNonMaximumSuppression(List<VisualElement> rawMatches) {
+        if (rawMatches == null || rawMatches.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+
+        List<VisualElement> filtered = new java.util.ArrayList<>();
+        for (VisualElement candidate : rawMatches) {
+            boolean isDuplicate = false;
+            for (VisualElement existing : filtered) {
+                int dx = Math.abs(candidate.getX() - existing.getX());
+                int dy = Math.abs(candidate.getY() - existing.getY());
+                if (dx < 10 && dy < 10) {
+                    isDuplicate = true;
+                    break;
+                }
+            }
+            if (!isDuplicate) {
+                filtered.add(candidate);
+            }
+        }
+        return filtered;
+    }
 }
+

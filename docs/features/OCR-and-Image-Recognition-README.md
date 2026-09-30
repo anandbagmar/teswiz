@@ -122,9 +122,51 @@ VisualElement cartBtn = driver.findByImageOrText(List.of("src/test/resources/ima
 cartBtn.click();
 ```
 
+### 4. Extract All Visual Elements (`findAllByText` & `findAllByImage`)
+
+Retrieve all matching elements on screen as a `List<VisualElement>` with Non-Maximum Suppression (NMS) duplicate filtering:
+
+```java
+// Retrieve all elements matching OCR text "Details"
+List<VisualElement> detailButtons = driver.findAllByText("Details");
+for (VisualElement item : detailButtons) {
+    item.highlight();
+}
+
+// Click the 2nd matching visual element
+driver.findAllByText("Details").get(1).click();
+```
+
+### 5. Proximity & Spatial Relative Locators (`findRelativeByText` & `findRelativeByImage`)
+
+Locate targets relative to an anchor text/image on screen (`ABOVE`, `BELOW`, `LEFT_OF`, `RIGHT_OF`, `NEAR`):
+
+```java
+// Find text "Submit" located to the RIGHT_OF anchor text "Cancel"
+VisualElement submitBtn = driver.findRelativeByText("Submit", SpatialDirection.RIGHT_OF, "Cancel");
+submitBtn.click();
+
+// Find element "Total" BELOW anchor text "Subtotal"
+VisualElement totalAmount = driver.findRelativeByText("Total", SpatialDirection.BELOW, "Subtotal");
+```
+
+### 6. Dynamic Proxy Locators (`VisualBy`)
+
+Use `VisualBy` locators seamlessly with standard `Driver.findElement` / `Driver.findElements` calls:
+
+```java
+// Dynamic OCR text locator proxy
+WebElement loginBtn = driver.findElement(VisualBy.ocr("Login"));
+loginBtn.click();
+
+// Dynamic template image locator proxy
+WebElement logo = driver.findElement(VisualBy.image("src/test/resources/images/logo.png", 0.90));
+```
+
 ---
 
 ## VisualElement & Web Actions with Auto-Highlighting
+
 
 When `HIGHLIGHT_ELEMENTS=true` (default), standard interaction methods across Selenium, Playwright-Java, Playwright-TS, and Appium automatically clear existing highlights, apply orange-red outlines, and dispatch native actions:
 

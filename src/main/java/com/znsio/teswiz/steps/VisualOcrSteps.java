@@ -62,4 +62,25 @@ public class VisualOcrSteps {
     public void attemptingToFindVisualElementByImageOrTextShouldThrowVisualSubsystemDisabledException(String imagePath, String text) {
         new VisualOcrBL().verifyOcrDisabledThrowsExceptionForImageOrText(imagePath, text);
     }
+
+    @Then("I verify {int} visual elements are present using OCR text {string}")
+    public void iVerifyVisualElementsArePresentUsingOcrText(int expectedCount, String ocrText) {
+        new VisualOcrBL().verifyVisualElementCountByText(ocrText, ocrText, expectedCount);
+    }
+
+    @When("I visually click element at index {int} matching OCR text {string}")
+    public void iVisuallyClickElementAtIndexMatchingOcrText(int index, String ocrText) {
+        new VisualOcrBL().visuallyClickElementAtIndexUsingOcrText(ocrText, index, ocrText);
+    }
+
+    @When("I visually click {string} using OCR text {string} {string} {string}")
+    public void iVisuallyClickUsingOcrTextRelative(String elementName, String targetText, String directionText, String anchorText) {
+        new VisualOcrBL().visuallyClickUsingOcrTextRelative(elementName, targetText, directionText, anchorText);
+    }
+
+    @Then("I verify visual element {string} is present using OCR text {string} {string} {string}")
+    public void iVerifyVisualElementIsPresentUsingOcrTextRelative(String elementName, String targetText, String directionText, String anchorText) {
+        new VisualOcrBL().verifyVisualElementIsPresentRelativeByText(elementName, targetText, directionText, anchorText);
+    }
 }
+

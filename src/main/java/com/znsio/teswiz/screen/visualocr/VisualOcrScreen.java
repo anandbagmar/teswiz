@@ -18,4 +18,15 @@ public abstract class VisualOcrScreen {
     public abstract VisualElement findVisualElementByTextOrImage(String text, List<String> imagePaths);
 
     public abstract VisualElement findVisualElementByImageOrText(List<String> imagePaths, String text);
+
+    public abstract List<VisualElement> findAllVisualElementsByText(String text);
+
+    public abstract List<VisualElement> findAllVisualElementsByImage(List<String> imagePaths);
+
+    public abstract List<VisualElement> findAllVisualElementsByTextOrImage(String text, List<String> imagePaths);
+
+    public abstract VisualElement findVisualElementRelativeByText(String targetText, com.znsio.teswiz.entities.SpatialDirection direction, String anchorText);
+
+    public abstract VisualElement findVisualElementRelativeByImage(List<String> imagePaths, com.znsio.teswiz.entities.SpatialDirection direction, String anchorText);
 }
+

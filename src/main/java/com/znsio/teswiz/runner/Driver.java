@@ -1232,4 +1232,79 @@ public class Driver {
     public VisualElement findByImageOrText(List<String> imageTemplatePaths, String text) {
         return this.visually.findByImageOrText(imageTemplatePaths, text);
     }
+
+    public List<VisualElement> findAllByText(String text) {
+        return this.visually.findAllByText(text);
+    }
+
+    public List<VisualElement> findAllByImage(String... imageTemplatePaths) {
+        return findAllByImage(Arrays.asList(imageTemplatePaths));
+    }
+
+    public List<VisualElement> findAllByImage(List<String> imageTemplatePaths) {
+        return this.visually.findAllByImage(imageTemplatePaths);
+    }
+
+    public List<VisualElement> findAllByImage(List<String> imageTemplatePaths, double confidenceThreshold) {
+        return this.visually.findAllByImage(imageTemplatePaths, confidenceThreshold);
+    }
+
+    public List<VisualElement> findAllByTextOrImage(String text, String... imageTemplatePaths) {
+        return findAllByTextOrImage(text, Arrays.asList(imageTemplatePaths));
+    }
+
+    public List<VisualElement> findAllByTextOrImage(String text, List<String> imageTemplatePaths) {
+        return this.visually.findAllByTextOrImage(text, imageTemplatePaths);
+    }
+
+    public List<VisualElement> findAllByImageOrText(List<String> imageTemplatePaths, String text) {
+        return this.visually.findAllByImageOrText(imageTemplatePaths, text);
+    }
+
+    public VisualElement findRelativeByText(String targetText, com.znsio.teswiz.entities.SpatialDirection direction, String anchorText) {
+        return this.visually.findRelativeByText(targetText, direction, anchorText);
+    }
+
+    public VisualElement findRelativeByImage(List<String> targetImagePaths, com.znsio.teswiz.entities.SpatialDirection direction, String anchorText) {
+        return this.visually.findRelativeByImage(targetImagePaths, direction, anchorText);
+    }
+
+    public WebElement findElement(VisualBy visualBy) {
+        if (visualBy == null) {
+            return null;
+        }
+        switch (visualBy.getType()) {
+            case OCR_TEXT:
+                VisualElement ocrElement = findByText(visualBy.getText());
+                return ocrElement != null ? ocrElement.toWebElement() : null;
+            case IMAGE_TEMPLATE:
+                VisualElement imageElement = findByImage(List.of(visualBy.getImagePath()), visualBy.getConfidenceThreshold());
+                return imageElement != null ? imageElement.toWebElement() : null;
+            case FALLBACK_TEXT_IMAGE:
+            default:
+                VisualElement fallbackElement = findByTextOrImage(visualBy.getText(), List.of(visualBy.getImagePath()));
+                return fallbackElement != null ? fallbackElement.toWebElement() : null;
+        }
+    }
+
+    public List<WebElement> findElements(VisualBy visualBy) {
+        if (visualBy == null) {
+            return Collections.emptyList();
+        }
+        List<VisualElement> visualElements;
+        switch (visualBy.getType()) {
+            case OCR_TEXT:
+                visualElements = findAllByText(visualBy.getText());
+                break;
+            case IMAGE_TEMPLATE:
+                visualElements = findAllByImage(List.of(visualBy.getImagePath()), visualBy.getConfidenceThreshold());
+                break;
+            case FALLBACK_TEXT_IMAGE:
+            default:
+                visualElements = findAllByTextOrImage(visualBy.getText(), List.of(visualBy.getImagePath()));
+                break;
+        }
+        return visualElements.stream().map(VisualElement::toWebElement).collect(Collectors.toList());
+    }
 }
+

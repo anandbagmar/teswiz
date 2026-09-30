@@ -199,4 +199,58 @@ public class VisualElement {
     public String toString() {
         return String.format("VisualElement{label='%s', bounds=[x=%d, y=%d, w=%d, h=%d]}", label, x, y, width, height);
     }
+
+    public WebElement toWebElement() {
+        return (WebElement) java.lang.reflect.Proxy.newProxyInstance(
+                VisualElement.class.getClassLoader(),
+                new Class<?>[]{WebElement.class},
+                new VisualElementWebElementInvocationHandler(this)
+        );
+    }
+
+    private static class VisualElementWebElementInvocationHandler implements java.lang.reflect.InvocationHandler {
+        private final VisualElement visualElement;
+
+        VisualElementWebElementInvocationHandler(VisualElement visualElement) {
+            this.visualElement = visualElement;
+        }
+
+        @Override
+        public Object invoke(Object proxy, java.lang.reflect.Method method, Object[] args) throws Throwable {
+            String methodName = method.getName();
+            switch (methodName) {
+                case "click":
+                    visualElement.click();
+                    return null;
+                case "sendKeys":
+                    if (args != null && args.length > 0 && args[0] instanceof CharSequence[]) {
+                        visualElement.sendKeys((CharSequence[]) args[0]);
+                    }
+                    return null;
+                case "isDisplayed":
+                    return true;
+                case "isEnabled":
+                    return true;
+                case "isSelected":
+                    return false;
+                case "getText":
+                    return visualElement.getLabel();
+                case "getTagName":
+                    return "visual-element";
+                case "getAttribute":
+                    return visualElement.getLabel();
+                case "getLocation":
+                    return new Point(visualElement.getX(), visualElement.getY());
+                case "getSize":
+                    return visualElement.getSize();
+                case "getRect":
+                    return new org.openqa.selenium.Rectangle(visualElement.getX(), visualElement.getY(), visualElement.getHeight(), visualElement.getWidth());
+                case "toString":
+                    return visualElement.toString();
+                default:
+                    return null;
+            }
+        }
+    }
 }
+
