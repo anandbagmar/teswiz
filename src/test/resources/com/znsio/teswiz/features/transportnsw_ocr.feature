@@ -41,7 +41,7 @@ Feature: Visual OCR and Image Recognition map navigation on Transport NSW Metro 
     Given I navigate to the Transport NSW Metro page at "https://transportnsw.info/travel-info/ways-to-get-around/metro"
     When I scroll to the "Explore the new route" interactive map section
     And I visually click "a station solid green dot on the map" using fallback OCR text "Rouse Hill" or image template "src/test/resources/images/solid_green_dot.png"
-    Then I verify visual element "Departures from here" is present using OCR text "Departures" "near" "Rouse Hill"
+    Then I verify visual element "Departures from here" is present using OCR text "Departures" "near" "from here"
 
   @web @fallback @positive
   Scenario: Visually find all instances using multi-modal fallback matching

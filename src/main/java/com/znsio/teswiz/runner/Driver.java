@@ -1265,8 +1265,16 @@ public class Driver {
         return this.visually.findRelativeByText(targetText, direction, anchorText);
     }
 
+    public VisualElement findRelativeByText(String targetText, com.znsio.teswiz.entities.SpatialDirection direction, VisualElement anchor) {
+        return this.visually.findRelativeByText(targetText, direction, anchor);
+    }
+
     public VisualElement findRelativeByImage(List<String> targetImagePaths, com.znsio.teswiz.entities.SpatialDirection direction, String anchorText) {
         return this.visually.findRelativeByImage(targetImagePaths, direction, anchorText);
+    }
+
+    public VisualElement findRelativeByImage(List<String> targetImagePaths, com.znsio.teswiz.entities.SpatialDirection direction, VisualElement anchor) {
+        return this.visually.findRelativeByImage(targetImagePaths, direction, anchor);
     }
 
     public WebElement findElement(VisualBy visualBy) {

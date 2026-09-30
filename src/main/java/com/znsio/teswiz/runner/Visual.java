@@ -1389,6 +1389,19 @@ public class Visual {
                 String.format("Visual element with text '%s' not found %s anchor '%s'", targetText, direction.getDirection(), anchorText));
     }
 
+    public VisualElement findRelativeByText(String targetText, com.znsio.teswiz.entities.SpatialDirection direction, VisualElement anchor) {
+        verifyOcrEnabled();
+        LOGGER.info(String.format("Locating visual element '%s' %s anchor element", targetText, direction.getDirection()));
+        List<VisualElement> candidates = findAllByText(targetText);
+
+        VisualElement bestCandidate = filterAndSelectClosestRelative(anchor, candidates, direction);
+        if (bestCandidate != null) {
+            return bestCandidate;
+        }
+        throw new com.znsio.teswiz.exceptions.NoSuchVisualElementException(
+                String.format("Visual element with text '%s' not found %s anchor element", targetText, direction.getDirection()));
+    }
+
     public VisualElement findRelativeByImage(List<String> targetImagePaths, com.znsio.teswiz.entities.SpatialDirection direction, String anchorText) {
         verifyOcrEnabled();
         LOGGER.info(String.format("Locating visual element matching images %s %s anchor text '%s'", targetImagePaths, direction.getDirection(), anchorText));
@@ -1402,6 +1415,20 @@ public class Visual {
         throw new com.znsio.teswiz.exceptions.NoSuchVisualElementException(
                 String.format("Visual element matching images %s not found %s anchor '%s'", targetImagePaths, direction.getDirection(), anchorText));
     }
+
+    public VisualElement findRelativeByImage(List<String> targetImagePaths, com.znsio.teswiz.entities.SpatialDirection direction, VisualElement anchor) {
+        verifyOcrEnabled();
+        LOGGER.info(String.format("Locating visual element matching images %s %s anchor element", targetImagePaths, direction.getDirection()));
+        List<VisualElement> candidates = findAllByImage(targetImagePaths);
+
+        VisualElement bestCandidate = filterAndSelectClosestRelative(anchor, candidates, direction);
+        if (bestCandidate != null) {
+            return bestCandidate;
+        }
+        throw new com.znsio.teswiz.exceptions.NoSuchVisualElementException(
+                String.format("Visual element matching images %s not found %s anchor element", targetImagePaths, direction.getDirection()));
+    }
+
 
     private VisualElement filterAndSelectClosestRelative(VisualElement anchor, List<VisualElement> candidates, com.znsio.teswiz.entities.SpatialDirection direction) {
         if (anchor == null || candidates == null || candidates.isEmpty()) {
