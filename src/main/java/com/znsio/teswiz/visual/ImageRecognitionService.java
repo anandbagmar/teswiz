@@ -1,20 +1,16 @@
 package com.znsio.teswiz.visual;
 
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import javax.imageio.ImageIO;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opencv.core.Core;
-import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
 import org.opencv.core.Point;
-import org.opencv.core.Rect;
 import org.opencv.core.Size;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
@@ -25,6 +21,7 @@ import com.znsio.teswiz.runner.VisualElement;
 public class ImageRecognitionService {
     private static final Logger LOGGER = LogManager.getLogger(ImageRecognitionService.class.getName());
     private static boolean openCvNativeLoaded = false;
+    private static final double[] DEFAULT_SCALE_FACTORS = {1.0, 0.75, 0.5, 1.25, 1.5, 2.0};
 
     static {
         try {
@@ -57,30 +54,23 @@ public class ImageRecognitionService {
             return null;
         }
 
-        Mat sceneMat = Imgcodecs.imdecode(new MatOfByte(screenshotBytes), Imgcodecs.IMREAD_COLOR);
-        if (sceneMat.empty()) {
-            LOGGER.warn("Failed to decode screenshot frame buffer for template matching.");
+        Mat sceneMat = loadSceneMat(screenshotBytes);
+        if (sceneMat == null) {
             return null;
         }
 
         try {
             for (String templatePath : templatePaths) {
-                File templateFile = new File(templatePath);
-                if (!templateFile.exists()) {
-                    LOGGER.warn("Visual template file does not exist: " + templatePath);
-                    continue;
-                }
-
-                Mat templateMat = Imgcodecs.imread(templateFile.getAbsolutePath(), Imgcodecs.IMREAD_COLOR);
-                if (templateMat.empty()) {
-                    LOGGER.warn("Failed to read image template file: " + templatePath);
+                Mat templateMat = loadTemplateMat(templatePath);
+                if (templateMat == null) {
                     continue;
                 }
 
                 try {
-                    VisualElement match = matchMultiScale(sceneMat, templateMat, templateFile.getName(), confidenceThreshold, driverFacade);
+                    String templateName = new File(templatePath).getName();
+                    VisualElement match = matchMultiScale(sceneMat, templateMat, templateName, confidenceThreshold, driverFacade);
                     if (match != null) {
-                        LOGGER.info(String.format("Successfully matched visual template '%s' at bounds %s", templateFile.getName(), match));
+                        LOGGER.info(String.format("Successfully matched visual template '%s' at bounds %s", templateName, match));
                         return match;
                     }
                 } finally {
@@ -94,21 +84,76 @@ public class ImageRecognitionService {
         return null;
     }
 
+    public static List<VisualElement> findAllTemplateMatches(byte[] screenshotBytes, List<String> templatePaths, double confidenceThreshold, Driver driverFacade) {
+        if (!isOpenCvAvailable() || screenshotBytes == null || templatePaths == null || templatePaths.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        Mat sceneMat = loadSceneMat(screenshotBytes);
+        if (sceneMat == null) {
+            return Collections.emptyList();
+        }
+
+        List<VisualElement> matches = new ArrayList<>();
+        try {
+            for (String templatePath : templatePaths) {
+                Mat templateMat = loadTemplateMat(templatePath);
+                if (templateMat == null) {
+                    continue;
+                }
+
+                try {
+                    String templateName = new File(templatePath).getName();
+                    List<VisualElement> templateMatches = matchAllMultiScale(sceneMat, templateMat, templateName, confidenceThreshold, driverFacade);
+                    matches.addAll(templateMatches);
+                } finally {
+                    templateMat.release();
+                }
+            }
+        } finally {
+            sceneMat.release();
+        }
+
+        return applyNonMaximumSuppression(matches);
+    }
+
+    private static Mat loadSceneMat(byte[] screenshotBytes) {
+        Mat sceneMat = Imgcodecs.imdecode(new MatOfByte(screenshotBytes), Imgcodecs.IMREAD_COLOR);
+        if (sceneMat.empty()) {
+            LOGGER.warn("Failed to decode screenshot frame buffer for template matching.");
+            return null;
+        }
+        return sceneMat;
+    }
+
+    private static Mat loadTemplateMat(String templatePath) {
+        File templateFile = new File(templatePath);
+        if (!templateFile.exists()) {
+            LOGGER.warn("Visual template file does not exist: " + templatePath);
+            return null;
+        }
+
+        Mat templateMat = Imgcodecs.imread(templateFile.getAbsolutePath(), Imgcodecs.IMREAD_COLOR);
+        if (templateMat.empty()) {
+            LOGGER.warn("Failed to read image template file: " + templatePath);
+            return null;
+        }
+        return templateMat;
+    }
+
     private static VisualElement matchMultiScale(Mat scene, Mat template, String templateName, double threshold, Driver driverFacade) {
-        double[] scaleFactors = {1.0, 0.75, 0.5, 1.25, 1.5, 2.0};
         double bestVal = -1.0;
         Point bestLoc = null;
         int bestW = 0;
         int bestH = 0;
-
         int sceneWidth = scene.cols();
         int sceneHeight = scene.rows();
 
-        for (double scale : scaleFactors) {
+        for (double scale : DEFAULT_SCALE_FACTORS) {
             int scaledW = (int) (template.cols() * scale);
             int scaledH = (int) (template.rows() * scale);
 
-            if (scaledW > sceneWidth || scaledH > sceneHeight || scaledW < 5 || scaledH < 5) {
+            if (isInvalidScaleDimensions(scaledW, scaledH, sceneWidth, sceneHeight)) {
                 continue;
             }
 
@@ -135,73 +180,23 @@ public class ImageRecognitionService {
         }
 
         if (bestVal >= threshold && bestLoc != null) {
-            LOGGER.info(String.format("Template '%s' matched with score %.4f >= threshold %.2f", templateName, bestVal, threshold));
-            double scaleFactor = 1.0;
-            if (driverFacade != null) {
-                scaleFactor = driverFacade.getViewportScaleFactor(sceneWidth);
-            }
-            int logicalX = (int) Math.round(bestLoc.x / scaleFactor);
-            int logicalY = (int) Math.round(bestLoc.y / scaleFactor);
-            int logicalW = (int) Math.round(bestW / scaleFactor);
-            int logicalH = (int) Math.round(bestH / scaleFactor);
-            LOGGER.info(String.format("Template '%s' matched at screenshot bounds [x=%d, y=%d, w=%d, h=%d] -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
-                    templateName, (int) bestLoc.x, (int) bestLoc.y, bestW, bestH, logicalX, logicalY, logicalW, logicalH, scaleFactor));
-            return new VisualElement(logicalX, logicalY, logicalW, logicalH, templateName, driverFacade);
+            return buildMatchedVisualElement(bestLoc, bestW, bestH, templateName, sceneWidth, bestVal, threshold, driverFacade);
         }
 
         LOGGER.debug(String.format("Template '%s' best match score was %.4f (below threshold %.2f)", templateName, bestVal, threshold));
         return null;
     }
 
-    public static List<VisualElement> findAllTemplateMatches(byte[] screenshotBytes, List<String> templatePaths, double confidenceThreshold, Driver driverFacade) {
-        if (!isOpenCvAvailable() || screenshotBytes == null || templatePaths == null || templatePaths.isEmpty()) {
-            return java.util.Collections.emptyList();
-        }
-
-        Mat sceneMat = Imgcodecs.imdecode(new MatOfByte(screenshotBytes), Imgcodecs.IMREAD_COLOR);
-        if (sceneMat.empty()) {
-            LOGGER.warn("Failed to decode screenshot frame buffer for template matching.");
-            return java.util.Collections.emptyList();
-        }
-
-        List<VisualElement> matches = new java.util.ArrayList<>();
-        try {
-            for (String templatePath : templatePaths) {
-                File templateFile = new File(templatePath);
-                if (!templateFile.exists()) {
-                    continue;
-                }
-
-                Mat templateMat = Imgcodecs.imread(templateFile.getAbsolutePath(), Imgcodecs.IMREAD_COLOR);
-                if (templateMat.empty()) {
-                    continue;
-                }
-
-                try {
-                    List<VisualElement> templateMatches = matchAllMultiScale(sceneMat, templateMat, templateFile.getName(), confidenceThreshold, driverFacade);
-                    matches.addAll(templateMatches);
-                } finally {
-                    templateMat.release();
-                }
-            }
-        } finally {
-            sceneMat.release();
-        }
-
-        return applyNonMaximumSuppression(matches);
-    }
-
     private static List<VisualElement> matchAllMultiScale(Mat scene, Mat template, String templateName, double threshold, Driver driverFacade) {
-        List<VisualElement> results = new java.util.ArrayList<>();
-        double[] scaleFactors = {1.0, 0.75, 0.5, 1.25, 1.5, 2.0};
+        List<VisualElement> results = new ArrayList<>();
         int sceneWidth = scene.cols();
         int sceneHeight = scene.rows();
 
-        for (double scale : scaleFactors) {
+        for (double scale : DEFAULT_SCALE_FACTORS) {
             int scaledW = (int) (template.cols() * scale);
             int scaledH = (int) (template.rows() * scale);
 
-            if (scaledW > sceneWidth || scaledH > sceneHeight || scaledW < 5 || scaledH < 5) {
+            if (isInvalidScaleDimensions(scaledW, scaledH, sceneWidth, sceneHeight)) {
                 continue;
             }
 
@@ -235,12 +230,28 @@ public class ImageRecognitionService {
         return results;
     }
 
+    private static boolean isInvalidScaleDimensions(int scaledW, int scaledH, int sceneWidth, int sceneHeight) {
+        return scaledW > sceneWidth || scaledH > sceneHeight || scaledW < 5 || scaledH < 5;
+    }
+
+    private static VisualElement buildMatchedVisualElement(Point bestLoc, int bestW, int bestH, String templateName, int sceneWidth, double matchVal, double threshold, Driver driverFacade) {
+        LOGGER.info(String.format("Template '%s' matched with score %.4f >= threshold %.2f", templateName, matchVal, threshold));
+        double scaleFactor = (driverFacade != null) ? driverFacade.getViewportScaleFactor(sceneWidth) : 1.0;
+        int logicalX = (int) Math.round(bestLoc.x / scaleFactor);
+        int logicalY = (int) Math.round(bestLoc.y / scaleFactor);
+        int logicalW = (int) Math.round(bestW / scaleFactor);
+        int logicalH = (int) Math.round(bestH / scaleFactor);
+        LOGGER.info(String.format("Template '%s' matched at screenshot bounds [x=%d, y=%d, w=%d, h=%d] -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
+                templateName, (int) bestLoc.x, (int) bestLoc.y, bestW, bestH, logicalX, logicalY, logicalW, logicalH, scaleFactor));
+        return new VisualElement(logicalX, logicalY, logicalW, logicalH, templateName, driverFacade);
+    }
+
     private static List<VisualElement> applyNonMaximumSuppression(List<VisualElement> rawMatches) {
         if (rawMatches == null || rawMatches.isEmpty()) {
-            return java.util.Collections.emptyList();
+            return Collections.emptyList();
         }
 
-        List<VisualElement> filtered = new java.util.ArrayList<>();
+        List<VisualElement> filtered = new ArrayList<>();
         for (VisualElement candidate : rawMatches) {
             boolean isDuplicate = false;
             for (VisualElement existing : filtered) {
@@ -258,4 +269,3 @@ public class ImageRecognitionService {
         return filtered;
     }
 }
-

@@ -66,6 +66,13 @@ public class VisualOcrScreenWeb extends VisualOcrScreen {
     }
 
     @Override
+    public List<VisualElement> findAllVisualElementsByImageOrText(List<String> imagePaths, String text) {
+        LOGGER.info("Finding all visual elements by image or text: " + imagePaths + " / " + text);
+        return driver.findAllByImageOrText(imagePaths, text);
+    }
+
+
+    @Override
     public VisualElement findVisualElementRelativeByText(String targetText, com.znsio.teswiz.entities.SpatialDirection direction, String anchorText) {
         LOGGER.info(String.format("Finding visual element '%s' %s anchor text '%s'", targetText, direction.getDirection(), anchorText));
         return driver.findRelativeByText(targetText, direction, anchorText);

@@ -137,6 +137,38 @@ for (VisualElement item : detailButtons) {
 driver.findAllByText("Details").get(1).click();
 ```
 
+### BDD Step Definitions for Multi-Match & Positions
+
+```gherkin
+# Find and highlight all instances on screen (with visual checkpoint)
+And I visually find all instances of "a station solid green dot on the map" using image template "src/test/resources/images/solid_green_dot.png"
+And I visually find all instances of "Station" using OCR text "Station"
+And I visually inspect all instances of "Metro logo" using image template "src/test/resources/images/metro.png"
+
+# Multi-instance fallback matching (OCR text primary; fallback to image template)
+And I visually find all instances of "Submit button" using fallback OCR text "Submit" or image template "src/test/resources/images/submit.png"
+And I visually find all instances of "Cart icon" using fallback image template "src/test/resources/images/cart.png" or OCR text "Cart"
+
+
+# Click by ordinal position / alias ("first", "last", "1st", "2nd", "3rd", "4th", etc.)
+When I visually click the "first" element matching OCR text "Details"
+When I visually click the "last" element matching OCR text "Details"
+When I visually click the "2nd" element matching OCR text "Details"
+
+# Click by zero-based integer index
+When I visually click element at index 0 matching OCR text "Details"
+
+# Verify exact match count
+Then I verify 3 visual elements are present using OCR text "Details"
+Then I verify 5 visual elements are present using image template "src/test/resources/images/dot.png"
+
+# Verify minimum match count
+Then I verify at least 2 visual elements are present using OCR text "Details"
+Then I verify at least 1 visual elements are present using image template "src/test/resources/images/dot.png"
+```
+
+
+
 ### 5. Proximity & Spatial Relative Locators (`findRelativeByText` & `findRelativeByImage`)
 
 Locate targets relative to an anchor text/image on screen (`ABOVE`, `BELOW`, `LEFT_OF`, `RIGHT_OF`, `NEAR`):
