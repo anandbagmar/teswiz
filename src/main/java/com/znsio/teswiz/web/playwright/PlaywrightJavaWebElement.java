@@ -31,6 +31,8 @@ final class PlaywrightJavaWebElement implements WebElement {
     private void highlight() {
         if (com.znsio.teswiz.runner.Setup.getBooleanValueFromConfigs(com.znsio.teswiz.runner.Setup.HIGHLIGHT_ELEMENTS)) {
             try {
+                String color = com.znsio.teswiz.runner.Setup.getStringValueFromConfigs(com.znsio.teswiz.runner.Setup.HIGHLIGHT_COLOR, "#FF4500");
+                String borderWidth = com.znsio.teswiz.runner.Setup.getStringValueFromConfigs(com.znsio.teswiz.runner.Setup.HIGHLIGHT_BORDER_WIDTH, "3px");
                 locator.evaluate("el => {" +
                     "let visualBox = document.getElementById('teswiz-visual-highlight');" +
                     "if (visualBox) { visualBox.remove(); }" +
@@ -45,9 +47,9 @@ final class PlaywrightJavaWebElement implements WebElement {
                     "window.teswizLastOutline = el.style.outline;" +
                     "window.teswizLastOutlineOffset = el.style.outlineOffset;" +
                     "window.teswizLastBoxShadow = el.style.boxShadow;" +
-                    "el.style.outline = '3px solid #FF4500';" +
+                    "el.style.outline = '" + borderWidth + " solid " + color + "';" +
                     "el.style.outlineOffset = '-2px';" +
-                    "el.style.boxShadow = '0 0 10px #FF4500';" +
+                    "el.style.boxShadow = '0 0 10px " + color + "';" +
                     "}");
             } catch (Exception ignored) {}
         }

@@ -15,6 +15,7 @@ import org.opencv.core.Size;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
+import java.awt.image.BufferedImage;
 import com.znsio.teswiz.runner.Driver;
 import com.znsio.teswiz.runner.VisualElement;
 
@@ -50,11 +51,32 @@ public class ImageRecognitionService {
     }
 
     public static VisualElement findTemplateMatch(byte[] screenshotBytes, List<String> templatePaths, double confidenceThreshold, Driver driverFacade) {
+        return findTemplateMatch(screenshotBytes, templatePaths, confidenceThreshold, null, driverFacade);
+    }
+
+    public static VisualElement findTemplateMatch(byte[] screenshotBytes, List<String> templatePaths, double confidenceThreshold, com.znsio.teswiz.entities.VisualRegion region, Driver driverFacade) {
         if (!isOpenCvAvailable() || screenshotBytes == null || templatePaths == null || templatePaths.isEmpty()) {
             return null;
         }
 
-        Mat sceneMat = loadSceneMat(screenshotBytes);
+        BufferedImage bufferedImage = parseScreenshot(screenshotBytes);
+        if (bufferedImage == null) {
+            return null;
+        }
+
+        int offsetX = 0;
+        int offsetY = 0;
+        if (region != null) {
+            offsetX = Math.max(0, Math.min(region.getX(), bufferedImage.getWidth() - 1));
+            offsetY = Math.max(0, Math.min(region.getY(), bufferedImage.getHeight() - 1));
+            int w = Math.min(region.getWidth(), bufferedImage.getWidth() - offsetX);
+            int h = Math.min(region.getHeight(), bufferedImage.getHeight() - offsetY);
+            if (w > 0 && h > 0) {
+                bufferedImage = bufferedImage.getSubimage(offsetX, offsetY, w, h);
+            }
+        }
+
+        Mat sceneMat = bufferedImageToMat(bufferedImage);
         if (sceneMat == null) {
             return null;
         }
@@ -70,8 +92,9 @@ public class ImageRecognitionService {
                     String templateName = new File(templatePath).getName();
                     VisualElement match = matchMultiScale(sceneMat, templateMat, templateName, confidenceThreshold, driverFacade);
                     if (match != null) {
-                        LOGGER.info(String.format("Successfully matched visual template '%s' at bounds %s", templateName, match));
-                        return match;
+                        VisualElement offsetMatch = match.withOffset(offsetX, offsetY);
+                        LOGGER.info(String.format("Successfully matched visual template '%s' at bounds %s", templateName, offsetMatch));
+                        return offsetMatch;
                     }
                 } finally {
                     templateMat.release();
@@ -85,11 +108,32 @@ public class ImageRecognitionService {
     }
 
     public static List<VisualElement> findAllTemplateMatches(byte[] screenshotBytes, List<String> templatePaths, double confidenceThreshold, Driver driverFacade) {
+        return findAllTemplateMatches(screenshotBytes, templatePaths, confidenceThreshold, null, driverFacade);
+    }
+
+    public static List<VisualElement> findAllTemplateMatches(byte[] screenshotBytes, List<String> templatePaths, double confidenceThreshold, com.znsio.teswiz.entities.VisualRegion region, Driver driverFacade) {
         if (!isOpenCvAvailable() || screenshotBytes == null || templatePaths == null || templatePaths.isEmpty()) {
             return Collections.emptyList();
         }
 
-        Mat sceneMat = loadSceneMat(screenshotBytes);
+        BufferedImage bufferedImage = parseScreenshot(screenshotBytes);
+        if (bufferedImage == null) {
+            return Collections.emptyList();
+        }
+
+        int offsetX = 0;
+        int offsetY = 0;
+        if (region != null) {
+            offsetX = Math.max(0, Math.min(region.getX(), bufferedImage.getWidth() - 1));
+            offsetY = Math.max(0, Math.min(region.getY(), bufferedImage.getHeight() - 1));
+            int w = Math.min(region.getWidth(), bufferedImage.getWidth() - offsetX);
+            int h = Math.min(region.getHeight(), bufferedImage.getHeight() - offsetY);
+            if (w > 0 && h > 0) {
+                bufferedImage = bufferedImage.getSubimage(offsetX, offsetY, w, h);
+            }
+        }
+
+        Mat sceneMat = bufferedImageToMat(bufferedImage);
         if (sceneMat == null) {
             return Collections.emptyList();
         }
@@ -105,7 +149,9 @@ public class ImageRecognitionService {
                 try {
                     String templateName = new File(templatePath).getName();
                     List<VisualElement> templateMatches = matchAllMultiScale(sceneMat, templateMat, templateName, confidenceThreshold, driverFacade);
-                    matches.addAll(templateMatches);
+                    for (VisualElement m : templateMatches) {
+                        matches.add(m.withOffset(offsetX, offsetY));
+                    }
                 } finally {
                     templateMat.release();
                 }
@@ -115,6 +161,27 @@ public class ImageRecognitionService {
         }
 
         return applyNonMaximumSuppression(matches);
+    }
+
+    private static BufferedImage parseScreenshot(byte[] screenshotBytes) {
+        try {
+            return javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(screenshotBytes));
+        } catch (java.io.IOException e) {
+            LOGGER.warn("Failed to parse screenshot bytes to BufferedImage: " + e.getMessage());
+            return null;
+        }
+    }
+
+    private static Mat bufferedImageToMat(BufferedImage image) {
+        try {
+            java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+            javax.imageio.ImageIO.write(image, "png", baos);
+            byte[] bytes = baos.toByteArray();
+            return loadSceneMat(bytes);
+        } catch (java.io.IOException e) {
+            LOGGER.warn("Failed to convert BufferedImage to Mat: " + e.getMessage());
+            return null;
+        }
     }
 
     private static Mat loadSceneMat(byte[] screenshotBytes) {
