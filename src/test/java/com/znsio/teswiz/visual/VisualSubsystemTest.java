@@ -105,5 +105,19 @@ class VisualSubsystemTest {
         assertThat(webElement.getSize().getWidth()).isEqualTo(100);
         assertThat(webElement.getSize().getHeight()).isEqualTo(50);
     }
+
+    @Test
+    void testParsePositionIndex() {
+        com.znsio.teswiz.businessLayer.visualocr.VisualOcrBL bl = new com.znsio.teswiz.businessLayer.visualocr.VisualOcrBL();
+        assertThat(bl.parsePositionIndex("first", 5)).isEqualTo(0);
+        assertThat(bl.parsePositionIndex("1st", 5)).isEqualTo(0);
+        assertThat(bl.parsePositionIndex("last", 5)).isEqualTo(4);
+        assertThat(bl.parsePositionIndex("second", 5)).isEqualTo(1);
+        assertThat(bl.parsePositionIndex("2nd", 5)).isEqualTo(1);
+        assertThat(bl.parsePositionIndex("3rd", 5)).isEqualTo(2);
+        assertThat(bl.parsePositionIndex("4th", 5)).isEqualTo(3);
+        assertThat(bl.parsePositionIndex("2", 5)).isEqualTo(2);
+    }
 }
+
 

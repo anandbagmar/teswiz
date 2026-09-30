@@ -9,6 +9,8 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -30,6 +32,8 @@ import net.sourceforge.tess4j.Word;
 public class OcrService {
     private static final Logger LOGGER = LogManager.getLogger(OcrService.class.getName());
     private static boolean tess4jAvailable = false;
+    private static final double[] PRIMARY_ROTATION_ANGLES = {90.0, 270.0, 45.0, -45.0, 30.0, -30.0, 180.0};
+    private static final double[] FINE_GRAINED_ROTATION_ANGLES = {15.0, -15.0, 60.0, -60.0, 75.0, -75.0, 105.0, 120.0, 135.0, 150.0, 210.0, 225.0, 240.0, 300.0, 315.0, 330.0};
 
     static {
         try {
@@ -73,16 +77,13 @@ public class OcrService {
         }
 
         applyCustomJnaLibraryPath();
-
         String tessDataPath = resolveTessDataPath();
         if (tessDataPath == null) {
             throwTessDataNotFoundException();
         }
 
         try {
-            Tesseract tesseract = new Tesseract();
-            tesseract.setDatapath(tessDataPath);
-
+            Tesseract tesseract = createTesseractInstance(tessDataPath);
             double scaleFactor = (driverFacade != null) ? driverFacade.getViewportScaleFactor(bufferedImage.getWidth()) : 1.0;
             String normalizedSearch = searchText.trim().toLowerCase();
             List<Word> words = tesseract.getWords(bufferedImage, RIL_WORD);
@@ -106,6 +107,56 @@ public class OcrService {
             LOGGER.warn("Tesseract OCR text extraction failed: " + e.getMessage());
             return null;
         }
+    }
+
+    public static List<VisualElement> findAllTextMatches(byte[] screenshotBytes, String searchText, Driver driverFacade) {
+        if (!isTess4jAvailable() || screenshotBytes == null || searchText == null || searchText.isBlank()) {
+            return Collections.emptyList();
+        }
+
+        BufferedImage bufferedImage = parseScreenshot(screenshotBytes);
+        if (bufferedImage == null) {
+            return Collections.emptyList();
+        }
+
+        applyCustomJnaLibraryPath();
+        String tessDataPath = resolveTessDataPath();
+        if (tessDataPath == null) {
+            throwTessDataNotFoundException();
+        }
+
+        List<VisualElement> matches = new ArrayList<>();
+        try {
+            Tesseract tesseract = createTesseractInstance(tessDataPath);
+            double scaleFactor = (driverFacade != null) ? driverFacade.getViewportScaleFactor(bufferedImage.getWidth()) : 1.0;
+            String normalizedSearch = searchText.trim().toLowerCase();
+            List<Word> words = tesseract.getWords(bufferedImage, RIL_WORD);
+
+            for (Word word : words) {
+                String wordText = word.getText();
+                if (wordText != null && isWordMatchingSearch(wordText, normalizedSearch)) {
+                    Rectangle rect = word.getBoundingBox();
+                    VisualElement element = buildScaledVisualElement(rect.x, rect.y, rect.width, rect.height, scaleFactor, wordText.trim(), driverFacade);
+                    matches.add(element);
+                }
+            }
+        } catch (Throwable e) {
+            LOGGER.warn("Tesseract OCR findAllTextMatches failed: " + e.getMessage());
+        }
+
+        return applyNonMaximumSuppression(matches);
+    }
+
+    private static Tesseract createTesseractInstance(String tessDataPath) {
+        Tesseract tesseract = new Tesseract();
+        tesseract.setDatapath(tessDataPath);
+        return tesseract;
+    }
+
+    private static boolean isWordMatchingSearch(String wordText, String normalizedSearch) {
+        String trimmed = wordText.trim();
+        String cleaned = trimmed.replaceAll("^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$", "");
+        return trimmed.equalsIgnoreCase(normalizedSearch) || cleaned.equalsIgnoreCase(normalizedSearch) || trimmed.toLowerCase().contains(normalizedSearch);
     }
 
     private static BufferedImage parseScreenshot(byte[] screenshotBytes) {
@@ -240,14 +291,11 @@ public class OcrService {
     }
 
     private static VisualElement searchRotatedTextMatch(Tesseract tesseract, BufferedImage originalImage, String normalizedSearch, String searchText, double scaleFactor, Driver driverFacade) {
-        double[] primaryAngles = {90.0, 270.0, 45.0, -45.0, 30.0, -30.0, 180.0};
-        VisualElement match = searchAngles(tesseract, originalImage, primaryAngles, normalizedSearch, searchText, scaleFactor, driverFacade, "Primary");
+        VisualElement match = searchAngles(tesseract, originalImage, PRIMARY_ROTATION_ANGLES, normalizedSearch, searchText, scaleFactor, driverFacade, "Primary");
         if (match != null) {
             return match;
         }
-
-        double[] fineGrainedAngles = {15.0, -15.0, 60.0, -60.0, 75.0, -75.0, 105.0, 120.0, 135.0, 150.0, 210.0, 225.0, 240.0, 300.0, 315.0, 330.0};
-        return searchAngles(tesseract, originalImage, fineGrainedAngles, normalizedSearch, searchText, scaleFactor, driverFacade, "Fine-grained intermediate");
+        return searchAngles(tesseract, originalImage, FINE_GRAINED_ROTATION_ANGLES, normalizedSearch, searchText, scaleFactor, driverFacade, "Fine-grained intermediate");
     }
 
     private static VisualElement searchAngles(Tesseract tesseract, BufferedImage originalImage, double[] angles, String normalizedSearch, String searchText, double scaleFactor, Driver driverFacade, String passName) {
@@ -356,6 +404,29 @@ public class OcrService {
         return new VisualElement(logicalX, logicalY, logicalW, logicalH, "OCR: " + labelText, driverFacade);
     }
 
+    private static List<VisualElement> applyNonMaximumSuppression(List<VisualElement> rawMatches) {
+        if (rawMatches == null || rawMatches.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<VisualElement> filtered = new ArrayList<>();
+        for (VisualElement candidate : rawMatches) {
+            boolean isDuplicate = false;
+            for (VisualElement existing : filtered) {
+                int dx = Math.abs(candidate.getX() - existing.getX());
+                int dy = Math.abs(candidate.getY() - existing.getY());
+                if (dx < 10 && dy < 10) {
+                    isDuplicate = true;
+                    break;
+                }
+            }
+            if (!isDuplicate) {
+                filtered.add(candidate);
+            }
+        }
+        return filtered;
+    }
+
     private static void throwTessDataNotFoundException() {
         LOGGER.error("eng.traineddata language data file not found in system tessdata paths or configuration.");
         throw new VisualSubsystemDisabledException(
@@ -458,72 +529,4 @@ public class OcrService {
         }
         return null;
     }
-
-    public static List<VisualElement> findAllTextMatches(byte[] screenshotBytes, String searchText, Driver driverFacade) {
-        if (!isTess4jAvailable() || screenshotBytes == null || searchText == null || searchText.isBlank()) {
-            return java.util.Collections.emptyList();
-        }
-
-        BufferedImage bufferedImage = parseScreenshot(screenshotBytes);
-        if (bufferedImage == null) {
-            return java.util.Collections.emptyList();
-        }
-
-        applyCustomJnaLibraryPath();
-        String tessDataPath = resolveTessDataPath();
-        if (tessDataPath == null) {
-            throwTessDataNotFoundException();
-        }
-
-        List<VisualElement> matches = new java.util.ArrayList<>();
-        try {
-            Tesseract tesseract = new Tesseract();
-            tesseract.setDatapath(tessDataPath);
-
-            double scaleFactor = (driverFacade != null) ? driverFacade.getViewportScaleFactor(bufferedImage.getWidth()) : 1.0;
-            String normalizedSearch = searchText.trim().toLowerCase();
-            List<Word> words = tesseract.getWords(bufferedImage, RIL_WORD);
-
-            for (Word word : words) {
-                String wordText = word.getText();
-                if (wordText != null) {
-                    String cleaned = wordText.trim().replaceAll("^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$", "");
-                    if (wordText.trim().equalsIgnoreCase(normalizedSearch) || cleaned.equalsIgnoreCase(normalizedSearch) || wordText.trim().toLowerCase().contains(normalizedSearch)) {
-                        Rectangle rect = word.getBoundingBox();
-                        VisualElement element = buildScaledVisualElement(rect.x, rect.y, rect.width, rect.height, scaleFactor, wordText.trim(), driverFacade);
-                        matches.add(element);
-                    }
-                }
-            }
-        } catch (Throwable e) {
-            LOGGER.warn("Tesseract OCR findAllTextMatches failed: " + e.getMessage());
-        }
-
-        return applyNonMaximumSuppression(matches);
-    }
-
-    private static List<VisualElement> applyNonMaximumSuppression(List<VisualElement> rawMatches) {
-        if (rawMatches == null || rawMatches.isEmpty()) {
-            return java.util.Collections.emptyList();
-        }
-
-        List<VisualElement> filtered = new java.util.ArrayList<>();
-        for (VisualElement candidate : rawMatches) {
-            boolean isDuplicate = false;
-            for (VisualElement existing : filtered) {
-                int dx = Math.abs(candidate.getX() - existing.getX());
-                int dy = Math.abs(candidate.getY() - existing.getY());
-                if (dx < 10 && dy < 10) {
-                    isDuplicate = true;
-                    break;
-                }
-            }
-            if (!isDuplicate) {
-                filtered.add(candidate);
-            }
-        }
-        return filtered;
-    }
 }
-
-

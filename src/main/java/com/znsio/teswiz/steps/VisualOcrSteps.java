@@ -68,15 +68,84 @@ public class VisualOcrSteps {
         new VisualOcrBL().verifyVisualElementCountByText(ocrText, ocrText, expectedCount);
     }
 
+    @Then("I verify {int} visual elements are present using image template {string}")
+    public void iVerifyVisualElementsArePresentUsingImageTemplate(int expectedCount, String imageTemplatePath) {
+        new VisualOcrBL().verifyVisualElementCountByImage(imageTemplatePath, imageTemplatePath, expectedCount);
+    }
+
+    @Then("I verify at least {int} visual elements are present using OCR text {string}")
+    public void iVerifyAtLeastNVisualElementsArePresentUsingOcrText(int minCount, String ocrText) {
+        new VisualOcrBL().verifyAtLeastNVisualElementsPresentByText(ocrText, ocrText, minCount);
+    }
+
+    @Then("I verify at least {int} visual elements are present using image template {string}")
+    public void iVerifyAtLeastNVisualElementsArePresentUsingImageTemplate(int minCount, String imageTemplatePath) {
+        new VisualOcrBL().verifyAtLeastNVisualElementsPresentByImage(imageTemplatePath, imageTemplatePath, minCount);
+    }
+
+    @When("I visually find all instances of {string} using image template {string}")
+    public void iVisuallyFindAllInstancesUsingImageTemplate(String elementName, String imageTemplatePath) {
+        new VisualOcrBL().visuallyFindAllInstancesUsingImageTemplate(elementName, imageTemplatePath);
+    }
+
+    @When("I visually find all instances of {string} using OCR text {string}")
+    public void iVisuallyFindAllInstancesUsingOcrText(String elementName, String ocrText) {
+        new VisualOcrBL().visuallyFindAllInstancesUsingOcrText(elementName, ocrText);
+    }
+
+    @When("I visually inspect all instances of {string} using image template {string}")
+    public void iVisuallyInspectAllInstancesUsingImageTemplate(String elementName, String imageTemplatePath) {
+        new VisualOcrBL().visuallyFindAllInstancesUsingImageTemplate(elementName, imageTemplatePath);
+    }
+
+    @When("I visually inspect all instances of {string} using OCR text {string}")
+    public void iVisuallyInspectAllInstancesUsingOcrText(String elementName, String ocrText) {
+        new VisualOcrBL().visuallyFindAllInstancesUsingOcrText(elementName, ocrText);
+    }
+
+    @When("I visually find all instances of {string} using fallback OCR text {string} or image template {string}")
+    public void iVisuallyFindAllInstancesUsingFallbackOcrTextOrImageTemplate(String elementName, String ocrText, String imageTemplatePath) {
+        new VisualOcrBL().visuallyFindAllInstancesUsingFallbackOcrTextOrImageTemplate(elementName, ocrText, imageTemplatePath);
+    }
+
+    @When("I visually find all instances of {string} using fallback image template {string} or OCR text {string}")
+    public void iVisuallyFindAllInstancesUsingFallbackImageTemplateOrOcrText(String elementName, String imageTemplatePath, String ocrText) {
+        new VisualOcrBL().visuallyFindAllInstancesUsingFallbackImageTemplateOrOcrText(elementName, imageTemplatePath, ocrText);
+    }
+
+    @When("I visually inspect all instances of {string} using fallback OCR text {string} or image template {string}")
+    public void iVisuallyInspectAllInstancesUsingFallbackOcrTextOrImageTemplate(String elementName, String ocrText, String imageTemplatePath) {
+        new VisualOcrBL().visuallyFindAllInstancesUsingFallbackOcrTextOrImageTemplate(elementName, ocrText, imageTemplatePath);
+    }
+
+    @When("I visually inspect all instances of {string} using fallback image template {string} or OCR text {string}")
+    public void iVisuallyInspectAllInstancesUsingFallbackImageTemplateOrOcrText(String elementName, String imageTemplatePath, String ocrText) {
+        new VisualOcrBL().visuallyFindAllInstancesUsingFallbackImageTemplateOrOcrText(elementName, imageTemplatePath, ocrText);
+    }
+
+
+
+
     @When("I visually click element at index {int} matching OCR text {string}")
     public void iVisuallyClickElementAtIndexMatchingOcrText(int index, String ocrText) {
         new VisualOcrBL().visuallyClickElementAtIndexUsingOcrText(ocrText, index, ocrText);
+    }
+
+    @When("I visually click the {string} element matching OCR text {string}")
+    public void iVisuallyClickThePositionElementMatchingOcrText(String positionText, String ocrText) {
+        new VisualOcrBL().visuallyClickElementByPositionUsingOcrText(ocrText, positionText, ocrText);
+    }
+
+    @When("I visually click the {string} element matching image template {string}")
+    public void iVisuallyClickThePositionElementMatchingImageTemplate(String positionText, String imageTemplatePath) {
+        new VisualOcrBL().visuallyClickElementByPositionUsingImageTemplate(imageTemplatePath, positionText, imageTemplatePath);
     }
 
     @When("I visually click {string} using OCR text {string} {string} {string}")
     public void iVisuallyClickUsingOcrTextRelative(String elementName, String targetText, String directionText, String anchorText) {
         new VisualOcrBL().visuallyClickUsingOcrTextRelative(elementName, targetText, directionText, anchorText);
     }
+
 
     @Then("I verify visual element {string} is present using OCR text {string} {string} {string}")
     public void iVerifyVisualElementIsPresentUsingOcrTextRelative(String elementName, String targetText, String directionText, String anchorText) {

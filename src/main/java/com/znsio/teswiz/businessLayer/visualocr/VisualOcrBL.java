@@ -303,6 +303,10 @@ public class VisualOcrBL {
         return VisualOcrScreen.get().findAllVisualElementsByTextOrImage(ocrText, List.of(imageTemplatePath));
     }
 
+    public List<VisualElement> findAllVisualElementsByImageOrText(String imageTemplatePath, String ocrText) {
+        return VisualOcrScreen.get().findAllVisualElementsByImageOrText(List.of(imageTemplatePath), ocrText);
+    }
+
     public VisualOcrBL verifyVisualElementCountByText(String elementName, String ocrText, int expectedCount) {
         LOGGER.info(String.format("Verifying %d visual elements named '%s' present using OCR text '%s'", expectedCount, elementName, ocrText));
         List<VisualElement> elements = findAllVisualElementsByText(ocrText);
@@ -311,6 +315,97 @@ public class VisualOcrBL {
                 .hasSize(expectedCount);
         return this;
     }
+
+    public VisualOcrBL verifyVisualElementCountByImage(String elementName, String imageTemplatePath, int expectedCount) {
+        LOGGER.info(String.format("Verifying %d visual elements named '%s' present using image template '%s'", expectedCount, elementName, imageTemplatePath));
+        List<VisualElement> elements = findAllVisualElementsByImage(imageTemplatePath);
+        assertThat(elements)
+                .as("Expected " + expectedCount + " visual elements matching image template '" + imageTemplatePath + "'")
+                .hasSize(expectedCount);
+        return this;
+    }
+
+    public VisualOcrBL verifyAtLeastNVisualElementsPresentByText(String elementName, String ocrText, int minCount) {
+        LOGGER.info(String.format("Verifying at least %d visual elements named '%s' present using OCR text '%s'", minCount, elementName, ocrText));
+        List<VisualElement> elements = findAllVisualElementsByText(ocrText);
+        assertThat(elements)
+                .as("Expected at least " + minCount + " visual elements matching OCR text '" + ocrText + "'")
+                .hasSizeGreaterThanOrEqualTo(minCount);
+        return this;
+    }
+
+    public VisualOcrBL verifyAtLeastNVisualElementsPresentByImage(String elementName, String imageTemplatePath, int minCount) {
+        LOGGER.info(String.format("Verifying at least %d visual elements named '%s' present using image template '%s'", minCount, elementName, imageTemplatePath));
+        List<VisualElement> elements = findAllVisualElementsByImage(imageTemplatePath);
+        assertThat(elements)
+                .as("Expected at least " + minCount + " visual elements matching image template '" + imageTemplatePath + "'")
+                .hasSizeGreaterThanOrEqualTo(minCount);
+        return this;
+    }
+
+    public VisualOcrBL visuallyFindAllInstancesUsingImageTemplate(String elementName, String imageTemplatePath) {
+        LOGGER.info(String.format("Visually finding all instances of '%s' using image template '%s'", elementName, imageTemplatePath));
+        List<VisualElement> elements = findAllVisualElementsByImage(imageTemplatePath);
+        assertThat(elements)
+                .as("Visual element '" + elementName + "' matched by image template '" + imageTemplatePath + "' should have at least 1 instance on screen")
+                .isNotEmpty();
+
+        for (VisualElement element : elements) {
+            element.highlight();
+        }
+        getDriver().getVisual().checkWindow(getClass().getSimpleName(), "Found " + elements.size() + " instances of " + elementName + " via image template");
+        getDriver().clearHighlight();
+        return this;
+    }
+
+    public VisualOcrBL visuallyFindAllInstancesUsingOcrText(String elementName, String ocrText) {
+        LOGGER.info(String.format("Visually finding all instances of '%s' using OCR text '%s'", elementName, ocrText));
+        List<VisualElement> elements = findAllVisualElementsByText(ocrText);
+        assertThat(elements)
+                .as("Visual element '" + elementName + "' matched by OCR text '" + ocrText + "' should have at least 1 instance on screen")
+                .isNotEmpty();
+
+        for (VisualElement element : elements) {
+            element.highlight();
+        }
+        getDriver().getVisual().checkWindow(getClass().getSimpleName(), "Found " + elements.size() + " instances of " + elementName + " via OCR text");
+        getDriver().clearHighlight();
+        return this;
+    }
+
+    public VisualOcrBL visuallyFindAllInstancesUsingFallbackOcrTextOrImageTemplate(String elementName, String ocrText, String imageTemplatePath) {
+        LOGGER.info(String.format("Visually finding all instances of '%s' using fallback OCR text '%s' or image template '%s'", elementName, ocrText, imageTemplatePath));
+        List<VisualElement> elements = findAllVisualElementsByTextOrImage(ocrText, imageTemplatePath);
+        assertThat(elements)
+                .as("Visual element '" + elementName + "' matched by fallback text/image should have at least 1 instance on screen")
+                .isNotEmpty();
+
+        for (VisualElement element : elements) {
+            element.highlight();
+        }
+        getDriver().getVisual().checkWindow(getClass().getSimpleName(), "Found " + elements.size() + " instances of " + elementName + " via fallback text/image");
+        getDriver().clearHighlight();
+        return this;
+    }
+
+    public VisualOcrBL visuallyFindAllInstancesUsingFallbackImageTemplateOrOcrText(String elementName, String imageTemplatePath, String ocrText) {
+        LOGGER.info(String.format("Visually finding all instances of '%s' using fallback image template '%s' or OCR text '%s'", elementName, imageTemplatePath, ocrText));
+        List<VisualElement> elements = findAllVisualElementsByImageOrText(imageTemplatePath, ocrText);
+        assertThat(elements)
+                .as("Visual element '" + elementName + "' matched by fallback image/text should have at least 1 instance on screen")
+                .isNotEmpty();
+
+        for (VisualElement element : elements) {
+            element.highlight();
+        }
+        getDriver().getVisual().checkWindow(getClass().getSimpleName(), "Found " + elements.size() + " instances of " + elementName + " via fallback image/text");
+        getDriver().clearHighlight();
+        return this;
+    }
+
+
+
+
 
     public VisualOcrBL visuallyClickElementAtIndexUsingOcrText(String elementName, int index, String ocrText) {
         LOGGER.info(String.format("Visually clicking element '%s' at index %d using OCR text '%s'", elementName, index, ocrText));
@@ -328,6 +423,83 @@ public class VisualOcrBL {
         getDriver().getVisual().checkWindow(getClass().getSimpleName(), "After visual click at index " + index + " OCR text: " + ocrText);
         return this;
     }
+
+    public VisualOcrBL visuallyClickElementByPositionUsingOcrText(String elementName, String positionText, String ocrText) {
+        LOGGER.info(String.format("Visually clicking '%s' element '%s' using OCR text '%s'", positionText, elementName, ocrText));
+        List<VisualElement> elements = findAllVisualElementsByText(ocrText);
+        assertThat(elements)
+                .as("Expected at least 1 visual element matching OCR text '" + ocrText + "'")
+                .isNotEmpty();
+
+        int targetIndex = parsePositionIndex(positionText, elements.size());
+        assertThat(targetIndex)
+                .as("Invalid position index '" + positionText + "' for list of size " + elements.size())
+                .isGreaterThanOrEqualTo(0)
+                .isLessThan(elements.size());
+
+        VisualElement target = elements.get(targetIndex);
+        target.highlight();
+        getDriver().getVisual().checkWindow(getClass().getSimpleName(), "Before visual click position '" + positionText + "' OCR text: " + ocrText);
+        target.click();
+        getDriver().clearHighlight();
+        waitFor(5);
+        getDriver().getVisual().checkWindow(getClass().getSimpleName(), "After visual click position '" + positionText + "' OCR text: " + ocrText);
+        return this;
+    }
+
+    public VisualOcrBL visuallyClickElementByPositionUsingImageTemplate(String elementName, String positionText, String imageTemplatePath) {
+        LOGGER.info(String.format("Visually clicking '%s' element '%s' using image template '%s'", positionText, elementName, imageTemplatePath));
+        List<VisualElement> elements = findAllVisualElementsByImage(imageTemplatePath);
+        assertThat(elements)
+                .as("Expected at least 1 visual element matching image template '" + imageTemplatePath + "'")
+                .isNotEmpty();
+
+        int targetIndex = parsePositionIndex(positionText, elements.size());
+        assertThat(targetIndex)
+                .as("Invalid position index '" + positionText + "' for list of size " + elements.size())
+                .isGreaterThanOrEqualTo(0)
+                .isLessThan(elements.size());
+
+        VisualElement target = elements.get(targetIndex);
+        target.highlight();
+        getDriver().getVisual().checkWindow(getClass().getSimpleName(), "Before visual click position '" + positionText + "' image: " + imageTemplatePath);
+        target.click();
+        getDriver().clearHighlight();
+        waitFor(5);
+        getDriver().getVisual().checkWindow(getClass().getSimpleName(), "After visual click position '" + positionText + "' image: " + imageTemplatePath);
+        return this;
+    }
+
+    public int parsePositionIndex(String positionText, int listSize) {
+        if (positionText == null || positionText.isBlank()) {
+            return 0;
+        }
+        String normalized = positionText.trim().toLowerCase();
+        if ("first".equals(normalized) || "1st".equals(normalized)) {
+            return 0;
+        }
+        if ("last".equals(normalized)) {
+            return Math.max(0, listSize - 1);
+        }
+        if ("second".equals(normalized) || "2nd".equals(normalized)) {
+            return 1;
+        }
+        if ("third".equals(normalized) || "3rd".equals(normalized)) {
+            return 2;
+        }
+        if (normalized.endsWith("st") || normalized.endsWith("nd") || normalized.endsWith("rd") || normalized.endsWith("th")) {
+            String digits = normalized.replaceAll("[^0-9]", "");
+            if (!digits.isEmpty()) {
+                return Integer.parseInt(digits) - 1;
+            }
+        }
+        try {
+            return Integer.parseInt(normalized);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
 
     public VisualElement findVisualElementRelativeByText(String targetText, String directionText, String anchorText) {
         com.znsio.teswiz.entities.SpatialDirection direction = com.znsio.teswiz.entities.SpatialDirection.fromString(directionText);
