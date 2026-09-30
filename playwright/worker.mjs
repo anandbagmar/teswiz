@@ -24,6 +24,7 @@ const sessions = new Map();
 const browsers = new Map();
 const screenModules = new Map();
 const screenRootDirectories = [
+  path.resolve(process.cwd(), "src", "main", "resources", "playwright", "screens"),
   path.resolve(process.cwd(), "src", "test", "resources", "playwright", "screens"),
   path.resolve(process.cwd(), "playwright", "screens"),
 ];
