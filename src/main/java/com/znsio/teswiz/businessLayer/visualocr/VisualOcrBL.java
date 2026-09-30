@@ -37,10 +37,140 @@ public class VisualOcrBL {
         this.currentPlatform = Platform.web;
     }
 
+    // --- Query / Finder Methods (Non-asserting) ---
+
+    public VisualElement findVisualElementByText(String ocrText) {
+        return VisualOcrScreen.get().findVisualElementByText(ocrText);
+    }
+
+    public VisualElement findVisualElementByImage(String imageTemplatePath) {
+        return VisualOcrScreen.get().findVisualElementByImage(List.of(imageTemplatePath));
+    }
+
+    public VisualElement findVisualElementByTextOrImage(String ocrText, String imageTemplatePath) {
+        return VisualOcrScreen.get().findVisualElementByTextOrImage(ocrText, List.of(imageTemplatePath));
+    }
+
+    public VisualElement findVisualElementByImageOrText(String imageTemplatePath, String ocrText) {
+        return VisualOcrScreen.get().findVisualElementByImageOrText(List.of(imageTemplatePath), ocrText);
+    }
+
+    // --- Pure Verification Methods (Explicit Assertions) ---
+
+    public VisualOcrBL verifyVisualElementIsPresentByText(String elementName, String ocrText) {
+        LOGGER.info(String.format("Verifying visual element '%s' is present using OCR text '%s'", elementName, ocrText));
+        VisualElement element = findVisualElementByText(ocrText);
+        assertThat(element).as("Visual element '" + elementName + "' with OCR text '" + ocrText + "' should be found").isNotNull();
+        return this;
+    }
+
+    public VisualOcrBL verifyVisualElementIsNotPresentByText(String elementName, String ocrText) {
+        LOGGER.info(String.format("Verifying visual element '%s' is NOT present using OCR text '%s'", elementName, ocrText));
+        VisualElement element = findVisualElementByText(ocrText);
+        assertThat(element).as("Visual element '" + elementName + "' with OCR text '" + ocrText + "' should NOT be present").isNull();
+        return this;
+    }
+
+    public VisualOcrBL verifyVisualElementIsPresentByImage(String elementName, String imageTemplatePath) {
+        LOGGER.info(String.format("Verifying visual element '%s' is present using image template '%s'", elementName, imageTemplatePath));
+        VisualElement element = findVisualElementByImage(imageTemplatePath);
+        assertThat(element).as("Visual element '" + elementName + "' matched by image template '" + imageTemplatePath + "' should be found").isNotNull();
+        return this;
+    }
+
+    public VisualOcrBL verifyVisualElementIsNotPresentByImage(String elementName, String imageTemplatePath) {
+        LOGGER.info(String.format("Verifying visual element '%s' is NOT present using image template '%s'", elementName, imageTemplatePath));
+        VisualElement element = findVisualElementByImage(imageTemplatePath);
+        assertThat(element).as("Visual element '" + elementName + "' matched by image template '" + imageTemplatePath + "' should NOT be present").isNull();
+        return this;
+    }
+
+    public VisualOcrBL verifyVisualElementIsPresentByFallbackTextOrImage(String elementName, String ocrText, String imageTemplatePath) {
+        LOGGER.info(String.format("Verifying visual element '%s' is present using fallback OCR text '%s' or image template '%s'", elementName, ocrText, imageTemplatePath));
+        VisualElement element = findVisualElementByTextOrImage(ocrText, imageTemplatePath);
+        assertThat(element).as("Visual element '" + elementName + "' matched by text/image should be found").isNotNull();
+        return this;
+    }
+
+    public VisualOcrBL verifyVisualElementIsPresentByFallbackImageOrText(String elementName, String imageTemplatePath, String ocrText) {
+        LOGGER.info(String.format("Verifying visual element '%s' is present using fallback image template '%s' or OCR text '%s'", elementName, imageTemplatePath, ocrText));
+        VisualElement element = findVisualElementByImageOrText(imageTemplatePath, ocrText);
+        assertThat(element).as("Visual element '" + elementName + "' matched by image/text should be found").isNotNull();
+        return this;
+    }
+
+    // --- Conditional Action Methods (Non-asserting) ---
+
+    public boolean tryVisuallyClickUsingOcrText(String elementName, String ocrText) {
+        LOGGER.info(String.format("Attempting optional visual click on element '%s' using OCR text '%s'", elementName, ocrText));
+        VisualElement element = findVisualElementByText(ocrText);
+        if (element == null) {
+            LOGGER.info(String.format("Optional visual element '%s' with OCR text '%s' was not found. Skipping click.", elementName, ocrText));
+            return false;
+        }
+        element.highlight();
+        getDriver().getVisual().checkWindow(getClass().getSimpleName(), "Before try visual click OCR text: " + ocrText);
+        element.click();
+        waitFor(5);
+        getDriver().getVisual().checkWindow(getClass().getSimpleName(), "After try visual click OCR text: " + ocrText);
+        return true;
+    }
+
+    public boolean tryVisuallyClickUsingImageTemplate(String elementName, String imageTemplatePath) {
+        LOGGER.info(String.format("Attempting optional visual click on element '%s' using image template '%s'", elementName, imageTemplatePath));
+        VisualElement element = findVisualElementByImage(imageTemplatePath);
+        if (element == null) {
+            LOGGER.info(String.format("Optional visual element '%s' matched by image template '%s' was not found. Skipping click.", elementName, imageTemplatePath));
+            return false;
+        }
+        element.highlight();
+        getDriver().getVisual().checkWindow(getClass().getSimpleName(), "Before try visual click: " + elementName);
+        element.click();
+        waitFor(5);
+        getDriver().getVisual().checkWindow(getClass().getSimpleName(), "After try visual click: " + elementName);
+        return true;
+    }
+
+    public boolean tryVisuallyClickUsingFallbackOcrTextOrImageTemplate(String elementName, String ocrText, String imageTemplatePath) {
+        LOGGER.info(String.format("Attempting optional visual click on element '%s' using fallback OCR text '%s' or image template '%s'", elementName, ocrText, imageTemplatePath));
+        VisualElement element = findVisualElementByTextOrImage(ocrText, imageTemplatePath);
+        if (element == null) {
+            LOGGER.info(String.format("Optional visual element '%s' matched by text/image was not found. Skipping click.", elementName));
+            return false;
+        }
+        String matchedOption = resolveMatchedOption(element, ocrText, imageTemplatePath, true);
+        LOGGER.info(String.format("Visual element '%s' resolved using %s (matched label: '%s')", elementName, matchedOption, element.getLabel()));
+        element.highlight();
+        getDriver().getVisual().checkWindow(getClass().getSimpleName(), "Before try visual click: " + elementName + " via " + matchedOption);
+        element.click();
+        waitFor(5);
+        getDriver().getVisual().checkWindow(getClass().getSimpleName(), "After try visual click: " + elementName + " via " + matchedOption);
+        return true;
+    }
+
+    public boolean tryVisuallyClickUsingFallbackImageTemplateOrOcrText(String elementName, String imageTemplatePath, String ocrText) {
+        LOGGER.info(String.format("Attempting optional visual click on element '%s' using fallback image template '%s' or OCR text '%s'", elementName, imageTemplatePath, ocrText));
+        VisualElement element = findVisualElementByImageOrText(imageTemplatePath, ocrText);
+        if (element == null) {
+            LOGGER.info(String.format("Optional visual element '%s' matched by image/text was not found. Skipping click.", elementName));
+            return false;
+        }
+        String matchedOption = resolveMatchedOption(element, ocrText, imageTemplatePath, false);
+        LOGGER.info(String.format("Visual element '%s' resolved using %s (matched label: '%s')", elementName, matchedOption, element.getLabel()));
+        element.highlight();
+        getDriver().getVisual().checkWindow(getClass().getSimpleName(), "Before try visual click: " + elementName + " via " + matchedOption);
+        element.click();
+        waitFor(5);
+        getDriver().getVisual().checkWindow(getClass().getSimpleName(), "After try visual click: " + elementName + " via " + matchedOption);
+        return true;
+    }
+
+    // --- Strict Action Methods (Asserting Mode) ---
+
     public VisualOcrBL visuallyClickUsingImageTemplate(String elementName, String imageTemplatePath) {
         LOGGER.info(String.format("Visually clicking element '%s' using image template '%s'", elementName, imageTemplatePath));
-        VisualElement element = VisualOcrScreen.get().findVisualElementByImage(List.of(imageTemplatePath));
-        assertThat(element).as("Visual element '" + elementName + "' matched by image template '" + imageTemplatePath + "' should be found").isNotNull();
+        verifyVisualElementIsPresentByImage(elementName, imageTemplatePath);
+        VisualElement element = findVisualElementByImage(imageTemplatePath);
         element.highlight();
         getDriver().getVisual().checkWindow(getClass().getSimpleName(), "Before visual click: " + elementName);
         element.click();
@@ -51,8 +181,8 @@ public class VisualOcrBL {
 
     public VisualOcrBL visuallyClickUsingOcrText(String elementName, String ocrText) {
         LOGGER.info(String.format("Visually clicking element '%s' using OCR text '%s'", elementName, ocrText));
-        VisualElement element = VisualOcrScreen.get().findVisualElementByText(ocrText);
-        assertThat(element).as("Visual element '" + elementName + "' with OCR text '" + ocrText + "' should be found").isNotNull();
+        verifyVisualElementIsPresentByText(elementName, ocrText);
+        VisualElement element = findVisualElementByText(ocrText);
         element.highlight();
         getDriver().getVisual().checkWindow(getClass().getSimpleName(), "Before visual click OCR text: " + ocrText);
         element.click();
@@ -63,8 +193,8 @@ public class VisualOcrBL {
 
     public VisualOcrBL visuallyInspectUsingOcrText(String elementName, String ocrText) {
         LOGGER.info(String.format("Visually inspecting element '%s' using OCR text '%s'", elementName, ocrText));
-        VisualElement element = VisualOcrScreen.get().findVisualElementByText(ocrText);
-        assertThat(element).as("Visual element '" + elementName + "' with OCR text '" + ocrText + "' should be found").isNotNull();
+        verifyVisualElementIsPresentByText(elementName, ocrText);
+        VisualElement element = findVisualElementByText(ocrText);
         element.highlight();
         getDriver().getVisual().checkWindow(getClass().getSimpleName(), "Inspecting OCR text: " + ocrText);
         return this;
@@ -72,8 +202,8 @@ public class VisualOcrBL {
 
     public VisualOcrBL visuallyInspectUsingImageTemplate(String elementName, String imageTemplatePath) {
         LOGGER.info(String.format("Visually inspecting element '%s' using image template '%s'", elementName, imageTemplatePath));
-        VisualElement element = VisualOcrScreen.get().findVisualElementByImage(List.of(imageTemplatePath));
-        assertThat(element).as("Visual element '" + elementName + "' matched by image template '" + imageTemplatePath + "' should be found").isNotNull();
+        verifyVisualElementIsPresentByImage(elementName, imageTemplatePath);
+        VisualElement element = findVisualElementByImage(imageTemplatePath);
         element.highlight();
         getDriver().getVisual().checkWindow(getClass().getSimpleName(), "Inspecting image template: " + imageTemplatePath);
         return this;
@@ -81,11 +211,9 @@ public class VisualOcrBL {
 
     public VisualOcrBL visuallyClickUsingFallbackOcrTextOrImageTemplate(String elementName, String ocrText, String imageTemplatePath) {
         LOGGER.info(String.format("Visually clicking element '%s' using fallback OCR text '%s' or image template '%s'", elementName, ocrText, imageTemplatePath));
-        VisualElement element = VisualOcrScreen.get().findVisualElementByTextOrImage(ocrText, List.of(imageTemplatePath));
-        assertThat(element).as("Visual element '" + elementName + "' matched by text/image should be found").isNotNull();
-        String matchedOption = element.getLabel().startsWith("OCR:")
-                ? "fallback OCR text '" + ocrText + "'"
-                : "image template '" + imageTemplatePath + "'";
+        verifyVisualElementIsPresentByFallbackTextOrImage(elementName, ocrText, imageTemplatePath);
+        VisualElement element = findVisualElementByTextOrImage(ocrText, imageTemplatePath);
+        String matchedOption = resolveMatchedOption(element, ocrText, imageTemplatePath, true);
         LOGGER.info(String.format("Visual element '%s' resolved using %s (matched label: '%s')", elementName, matchedOption, element.getLabel()));
         element.highlight();
         getDriver().getVisual().checkWindow(getClass().getSimpleName(), "Before visual click: " + elementName + " via " + matchedOption);
@@ -97,11 +225,9 @@ public class VisualOcrBL {
 
     public VisualOcrBL visuallyClickUsingFallbackImageTemplateOrOcrText(String elementName, String imageTemplatePath, String ocrText) {
         LOGGER.info(String.format("Visually clicking element '%s' using fallback image template '%s' or OCR text '%s'", elementName, imageTemplatePath, ocrText));
-        VisualElement element = VisualOcrScreen.get().findVisualElementByImageOrText(List.of(imageTemplatePath), ocrText);
-        assertThat(element).as("Visual element '" + elementName + "' matched by image/text should be found").isNotNull();
-        String matchedOption = element.getLabel().startsWith("OCR:")
-                ? "OCR text '" + ocrText + "'"
-                : "fallback image template '" + imageTemplatePath + "'";
+        verifyVisualElementIsPresentByFallbackImageOrText(elementName, imageTemplatePath, ocrText);
+        VisualElement element = findVisualElementByImageOrText(imageTemplatePath, ocrText);
+        String matchedOption = resolveMatchedOption(element, ocrText, imageTemplatePath, false);
         LOGGER.info(String.format("Visual element '%s' resolved using %s (matched label: '%s')", elementName, matchedOption, element.getLabel()));
         element.highlight();
         getDriver().getVisual().checkWindow(getClass().getSimpleName(), "Before visual click: " + elementName + " via " + matchedOption);
@@ -110,6 +236,8 @@ public class VisualOcrBL {
         getDriver().getVisual().checkWindow(getClass().getSimpleName(), "After visual click: " + elementName + " via " + matchedOption);
         return this;
     }
+
+    // --- Subsystem Disabled Verification Methods ---
 
     public VisualOcrBL verifyVisualOcrCapabilityDisabled() {
         assertThat(Runner.isOcrEnabled()).isFalse();
@@ -151,6 +279,15 @@ public class VisualOcrBL {
                 .isInstanceOf(VisualSubsystemDisabledException.class)
                 .hasMessageContaining("[teswiz] Visual OCR & Image Recognition Subsystem is Disabled!");
         return this;
+    }
+
+    private String resolveMatchedOption(VisualElement element, String ocrText, String imageTemplatePath, boolean ocrIsPrimary) {
+        boolean matchedByOcr = element.getLabel().startsWith("OCR:");
+        if (ocrIsPrimary) {
+            return matchedByOcr ? "fallback OCR text '" + ocrText + "'" : "image template '" + imageTemplatePath + "'";
+        } else {
+            return matchedByOcr ? "OCR text '" + ocrText + "'" : "fallback image template '" + imageTemplatePath + "'";
+        }
     }
 
     private Driver getDriver() {
