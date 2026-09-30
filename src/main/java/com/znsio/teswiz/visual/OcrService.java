@@ -458,4 +458,72 @@ public class OcrService {
         }
         return null;
     }
+
+    public static List<VisualElement> findAllTextMatches(byte[] screenshotBytes, String searchText, Driver driverFacade) {
+        if (!isTess4jAvailable() || screenshotBytes == null || searchText == null || searchText.isBlank()) {
+            return java.util.Collections.emptyList();
+        }
+
+        BufferedImage bufferedImage = parseScreenshot(screenshotBytes);
+        if (bufferedImage == null) {
+            return java.util.Collections.emptyList();
+        }
+
+        applyCustomJnaLibraryPath();
+        String tessDataPath = resolveTessDataPath();
+        if (tessDataPath == null) {
+            throwTessDataNotFoundException();
+        }
+
+        List<VisualElement> matches = new java.util.ArrayList<>();
+        try {
+            Tesseract tesseract = new Tesseract();
+            tesseract.setDatapath(tessDataPath);
+
+            double scaleFactor = (driverFacade != null) ? driverFacade.getViewportScaleFactor(bufferedImage.getWidth()) : 1.0;
+            String normalizedSearch = searchText.trim().toLowerCase();
+            List<Word> words = tesseract.getWords(bufferedImage, RIL_WORD);
+
+            for (Word word : words) {
+                String wordText = word.getText();
+                if (wordText != null) {
+                    String cleaned = wordText.trim().replaceAll("^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$", "");
+                    if (wordText.trim().equalsIgnoreCase(normalizedSearch) || cleaned.equalsIgnoreCase(normalizedSearch) || wordText.trim().toLowerCase().contains(normalizedSearch)) {
+                        Rectangle rect = word.getBoundingBox();
+                        VisualElement element = buildScaledVisualElement(rect.x, rect.y, rect.width, rect.height, scaleFactor, wordText.trim(), driverFacade);
+                        matches.add(element);
+                    }
+                }
+            }
+        } catch (Throwable e) {
+            LOGGER.warn("Tesseract OCR findAllTextMatches failed: " + e.getMessage());
+        }
+
+        return applyNonMaximumSuppression(matches);
+    }
+
+    private static List<VisualElement> applyNonMaximumSuppression(List<VisualElement> rawMatches) {
+        if (rawMatches == null || rawMatches.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+
+        List<VisualElement> filtered = new java.util.ArrayList<>();
+        for (VisualElement candidate : rawMatches) {
+            boolean isDuplicate = false;
+            for (VisualElement existing : filtered) {
+                int dx = Math.abs(candidate.getX() - existing.getX());
+                int dy = Math.abs(candidate.getY() - existing.getY());
+                if (dx < 10 && dy < 10) {
+                    isDuplicate = true;
+                    break;
+                }
+            }
+            if (!isDuplicate) {
+                filtered.add(candidate);
+            }
+        }
+        return filtered;
+    }
 }
+
+

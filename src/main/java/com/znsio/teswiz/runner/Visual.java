@@ -1339,6 +1339,116 @@ public class Visual {
         }
     }
 
+    public List<VisualElement> findAllByText(String text) {
+        verifyOcrEnabled();
+        LOGGER.info(String.format("Locating all visual elements matching text '%s'", text));
+        byte[] screenshot = captureScreenshotBytes();
+        return com.znsio.teswiz.visual.OcrService.findAllTextMatches(screenshot, text, this.driverFacade);
+    }
+
+    public List<VisualElement> findAllByImage(List<String> imageTemplatePaths) {
+        return findAllByImage(imageTemplatePaths, Runner.getVisualConfidenceThreshold());
+    }
+
+    public List<VisualElement> findAllByImage(List<String> imageTemplatePaths, double confidenceThreshold) {
+        verifyOcrEnabled();
+        LOGGER.info(String.format("Locating all visual elements matching image templates %s with threshold %.2f", imageTemplatePaths, confidenceThreshold));
+        byte[] screenshot = captureScreenshotBytes();
+        return com.znsio.teswiz.visual.ImageRecognitionService.findAllTemplateMatches(screenshot, imageTemplatePaths, confidenceThreshold, this.driverFacade);
+    }
+
+    public List<VisualElement> findAllByTextOrImage(String text, List<String> imageTemplatePaths) {
+        verifyOcrEnabled();
+        List<VisualElement> textMatches = findAllByText(text);
+        if (!textMatches.isEmpty()) {
+            return textMatches;
+        }
+        return findAllByImage(imageTemplatePaths);
+    }
+
+    public List<VisualElement> findAllByImageOrText(List<String> imageTemplatePaths, String text) {
+        verifyOcrEnabled();
+        List<VisualElement> imageMatches = findAllByImage(imageTemplatePaths);
+        if (!imageMatches.isEmpty()) {
+            return imageMatches;
+        }
+        return findAllByText(text);
+    }
+
+    public VisualElement findRelativeByText(String targetText, com.znsio.teswiz.entities.SpatialDirection direction, String anchorText) {
+        verifyOcrEnabled();
+        LOGGER.info(String.format("Locating visual element '%s' %s anchor text '%s'", targetText, direction.getDirection(), anchorText));
+        VisualElement anchor = findByText(anchorText);
+        List<VisualElement> candidates = findAllByText(targetText);
+
+        VisualElement bestCandidate = filterAndSelectClosestRelative(anchor, candidates, direction);
+        if (bestCandidate != null) {
+            return bestCandidate;
+        }
+        throw new com.znsio.teswiz.exceptions.NoSuchVisualElementException(
+                String.format("Visual element with text '%s' not found %s anchor '%s'", targetText, direction.getDirection(), anchorText));
+    }
+
+    public VisualElement findRelativeByImage(List<String> targetImagePaths, com.znsio.teswiz.entities.SpatialDirection direction, String anchorText) {
+        verifyOcrEnabled();
+        LOGGER.info(String.format("Locating visual element matching images %s %s anchor text '%s'", targetImagePaths, direction.getDirection(), anchorText));
+        VisualElement anchor = findByText(anchorText);
+        List<VisualElement> candidates = findAllByImage(targetImagePaths);
+
+        VisualElement bestCandidate = filterAndSelectClosestRelative(anchor, candidates, direction);
+        if (bestCandidate != null) {
+            return bestCandidate;
+        }
+        throw new com.znsio.teswiz.exceptions.NoSuchVisualElementException(
+                String.format("Visual element matching images %s not found %s anchor '%s'", targetImagePaths, direction.getDirection(), anchorText));
+    }
+
+    private VisualElement filterAndSelectClosestRelative(VisualElement anchor, List<VisualElement> candidates, com.znsio.teswiz.entities.SpatialDirection direction) {
+        if (anchor == null || candidates == null || candidates.isEmpty()) {
+            return null;
+        }
+
+        int anchorCenterX = anchor.getCenter().getX();
+        int anchorCenterY = anchor.getCenter().getY();
+        VisualElement closest = null;
+        double minDistance = Double.MAX_VALUE;
+
+        for (VisualElement candidate : candidates) {
+            int candidateCenterX = candidate.getCenter().getX();
+            int candidateCenterY = candidate.getCenter().getY();
+
+            boolean matchesDirection = false;
+            switch (direction) {
+                case ABOVE:
+                    matchesDirection = candidateCenterY < anchorCenterY;
+                    break;
+                case BELOW:
+                    matchesDirection = candidateCenterY > anchorCenterY;
+                    break;
+                case LEFT_OF:
+                    matchesDirection = candidateCenterX < anchorCenterX;
+                    break;
+                case RIGHT_OF:
+                    matchesDirection = candidateCenterX > anchorCenterX;
+                    break;
+                case NEAR:
+                default:
+                    matchesDirection = true;
+                    break;
+            }
+
+            if (matchesDirection) {
+                double distance = Math.hypot(candidateCenterX - anchorCenterX, candidateCenterY - anchorCenterY);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closest = candidate;
+                }
+            }
+        }
+        return closest;
+    }
+
+
     private byte[] captureScreenshotBytes() {
         if (this.innerDriver instanceof TakesScreenshot) {
             return ((TakesScreenshot) this.innerDriver).getScreenshotAs(OutputType.BYTES);

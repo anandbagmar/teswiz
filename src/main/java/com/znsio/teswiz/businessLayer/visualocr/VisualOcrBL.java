@@ -291,6 +291,89 @@ public class VisualOcrBL {
         return this;
     }
 
+    public List<VisualElement> findAllVisualElementsByText(String ocrText) {
+        return VisualOcrScreen.get().findAllVisualElementsByText(ocrText);
+    }
+
+    public List<VisualElement> findAllVisualElementsByImage(String imageTemplatePath) {
+        return VisualOcrScreen.get().findAllVisualElementsByImage(List.of(imageTemplatePath));
+    }
+
+    public List<VisualElement> findAllVisualElementsByTextOrImage(String ocrText, String imageTemplatePath) {
+        return VisualOcrScreen.get().findAllVisualElementsByTextOrImage(ocrText, List.of(imageTemplatePath));
+    }
+
+    public VisualOcrBL verifyVisualElementCountByText(String elementName, String ocrText, int expectedCount) {
+        LOGGER.info(String.format("Verifying %d visual elements named '%s' present using OCR text '%s'", expectedCount, elementName, ocrText));
+        List<VisualElement> elements = findAllVisualElementsByText(ocrText);
+        assertThat(elements)
+                .as("Expected " + expectedCount + " visual elements matching OCR text '" + ocrText + "'")
+                .hasSize(expectedCount);
+        return this;
+    }
+
+    public VisualOcrBL visuallyClickElementAtIndexUsingOcrText(String elementName, int index, String ocrText) {
+        LOGGER.info(String.format("Visually clicking element '%s' at index %d using OCR text '%s'", elementName, index, ocrText));
+        List<VisualElement> elements = findAllVisualElementsByText(ocrText);
+        assertThat(elements)
+                .as("Expected at least " + (index + 1) + " visual elements matching OCR text '" + ocrText + "'")
+                .hasSizeGreaterThan(index);
+
+        VisualElement target = elements.get(index);
+        target.highlight();
+        getDriver().getVisual().checkWindow(getClass().getSimpleName(), "Before visual click at index " + index + " OCR text: " + ocrText);
+        target.click();
+        getDriver().clearHighlight();
+        waitFor(5);
+        getDriver().getVisual().checkWindow(getClass().getSimpleName(), "After visual click at index " + index + " OCR text: " + ocrText);
+        return this;
+    }
+
+    public VisualElement findVisualElementRelativeByText(String targetText, String directionText, String anchorText) {
+        com.znsio.teswiz.entities.SpatialDirection direction = com.znsio.teswiz.entities.SpatialDirection.fromString(directionText);
+        return VisualOcrScreen.get().findVisualElementRelativeByText(targetText, direction, anchorText);
+    }
+
+    public VisualOcrBL visuallyClickUsingOcrTextRelative(String elementName, String targetText, String directionText, String anchorText) {
+        LOGGER.info(String.format("Visually clicking element '%s' with OCR text '%s' %s anchor text '%s'", elementName, targetText, directionText, anchorText));
+        VisualElement element = findVisualElementRelativeByText(targetText, directionText, anchorText);
+        assertThat(element).as("Visual element '" + elementName + "' relative to '" + anchorText + "' should be found").isNotNull();
+        element.highlight();
+        getDriver().getVisual().checkWindow(getClass().getSimpleName(), "Before visual click relative: " + targetText);
+        element.click();
+        getDriver().clearHighlight();
+        waitFor(5);
+        getDriver().getVisual().checkWindow(getClass().getSimpleName(), "After visual click relative: " + targetText);
+        return this;
+    }
+
+    public boolean tryVisuallyClickUsingOcrTextRelative(String elementName, String targetText, String directionText, String anchorText) {
+        LOGGER.info(String.format("Attempting optional visual click on element '%s' with OCR text '%s' %s anchor text '%s'", elementName, targetText, directionText, anchorText));
+        try {
+            VisualElement element = findVisualElementRelativeByText(targetText, directionText, anchorText);
+            if (element == null) {
+                return false;
+            }
+            element.highlight();
+            getDriver().getVisual().checkWindow(getClass().getSimpleName(), "Before try visual click relative: " + targetText);
+            element.click();
+            getDriver().clearHighlight();
+            waitFor(5);
+            getDriver().getVisual().checkWindow(getClass().getSimpleName(), "After try visual click relative: " + targetText);
+            return true;
+        } catch (Exception e) {
+            LOGGER.info(String.format("Optional relative element '%s' was not found. Skipping click.", targetText));
+            return false;
+        }
+    }
+
+    public VisualOcrBL verifyVisualElementIsPresentRelativeByText(String elementName, String targetText, String directionText, String anchorText) {
+        LOGGER.info(String.format("Verifying visual element '%s' with OCR text '%s' present %s anchor text '%s'", elementName, targetText, directionText, anchorText));
+        VisualElement element = findVisualElementRelativeByText(targetText, directionText, anchorText);
+        assertThat(element).as("Visual element '" + elementName + "' relative to '" + anchorText + "' should be found").isNotNull();
+        return this;
+    }
+
     private String resolveMatchedOption(VisualElement element, String ocrText, String imageTemplatePath, boolean ocrIsPrimary) {
         boolean matchedByOcr = element.getLabel().startsWith("OCR:");
         if (ocrIsPrimary) {
@@ -304,3 +387,4 @@ public class VisualOcrBL {
         return Drivers.getDriverForCurrentUser(Thread.currentThread().getId());
     }
 }
+

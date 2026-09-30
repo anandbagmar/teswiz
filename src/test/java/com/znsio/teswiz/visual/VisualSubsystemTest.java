@@ -71,4 +71,39 @@ class VisualSubsystemTest {
                 .isInstanceOf(VisualSubsystemDisabledException.class)
                 .hasMessageContaining("[teswiz] Visual OCR & Image Recognition Subsystem is Disabled!");
     }
+
+    @Test
+    void testSpatialDirectionParsing() {
+        assertThat(com.znsio.teswiz.entities.SpatialDirection.fromString("above")).isEqualTo(com.znsio.teswiz.entities.SpatialDirection.ABOVE);
+        assertThat(com.znsio.teswiz.entities.SpatialDirection.fromString("below")).isEqualTo(com.znsio.teswiz.entities.SpatialDirection.BELOW);
+        assertThat(com.znsio.teswiz.entities.SpatialDirection.fromString("left of")).isEqualTo(com.znsio.teswiz.entities.SpatialDirection.LEFT_OF);
+        assertThat(com.znsio.teswiz.entities.SpatialDirection.fromString("right of")).isEqualTo(com.znsio.teswiz.entities.SpatialDirection.RIGHT_OF);
+        assertThat(com.znsio.teswiz.entities.SpatialDirection.fromString("near")).isEqualTo(com.znsio.teswiz.entities.SpatialDirection.NEAR);
+    }
+
+    @Test
+    void testVisualByCreation() {
+        com.znsio.teswiz.runner.VisualBy ocrBy = com.znsio.teswiz.runner.VisualBy.ocr("Login");
+        assertThat(ocrBy.getType()).isEqualTo(com.znsio.teswiz.runner.VisualBy.VisualByType.OCR_TEXT);
+        assertThat(ocrBy.getText()).isEqualTo("Login");
+
+        com.znsio.teswiz.runner.VisualBy imageBy = com.znsio.teswiz.runner.VisualBy.image("logo.png", 0.90);
+        assertThat(imageBy.getType()).isEqualTo(com.znsio.teswiz.runner.VisualBy.VisualByType.IMAGE_TEMPLATE);
+        assertThat(imageBy.getImagePath()).isEqualTo("logo.png");
+        assertThat(imageBy.getConfidenceThreshold()).isEqualTo(0.90);
+    }
+
+    @Test
+    void testVisualElementToWebElementProxy() {
+        com.znsio.teswiz.runner.VisualElement element = new com.znsio.teswiz.runner.VisualElement(10, 20, 100, 50, "TestLabel", null);
+        org.openqa.selenium.WebElement webElement = element.toWebElement();
+        assertThat(webElement).isNotNull();
+        assertThat(webElement.getText()).isEqualTo("TestLabel");
+        assertThat(webElement.isDisplayed()).isTrue();
+        assertThat(webElement.getLocation().getX()).isEqualTo(10);
+        assertThat(webElement.getLocation().getY()).isEqualTo(20);
+        assertThat(webElement.getSize().getWidth()).isEqualTo(100);
+        assertThat(webElement.getSize().getHeight()).isEqualTo(50);
+    }
 }
+

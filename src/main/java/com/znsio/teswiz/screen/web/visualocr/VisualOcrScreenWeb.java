@@ -46,4 +46,35 @@ public class VisualOcrScreenWeb extends VisualOcrScreen {
         LOGGER.info("Finding visual element by image or text: " + imagePaths + " / " + text);
         return driver.findByImageOrText(imagePaths, text);
     }
+
+    @Override
+    public List<VisualElement> findAllVisualElementsByText(String text) {
+        LOGGER.info("Finding all visual elements by text: " + text);
+        return driver.findAllByText(text);
+    }
+
+    @Override
+    public List<VisualElement> findAllVisualElementsByImage(List<String> imagePaths) {
+        LOGGER.info("Finding all visual elements by image: " + imagePaths);
+        return driver.findAllByImage(imagePaths);
+    }
+
+    @Override
+    public List<VisualElement> findAllVisualElementsByTextOrImage(String text, List<String> imagePaths) {
+        LOGGER.info("Finding all visual elements by text or image: " + text + " / " + imagePaths);
+        return driver.findAllByTextOrImage(text, imagePaths);
+    }
+
+    @Override
+    public VisualElement findVisualElementRelativeByText(String targetText, com.znsio.teswiz.entities.SpatialDirection direction, String anchorText) {
+        LOGGER.info(String.format("Finding visual element '%s' %s anchor text '%s'", targetText, direction.getDirection(), anchorText));
+        return driver.findRelativeByText(targetText, direction, anchorText);
+    }
+
+    @Override
+    public VisualElement findVisualElementRelativeByImage(List<String> imagePaths, com.znsio.teswiz.entities.SpatialDirection direction, String anchorText) {
+        LOGGER.info(String.format("Finding visual element matching image %s %s anchor text '%s'", imagePaths, direction.getDirection(), anchorText));
+        return driver.findRelativeByImage(imagePaths, direction, anchorText);
+    }
 }
+
