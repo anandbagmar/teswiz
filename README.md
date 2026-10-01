@@ -47,7 +47,7 @@ Read these before upgrading or enabling Playwright:
 
 Detailed guidance:
 
-- [Documentation Index](docs/README.md)
+- [Documentation Index](docs/index.md)
 - [Breaking changes](docs/architecture-and-internals/breaking-changes.md)
 - [Playwright migration guide](docs/architecture-and-internals/playwright-migration-guide.md)
 - [Web engine capability & parity guide](docs/engines/web-engine-capabilities.md)

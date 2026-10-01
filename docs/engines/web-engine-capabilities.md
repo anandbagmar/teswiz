@@ -1,5 +1,5 @@
 # Web Engine Capability & Parity Guide
-[📚 Documentation Index](../README.md) | [🏠 Main README](../../README.md)
+[📚 Documentation Index](../index.md) | [🏠 Main README](../../README.md)
 
 ---
 

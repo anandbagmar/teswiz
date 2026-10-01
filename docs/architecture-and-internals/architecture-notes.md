@@ -1,5 +1,5 @@
 # teswiz Architecture Notes
-[📚 Documentation Index](../README.md) | [🏠 Main README](../../README.md)
+[📚 Documentation Index](../index.md) | [🏠 Main README](../../README.md)
 
 ---
 
