@@ -1,5 +1,5 @@
 # API Test Implementation Example
-[📚 Documentation Index](../index.md) | [🏠 Main README](../../README.md)
+[📚 Documentation Index](../index.md) • [🏠 Main README](../../README.md)
 
 ---
 
@@ -20,7 +20,7 @@ This guide provides concrete examples of implementing API-level tests in Teswiz 
 
 ---
 
-## Configuration (`API_ENGINE`)
+## 🎛️ Configuration (`API_ENGINE`)
 
 Engine selection is governed by the `API_ENGINE` property in your configuration properties file or environment variable:
 
@@ -47,7 +47,7 @@ DISABLE_ENVIRONMENT_ISSUE_FILTER=true
 
 ---
 
-## API Traffic Logging
+## 📝 API Traffic Logging
 
 teswiz registers global traffic loggers so every API call in the suite is captured automatically — request method, URL, headers, query parameters, request body, response status, headers, and response body — as a single masked `.log` file per call under `api-traffic/` inside the scenario's report folder (e.g. `api-traffic/01-GET-https-jsonplaceholder-typicode-com-posts-1.log`). Masking applies `SensitiveDataMasker` configuration.
 

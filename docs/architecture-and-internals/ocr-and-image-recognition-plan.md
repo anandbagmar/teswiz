@@ -1,5 +1,5 @@
 # Detailed Architectural & Usage Plan: OCR and Image Recognition in teswiz
-[📚 Documentation Index](../index.md) | [🏠 Main README](../../README.md)
+[📚 Documentation Index](../index.md) • [🏠 Main README](../../README.md)
 
 ---
 
@@ -83,7 +83,7 @@ This document defines the production specification for **OCR (Optical Character 
 
 ---
 
-## 3. Architecture & Engine Interaction Pipeline
+## 🏗️ 3. Architecture & Engine Interaction Pipeline
 
 ```mermaid
 flowchart TD
@@ -334,7 +334,7 @@ src/test/resources/visualTemplates/
 
 ---
 
-## 12. Simplified Configuration & Unified Multimodal Strategy
+## 🎛️ 12. Simplified Configuration & Unified Multimodal Strategy
 
 ### A. Single Master Enablement Property Syntax
 To follow `teswiz`'s canonical configuration syntax (`configs/teswiz/teswiz_config.properties.template`), visual capability enablement is defined using uppercase property keys:
@@ -369,7 +369,7 @@ if (isOcrEnabled) {
 
 ---
 
-## 13. Decoupled Compilation Architecture: Preventing Java Compile Errors
+## 🏗️ 13. Decoupled Compilation Architecture: Preventing Java Compile Errors
 
 ### Q: If visual dependencies are downloaded on-demand, will methods like `driver.findByImage(...)` cause Java compilation errors?
 
@@ -401,7 +401,7 @@ if (isOcrEnabled) {
 
 ---
 
-## 14. Summary of Capabilities & Final Architecture Matrix
+## 🏗️ 14. Summary of Capabilities & Final Architecture Matrix
 
 | Feature / Locator Method | Underlying Engine | Platforms Supported | Execution Mode | Enablement Property | Open Source & License |
 | :--- | :--- | :--- | :--- | :--- | :--- |

@@ -1,4 +1,4 @@
-[📚 Documentation Index](../index.md) | [🏠 Main README](../../README.md)
+[📚 Documentation Index](../index.md) • [🏠 Main README](../../README.md)
 
 ---
 
@@ -11,7 +11,7 @@
 
 ---
 
-## Rich Reports using cucumber-reporting
+## 📊 Rich Reports using cucumber-reporting
 teswiz creates rich reports for offline consuption using cucumber-reporting (https://github.com/damianszczepanik/cucumber-reporting)
 
 These reports will be available in the following directory:

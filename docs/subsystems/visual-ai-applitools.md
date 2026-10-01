@@ -1,5 +1,5 @@
 # Applitools Visual AI Integration
-[📚 Documentation Index](../index.md) | [🏠 Main README](../../README.md)
+[📚 Documentation Index](../index.md) • [🏠 Main README](../../README.md)
 
 ---
 
@@ -32,7 +32,7 @@ flowchart TD
     F2 --> G
 ```
 
-## Applitools Configuration
+## 🎛️ Applitools Configuration
 
 To run Visual Tests against a dedicated Applitools instance, add a property `serverUrl` in `applitools_config.json`.
 Ex: `"serverUrl": "https://eyesapi.applitools.com"`
