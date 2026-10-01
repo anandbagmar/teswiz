@@ -1,0 +1,139 @@
+# Debugging a test in teswiz
+[📚 Documentation Index](../README.md) | [🏠 Main README](../../README.md)
+
+---
+
+
+## Table of Contents
+
+- [1. Start with the run configuration](#1-start-with-the-run-configuration)
+- [2. Re-run the smallest useful slice](#2-re-run-the-smallest-useful-slice)
+- [3. Attach a debugger](#3-attach-a-debugger)
+- [4. Turn on the right logs](#4-turn-on-the-right-logs)
+- [5. Check failure artifacts](#5-check-failure-artifacts)
+- [6. Use the failure mode intentionally](#6-use-the-failure-mode-intentionally)
+- [7. If the problem is in test wiring](#7-if-the-problem-is-in-test-wiring)
+- [8. If you need a starting checklist](#8-if-you-need-a-starting-checklist)
+
+---
+
+
+This guide collects the most useful places to look when a test fails or behaves unexpectedly.
+
+## 1. Start with the run configuration
+
+Check the values that control where and how the test runs:
+
+- `PLATFORM`
+- `TAG`
+- `PARALLEL`
+- `IS_VISUAL`
+- `SET_HARD_GATE`
+- `IS_FAILING_TEST_SUITE`
+- `LOG_DIR`
+- `LOG_PROPERTIES_FILE`
+- `SHOW_SENSITIVE_DATA`
+- `TESWIZ_METHOD_LOG_LEVEL`
+
+The full list of supported configuration keys is in [configuration-parameters.md](../configuration/configuration-parameters.md).
+
+## 2. Re-run the smallest useful slice
+
+When you are debugging a failure, rerun only the scenario or tag you care about.
+
+Examples:
+
+```bash
+PLATFORM=android TAG=@schedule ./gradlew run
+```
+
+```bash
+PLATFORM=android TAG="@schedule and @signup" ./gradlew run
+```
+
+```bash
+PLATFORM=web TAG="@schedule or @signup" ./gradlew run
+```
+
+The sample commands above come from [configuring-test-execution.md](../getting-started/configuring-test-execution.md).
+
+## 3. Attach a debugger
+
+If you need to pause execution and step through the test, run Gradle in debug mode:
+
+```bash
+./gradlew run -Ddebug=true
+```
+
+The `run` task is configured to start the JVM with JDWP on port `5005` when `-Ddebug=true` is set.
+
+## 4. Turn on the right logs
+
+teswiz already supports several log sources that are useful during investigation:
+
+- Appium logs
+- browser logs
+- device logs
+- ReportPortal logs
+- AspectJ auto-logging
+- Applitools logs when visual testing is enabled
+
+Normal console output is intentionally limited to high-signal `INFO` events. The rolling test log captures `DEBUG` details such as JSON payloads. AspectJ method events are suppressed by default; command stdout/stderr is preserved as masked files under the scenario's `commandOutput/` directory. Enable concise AspectJ method tracing when diagnosing framework flow:
+
+```bash
+CONFIG=configs/theapp/theapp_local_web_config.properties FRAMEWORK=cucumber TAG=@theapp \
+  ./gradlew run -DTESWIZ_METHOD_LOG_LEVEL=DEBUG
+```
+
+Helpful references:
+
+- [reportportal-integration.md](../subsystems/reportportal-integration.md)
+- [aspectj-logging.md](../subsystems/aspectj-logging.md)
+- [visual-ai-applitools.md](../subsystems/visual-ai-applitools.md)
+
+## 5. Check failure artifacts
+
+When a test fails, look for:
+
+- screenshots or visual diffs if `IS_VISUAL=true`
+- ReportPortal attachments
+- browser or device logs
+- `commandOutput/command-####.log` files for command stdout/stderr
+- console output produced with your configured log level
+
+For visual testing, the most relevant setup and naming rules are documented in [visual-ai-applitools.md](../subsystems/visual-ai-applitools.md).
+
+## 6. Use the failure mode intentionally
+
+If you are working on a known failing scenario, use the hard gate controls to run just the failing suite:
+
+```bash
+SET_HARD_GATE=true IS_FAILING_TEST_SUITE=true ./gradlew run
+```
+
+If you are validating the pass-path, run with failing tests excluded:
+
+```bash
+SET_HARD_GATE=true IS_FAILING_TEST_SUITE=false ./gradlew run
+```
+
+See [hard-gate.md](../configuration/hard-gate.md) for details.
+
+## 7. If the problem is in test wiring
+
+If the test fails before the app flow even starts, check:
+
+- the config file used for the run
+- capability values under `caps/`
+- browser config values under `configs/`
+- any overridden `BASE_URL_FOR_WEB` or `BROWSER_CONFIG_FILE`
+
+The override pattern is documented in [configuration-parameters.md](../configuration/configuration-parameters.md).
+
+## 8. If you need a starting checklist
+
+1. Confirm the platform and tag are correct.
+2. Rerun the single failing scenario.
+3. Enable the most relevant logs.
+4. Check the output directory and attached artifacts.
+5. Narrow the issue to either test setup, app behavior, or assertion logic.
