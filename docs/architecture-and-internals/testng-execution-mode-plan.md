@@ -1,5 +1,5 @@
 # TestNG-only Execution Mode — Implementation Plan & Checklist
-[📚 Documentation Index](../README.md) | [🏠 Main README](../../README.md)
+[📚 Documentation Index](../index.md) | [🏠 Main README](../../README.md)
 
 ---
 

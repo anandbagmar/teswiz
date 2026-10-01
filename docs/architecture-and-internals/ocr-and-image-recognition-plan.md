@@ -1,5 +1,5 @@
 # Detailed Architectural & Usage Plan: OCR and Image Recognition in teswiz
-[📚 Documentation Index](../README.md) | [🏠 Main README](../../README.md)
+[📚 Documentation Index](../index.md) | [🏠 Main README](../../README.md)
 
 ---
 
