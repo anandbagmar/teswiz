@@ -15,25 +15,50 @@
 
 ---
 
-## Subsystem Interaction Flow
+## Subsystem Architecture & Interaction Flow
+
+```mermaid
+flowchart TD
+    A["Test Step / Business Layer Call<br/>(findByText / findByImage)"] --> B["VisualElement Facade"]
+    B --> C{"Active Platform & Engine"}
+    
+    C -->|Web| D1["Web Engine (Selenium / Playwright-Java / Playwright-TS)"]
+    C -->|Mobile| D2["Mobile Engine (Appium Android / iOS)"]
+
+    D1 --> E["Capture Screen Byte Stream"]
+    D2 --> E
+
+    E --> F{"Recognition Technique"}
+    F -->|OCR Text Search| G1["Tesseract 5 OCR Engine / Tess4J<br/>(Exact / Fuzzy text line bounding)"]
+    F -->|Image Matching| G2["OpenCV 4.9 Multi-Scale Pyramid Matcher<br/>(Gaussian scale range 0.5x to 2.0x)"]
+
+    G1 --> H["Calculate Dynamic Scale Factor<br/>(viewportScaleFactor = physicalWidth / innerWidth)"]
+    G2 --> H
+
+    H --> I["Map Screenshot Bounding Box to Logical Viewport Coordinates"]
+    I --> J["Automatic Highlight Overlay<br/>(Inject fixed CSS <div> or outline)"]
+    J --> K["Perform Native Click / Input / Verification Action"]
+```
 
 ```mermaid
 sequenceDiagram
     autonumber
     participant Step as Test / Step Definition
     participant Driver as Driver / VisualElement
-    participant OCR as OcrService / OpenCV
-    participant Browser as Browser DOM / Engine
+    participant OCR as OcrService / OpenCV Pyramid Matcher
+    participant Screen as Web Browser / Mobile Device
 
-    Step->>Driver: findByText("Search") / findByImage(template)
-    Driver->>OCR: Screenshot buffer & search criteria
-    OCR->>OCR: Multi-scale matching / Tesseract OCR
-    OCR-->>Driver: Return screenshot match bounds
-    Driver->>Driver: Convert bounds via getViewportScaleFactor()
-    Driver->>Browser: clearHighlight() (remove previous overlay)
-    Driver->>Browser: Inject highlight div / CSS outline
+    Step->>Driver: findByText("Explore") / findByImage(template)
+    Driver->>Screen: Capture screenshot buffer
+    Screen-->>Driver: Physical image bytes & dimensions
+    Driver->>OCR: Pass image buffer & text/template criteria
+    OCR->>OCR: Execute Tesseract OCR line detection / OpenCV template match
+    OCR-->>Driver: Return physical match bounds (x, y, width, height)
+    Driver->>Driver: Convert physical bounds via getViewportScaleFactor()
+    Driver->>Screen: clearHighlight() (remove previous overlay)
+    Driver->>Screen: Inject highlight overlay div / native boundary
     Step->>Driver: click() / sendKeys() / checkWindow()
-    Driver->>Browser: Perform native W3C / Playwright interaction
+    Driver->>Screen: Perform native W3C WebDriver / Playwright / Appium action
 ```
 
 ---

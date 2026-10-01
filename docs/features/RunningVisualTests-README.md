@@ -1,10 +1,32 @@
-# Applitools configuration
-To run Visual Tests against dedicated Applitools instance, add a property serverUrl in applitools_config.json.
-Ex: "serverUrl": "https://eyesapi.applitools.com"
-* By default, the free public Applitools cloud will be used
+# Applitools Visual AI Integration
 
-To provide proxy information for Applitools, add/update the value of the APPLITOOLS_PROXY_KEY property in the applitools_config.json 
-NOTE: If proxy should be set, what is the environment variable specifying the proxy?
+teswiz provides seamless Applitools Visual AI integration across Web (Selenium, Playwright-Java, Playwright-TS) and Mobile (Android & iOS via Appium), supporting both classic Eyes check-window execution and Applitools Ultrafast Grid (UFG).
+
+```mermaid
+flowchart TD
+    A["Scenario / Test Execution (IS_VISUAL=true)"] --> B["Visual Facade (com.znsio.teswiz.runner.Visual)"]
+    B --> C{"Execution Target"}
+    
+    C -->|Web Suites| D1["Web Engine (Selenium / Playwright-Java / Playwright-TS)"]
+    C -->|Mobile Suites| D2["Mobile Engine (Appium Android / iOS)"]
+
+    D1 --> E{"Applitools Mode"}
+    D2 --> E
+
+    E -->|useUFG=false| F1["Classic Applitools Eyes Driver<br/>(Local browser / device visual capture)"]
+    E -->|useUFG=true| F2["Applitools Ultrafast Grid (UFG)<br/>(Multi-browser & multi-device parallel rendering)"]
+
+    F1 --> G["Applitools Eyes Dashboard Results"]
+    F2 --> G
+```
+
+## Applitools Configuration
+
+To run Visual Tests against a dedicated Applitools instance, add a property `serverUrl` in `applitools_config.json`.
+Ex: `"serverUrl": "https://eyesapi.applitools.com"`
+* By default, the free public Applitools cloud will be used.
+
+To provide proxy information for Applitools, add/update the value of the `APPLITOOLS_PROXY_KEY` property in `applitools_config.json`:
 
 Example:
 

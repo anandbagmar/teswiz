@@ -28,33 +28,45 @@ flowchart LR
     F[Feature file] --> S[Step definitions]
     S --> BL[Java BL]
     TNG["Plain TestNG @Test class<br/>(FRAMEWORK=testng)"] --> BL
-    BL --> SC[Stable screen contract]
+    BL --> SC[Stable Screen / API Contract]
     SC --> ROUTER[Runtime screen / engine router]
 
     ROUTER --> SH[SessionHandle + persona routing]
     SH --> REP[Reporting / logs / artifacts]
-    SH --> VIS[Visual validation]
+    SH --> VIS[Applitools Visual AI]
+    SH --> OCR[Tesseract OCR & OpenCV Engine]
     SH --> CLOUD[Cloud provider adapters]
 
     ROUTER --> WSEL[Web: SeleniumWebEngineAdapter]
     ROUTER --> WPJ[Web: PlaywrightJavaWebEngineAdapter]
     ROUTER --> WPTS[Web: PlaywrightTsWebEngineAdapter]
     ROUTER --> MAPP[Mobile: AppiumJavaEngineAdapter]
+    ROUTER --> APIE[API: ApiService Engine Router]
+    ROUTER --> DSK[Desktop / PDF: Electron / WinApp / PDF Engine]
 
     WSEL --> WD[Selenium WebDriver]
     WPJ --> PWJ[Playwright Java runtime]
     WPTS --> IPC[Java module bridge -> TS worker IPC]
     IPC --> PWT[Playwright TS worker]
     MAPP --> APP[Appium Java runtime]
+    APIE --> RA[RestAssured HTTP Client]
+    APIE --> PWJ_A[Playwright-Java APIRequestContext]
+    APIE --> PWTS_A[Playwright-TS API Worker]
+    DSK --> ELE[Electron / WinAppDriver / Apache PDFBox]
 
-    WD --> B[Browser]
+    WD --> B[Web Browser]
     PWJ --> B
     PWT --> B
     APP --> D[Android / iOS device, emulator, or cloud device]
+    RA --> API_END[REST / HTTP Endpoints]
+    PWJ_A --> API_END
+    PWTS_A --> API_END
+    ELE --> APP_DESK[Desktop Application / PDF File]
 
     SH --> META[Engine name, provider, platform, persona, session id]
     META --> REP
     META --> VIS
+    META --> OCR
     META --> CLOUD
 ```
 
@@ -64,7 +76,7 @@ Logging and diagnostic artifacts follow the execution context rather than the en
 flowchart LR
     LIFE[Scenario / TestNG lifecycle] --> CTX[Thread-bound LoggingContext]
     CTX --> LOG[Console + rolling test log]
-    CTX --> ART[Scenario commandOutput artifacts]
+    CTX --> ART[Scenario commandOutput & api-traffic artifacts]
     CMD[CommandLineExecutor] --> ART
     CMD --> LOG
     LOG --> SUM[Run summary: total, passed, failed, skipped, duration]
@@ -78,34 +90,43 @@ Execution routing is still persona-scoped, and the same scenario can involve mul
 
 ```mermaid
 sequenceDiagram
-    participant Feature as Feature file
-    participant BL as Java BL
-    participant Router as Screen / engine router
-    participant Se as Selenium screen
-    participant PJ as Playwright-Java screen
-    participant PT as "Framework-owned playwright-ts module bridge"
-    participant TS as "Playwright TS screen module"
-    participant App as Appium screen
-    participant Worker as TS worker
+    participant Feature as Feature file / TestNG Test
+    participant BL as Java BL / ApiService
+    participant Router as Screen / Engine Router
+    participant Se as Selenium Screen
+    participant PJ as Playwright-Java Screen
+    participant PT as "playwright-ts module bridge"
+    participant App as Appium Screen (Android/iOS)
+    participant API as "API Engine (RestAssured / PW-Java / PW-TS)"
+    participant Vis as Applitools Visual AI
+    participant Ocr as Tesseract OCR / OpenCV Engine
 
-    Feature->>BL: Invoke scenario step
+    Feature->>BL: Invoke scenario step / test action
     BL->>Router: Resolve persona + platform + engine
-    alt web + Selenium
+    alt Web + Selenium
         Router-->>BL: Selenium screen
         BL->>Se: Screen action
-    else web + Playwright-Java
+    else Web + Playwright-Java
         Router-->>BL: Playwright-Java screen
         BL->>PJ: Screen action
-    else web + playwright-ts
+    else Web + playwright-ts
         Router-->>BL: Framework-owned `playwright-ts` module bridge
         BL->>PT: Screen action
-        PT->>Worker: screenAction(screenModule, action, args)
-        Worker->>TS: invoke exported action
-        TS->>Worker: Playwright Page/Context result
-        Worker-->>PT: Browser result
-    else mobile + Appium
+        PT->>PT: IPC -> Playwright TS worker -> Screen module
+    else Mobile + Appium (Android / iOS)
         Router-->>BL: Appium screen
         BL->>App: Screen action
+    else API Request
+        Router-->>BL: ApiService engine adapter
+        BL->>API: executeGet() / executePost()
+        API-->>BL: Response payload & traffic log
+    else Visual AI Check
+        BL->>Vis: checkWindow() / checkRegion()
+        Vis->>Vis: Capture baseline & compare via Eyes / Ultrafast Grid
+    else OCR / Image Element Lookup
+        BL->>Ocr: findVisualElementByText() / findByImage()
+        Ocr->>Ocr: Screenshot capture -> Tesseract OCR / OpenCV pyramid match
+        Ocr-->>BL: Bounding box coordinates & highlight overlay
     end
 ```
 

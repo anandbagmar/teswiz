@@ -56,20 +56,29 @@ Detailed guidance:
 
 ```mermaid
 flowchart TD
-    A["Install prerequisites"] --> B["Create or update config.properties"]
-    B --> C{"Platform?"}
-    C -->|Web| D["Set PLATFORM=web and WEB_ENGINE"]
-    C -->|Mobile| E["Set PLATFORM=android or PLATFORM=iOS"]
-    D --> F["Implement shared screen contract"]
-    E --> F
-    F --> G{"Web engine?"}
-    G -->|selenium| H["Add Selenium web screen"]
-    G -->|playwright-java| I["Add Playwright-Java web screen"]
-    G -->|playwright-ts| J["Add TypeScript screen module"]
-    H --> K["Run tests"]
-    I --> K
-    J --> K
-    K --> L["Optional: visual checks and ReportPortal"]
+    A["Install Prerequisites"] --> B["Create or update config.properties"]
+    B --> C{"Select Target Platform"}
+    
+    C -->|Web| D1["Set PLATFORM=web<br/>WEB_ENGINE=selenium | playwright-java | playwright-ts"]
+    C -->|Mobile| D2["Set PLATFORM=android | iOS<br/>(Appium Java Driver)"]
+    C -->|API| D3["Set PLATFORM=api<br/>API_ENGINE=rest-assured | playwright-java | playwright-ts"]
+    C -->|Desktop & Document| D4["Set PLATFORM=electron | windows | pdf<br/>(Electron / WinAppDriver / PDF Engine)"]
+
+    D1 --> E["Implement Screen or API Contracts"]
+    D2 --> E
+    D3 --> E
+    D4 --> E
+
+    E --> F{"Enable Visual / OCR Subsystems?"}
+    F -->|Visual AI| G1["IS_VISUAL=true<br/>(Applitools Eyes & Ultrafast Grid for Web, Android, iOS)"]
+    F -->|OCR & Image Recognition| G2["IS_OCR_ENABLED=true<br/>(Tesseract OCR & OpenCV Pyramid Matching)"]
+    F -->|Standard Automation| G3["Native Element / API Operations"]
+
+    G1 --> H["Execute Tests via Cucumber BDD or TestNG"]
+    G2 --> H
+    G3 --> H
+
+    H --> I["Generate Engine-Aware Reports & Diagnostics<br/>(Cucumber HTML, ReportPortal, Console Logs, HARs, Traces)"]
 ```
 
 Recommended reading order:
@@ -205,7 +214,63 @@ See [Debugging tests](docs/guides/DebuggingTests-README.md) and [configuration p
 
 ## Architecture
 
-The high-level architecture is documented separately in:
+teswiz uses a unified architecture connecting test frameworks, contract layers, engine adapters, and visual/OCR subsystems:
+
+```mermaid
+flowchart LR
+    subgraph Frameworks["Test Frameworks"]
+        CUC["Cucumber BDD (.feature)"]
+        TNG["TestNG (@Test)"]
+    end
+
+    subgraph Layer["Contract & Business Layer"]
+        BL["Business Layer (BL)"]
+        SC["Screen Contracts (Web / Mobile / Desktop)"]
+        API_SVC["API Service Contracts"]
+    end
+
+    subgraph CoreEngines["Core Execution Engines"]
+        subgraph WebEngines["Web Engines"]
+            SEL["Selenium"]
+            PWJ_W["Playwright-Java"]
+            PWTS_W["Playwright-TS"]
+        end
+        subgraph MobileEngines["Mobile Engines (Appium)"]
+            APP_AND["Android"]
+            APP_IOS["iOS"]
+        end
+        subgraph ApiEngines["API Engines"]
+            RA["RestAssured"]
+            PWJ_A["Playwright-Java API"]
+            PWTS_A["Playwright-TS API"]
+        end
+        subgraph DesktopEngines["Desktop & Document Engines"]
+            ELE["Electron"]
+            WIN["Windows App"]
+            PDF["PDF Engine"]
+        end
+    end
+
+    subgraph Subsystems["Cross-Cutting Subsystems"]
+        VIS["Applitools Visual AI<br/>(Eyes & Ultrafast Grid)"]
+        OCR["OCR & Image Engine<br/>(Tesseract OCR & OpenCV)"]
+        REP["Reporting & Artifacts<br/>(ReportPortal, Log4j2, Screenshots, HARs)"]
+    end
+
+    CUC --> BL
+    TNG --> BL
+    BL --> SC
+    BL --> API_SVC
+
+    SC --> WebEngines
+    SC --> MobileEngines
+    SC --> DesktopEngines
+    API_SVC --> ApiEngines
+
+    CoreEngines --> Subsystems
+```
+
+The detailed design notes are documented separately in:
 
 - [Architecture notes](docs/internals/Architecture-README.md)
 
@@ -213,7 +278,11 @@ That doc covers:
 
 - Java orchestration layer
 - Selenium, Playwright-Java, and Playwright-TS web engines
-- Appium mobile execution
+- Appium mobile execution (Android & iOS)
+- RestAssured, Playwright-Java, and Playwright-TS API engines
+- Electron, Windows, and PDF validation engines
+- Applitools Visual AI integration (Web & Mobile)
+- Tesseract OCR & OpenCV Multi-Scale Image Recognition
 - screen resolution and contract verification
 - cloud/provider adapters
 - reporting and visual integration
