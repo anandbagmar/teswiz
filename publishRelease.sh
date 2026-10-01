@@ -170,7 +170,7 @@ EOF
 }
 
 cleanup_release_changes() {
-  local release_files=("build.gradle" "build.gradle.sample" "package.json" "package-lock.json" "README.md" "Changelog.MD")
+  local release_files=("build.gradle" "build.gradle.sample" "package.json" "package-lock.json" "README.md" "Changelog.MD" "docs/getting-started/getting-started-guide.md")
   local changed_release_files=()
   local file
 
@@ -316,6 +316,10 @@ update_version_in_project_files() {
     sed -i '' -E 's/(release-)[^-]+(-blue.svg\))/\1'"$VERSION"'\2/' README.md
   fi
 
+  if [ -f docs/getting-started/getting-started-guide.md ]; then
+    sed -i '' -E 's/(implementation '\''com.github.anandbagmar:teswiz:')[^']*('\'')/\1'"$VERSION"'\2/' docs/getting-started/getting-started-guide.md
+  fi
+
   if [ -f Changelog.MD ]; then
     local temp_changelog
     temp_changelog=$(mktemp)
@@ -448,7 +452,7 @@ commit_tag_and_push() {
   fi
 
   echo "📦 Committing, tagging, and pushing changes to GitHub..."
-  git add build.gradle build.gradle.sample package.json package-lock.json README.md Changelog.MD
+  git add build.gradle build.gradle.sample package.json package-lock.json README.md Changelog.MD docs/getting-started/getting-started-guide.md
   git commit -m "Release $VERSION"
   git push origin main
   git tag "$VERSION"

@@ -74,23 +74,42 @@ jobs:
       - name: 🆔 Capture Commit ID
         run: echo "COMMIT_ID=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
 
-      - name: 📝 Update README with Commit ID (main only)
+      - name: 📝 Update README and Docs with Release Version (main only)
         if: github.ref_name == 'main'
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           git pull --rebase origin main
 
-          awk -v id="$COMMIT_ID" '{gsub("commit-.*-blue", "commit-"id"-blue")}1' README.md > README_temp.md
-          mv README_temp.md README.md
+          VERSION=$(grep -E '^\s*def\s+teswizVersion\s*=\s*' build.gradle | sed -E 's/.*"([^"]+)".*/\1/')
+          echo "Current framework version from build.gradle: $VERSION"
+
+          python3 -c "
+          import re, os
+          version = '$VERSION'
+          if version:
+              with open('README.md', 'r') as f:
+                  content = f.read()
+              new_content = re.sub(r'release-[^-]+-blue\.svg\)', f'release-{version}-blue.svg)', content)
+              with open('README.md', 'w') as f:
+                  f.write(new_content)
+
+              guide_path = 'docs/getting-started/getting-started-guide.md'
+              if os.path.exists(guide_path):
+                  with open(guide_path, 'r') as f:
+                      gcontent = f.read()
+                  gnew_content = re.sub(r\"implementation 'com\.github\.anandbagmar:teswiz:[^']+'\", f\"implementation 'com.github.anandbagmar:teswiz:{version}'\", gcontent)
+                  with open(guide_path, 'w') as f:
+                      f.write(gnew_content)
+          "
 
           if [[ -n "$(git status --porcelain)" ]]; then
-            echo "Updating README with commit ID: $COMMIT_ID"
-            git add README.md
-            git commit -m "🔄 Update README with latest commit ID - $COMMIT_ID"
+            echo "Updating README and docs with release version: $VERSION"
+            git add README.md docs/getting-started/getting-started-guide.md
+            git commit -m "🔄 Update README with release version - $VERSION"
             git push origin main
           else
-            echo "✅ No changes to commit"
+            echo "✅ No version changes to commit"
           fi
         env:
           COMMIT_ID: ${{ env.COMMIT_ID }}
