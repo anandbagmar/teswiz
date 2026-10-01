@@ -170,7 +170,7 @@ EOF
 }
 
 cleanup_release_changes() {
-  local release_files=("build.gradle" "package.json" "package-lock.json" "README.md" "Changelog.MD")
+  local release_files=("build.gradle" "build.gradle.sample" "package.json" "package-lock.json" "README.md" "Changelog.MD")
   local changed_release_files=()
   local file
 
@@ -296,6 +296,11 @@ update_version_in_project_files() {
   echo "🔄 Updating version to $VERSION in project files..."
 
   sed -i '' -E 's/(def teswizVersion = ")[^"]*(")/\1'"$VERSION"'\2/' build.gradle
+
+  if [ -f build.gradle.sample ]; then
+    sed -i '' -E 's/(def teswizVersion = ")[^"]*(")/\1'"$VERSION"'\2/' build.gradle.sample
+    sed -i '' -E 's/(def defaultTeswizVersion = ")[^"]*(")/\1'"$VERSION"'\2/' build.gradle.sample
+  fi
 
   if [ -f package.json ]; then
     local package_version
@@ -443,7 +448,7 @@ commit_tag_and_push() {
   fi
 
   echo "📦 Committing, tagging, and pushing changes to GitHub..."
-  git add build.gradle package.json package-lock.json README.md Changelog.MD
+  git add build.gradle build.gradle.sample package.json package-lock.json README.md Changelog.MD
   git commit -m "Release $VERSION"
   git push origin main
   git tag "$VERSION"
