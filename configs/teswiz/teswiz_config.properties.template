@@ -80,6 +80,7 @@ SHOW_SENSITIVE_DATA=false
 
 # API execution & traffic logging
 #API_ENGINE=rest-assured
+#API_MAX_RETRIES=3
 #API_TRAFFIC_LOGGING=true
 #STEP_ATTRIBUTION_ENABLED=true
 

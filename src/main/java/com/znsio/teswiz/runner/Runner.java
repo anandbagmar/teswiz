@@ -121,6 +121,10 @@ public class Runner {
             LOGGER.info("Execution status: {}", status);
             Setup.cleanUpExecutionEnvironment();
             Reportable overviewReport = CustomReports.generateReport();
+            if (overviewReport == null) {
+                LOGGER.info("No test scenarios were executed. Exiting with status: {}", status);
+                System.exit(status);
+            }
             int totalFeatures = overviewReport.getFeatures();
             int totalScenarios = overviewReport.getScenarios();
             int failedScenarios = overviewReport.getFailedScenarios();
