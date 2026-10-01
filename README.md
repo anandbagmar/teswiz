@@ -47,10 +47,11 @@ Read these before upgrading or enabling Playwright:
 
 Detailed guidance:
 
-- [Breaking changes](docs/internals/BreakingChanges-README.md)
-- [Playwright migration guide](docs/internals/Playwright-Migration-Guide.md)
-- [Web engine capability & parity guide](docs/web-engine-capabilities.md)
-- [Architecture notes](docs/internals/Architecture-README.md)
+- [Documentation Index](docs/README.md)
+- [Breaking changes](docs/architecture-and-internals/breaking-changes.md)
+- [Playwright migration guide](docs/architecture-and-internals/playwright-migration-guide.md)
+- [Web engine capability & parity guide](docs/engines/web-engine-capabilities.md)
+- [Architecture notes](docs/architecture-and-internals/architecture-notes.md)
 
 ## Get started
 
@@ -83,11 +84,11 @@ flowchart TD
 
 Recommended reading order:
 
-1. [Prerequisites](docs/guides/Prerequisites-README.md)
-2. [Getting started](docs/guides/GettingStartedUsingTeswiz-README.md)
-3. [Configure test execution](docs/guides/ConfiguringTestExecution-README.md)
-4. [Write your first test](docs/guides/WritingFirstTest-README.md)
-5. [Sample tests](docs/guides/SampleTests-README.md)
+1. [Prerequisites](docs/getting-started/prerequisites.md)
+2. [Getting started](docs/getting-started/getting-started-guide.md)
+3. [Configure test execution](docs/getting-started/configuring-test-execution.md)
+4. [Write your first test](docs/getting-started/writing-first-test.md)
+5. [Sample tests](docs/getting-started/sample-tests.md)
 
 ## Choose your web engine
 
@@ -111,12 +112,12 @@ Use:
 
 Examples:
 
-- [Selenium web example](docs/examples/Web-Selenium-Example.md)
-- [Playwright-Java web example](docs/examples/Web-Playwright-Java-Example.md)
-- [Playwright-TS web example](docs/examples/Web-Playwright-TS-Example.md)
-- [Android example](docs/examples/Android-Example.md)
-- [iOS example](docs/examples/iOS-Example.md)
-- [API example](docs/examples/API-Example.md)
+- [Selenium web example](docs/examples/web-selenium-example.md)
+- [Playwright-Java web example](docs/examples/web-playwright-java-example.md)
+- [Playwright-TS web example](docs/examples/web-playwright-ts-example.md)
+- [Android example](docs/examples/android-example.md)
+- [iOS example](docs/examples/ios-example.md)
+- [API example](docs/examples/api-example.md)
 
 ## Choose your API engine
 
@@ -134,8 +135,8 @@ Valid values:
 
 Read more:
 
-- [API test execution guide](docs/features/RunningApiTests-README.md)
-- [API implementation example](docs/examples/API-Example.md)
+- [API test execution guide](docs/engines/running-api-tests.md)
+- [API implementation example](docs/examples/api-example.md)
 
 ## Choose your test framework
 
@@ -160,8 +161,8 @@ A project may contain both Cucumber feature files/step-defs and plain TestNG tes
 
 Read more:
 
-- [Configure test execution](docs/guides/ConfiguringTestExecution-README.md)
-- [Cucumber to TestNG migration guide](docs/internals/Cucumber-To-TestNG-Migration-Guide.md)
+- [Configure test execution](docs/getting-started/configuring-test-execution.md)
+- [Cucumber to TestNG migration guide](docs/architecture-and-internals/cucumber-to-testng-migration-guide.md)
 
 ## Common commands
 
@@ -194,9 +195,9 @@ teswiz supports:
 
 Read more:
 
-- [Running visual tests](docs/features/RunningVisualTests-README.md)
-- [ReportPortal setup](docs/features/ReportPortal-README.md)
-- [Configuration parameters](docs/features/ConfigurationParameters-README.md)
+- [Running visual tests](docs/subsystems/visual-ai-applitools.md)
+- [ReportPortal setup](docs/subsystems/reportportal-integration.md)
+- [Configuration parameters](docs/configuration/configuration-parameters.md)
 
 ## Logging and diagnostics
 
@@ -210,7 +211,7 @@ For framework method tracing, enable it explicitly:
 ./gradlew -DTESWIZ_METHOD_LOG_LEVEL=DEBUG run
 ```
 
-See [Debugging tests](docs/guides/DebuggingTests-README.md) and [configuration parameters](docs/features/ConfigurationParameters-README.md) for the logging controls and artifact layout.
+See [Debugging tests](docs/architecture-and-internals/debugging-tests.md) and [configuration parameters](docs/configuration/configuration-parameters.md) for the logging controls and artifact layout.
 
 ## Architecture
 
@@ -272,7 +273,7 @@ flowchart LR
 
 The detailed design notes are documented separately in:
 
-- [Architecture notes](docs/internals/Architecture-README.md)
+- [Architecture notes](docs/architecture-and-internals/architecture-notes.md)
 
 That doc covers:
 
