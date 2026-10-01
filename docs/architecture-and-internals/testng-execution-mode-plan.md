@@ -497,7 +497,7 @@ reportportal.properties from the earlier ReportPortal investigation.
 ## Backlog (deferred, not forgotten — not part of this plan's scope)
 
 - ReportPortal integration for TestNG mode — see Phase 3 above for the full investigation; blocked on an upstream dependency bug, not abandoned by choice, explicitly excluded from Phase 5 per direct instruction.
-- Automated one-time Cucumber → TestNG migration tooling (skill/agent) for existing consumers who later want to switch. The manual approach and worked examples are documented in [Cucumber-To-TestNG-Migration-Guide.md](Cucumber-To-TestNG-Migration-Guide.md); an automated generator following the same rules remains unbuilt.
+- Automated one-time Cucumber → TestNG migration tooling (skill/agent) for existing consumers who later want to switch. The manual approach and worked examples are documented in [cucumber-to-testng-migration-guide.md](cucumber-to-testng-migration-guide.md); an automated generator following the same rules remains unbuilt.
 - 5.3's Android/iOS/Windows/Electron/PDF/visual pilots — each blocked on an external resource or scoping decision, see Phase 5.3's table for specifics.
 
 ## Open items

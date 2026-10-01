@@ -235,9 +235,9 @@ Once migrated, TestNG mode gives you the same reporting fidelity as Cucumber mod
 * A rich, masterthought-powered HTML report (Bootstrap navbar, Chart.js tag charts, per-scenario step
   trees with real execution order and nesting depth) is generated automatically, alongside a lightweight
   tag-coverage report and TestNG's own `EmailableReporter2` output. See
-  [TestNG-Execution-Mode-Plan.md](TestNG-Execution-Mode-Plan.md) for the implementation details.
+  [testng-execution-mode-plan.md](testng-execution-mode-plan.md) for the implementation details.
 * ReportPortal integration for TestNG mode is not available - see
-  [TestNG-Execution-Mode-Plan.md](TestNG-Execution-Mode-Plan.md)'s Phase 3 for the investigation and why.
+  [testng-execution-mode-plan.md](testng-execution-mode-plan.md)'s Phase 3 for the investigation and why.
 
 ---
 
