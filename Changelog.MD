@@ -1,3 +1,47 @@
+## 1.0.40
+- Update publishRelease.sh, AGENTS.md, and Changelog
+- Add documentation links across Capability Matrix and README
+- Refactor API client, retry logic, and test metadata
+- chore: update dependencies to latest versions
+- Update dependencies: bump appium to 3.8.0 and webdrivermanager to 6.4.0
+- Enhance formatting and visual layout across all docs
+- Fix case-sensitive links in documentation
+- Enhance documentation visual layout and formatting
+- Rework Key Architectural & Upgrade Notes in README
+- Rename docs/README.md to docs/index.md
+- Reorganize documentation directory layout
+- Update architecture diagrams across documentation
+- Add main resources path to Playwright worker
+- Move Playwright TS screens to main resources
+- Add Transport NSW capabilities JSON & enable CAPS property
+- Enhance Visual OCR support for Playwright engines
+- Make visual retry configurable & update code quality rules
+- Add region visual search, retry & highlight configs
+- Fix anchor resolution fallback in visual proximity
+- Feat: add findAll, proximity, and position locators
+- Feat: add findAll, spatial relative, and VisualBy proxy locators
+- Add 2-pass multi-angle text OCR search in OcrService
+- Add multi-angle rotation scanning fallback to OcrService
+- Clear visual highlights post-action and standardize VisualOcrBL return types
+- Eliminate redundant OCR searches and locator screenshots
+- Add verification and conditional action methods to VisualOcrBL
+- Refactor OcrService and VisualOcrSteps to BL architecture
+- Improve OCR matching accuracy and log fallback option
+- Disable element highlighting in GitHub Actions workflows
+- Add scenarios for highway navigation and include motorway image template
+- Add element highlighting for standard web element interactions
+- Add HIGHLIGHT_ELEMENTS config and update visual docs
+- Add OCR line matching and visual screenshot retries
+- Load IS_OCR_ENABLED and threshold in Setup properties
+- Add environment base URLs for COVID tracking and Transport NSW
+- Add positive Visual OCR BDD test suites and update rules
+- Refactor Visual OCR test suite to follow Feature-Step-BL-Screen pattern
+- Add embedded Visual OCR & Image Recognition subsystem
+- docs: update OCR and Image Recognition implementation roadmap with status and deliverables
+- Add OCR and visual locator facade to Driver
+- refactor: remove Playwright API test support ideas from backlog
+- fix: catch EyesException in instantiateAppiumEyes
+
 ## 1.0.39
 - docs: add RestAssured to Playwright API migration
 - fix: set Connection close for Playwright API
