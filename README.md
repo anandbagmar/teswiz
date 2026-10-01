@@ -1,67 +1,51 @@
-[![](https://badges.frapsoft.com/os/v3/open-source.svg)](https://github.com/anandbagmar/teswiz)
-[![GitHub stars](https://img.shields.io/github/stars/anandbagmar/teswiz.svg?style=flat)](https://github.com/anandbagmar/teswiz/stargazers)
-[![PRs Welcome](https://img.shields.io/badge/PRs-Welcome-brightgreen.svg?style=flat)](https://github.com/anandbagmar/teswiz/pulls)
-[![GitHub forks](https://img.shields.io/github/forks/anandbagmar/teswiz.svg?style=social&label=Fork)](https://github.com/anandbagmar/teswiz/network)
+# 🧙‍♂️ teswiz
 
-## Status
+**Enterprise Multi-Platform Test Automation Framework for Web, Mobile, API, Desktop, Visual AI, & OCR**
 
-[![Release](https://img.shields.io/badge/release-1.0.39-blue.svg)](https://jitpack.io/#anandbagmar/teswiz)
-[![CI](https://github.com/anandbagmar/teswiz/actions/workflows/Build_And_Run_Unit_Tests_CI.yml/badge.svg)](https://github.com/anandbagmar/teswiz/actions/workflows/Build_And_Run_Unit_Tests_CI.yml)
-[![CodeQL](https://github.com/anandbagmar/teswiz/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/anandbagmar/teswiz/actions/workflows/codeql-analysis.yml)
-[![Latest Commit](https://img.shields.io/badge/commit-eec1374-blue.svg)](https://jitpack.io/#anandbagmar/teswiz)
+[![Release](https://img.shields.io/badge/release-1.0.39-blue.svg?style=flat)](https://jitpack.io/#anandbagmar/teswiz)
+[![CI](https://github.com/anandbagmar/teswiz/actions/workflows/Build_And_Run_Unit_Tests_CI.yml/badge.svg?style=flat)](https://github.com/anandbagmar/teswiz/actions/workflows/Build_And_Run_Unit_Tests_CI.yml)
+[![CodeQL](https://github.com/anandbagmar/teswiz/actions/workflows/codeql-analysis.yml/badge.svg?style=flat)](https://github.com/anandbagmar/teswiz/actions/workflows/codeql-analysis.yml)
+[![Open Source](https://badges.frapsoft.com/os/v3/open-source.svg?v=103)](https://github.com/anandbagmar/teswiz)
 
-# teswiz
+[📚 Documentation Hub](docs/index.md) • [🚀 Getting Started](#-getting-started) • [⚙️ Engine Selection](#%EF%B8%8F-engine-selection) • [🏗️ Architecture](#%EF%B8%8F-architecture) • [📊 Reporting](#-visual-testing--reporting)
 
-teswiz is a Java-first automation framework for:
+---
 
-- web: Selenium, Playwright-Java, Playwright-TS
-- api: RestAssured, Playwright-Java, Playwright-TS
-- mobile: Appium Java for Android and iOS
-- desktop/web-adjacent: Electron, Windows apps, PDF validation
-- visual testing: Applitools Eyes and Ultrafast Grid
-- reporting: Cucumber HTML, ReportPortal, engine-aware artifacts
+## 🌟 Capability Matrix
 
-Two ways to author and run tests, selected via `FRAMEWORK`:
+| Platform / Subsystem | Supported Technology & Engines | Key Capabilities |
+| :--- | :--- | :--- |
+| **🌐 Web Automation** | `selenium` • `playwright-java` • `playwright-ts` | Multi-browser, stateful frames, async script execution, grid routing |
+| **📱 Mobile Automation** | Appium 2 (Android & iOS) | Native & web context, device cloud integration, gesture automation |
+| **🔌 API Testing** | `rest-assured` • `playwright-java` • `playwright-ts` | Data parity, 502/503/504 health filter, masked traffic logging (`api-traffic/`) |
+| **🖥️ Desktop & Document** | Electron • Windows AppDriver • Apache PDFBox | Desktop application UI automation & PDF content verification |
+| **👁️ Visual AI** | Applitools Eyes & Ultrafast Grid (UFG) | Cross-browser visual check & AI baseline comparison for Web & Mobile |
+| **🔍 Visual OCR & Image** | Tesseract 5 OCR & OpenCV 4.9 Pyramid Matcher | Embedded 100% offline text & image template locator matching (0 MB core) |
+| **🧪 Test Frameworks** | Cucumber BDD (`.feature`) & TestNG (`@Test`) | Dual framework execution modes via `FRAMEWORK=cucumber \| testng` |
 
-- `FRAMEWORK=cucumber` (default): `feature -> steps -> business layer -> screen contract`
-- `FRAMEWORK=testng`: plain TestNG `@Test` classes call the business/screen layers directly, skipping the Gherkin/step-def layer
+---
 
-teswiz handles persona routing, session lifecycle, platform selection, cloud execution, and reporting underneath either flow.
+> [!IMPORTANT]
+> **Key Architectural & Upgrade Notes**
+>
+> 1. **Dual Framework Execution Modes (`FRAMEWORK`)**:
+>    - `FRAMEWORK=cucumber` (default): Executes `.feature` files via Gherkin step definitions (`feature -> steps -> BL -> screen contract`).
+>    - `FRAMEWORK=testng`: Executes plain TestNG `@Test` classes directly calling Business & Screen layers, skipping step definitions.
+> 2. **Explicit Web Engine Selection (`WEB_ENGINE`)**:
+>    - Set `WEB_ENGINE=selenium` (default), `playwright-java`, or `playwright-ts` in your property config.
+> 3. **Playwright Screen Implementation Model**:
+>    - `playwright-java` uses native Java screen classes (`*ScreenPlaywrightJava.java`).
+>    - `playwright-ts` uses TypeScript screen modules resolved from `src/main/resources/playwright/screens` (common framework screens) and `src/test/resources/playwright/screens` (project screens).
+> 4. **Multi-Engine API Testing (`API_ENGINE`)**:
+>    - Set `API_ENGINE=rest-assured` (default), `playwright-java`, or `playwright-ts`. Automatic health filtering (502/503/504) and traffic logging.
+> 5. **On-Demand OCR & OpenCV Subsystem (`IS_OCR_ENABLED`)**:
+>    - Tesseract 5 OCR and OpenCV multi-scale matching are `compileOnly` dependencies carrying **0 MB core weight**. Set `IS_OCR_ENABLED=true` to enable.
+> 6. **Cloud Provider Parity**:
+>    - Playwright engines support local, Selenium Grid, BrowserStack, and LambdaTest execution. HeadSpin is intentionally unsupported and fails fast.
 
-## Key Architectural & Upgrade Notes
+---
 
-Read these key guidelines before configuring, upgrading, or authoring test suites in **teswiz**:
-
-1. **Dual Framework Execution Modes (`FRAMEWORK`)**:
-   - `FRAMEWORK=cucumber` (default): Executes `.feature` files via Gherkin step definitions.
-   - `FRAMEWORK=testng`: Executes plain TestNG `@Test` classes calling Business & Screen layers directly, skipping step definitions.
-2. **Explicit Web Engine Selection (`WEB_ENGINE`)**:
-   - Supports `selenium` (default), `playwright-java`, and `playwright-ts`.
-   - Existing Selenium suites continue to work uninterrupted. Playwright is opt-in per suite or scenario.
-3. **Playwright Screen Implementation Model**:
-   - `playwright-java` uses native Java screen classes (`*ScreenPlaywrightJava.java`).
-   - `playwright-ts` uses TypeScript screen modules resolved from `src/main/resources/playwright/screens` (framework common screens) and `src/test/resources/playwright/screens` (project screens).
-4. **Unified Multi-Engine API Testing (`API_ENGINE`)**:
-   - Supports `rest-assured` (default), `playwright-java` (`APIRequestContext`), and `playwright-ts` (IPC Worker).
-   - Provides automatic fail-fast environment health filters (502/503/504) and masked request/response logging under `target/reports/api-traffic/`.
-5. **On-Demand OCR & OpenCV Subsystem (`IS_OCR_ENABLED`)**:
-   - Tesseract 5 OCR and OpenCV 4.9 multi-scale matching are `compileOnly` dependencies carrying **0 MB core weight**.
-   - Set `IS_OCR_ENABLED=true` in `config.properties` to enable text/template element locator capabilities across Web and Mobile.
-6. **Visual AI & Ultrafast Grid (`IS_VISUAL`)**:
-   - Set `IS_VISUAL=true` to run Applitools Eyes visual checks. Configure `useUFG: true` in `applitools_config.json` for multi-browser/device parallel rendering.
-7. **Cloud Provider Parity & Fail-Fast Rules**:
-   - `playwright-ts` and `playwright-java` support local, Selenium Grid, BrowserStack, and LambdaTest execution.
-   - Playwright web on HeadSpin is intentionally unsupported and fails fast with a descriptive diagnostic message.
-
-Detailed guidance:
-
-- [Documentation Index](docs/index.md)
-- [Breaking changes](docs/architecture-and-internals/breaking-changes.md)
-- [Playwright migration guide](docs/architecture-and-internals/playwright-migration-guide.md)
-- [Web engine capability & parity guide](docs/engines/web-engine-capabilities.md)
-- [Architecture notes](docs/architecture-and-internals/architecture-notes.md)
-
-## Get started
+## 🚀 Getting Started
 
 ```mermaid
 flowchart TD
@@ -90,93 +74,78 @@ flowchart TD
     H --> I["Generate Engine-Aware Reports & Diagnostics<br/>(Cucumber HTML, ReportPortal, Console Logs, HARs, Traces)"]
 ```
 
-Recommended reading order:
+### 📖 Recommended Reading Order
 
-1. [Prerequisites](docs/getting-started/prerequisites.md)
-2. [Getting started](docs/getting-started/getting-started-guide.md)
-3. [Configure test execution](docs/getting-started/configuring-test-execution.md)
-4. [Write your first test](docs/getting-started/writing-first-test.md)
-5. [Sample tests](docs/getting-started/sample-tests.md)
+1. 🛠️ **[Prerequisites](docs/getting-started/prerequisites.md)**: Tooling, JDK, Node.js, and driver environment setup.
+2. 🎬 **[Getting Started Guide](docs/getting-started/getting-started-guide.md)**: Introduction to teswiz concepts and setup.
+3. 🎛️ **[Configure Test Execution](docs/getting-started/configuring-test-execution.md)**: Setting up properties, platforms, and frameworks.
+4. ✍️ **[Write Your First Test](docs/getting-started/writing-first-test.md)**: Authoring Cucumber features, step definitions, BL, and screens.
+5. 🧪 **[Sample Tests](docs/getting-started/sample-tests.md)**: Overview of bundled sample test suites.
 
-## Choose your web engine
+---
 
-Set this in your suite config:
+## ⚙️ Engine Selection
+
+### 🌐 Web Engine (`WEB_ENGINE`)
+
+Set `WEB_ENGINE` in your suite configuration properties file:
 
 ```properties
 WEB_ENGINE=selenium
 ```
 
-Valid values:
+| Value | Engine | Best Used For | Sample Code |
+| :--- | :--- | :--- | :--- |
+| `selenium` | Selenium WebDriver | Standard W3C web automation | [Selenium Example](docs/examples/web-selenium-example.md) |
+| `playwright-java` | Playwright Java | Fast, modern web execution using Java screen classes | [PW-Java Example](docs/examples/web-playwright-java-example.md) |
+| `playwright-ts` | Playwright TypeScript | High-performance web execution using TypeScript screen modules | [PW-TS Example](docs/examples/web-playwright-ts-example.md) |
 
-- `selenium`
-- `playwright-java`
-- `playwright-ts`
+### 🔌 API Engine (`API_ENGINE`)
 
-Use:
-
-- `selenium` when you want the current Selenium web path
-- `playwright-java` when you want Playwright web with Java screen implementations
-- `playwright-ts` when you want Playwright web with TypeScript screen modules
-
-Examples:
-
-- [Selenium web example](docs/examples/web-selenium-example.md)
-- [Playwright-Java web example](docs/examples/web-playwright-java-example.md)
-- [Playwright-TS web example](docs/examples/web-playwright-ts-example.md)
-- [Android example](docs/examples/android-example.md)
-- [iOS example](docs/examples/ios-example.md)
-- [API example](docs/examples/api-example.md)
-
-## Choose your API engine
-
-Set this in your suite config or environment variable:
+Set `API_ENGINE` in your suite configuration properties file or environment variables:
 
 ```properties
 API_ENGINE=rest-assured
 ```
 
-Valid values:
+| Value | Engine | Best Used For |
+| :--- | :--- | :--- |
+| `rest-assured` | RestAssured HTTP Client | Standard REST API automation (default) |
+| `playwright-java` | Playwright Java `APIRequestContext` | High-throughput native Playwright API calls in Java |
+| `playwright-ts` | Playwright TypeScript Worker Protocol | Asynchronous API execution via TypeScript worker IPC |
 
-- `rest-assured` (default) - uses RestAssured for HTTP execution
-- `playwright-java` - uses Playwright Java APIRequestContext for HTTP execution
-- `playwright-ts` - uses Playwright TypeScript worker protocol for HTTP execution
+> 📖 **Read more**: [API Test Execution Guide](docs/engines/running-api-tests.md) • [API Example](docs/examples/api-example.md)
 
-Read more:
+### 🧪 Test Framework (`FRAMEWORK`)
 
-- [API test execution guide](docs/engines/running-api-tests.md)
-- [API implementation example](docs/examples/api-example.md)
-
-## Choose your test framework
-
-Set this in your suite config or as an env var:
+Set `FRAMEWORK` to choose your test authoring paradigm:
 
 ```properties
 FRAMEWORK=cucumber
 ```
 
-Valid values:
-
-- `cucumber` (default) - runs `.feature` files via Cucumber step definitions, as today
-- `testng` - runs plain TestNG `@Test` classes that call the business/screen layers directly, skipping the step-definition layer
-
-`TAG` filtering works the same way in both modes; in TestNG mode tags map to TestNG groups.
+- `cucumber` (default): Runs `.feature` files via Cucumber step definitions (`feature -> steps -> BL -> screen`).
+- `testng`: Runs plain TestNG `@Test` classes directly invoking Business Layer (`BL`) and Screen methods.
 
 ```bash
+# Execute TestNG mode with tag group filtering
 CONFIG=configs/cli_local_config.properties FRAMEWORK=testng TAG=@calculator ./gradlew run
 ```
 
-A project may contain both Cucumber feature files/step-defs and plain TestNG test classes, but a single execution runs only one mode.
+> 📖 **Read more**: [Cucumber to TestNG Migration Guide](docs/architecture-and-internals/cucumber-to-testng-migration-guide.md)
 
-Read more:
+---
 
-- [Configure test execution](docs/getting-started/configuring-test-execution.md)
-- [Cucumber to TestNG migration guide](docs/architecture-and-internals/cucumber-to-testng-migration-guide.md)
-
-## Common commands
+## 💻 Common Commands
 
 ```bash
+# Clean build and compile
 ./gradlew clean build
+
+# Verify screen contracts across all engines and platforms
 ./gradlew verifyScreenContracts
+
+# Report missing screen contracts
 ./gradlew reportMissingScreenContracts
 ```
 
@@ -186,44 +155,38 @@ If you need a fresh dependency resolution:
 ./gradlew clean build -PforceUpdate=true
 ```
 
-Notes:
+> [!TIP]
+> Use JDK 17 or higher. Run `./gradlew verifyScreenContracts` explicitly whenever adding or migrating screen implementations.
 
-- use JDK 17 or higher
-- run `verifyScreenContracts` explicitly when adding or migrating screens
-- use `-PincludeMissingScreenTargets=true` with `verifyScreenContracts` when you want stricter coverage reporting
+---
 
-## Visual testing and reporting
+## 👁️ Visual Testing & Reporting
 
-teswiz supports:
+**teswiz** integrates seamlessly with enterprise visual AI and real-time reporting infrastructure:
 
-- Applitools Eyes for Selenium web, Playwright-Java web, Playwright-TS web, and mobile visual flows
-- Applitools Ultrafast Grid for web visual runs
-- ReportPortal publishing with engine, platform, provider, persona, and session metadata
-- unified scenario artifacts such as screenshots, traces, console logs, HARs, and provider links
+* **Applitools Eyes & Ultrafast Grid (UFG)**: Visual checking for Selenium Web, Playwright-Java Web, Playwright-TS Web, Android, and iOS.
+* **ReportPortal Integration**: Real-time publishing of engine, platform, provider, persona, and session metadata.
+* **Unified Scenario Diagnostic Artifacts**: Console logs, rolling debug logs, screenshots, traces, HARs, and cloud provider session links.
 
-Read more:
+> 📖 **Read more**: [Running Visual Tests](docs/subsystems/visual-ai-applitools.md) • [ReportPortal Setup](docs/subsystems/reportportal-integration.md) • [Configuration Parameters](docs/configuration/configuration-parameters.md)
 
-- [Running visual tests](docs/subsystems/visual-ai-applitools.md)
-- [ReportPortal setup](docs/subsystems/reportportal-integration.md)
-- [Configuration parameters](docs/configuration/configuration-parameters.md)
+---
 
-## Logging and diagnostics
+## 🔍 Diagnostics & Artifact Layout
 
-Each run writes a primary log under `LOG_DIR/testLogs/teswizSampleTestLog.log`. Console output is kept at high-signal `INFO` level, while the primary file retains `DEBUG` diagnostics. The file rolls daily or when it reaches 50 MB, retaining up to 14 archived files.
+Each test execution writes high-signal `INFO` logs to the console and detailed `DEBUG` diagnostics to rolling log files under `LOG_DIR/testLogs/teswizSampleTestLog.log`.
 
-Scenario logs include the scenario number, example row, and worker thread so parallel executions can be followed reliably. Command stdout and stderr are masked and written under each scenario's `commandOutput/` directory; the main log records the command result and artifact location.
-
-For framework method tracing, enable it explicitly:
+Command stdout and stderr are masked and saved per-command under `commandOutput/`. For framework method tracing, enable AspectJ logging explicitly:
 
 ```bash
 ./gradlew -DTESWIZ_METHOD_LOG_LEVEL=DEBUG run
 ```
 
-See [Debugging tests](docs/architecture-and-internals/debugging-tests.md) and [configuration parameters](docs/configuration/configuration-parameters.md) for the logging controls and artifact layout.
+> 📖 **Read more**: [Debugging Tests Guide](docs/architecture-and-internals/debugging-tests.md)
 
-## Architecture
+---
 
-teswiz uses a unified architecture connecting test frameworks, contract layers, engine adapters, and visual/OCR subsystems:
+## 🏗️ Architecture
 
 ```mermaid
 flowchart LR
@@ -279,55 +242,21 @@ flowchart LR
     CoreEngines --> Subsystems
 ```
 
-The detailed design notes are documented separately in:
+> 📖 **Read detailed design notes**: [Runtime Architecture Notes](docs/architecture-and-internals/architecture-notes.md)
 
-- [Architecture notes](docs/architecture-and-internals/architecture-notes.md)
+---
 
-That doc covers:
+## 🤝 Contributing & Configuration Templates
 
-- Java orchestration layer
-- Selenium, Playwright-Java, and Playwright-TS web engines
-- Appium mobile execution (Android & iOS)
-- RestAssured, Playwright-Java, and Playwright-TS API engines
-- Electron, Windows, and PDF validation engines
-- Applitools Visual AI integration (Web & Mobile)
-- Tesseract OCR & OpenCV Multi-Scale Image Recognition
-- screen resolution and contract verification
-- cloud/provider adapters
-- reporting and visual integration
+`configs/teswiz/teswiz_config.properties.template` is the canonical contract for all configuration files. Every property in `configs/**/*.properties` must be synchronized with the template.
 
-## CI notes
+Before opening a pull request:
 
-For GitHub Actions in this repo:
+```bash
+# Validate property configuration templates
+./gradlew validateConfigurationTemplates
+```
 
-- use `actions/setup-node` before Node-based installs
-- use `npm ci` in CI workflows
-- commit `package-lock.json` whenever `package.json` dependencies or overrides change
-- install Playwright browsers only in workflows that actually execute Playwright
-- keep only the latest artifact set per workflow for user-created branches
-- do not retain artifacts for dependency-management branches such as `dependabot/*` or `renovate/*`
+---
 
-## Contributing
-
-If you are adding or migrating screen implementations:
-
-1. keep the screen contract stable
-2. add the engine/platform-specific implementation
-3. run `./gradlew verifyScreenContracts`
-4. add or update the relevant sample/docs if user-facing behavior changed
-
-### Configuration files
-
-`configs/teswiz/teswiz_config.properties.template` is the canonical contract for execution
-configuration files. Every `configs/**/*.properties` file must contain every property from the
-template, either active or commented, while preserving values specific to that example.
-
-When adding or changing a configuration file:
-
-1. update the canonical template first when introducing a supported property
-2. keep the property in the same order as the template
-3. leave unused properties commented with their default or supported values
-4. run `./gradlew validateConfigurationTemplates`
-
-The same validation runs automatically as part of `./gradlew test`, `./gradlew check`,
-`./gradlew build`, `./gradlew shadowJar`, and CI builds.
+[📚 Documentation Hub](docs/index.md) • [Report an Issue](https://github.com/anandbagmar/teswiz/issues)
