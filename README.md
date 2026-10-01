@@ -28,22 +28,30 @@ Two ways to author and run tests, selected via `FRAMEWORK`:
 
 teswiz handles persona routing, session lifecycle, platform selection, cloud execution, and reporting underneath either flow.
 
-## Important upgrade notes
+## Key Architectural & Upgrade Notes
 
-Read these before upgrading or enabling Playwright:
+Read these key guidelines before configuring, upgrading, or authoring test suites in **teswiz**:
 
-1. Web engine selection is explicit.
-   `WEB_ENGINE` now supports `selenium`, `playwright-java`, and `playwright-ts`.
-   Checked-in sample web configs should set this explicitly, even though the runtime still defaults to `selenium` when omitted.
-2. Playwright is opt-in, not a replacement.
-   Existing Selenium suites continue to work. To use Playwright, choose the engine and add the matching screen implementation.
-3. Playwright screen model differs by engine.
-   `playwright-java` uses Java screen implementations.
-   `playwright-ts` uses TypeScript screen modules under `src/test/resources/playwright/screens`.
-4. Older context imports changed in `1.0.13+`.
-   Replace `com.context.*` imports with `com.znsio.teswiz.context.*`.
-5. Playwright web on HeadSpin is intentionally unsupported.
-   teswiz now fails fast with an explicit message if that combination is selected.
+1. **Dual Framework Execution Modes (`FRAMEWORK`)**:
+   - `FRAMEWORK=cucumber` (default): Executes `.feature` files via Gherkin step definitions.
+   - `FRAMEWORK=testng`: Executes plain TestNG `@Test` classes calling Business & Screen layers directly, skipping step definitions.
+2. **Explicit Web Engine Selection (`WEB_ENGINE`)**:
+   - Supports `selenium` (default), `playwright-java`, and `playwright-ts`.
+   - Existing Selenium suites continue to work uninterrupted. Playwright is opt-in per suite or scenario.
+3. **Playwright Screen Implementation Model**:
+   - `playwright-java` uses native Java screen classes (`*ScreenPlaywrightJava.java`).
+   - `playwright-ts` uses TypeScript screen modules resolved from `src/main/resources/playwright/screens` (framework common screens) and `src/test/resources/playwright/screens` (project screens).
+4. **Unified Multi-Engine API Testing (`API_ENGINE`)**:
+   - Supports `rest-assured` (default), `playwright-java` (`APIRequestContext`), and `playwright-ts` (IPC Worker).
+   - Provides automatic fail-fast environment health filters (502/503/504) and masked request/response logging under `target/reports/api-traffic/`.
+5. **On-Demand OCR & OpenCV Subsystem (`IS_OCR_ENABLED`)**:
+   - Tesseract 5 OCR and OpenCV 4.9 multi-scale matching are `compileOnly` dependencies carrying **0 MB core weight**.
+   - Set `IS_OCR_ENABLED=true` in `config.properties` to enable text/template element locator capabilities across Web and Mobile.
+6. **Visual AI & Ultrafast Grid (`IS_VISUAL`)**:
+   - Set `IS_VISUAL=true` to run Applitools Eyes visual checks. Configure `useUFG: true` in `applitools_config.json` for multi-browser/device parallel rendering.
+7. **Cloud Provider Parity & Fail-Fast Rules**:
+   - `playwright-ts` and `playwright-java` support local, Selenium Grid, BrowserStack, and LambdaTest execution.
+   - Playwright web on HeadSpin is intentionally unsupported and fails fast with a descriptive diagnostic message.
 
 Detailed guidance:
 
