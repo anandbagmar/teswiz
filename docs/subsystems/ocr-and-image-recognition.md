@@ -1,5 +1,5 @@
 # OCR & Image Recognition Subsystem in teswiz
-[📚 Documentation Index](../index.md) | [🏠 Main README](../../README.md)
+[📚 Documentation Index](../index.md) • [🏠 Main README](../../README.md)
 
 ---
 
@@ -28,13 +28,13 @@
 ---
 
 
-## Overview
+## 🛠️ Overview
 
 **teswiz** provides an embedded, 100% offline, free, Apache 2.0 open-source Visual OCR (Optical Character Recognition) and Multi-Scale Image Recognition subsystem. This subsystem enables automated test scripts across **Selenium (Web)**, **Playwright**, and **Appium (Android & iOS Mobile)** to locate and interact with UI elements on screen using exact/fuzzy text matching or image template matching without relying on traditional DOM or native XPaths.
 
 ---
 
-## Architecture & Zero Core Weight Principles
+## 🏗️ Architecture & Zero Core Weight Principles
 
 1. **Zero Core Footprint**: `teswiz` core JAR declares `opencv`, `tess4j`, and `onnxruntime` as `compileOnly` dependencies. Downstream projects using `teswiz` carry **0 MB additional weight** by default.
 2. **On-Demand Enablement**: When `IS_OCR_ENABLED=true` is set in configuration properties or environment variables, visual recognition capability is activated, and runtime dependencies are downloaded on demand if needed.
@@ -43,7 +43,7 @@
 
 ---
 
-## Subsystem Architecture & Interaction Flow
+## 🏗️ Subsystem Architecture & Interaction Flow
 
 ```mermaid
 flowchart TD
@@ -91,7 +91,7 @@ sequenceDiagram
 
 ---
 
-## High-DPI / Retina Display Scaling & Portability
+## 🖥️ High-DPI / Retina Display Scaling & Portability
 
 The visual subsystem handles screen resolutions, High-DPI displays (macOS Retina 2x/3x, Windows 125%/150%/200% scale factor), and headless browser modes (`HEADLESS=true`):
 
@@ -101,7 +101,7 @@ The visual subsystem handles screen resolutions, High-DPI displays (macOS Retina
 
 ---
 
-## Technology Stack
+## 🧰 Technology Stack
 
 - **Tess4J 5 (Tesseract 5 OCR)**: Offline optical character recognition engine for detecting text regions and extracting exact line bounding boxes on screen capture byte streams.
 - **OpenCV 4.9 (Multi-Scale Image Pyramid Matching)**: OpenCV template matching using multi-scale Gaussian pyramids (`0.5x` to `2.0x` scaling) to match target image templates regardless of device screen resolution or DPI scaling.
@@ -109,7 +109,7 @@ The visual subsystem handles screen resolutions, High-DPI displays (macOS Retina
 
 ---
 
-## Configuration Properties
+## 🎛️ Configuration Properties
 
 Configure visual parameters in canonical template `configs/teswiz/teswiz_config.properties.template` or your project execution `.properties` file:
 
@@ -132,7 +132,7 @@ System properties or environment variables take precedence over configuration fi
 
 ---
 
-## Usage Guide & API Examples
+## 💡 Usage Guide & API Examples
 
 ### 1. Locate Element by Text (`findByText`)
 

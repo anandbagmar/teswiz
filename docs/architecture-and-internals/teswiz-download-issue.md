@@ -1,5 +1,5 @@
 # Trouble downloading teswiz from jitpack.io?
-[📚 Documentation Index](../index.md) | [🏠 Main README](../../README.md)
+[📚 Documentation Index](../index.md) • [🏠 Main README](../../README.md)
 
 ---
 

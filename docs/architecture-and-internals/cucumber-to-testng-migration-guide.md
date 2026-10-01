@@ -1,5 +1,5 @@
 # Cucumber to TestNG Migration Guide
-[📚 Documentation Index](../index.md) | [🏠 Main README](../../README.md)
+[📚 Documentation Index](../index.md) • [🏠 Main README](../../README.md)
 
 ---
 
@@ -158,7 +158,7 @@ tags). If a Cucumber scenario relies on `TAG="@schedule and @signup"` semantics,
 test a single composite group instead (e.g. `@Test(groups = "scheduleAndSignup")`) rather than trying to
 express the AND at select-time.
 
-## Scenario Outline / Examples → `@DataProvider`
+## 💡 Scenario Outline / Examples → `@DataProvider`
 
 A `Scenario Outline` with an `Examples` table maps directly to a TestNG `@DataProvider`. From
 `cyptoAPI.feature`:
@@ -227,7 +227,7 @@ Be honest with yourself about these before assuming a scenario is a trivial port
 
 ---
 
-## Reporting parity
+## 📊 Reporting parity
 
 Once migrated, TestNG mode gives you the same reporting fidelity as Cucumber mode:
 
@@ -241,7 +241,7 @@ Once migrated, TestNG mode gives you the same reporting fidelity as Cucumber mod
 
 ---
 
-## Reference examples in this repo
+## 💡 Reference examples in this repo
 
 Every TestNG pilot already committed under
 [`src/test/java/com/znsio/teswiz/testng/`](../../src/test/java/com/znsio/teswiz/testng/) is a real,

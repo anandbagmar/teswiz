@@ -1,5 +1,5 @@
 # TestNG-only Execution Mode — Implementation Plan & Checklist
-[📚 Documentation Index](../index.md) | [🏠 Main README](../../README.md)
+[📚 Documentation Index](../index.md) • [🏠 Main README](../../README.md)
 
 ---
 
@@ -68,7 +68,7 @@ TDD throughout: a failing test before the implementation that makes it pass. Sma
 
 ---
 
-## Phase 0 — Align `AspectLogging` scope
+## 📝 Phase 0 — Align `AspectLogging` scope
 
 - [x] **0.0** Discovered and confirmed (empirically, via a throwaway probe test) that the two classes shared an identical FQN and only one was ever loaded per JVM — `src/test`'s copy silently shadowed `src/main`'s during `./gradlew test`. Decision taken: rename the `src/test` copy to `ConsumerLayerAspectLogging` so both aspects are genuinely distinct and simultaneously active/testable.
 - [x] **0.1** Write failing weaving-verification test: `src/test/java/com/znsio/teswiz/aspect/AspectLoggingWeavingTest.java`
@@ -291,7 +291,7 @@ scan package on FRAMEWORK accordingly.
 
 ---
 
-## Phase 3 — ReportPortal step-level logging for TestNG mode (ATTEMPTED, DEFERRED — reverted cleanly)
+## 📝 Phase 3 — ReportPortal step-level logging for TestNG mode (ATTEMPTED, DEFERRED — reverted cleanly)
 
 **Goal**: give TestNG mode step-level RP visibility equivalent to what Cucumber mode already gets natively via `agent-java-cucumber6`.
 

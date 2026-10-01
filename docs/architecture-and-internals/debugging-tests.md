@@ -1,5 +1,5 @@
 # Debugging a test in teswiz
-[📚 Documentation Index](../index.md) | [🏠 Main README](../../README.md)
+[📚 Documentation Index](../index.md) • [🏠 Main README](../../README.md)
 
 ---
 
@@ -20,7 +20,7 @@
 
 This guide collects the most useful places to look when a test fails or behaves unexpectedly.
 
-## 1. Start with the run configuration
+## 🎛️ 1. Start with the run configuration
 
 Check the values that control where and how the test runs:
 

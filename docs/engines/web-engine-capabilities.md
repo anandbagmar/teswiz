@@ -1,45 +1,35 @@
-# Web Engine Capability & Parity Guide
-[📚 Documentation Index](../index.md) | [🏠 Main README](../../README.md)
+[📚 Documentation Index](../index.md) • [🏠 Main README](../../README.md)
 
 ---
 
+# 🌐 Web Engine Capability & Parity Guide
 
-## Table of Contents
-
-- [1. Engine Parity & Capability Support Matrix](#1-engine-parity--capability-support-matrix)
-- [2. Fail-Fast & Diagnostic Messages](#2-fail-fast--diagnostic-messages)
-  - [Diagnostic Message Example:](#diagnostic-message-example)
-- [3. Recommended Architectural Patterns](#3-recommended-architectural-patterns)
+This guide outlines feature parity, capability discovery, and cross-engine support across `selenium`, `playwright-java`, and `playwright-ts` in **teswiz**.
 
 ---
 
+## 📊 Engine Parity & Capability Matrix
 
-This document outlines feature parity, capability discovery, and cross-engine support across `selenium`, `playwright-java`, and `playwright-ts` in `teswiz`.
-
----
-
-## 1. Engine Parity & Capability Support Matrix
-
-| Capability | Selenium | Playwright Java | Playwright TS | Description & Native Alternatives |
+| Capability | Selenium (`selenium`) | Playwright Java (`playwright-java`) | Playwright TS (`playwright-ts`) | Description & Native Alternatives |
 | :--- | :---: | :---: | :---: | :--- |
 | **Viewport Override** | ✅ | ✅ | ✅ | Configured via `TESWIZ_DRIVER_VIEWPORT_WIDTH` & `TESWIZ_DRIVER_VIEWPORT_HEIGHT`. |
 | **Cookie Management** | ✅ | ✅ | ✅ | `addCookie`, `isCookiePresent`, `deleteCookie` via `manage().cookies()` or `BrowserContext.addCookies`. |
-| **Stateful Frame Switching** | ✅ | ✅ | ✅ | `switchTo().frame(index)` and `switchTo().frame(nameOrId)`. In Playwright Java, native `FrameLocator` is also recommended. |
+| **Stateful Frame Switching** | ✅ | ✅ | ✅ | `switchTo().frame(index)` and `switchTo().frame(nameOrId)`. In Playwright Java, native `FrameLocator` is recommended. |
 | **Window Resizing** | ✅ | ✅ | ✅ | `manage().window().setSize(...)` / `setViewportSize(...)`. |
 | **Async Script Execution** | ✅ | ✅ | ✅ | `executeAsyncScript` with Promise completion and timeout support. |
 | **Network Interception** | ✅ | ✅ | ✅ | Route handling and request interception. |
+| **Applitools Visual AI** | ✅ | ✅ | ✅ | Classic Eyes and Ultrafast Grid (UFG) check window support. |
+| **Offline OCR / OpenCV** | ✅ | ✅ | ✅ | Dynamic text locator discovery and multi-scale template matching. |
 
 ---
 
-## 2. Fail-Fast & Diagnostic Messages
+## 🚨 Fail-Fast Strategy & Diagnostic Messages
 
-`teswiz` enforces a **fail-fast strategy** to prevent silent test failures or lossy behavior when using non-Selenium web engines.
+**teswiz** enforces a **fail-fast strategy** to prevent silent test failures or lossy behavior when using non-Selenium web engines.
 
 When an unsupported capability or invalid operation is invoked:
 1. **Pre-flight Check**: Validated during driver instantiation or Screen contract initialization.
 2. **Runtime Protection**: Throws a structured `UnsupportedOperationException` detailing the exact reason, native alternatives, and resolution steps.
-
-### Diagnostic Message Example:
 
 ```text
 ================================================================================
@@ -59,15 +49,15 @@ HOW TO RESOLVE:
             Set WEB_ENGINE=playwright-ts or WEB_ENGINE=selenium in properties.
 
 DOCUMENTATION:
-  https://github.com/znsio/teswiz/blob/main/docs/web-engine-capabilities.md
+  docs/engines/web-engine-capabilities.md
 ================================================================================
 ```
 
 ---
 
-## 3. Recommended Architectural Patterns
+## 🏗️ Recommended Architectural Patterns
 
-When authoring web tests in `teswiz`:
+When authoring web tests in **teswiz**:
 
 1. **Step Definitions (`*Steps.java`)**:
    - Must only call Business Layer methods.
@@ -77,8 +67,8 @@ When authoring web tests in `teswiz`:
    - Manages assertion logic (`SoftAssertions`) and flow coordination.
    - Calls Screen contract methods (`Screen.get()`).
 
-3. **Screen Contracts (`*Screen.java`) & Implementations**:
+3. **Screen Contracts & Implementations**:
    - Abstract contract in `com.znsio.teswiz.screen.<domain>`.
    - Selenium implementation in `com.znsio.teswiz.screen.web.<domain>.*ScreenWeb`.
    - Playwright Java implementation in `com.znsio.teswiz.screen.web.playwrightjava.<domain>.*ScreenPlaywrightJava`.
-   - Playwright TS implementation in `src/test/resources/playwright/screens/<domain>/*-screen.ts`.
+   - Playwright TS implementation in `src/main/resources/playwright/screens/<domain>/*-screen.ts` (framework common screens) and `src/test/resources/playwright/screens/<domain>/*-screen.ts` (project screens).

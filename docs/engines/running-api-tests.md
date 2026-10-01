@@ -1,5 +1,5 @@
 # API Test Execution
-[📚 Documentation Index](../index.md) | [🏠 Main README](../../README.md)
+[📚 Documentation Index](../index.md) • [🏠 Main README](../../README.md)
 
 ---
 
@@ -19,7 +19,7 @@
 ---
 
 
-## Command: 
+## 💻 Command:
 
 ```bash
 CONFIG=./configs/<apiConfig.properties> TAG=<ScenarioTag> PLATFORM=api ./gradlew run
@@ -33,7 +33,7 @@ API_ENGINE=playwright-java CONFIG=./configs/api_local_config.properties TAG=@api
 API_ENGINE=playwright-ts CONFIG=./configs/api_local_config.properties TAG=@api PLATFORM=api ./gradlew run
 ```
 
-## Supported API Engines (`API_ENGINE`)
+## 🔌 Supported API Engines (`API_ENGINE`)
 
 teswiz supports three API engines through the unified `ApiService` facade:
 

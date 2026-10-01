@@ -1,5 +1,5 @@
 # Playwright Migration & Implementation Guide
-[📚 Documentation Index](../index.md) | [🏠 Main README](../../README.md)
+[📚 Documentation Index](../index.md) • [🏠 Main README](../../README.md)
 
 ---
 
@@ -161,7 +161,7 @@ export async function searchForTheProduct(screen: ScreenContext, productName: st
 
 ---
 
-## 6. Verifying Screen Parity and Compliance
+## 🧪 6. Verifying Screen Parity and Compliance
 
 Teswiz's own build defines a `verifyScreenContracts` Gradle task (see `build.gradle`) that checks teswiz's own
 screen contracts under `src/test/java/com/znsio/teswiz/screen` for missing classes, missing TypeScript modules,

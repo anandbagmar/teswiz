@@ -1,5 +1,5 @@
 # Web Playwright-TS Test Implementation Example
-[📚 Documentation Index](../index.md) | [🏠 Main README](../../README.md)
+[📚 Documentation Index](../index.md) • [🏠 Main README](../../README.md)
 
 ---
 
@@ -17,7 +17,7 @@ This guide provides a concrete example of implementing a Playwright-TS (TypeScri
 
 ---
 
-## 1. Config Setup (`config.properties`)
+## 🚀 1. Config Setup (`config.properties`)
 ```properties
 PLATFORM=web
 WEB_ENGINE=playwright-ts

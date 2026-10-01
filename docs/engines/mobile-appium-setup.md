@@ -1,5 +1,5 @@
 # Appium 2 – iOS Setup
-[📚 Documentation Index](../index.md) | [🏠 Main README](../../README.md)
+[📚 Documentation Index](../index.md) • [🏠 Main README](../../README.md)
 
 ---
 
@@ -21,7 +21,7 @@ Refer to the [Prerequisites](../getting-started/prerequisites.md) document for g
 Verify XCUITest Driver installation path.
    ![XCUITest-driver-path.png](../images/XCUITest-driver-path.png)
 
-## Setting Variables for Project Setup
+## 🚀 Setting Variables for Project Setup
 Set the **usePrebuiltWDA** capability to false in a capabilities file, you can use the following format:
     
     "usePrebuiltWDA": false

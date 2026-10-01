@@ -1,222 +1,163 @@
-# Configuring the test execution
-[📚 Documentation Index](../index.md) | [🏠 Main README](../../README.md)
+[📚 Documentation Index](../index.md) • [🏠 Main README](../../README.md)
 
 ---
 
+# 🎛️ Configuring Test Execution
 
-## Table of Contents
+**teswiz** test execution is highly configurable via configuration property files, system properties, and environment variables.
 
-  - [Choosing between Cucumber and plain TestNG (`FRAMEWORK`)](#choosing-between-cucumber-and-plain-testng-framework)
-  - [Run Android app tests](#run-android-app-tests)
-  - [Run iOS app tests](#run-ios-app-tests)
-  - [Run Windows application tests](#run-windows-application-tests)
-  - [Run on Web](#run-on-web)
-  - [Run electron app tests](#run-electron-app-tests)
-  - [Run Api](#run-api)
-  - [Running Multi-User simulations](#running-multi-user-simulations)
-  - [Running Multi-User scenarios in Mobile Emulation View of Web Browsers](#running-multi-user-scenarios-in-mobile-emulation-view-of-web-browsers)
-  - [Using a different apk for execution (Android):](#using-a-different-apk-for-execution-android)
-  - [Overriding Teswiz runtime defaults](#overriding-teswiz-runtime-defaults)
-  - [Running a subset of tests:](#running-a-subset-of-tests)
+> 📖 **Reference**: See complete [Configuration Parameters Reference](../configuration/configuration-parameters.md).
 
 ---
 
+## 🧪 Framework Selection (`FRAMEWORK`)
 
-Test execution using teswiz is highly configurable. This enables you to control what type of tests you want to execute, and where (environment, local/cloud), etc.
+Choose between Cucumber BDD and plain TestNG `@Test` execution:
 
-See all the [Configuration parameters here](../configuration/configuration-parameters.md)
+```properties
+FRAMEWORK=cucumber
+```
 
-### Choosing between Cucumber and plain TestNG (`FRAMEWORK`)
+| Value | Description | Best Used For |
+| :--- | :--- | :--- |
+| `cucumber` (default) | Executes Gherkin `.feature` files via step definitions | BDD collaboration & Gherkin scenarios |
+| `testng` | Executes plain TestNG `@Test` classes calling BL & Screen contracts directly | Code-first automation without Gherkin step defs |
 
-By default, teswiz executes Cucumber `.feature` files via step definitions that call into your business/screen layers. If you don't need Gherkin's collaborative/BDD layer, you can instead write plain TestNG tests that call the same business/screen layers directly:
+```bash
+# Execute TestNG mode with tag group filtering
+CONFIG=configs/cli_local_config.properties FRAMEWORK=testng TAG=@calculator ./gradlew run
+```
 
-* `FRAMEWORK=cucumber` (default) - runs `.feature` files via Cucumber, as today.
-* `FRAMEWORK=testng` - runs plain TestNG `@Test` classes instead, skipping the step-definition layer entirely.
+> [!NOTE]
+> In TestNG mode, tags map to TestNG groups (e.g. `TAG=@calculator` selects tests declared with `@Test(groups = "calculator")`).
+>
+> 📖 **Read more**: [Cucumber to TestNG Migration Guide](../architecture-and-internals/cucumber-to-testng-migration-guide.md)
 
-Sample command:
+---
 
-    CONFIG=configs/cli_local_config.properties FRAMEWORK=testng TAG=@calculator ./gradlew run
+## 📱 Mobile Execution
 
-A project may contain both Cucumber feature files/step-defs and plain TestNG test classes, but a single execution runs only one mode - whichever `FRAMEWORK` selects. `TAG` filtering works the same way in both modes: in TestNG mode, tags map to TestNG groups (e.g. `@calculator` selects tests declared with `@Test(groups = "calculator")`).
+### 🤖 Android Execution
 
-TestNG mode supports the same `TAG` syntax as above, translated to TestNG's include/exclude groups:
+Execute Android test suites locally or on cloud device farms:
 
-* `TAG=@calculator` - runs tests in the `calculator` group.
-* `TAG="@cli @calculator"` or `TAG="@cli or @calculator"` - runs tests in either group.
-* `TAG="@calculator and not @wip"` - runs tests in the `calculator` group, excluding any also tagged `wip`.
+```bash
+PLATFORM=android ./gradlew run
+```
 
-One TestNG limitation to be aware of: TestNG's group model can select "any of these groups" and separately exclude "any of these groups", but it cannot require a test belong to two groups at once. So `TAG="@schedule and @signup"` (a true AND of two positive tags) is not supported in TestNG mode and raises a clear error - if you need that combination, give the test a single composite group instead (e.g. `@Test(groups = "scheduleAndSignup")`).
+#### Local Android Parallel Execution
+teswiz automatically detects connected Android devices and emulators, distributing test scenarios in parallel.
 
-If you have existing Cucumber feature files and want to port some of them to TestNG mode, see the
-[Cucumber to TestNG Migration Guide](../architecture-and-internals/cucumber-to-testng-migration-guide.md).
+#### pCloudy Cloud Execution
+Set the following environment variables to run against pCloudy:
 
-### Run Android app tests
+```bash
+PLATFORM=android RUN_IN_CI=true CLOUD_USERNAME=myusername CLOUD_KEY=abcd1234abcd ./gradlew run
+```
 
-To run all the tests against the Android platform, run the following command:
+#### TestMu AI (formerly LambdaTest) Execution
+Run test scenarios on TestMu AI using provided capability templates:
 
-    PLATFORM=android ./gradlew run
+```bash
+CONFIG=configs/theapp/theapp_lambdatest_android_config.properties PLATFORM=android ./gradlew run
+```
 
-#### Run on Local Android devices:
+> [!TIP]
+> - Set `CLOUD_UPLOAD_APP=true` to automatically upload local APKs to TestMu AI.
+> - If `CLOUD_UPLOAD_APP=false`, set `APP_PATH=lt://...` to reference an existing remote app ID.
 
-The framework, by default, automatically figures out if there are multiple devices connected to the machine, and if so,
-will run the tests in parallel
+### 🍎 iOS Execution
 
-#### Run on pCloudy's Device Farm:
+```bash
+PLATFORM=iOS ./gradlew run
+```
 
-**To enable running the tests on pCloudy's Device Farm, the following additional environment variables need to be provided:**
+---
 
-* `RUN_IN_CI=true` - Default is `false`
-* `CLOUD_USERNAME` - pCloudy username
-* `CLOUD_KEY` - pCloudy password
+## 🌐 Web Execution
 
-Sample command:
+Execute web scenarios across Selenium, Playwright-Java, or Playwright-TS engines:
 
-    PLATFORM=android RUN_IN_CI=true CLOUD_USERNAME=myusername CLOUD_KEY=abcd1234abcd ./gradlew run
+```bash
+# Run using default Selenium engine
+PLATFORM=web ./gradlew run
 
-For other cloud configurations, refer here: https://github.com/AppiumTestDistribution/AppiumTestDistribution
+# Override web engine to Playwright TypeScript
+PLATFORM=web WEB_ENGINE=playwright-ts ./gradlew run
 
-#### Run on TestMu AI (formerly LambdaTest)
+# Override web engine to Playwright Java
+PLATFORM=web WEB_ENGINE=playwright-java ./gradlew run
+```
 
-teswiz supports running against TestMu AI using the sample configs and capabilities in the repository.
+---
 
-* Supported config/capability samples:
-  * `configs/theapp/theapp_lambdatest_web_config.properties`
-  * `configs/theapp/theapp_lambdatest_android_config.properties`
-  * `configs/theapp/theapp_lambdatest_ios_config.properties`
-  * `caps/theapp/theapp_lambdatest_web_capabilities.json`
-  * `caps/theapp/theapp_lambdatest_android_capabilities.json`
-  * `caps/theapp/theapp_lambdatest_ios_capabilities.json`
-* Web runs use W3C-safe capabilities, with TestMu-specific keys inside `LT:Options`.
-* Mobile runs use TestMu-specific keys inside `lt:options`.
-* `network` and `appProfiling` are read from capability files rather than being hardcoded by the framework.
-* Native app uploads:
-  * If `CLOUD_UPLOAD_APP=true`, teswiz uploads the app to TestMu AI and uses the returned `lt://...` app id automatically.
-  * If `CLOUD_UPLOAD_APP=false`, you must provide `APP_PATH=lt://...` as an environment variable, system property, or in the config file.
-  * Do not use a local file path such as `temp/sampleApps/TheApp.ipa` when `CLOUD_UPLOAD_APP=false`.
+## 🔌 API Execution
 
-### Run iOS app tests
+Run API suites using RestAssured or Playwright engines:
 
-    PLATFORM=iOS ./gradlew run
+```bash
+# Run using default RestAssured engine
+PLATFORM=api ./gradlew run
 
-### Run Windows application tests
+# Override API engine to Playwright Java APIRequestContext
+PLATFORM=api API_ENGINE=playwright-java ./gradlew run
 
-    PLATFORM=windows ./gradlew run
+# Override API engine to Playwright TypeScript Worker
+PLATFORM=api API_ENGINE=playwright-ts ./gradlew run
+```
 
-### Run on Web
+---
 
-    PLATFORM=web ./gradlew run
+## 🖥️ Desktop & Web-Adjacent Execution
 
-All checked-in sample config files default `WEB_ENGINE=selenium`.
-To run the same web scenario on a Playwright engine instead, override it on the command line:
+```bash
+# Run Windows Application tests
+PLATFORM=windows ./gradlew run
 
-    PLATFORM=web WEB_ENGINE=playwright-ts ./gradlew run
+# Run Electron Desktop Application tests
+PLATFORM=electron ./gradlew run
+```
 
-or
+---
 
-    PLATFORM=web WEB_ENGINE=playwright-java ./gradlew run
+## 👥 Multi-Persona & Multi-User Simulations
 
-### Run electron app tests
+teswiz scenarios can orchestrate interactions between multiple personas and platforms within a single scenario (e.g., Buyer on Web, Seller on Android):
 
-    PLATFORM=electron ./gradlew run
+```bash
+# Run multi-user scenario across Android & Web
+TAG=@multiuser-android-web ./gradlew run
 
-### Run Api
+# Run multi-user scenario across multiple Web browsers
+TAG=@multiuser-web-web ./gradlew run
+```
 
-    PLATFORM=api ./gradlew run
+---
 
-All checked-in sample API config files default `API_ENGINE=rest-assured`.
-To run API scenarios with a specific engine, override `API_ENGINE` on the command line:
+## 🏷️ Filtering & Running Subsets of Tests
 
-    PLATFORM=api API_ENGINE=playwright-java ./gradlew run
+Filter scenario execution using tags:
 
-or
+```bash
+# Run scenarios tagged with @schedule
+PLATFORM=android TAG=@schedule ./gradlew run
 
-    PLATFORM=api API_ENGINE=playwright-ts ./gradlew run
+# Run scenarios matching AND condition
+PLATFORM=android TAG="@schedule and @signup" ./gradlew run
 
-### Running Multi-User simulations
+# Run scenarios matching OR condition
+PLATFORM=android TAG="@schedule or @signup" ./gradlew run
+```
 
-The framework now supports running multiuser scenarios. This means 1 cucumber scenario can orchestrate the interaction between multiple instances of the application-under-test in multiple platforms - ex: Android and Web
+---
 
-Example:
+## ⚙️ Overriding Runtime Defaults
 
-![multi-user-example-annotated.png](../images/Multiuser-example-annotated.png)
+Override default timeouts, retry counts, or driver settings via `TESWIZ_RUNTIME_CONFIG_FILE`:
 
-In the above example
-You can run these tests as below:
+```bash
+TESWIZ_RUNTIME_CONFIG_FILE=./configs/teswiz/runtime.properties ./gradlew run
+```
 
-#### To run tests on **android & web** platforms
-
-    TAG=@multiuser-android-web
-
-**_Current restriction - 1 android device & max 2 web browsers_**
-
-#### To run tests on **web** platforms
-
-    TAG=@multiuser-web-web 
-
-**_Current restriction - max 2 web browsers_**
-
-### Running Multi-User scenarios in Mobile Emulation View of Web Browsers
-
-The framework now supports launching web browsers in Mobile Emulation View.
-Instead of passing simple browser names in steps like 'chrome', 'firefox', etc,
-you can pass more informative parameters like 'chrome-mobile1', 'safari-mobile2', etc
-
-These informative parameters refer to Browser Config json file for actual device names
-
-Example:
-
-![mobile-emulation-on-web-browser.png](../images/mobile-emulation-on-web-browser.png)
-
-### Using a different apk for execution (Android):
-
-To run tests using a specific apk (instead of the one specified in caps/capabilities.json, OR,
-caps/pcloudy_capabilties.json, the following additional environment variable need to be provided:
-
-* `APP_PATH='<path to apk>'`
-
-When `APP_PATH` is a remote URL, teswiz validates the URL and downloads the app when it is not already available
-locally. Each remote operation uses a 15-second connect/read timeout by default. Configure this timeout with the
-`TESWIZ_APP_DOWNLOAD_TIMEOUT_SECONDS` system property or environment variable when larger apps or slower networks
-require more time.
-
-For example:
-
-    TESWIZ_APP_DOWNLOAD_TIMEOUT_SECONDS=60 APP_PATH=https://example.com/app.apk PLATFORM=android ./gradlew run
-
-### Overriding Teswiz runtime defaults
-
-Execution defaults such as wait timeouts, retry counts, viewport dimensions, Playwright timeouts, and driver limits
-can be placed in the execution properties file or an optional external file selected with
-`TESWIZ_RUNTIME_CONFIG_FILE`. Start with the complete
-[`teswiz_config.properties.template`](../../configs/teswiz/teswiz_config.properties.template) file:
-
-    TESWIZ_RUNTIME_CONFIG_FILE=./configs/teswiz/runtime.properties ./gradlew run
-
-The built-in defaults are loaded first. Values in the external file override them, and matching system properties or
-environment variables have the highest precedence. Runtime values are validated at startup; invalid or out-of-range
-values fail with the property name and expected type or range.
-
-Copy the template for a specific API, web, Android, or iOS suite and uncomment the platform-specific values you need.
-
-Sample command:
-
-    APP_PATH=~/Downloads/MyLatestApp.apk PLATFORM=android ./gradlew run
-
-
-### Running a subset of tests:
-
-To run a subset of tests, for a given platform, the following additional environment variables need to be provided:
-
-* `TAG=@schedule` - This will run all tests tagged with the platform name provided, except tests tagged as "@wip"
-* `TAG="@schedule and @signup"` - This will run all tests tagged with the name **schedule AND signup** for the platform
-  name provided, except tests tagged as "@wip"
-* `TAG="@schedule or @signup"` - This will run all tests tagged with the name **schedule OR signup** for the platform
-  name provided, except tests tagged as "@wip"
-
-Sample commands:
-
-    PLATFORM=android TAG=@schedule ./gradlew run`
-
-    PLATFORM=android TAG="@schedule and @signup" ./gradlew run`
-
-    PLATFORM=android TAG="@schedule or @signup" ./gradlew run`
+> [!NOTE]
+> Values set in system properties or environment variables take highest precedence over property files.

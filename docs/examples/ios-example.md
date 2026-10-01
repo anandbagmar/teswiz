@@ -1,5 +1,5 @@
 # iOS Test Implementation Example
-[📚 Documentation Index](../index.md) | [🏠 Main README](../../README.md)
+[📚 Documentation Index](../index.md) • [🏠 Main README](../../README.md)
 
 ---
 
@@ -70,7 +70,7 @@ public class InAMeetingScreenIOS extends InAMeetingScreen {
 
 ---
 
-## 3. Capabilities Configuration (`ios_caps.json`)
+## 🎛️ 3. Capabilities Configuration (`ios_caps.json`)
 ```json
 {
   "platformName": "iOS",

@@ -1,5 +1,5 @@
 # teswiz Architecture Notes
-[📚 Documentation Index](../index.md) | [🏠 Main README](../../README.md)
+[📚 Documentation Index](../index.md) • [🏠 Main README](../../README.md)
 
 ---
 
@@ -51,7 +51,7 @@ For upgrade steps, use:
 
 This doc focuses on architecture, not migration.
 
-## Engine architecture
+## 🏗️ Engine architecture
 
 teswiz treats web and mobile execution as first-class variants behind one shared business-facing contract.
 The execution choice is persona-scoped and session-scoped, so multi-user scenarios can mix engines safely.

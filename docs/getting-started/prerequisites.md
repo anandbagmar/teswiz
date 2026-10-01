@@ -1,81 +1,83 @@
-[📚 Documentation Index](../index.md) | [🏠 Main README](../../README.md)
+[📚 Documentation Index](../index.md) • [🏠 Main README](../../README.md)
 
 ---
 
+# 🛠️ System Prerequisites & Setup Guide
 
-## Table of Contents
-
-- [Pre Requisites](#pre-requisites)
-  - [Install Appium 2](#install-appium-2)
-- [Verifying the installation:](#verifying-the-installation)
-  - [Plugins](#plugins)
-  - [Utilities](#utilities)
-  - [Drivers](#drivers)
-  - [To verify appium installation is successful, run](#to-verify-appium-installation-is-successful-run)
-- [Setting Variables for Project Setup](#setting-variables-for-project-setup)
-- [Install and configure Appium Inspector](#install-and-configure-appium-inspector)
+Ensure your development environment meets the required dependencies before running **teswiz** test suites.
 
 ---
 
-## Pre Requisites
-* JDK
-    * **Minimum JDK version: 17**
-    * **Set JAVA_HOME environment variable**
-    * You can install JDK from here: https://adoptopenjdk.net/
-* Setup the Android environment for test execution:
-    * **Set ANDROID_HOME environment variable**
-    * **Refer to this post for instructions how to automatically setup your environment - https://applitools.com/blog/automatic-appium-setup/**
-    * Additional References:
-        * Setup Android Command-line tools and SDK - https://developer.android.com/studio#command-tools
-* Remove previous Appium 1.x installation if any.
-* Before you begin, please ensure that you have Node.js and npm (Node Package Manager) installed on your system. You can download and install them from the official Node.js website: <br>
-  https://nodejs.org
+## 📋 Environment Requirements Matrix
 
-### Install Appium 2
-  * You can install Appium 2.x and all relevant drivers, plugins and utilities using the [package.json](../../package.json)
+| Requirement | Minimum Version | Required Setup & Environment Variables | Installation Link |
+| :--- | :--- | :--- | :--- |
+| **Java Development Kit (JDK)** | JDK 17+ | Set `JAVA_HOME` pointing to JDK 17 installation directory | [Eclipse Adoptium (JDK 17)](https://adoptium.net/) |
+| **Node.js & npm** | Node.js 18+ | Required for Playwright TS worker, Appium 2, and CLI dependencies | [Node.js Official Download](https://nodejs.org) |
+| **Android SDK** | Android SDK 33+ | Set `ANDROID_HOME` pointing to Android SDK path | [Android Studio / Command-Line Tools](https://developer.android.com/studio#command-tools) |
+| **Appium 2** | Appium 2.x | Installed automatically via project `package.json` | Running `npm install` |
 
-        npm install
-  * Wait for the installation process to complete. npm will download and install the required packages into a folder named node_modules in your project's directory.
+---
 
-## Verifying the installation:
+## 🚀 ⚡ Quick Setup Instructions
 
-Once the installation is finished, check the output of `npm list`
+### 1. Install Node.js Dependencies & Appium 2
 
-You should see the following:
+Run `npm install` in the project root to install Appium 2, required Appium drivers, and Playwright dependencies:
 
-### Plugins
-    appium-device-farm
-    appium-dashboard
-    @appium/relaxed-caps-plugin --> plugin for relaxing appium's requirement for vendor prefixes on capabilities
+```bash
+npm install
+```
 
-### Utilities
-    go-ios --> A [cross platform installation](https://github.com/danielpaulus/go-ios), this is an operating system independent implementation of iOS device features. You can run UI tests, launch or kill apps, install apps etc. with it. MacOS users will need to install this driver to unzip files.
-    @appium/doctor --> A utility to check the status of your appium installation
+> [!NOTE]
+> `npm install` installs Appium 2 and the required drivers into `./node_modules`.
 
-### Drivers
-    appium-xcuitest-driver --> iOS driver
-    appium-uiautomator2-driver --> Android driver
+---
 
-### To verify appium installation is successful, run
+## 🧪 Verifying Installation
 
-    appium-doctor
+Verify installed Appium components by running `npx appium doctor` or inspecting `npm list`:
 
-There should be no errors reported
+### 🔌 Installed Drivers & Plugins
 
-## Setting Variables for Project Setup
-Add `appiumServerPath` to the capabilities.json file:
+| Category | Package Name | Purpose |
+| :--- | :--- | :--- |
+| **iOS Driver** | `appium-xcuitest-driver` | Automation driver for iOS devices and simulators |
+| **Android Driver** | `appium-uiautomator2-driver` | Automation driver for Android devices and emulators |
+| **Device Farm Plugin** | `appium-device-farm` | Multi-device farm parallel execution plugin |
+| **Dashboard Plugin** | `appium-dashboard` | Real-time device execution dashboard |
+| **Relaxed Caps Plugin** | `@appium/relaxed-caps-plugin` | Relaxes vendor capability prefix constraints |
 
-    "appiumServerPath": "./node_modules/appium/build/lib/main.js"
+### 🛠️ Diagnostics
 
-Optionally set `appiumServerLogLevel` inside the `android` or `iOS` section in capabilities.json.
-If this key is not set (or is blank), teswiz starts Appium with log level `info`.
+Run Appium Doctor to check system setup:
 
-    "android": {
-      "appiumServerLogLevel": "info"
-    }
+```bash
+npx appium-doctor
+```
 
-## Install and configure Appium Inspector
+> [!TIP]
+> Ensure all mandatory checks pass cleanly with no reported errors.
 
-Latest [Appium Inspector](https://github.com/appium/appium-inspector/releases) supporting Appium 2
+---
 
-Appium Inspector [Capability guidelines and examples](https://appium.io/docs/en/2.0/guides/caps/)
+## 🎛️ Appium Capabilities Configuration
+
+Add `appiumServerPath` to your `capabilities.json` file:
+
+```json
+{
+  "appiumServerPath": "./node_modules/appium/build/lib/main.js",
+  "android": {
+    "appiumServerLogLevel": "info"
+  }
+}
+```
+
+---
+
+## 🚀 📱 Appium Inspector Setup
+
+To inspect element locators for Android and iOS apps, install the latest [Appium Inspector](https://github.com/appium/appium-inspector/releases).
+
+> 📖 **Reference**: [Appium Capability Guidelines](https://appium.io/docs/en/2.0/guides/caps/)

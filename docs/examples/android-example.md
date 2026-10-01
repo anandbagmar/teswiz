@@ -1,5 +1,5 @@
 # Android Test Implementation Example
-[📚 Documentation Index](../index.md) | [🏠 Main README](../../README.md)
+[📚 Documentation Index](../index.md) • [🏠 Main README](../../README.md)
 
 ---
 
@@ -133,7 +133,7 @@ public class InAMeetingScreenAndroid extends InAMeetingScreen {
 
 ---
 
-## 6. Capabilities Configuration (`android_caps.json`)
+## 🎛️ 6. Capabilities Configuration (`android_caps.json`)
 ```json
 {
   "platformName": "Android",
