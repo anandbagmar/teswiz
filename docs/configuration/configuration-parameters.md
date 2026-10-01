@@ -53,6 +53,7 @@ For the complete property list and all available defaults, use the
                            Default is selenium. All checked-in sample config.properties files now declare this explicitly.
     API_ENGINE=rest-assured -> Which API engine should be used for API testing? Supported: rest-assured | playwright-java | playwright-ts
                                Default is rest-assured. Dynamically dispatches HTTP calls to RestAssured, Playwright Java APIRequestContext, or Playwright TS worker.
+    API_MAX_RETRIES=3 -> Maximum retry attempts for transient API network timeouts or 5xx server issues (default: 3).
     BUILD_ID=BUILDID -> The key name of the environment variable that has the corresponding build id of the test execution
     CLEANUP_DEVICE_BEFORE_STARTING_EXECUTION=true -> Uninstall app from local Android devices before starting test execution
     CLOUD_KEY=<auth / api key> for pCloudy / Headspin

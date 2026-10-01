@@ -61,7 +61,7 @@ flowchart TD
 All engines support full payload serialization and data type parity:
 - Data payloads: `Map<String, Object>`, `Collection`/`List`, `JSONObject`, `JSONArray`, `String`, numbers, booleans, and byte arrays.
 - HTTP operations: `GET`, `POST`, `PUT`, `PATCH`, `DELETE`.
-- Environment health filters: Automatic detection and `EnvironmentSetupException` throwing on `502`, `503`, and `504` status codes.
+- Transient Retry Handling: Automatic retries (configurable via `API_MAX_RETRIES`, default: 3 attempts with progressive linear backoff) on network timeouts, connection drops, and gateway server errors (`502 Bad Gateway`, `503 Service Unavailable`, `504 Gateway Timeout`). Application-level status codes (e.g. 200, 400, 401, 404, 422, and 500 Internal Server Error) represent expected application responses or application bugs and return immediately without retry.
 - Traffic logging: Automatic masked HTTP request/response logging under `api-traffic/`.
 
 ## API Config.properties File Params:
@@ -76,6 +76,7 @@ LOG_PROPERTIES_FILE=./src/test/resources/log4j2.properties
 PARALLEL=<parallel count>
 PLATFORM=api
 API_ENGINE=rest-assured
+API_MAX_RETRIES=3
 PROXY_KEY=HTTP_PROXY
 REPORT_PORTAL_FILE=src/test/resources/reportportal.properties
 RUN_IN_CI=<true/false>

@@ -53,97 +53,134 @@ public class PlaywrightApiEngineClient implements ApiEngineClient {
         return url != null && url.endsWith("?") ? url.substring(0, url.length() - 1) : url;
     }
 
+    private void applyQueryParams(RequestOptions options, Map<String, Object> queryParams) {
+        if (queryParams == null || queryParams.isEmpty()) {
+            return;
+        }
+        for (Map.Entry<String, Object> entry : queryParams.entrySet()) {
+            if (entry.getValue() != null) {
+                options.setQueryParam(entry.getKey(), String.valueOf(entry.getValue()));
+            }
+        }
+    }
+
+    private String applyRequestBody(RequestOptions options, Object body) {
+        if (body == null) {
+            return "";
+        }
+        if (body instanceof byte[]) {
+            options.setData((byte[]) body);
+            return "[binary data]";
+        }
+        if (body instanceof String) {
+            options.setData((String) body);
+            return (String) body;
+        }
+        if (body instanceof Map) {
+            String jsonStr = new org.json.JSONObject((Map<?, ?>) body).toString();
+            options.setData(jsonStr);
+            return jsonStr;
+        }
+        if (body instanceof java.util.Collection) {
+            String jsonStr = new org.json.JSONArray((java.util.Collection<?>) body).toString();
+            options.setData(jsonStr);
+            return jsonStr;
+        }
+        if (body instanceof org.json.JSONObject || body instanceof org.json.JSONArray) {
+            String jsonStr = body.toString();
+            options.setData(jsonStr);
+            return jsonStr;
+        }
+        String strBody = body.toString();
+        options.setData(strBody);
+        return strBody;
+    }
+
+    private APIResponse dispatchHttpMethod(String method, String url, RequestOptions options) {
+        return switch (method.toUpperCase()) {
+            case "GET" -> getRequestContext().get(url, options);
+            case "POST" -> getRequestContext().post(url, options);
+            case "PUT" -> getRequestContext().put(url, options);
+            case "PATCH" -> getRequestContext().patch(url, options);
+            case "DELETE" -> getRequestContext().delete(url, options);
+            case "HEAD" -> getRequestContext().fetch(url, options.setMethod("HEAD"));
+            case "OPTIONS" -> getRequestContext().fetch(url, options.setMethod("OPTIONS"));
+            default -> getRequestContext().fetch(url, options.setMethod(method));
+        };
+    }
+
     private TeswizApiResponse executeRequest(String method, String url, Object body, Map<String, Object> queryParams, Map<String, String> headers) {
         LOGGER.info("Processing {} call via Playwright API Engine", method);
         RequestOptions options = createRequestOptions(headers, body != null);
         String finalUrl = stripTrailingQuestionMark(url);
+        applyQueryParams(options, queryParams);
+        String requestBodyStr = applyRequestBody(options, body);
 
-        if (queryParams != null && !queryParams.isEmpty()) {
-            for (Map.Entry<String, Object> entry : queryParams.entrySet()) {
-                if (entry.getValue() != null) {
-                    options.setQueryParam(entry.getKey(), String.valueOf(entry.getValue()));
+        int maxRetries = OverriddenVariable.getOverriddenIntValue("API_MAX_RETRIES", 3);
+        Exception lastException = null;
+
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            long startTime = System.currentTimeMillis();
+            try {
+                APIResponse response = dispatchHttpMethod(method, finalUrl, options);
+                long responseTime = System.currentTimeMillis() - startTime;
+
+                int statusCode = response.status();
+                String responseBody = response.text();
+                byte[] responseBytes = response.body();
+                Map<String, String> responseHeaders = response.headers();
+
+                TeswizApiResponse teswizApiResponse = new TeswizApiResponse(statusCode, responseBody, responseBytes, responseHeaders, responseTime);
+
+                String attemptLabel = maxRetries > 1 ? String.format(" [Attempt %d/%d]", attempt, maxRetries) : "";
+                String trafficFile = recordTrafficSafely(method, finalUrl + attemptLabel, headers != null ? headers.toString() : "{}", requestBodyStr, statusCode, responseHeaders.toString(), responseBody);
+
+                checkEnvironmentIssue(finalUrl, statusCode, responseBody);
+
+                if (attempt > 1) {
+                    LOGGER.info("API request {} {} succeeded on retry attempt {}/{} | Recorded API traffic file: {}",
+                            method, finalUrl, attempt, maxRetries, trafficFile);
                 }
+
+                return teswizApiResponse;
+
+            } catch (EnvironmentSetupException e) {
+                lastException = e;
+                handleRetryOrThrow(method, finalUrl, attempt, maxRetries, headers, requestBodyStr, e);
+            } catch (Exception e) {
+                lastException = e;
+                handleRetryOrThrow(method, finalUrl, attempt, maxRetries, headers, requestBodyStr, e);
             }
         }
+        throw new RuntimeException("Playwright API request failed for " + method + " " + finalUrl + ": " + (lastException != null ? lastException.getMessage() : "unknown error"), lastException);
+    }
 
-        String requestBodyStr = "";
-        if (body != null) {
-            if (body instanceof byte[]) {
-                options.setData((byte[]) body);
-                requestBodyStr = "[binary data]";
-            } else if (body instanceof String) {
-                options.setData((String) body);
-                requestBodyStr = (String) body;
-            } else if (body instanceof Map) {
-                String jsonStr = new org.json.JSONObject((Map<?, ?>) body).toString();
-                options.setData(jsonStr);
-                requestBodyStr = jsonStr;
-            } else if (body instanceof java.util.Collection) {
-                String jsonStr = new org.json.JSONArray((java.util.Collection<?>) body).toString();
-                options.setData(jsonStr);
-                requestBodyStr = jsonStr;
-            } else if (body instanceof org.json.JSONObject || body instanceof org.json.JSONArray) {
-                String jsonStr = body.toString();
-                options.setData(jsonStr);
-                requestBodyStr = jsonStr;
-            } else {
-                String strBody = body.toString();
-                options.setData(strBody);
-                requestBodyStr = strBody;
-            }
+    private void handleRetryOrThrow(String method, String url, int attempt, int maxRetries, Map<String, String> headers, String requestBodyStr, Exception e) {
+        String attemptLabel = String.format(" [Attempt %d/%d FAILED: %s]", attempt, maxRetries, e.getMessage());
+        String trafficFile = recordTrafficSafely(method, url + attemptLabel, headers != null ? headers.toString() : "{}", requestBodyStr, -1, "{}", "(call failed on attempt " + attempt + "/" + maxRetries + ": " + e.getMessage() + ")");
+        String trafficFileInfo = (trafficFile != null && !trafficFile.isEmpty()) ? " | Recorded API traffic file: " + trafficFile : "";
+
+        if (attempt < maxRetries) {
+            long delayMs = attempt * 1000L;
+            LOGGER.warn("API request {} {} failed on attempt {}/{} ({}){} | Retrying attempt {}/{} in {} ms...",
+                    method, url, attempt, maxRetries, e.getMessage(), trafficFileInfo, attempt + 1, maxRetries, delayMs);
+            sleepSafely(delayMs);
+        } else if (e instanceof EnvironmentSetupException) {
+            LOGGER.error("API request {} {} failed after {} attempts due to environment issue{} | Cause: {}",
+                    method, url, maxRetries, trafficFileInfo, e.getMessage());
+            throw (EnvironmentSetupException) e;
+        } else {
+            LOGGER.error("API request {} {} failed after {} attempts{} | Cause: {}",
+                    method, url, maxRetries, trafficFileInfo, e.getMessage());
+            throw new RuntimeException("Playwright API request failed for " + method + " " + url + " after " + maxRetries + " attempts" + trafficFileInfo + ": " + e.getMessage(), e);
         }
+    }
 
-        APIResponse response = null;
-        long startTime = System.currentTimeMillis();
+    private void sleepSafely(long millis) {
         try {
-            switch (method.toUpperCase()) {
-                case "GET":
-                    response = getRequestContext().get(finalUrl, options);
-                    break;
-                case "POST":
-                    response = getRequestContext().post(finalUrl, options);
-                    break;
-                case "PUT":
-                    response = getRequestContext().put(finalUrl, options);
-                    break;
-                case "PATCH":
-                    response = getRequestContext().patch(finalUrl, options);
-                    break;
-                case "DELETE":
-                    response = getRequestContext().delete(finalUrl, options);
-                    break;
-                case "HEAD":
-                    response = getRequestContext().fetch(finalUrl, options.setMethod("HEAD"));
-                    break;
-                case "OPTIONS":
-                    response = getRequestContext().fetch(finalUrl, options.setMethod("OPTIONS"));
-                    break;
-                default:
-                    response = getRequestContext().fetch(finalUrl, options.setMethod(method));
-                    break;
-            }
-            long responseTime = System.currentTimeMillis() - startTime;
-            int statusCode = response.status();
-            String responseBody = response.text();
-            byte[] responseBytes = response.body();
-            Map<String, String> responseHeaders = response.headers();
-
-            TeswizApiResponse teswizApiResponse = new TeswizApiResponse(statusCode, responseBody, responseBytes, responseHeaders, responseTime);
-
-            recordTrafficSafely(method, finalUrl, headers != null ? headers.toString() : "{}", requestBodyStr, statusCode, responseHeaders.toString(), responseBody);
-            checkEnvironmentIssue(finalUrl, statusCode, responseBody);
-
-            return teswizApiResponse;
-
-        } catch (EnvironmentSetupException e) {
-            throw e;
-        } catch (Exception e) {
-            if (response != null) {
-                recordTrafficSafely(method, finalUrl, headers != null ? headers.toString() : "{}", requestBodyStr, response.status(), response.headers().toString(), response.text());
-            } else {
-                recordTrafficSafely(method, finalUrl, headers != null ? headers.toString() : "{}", requestBodyStr, -1, "{}", "(no response — call failed: " + e.getMessage() + ")");
-            }
-            throw new RuntimeException("Playwright API request failed for " + method + " " + finalUrl + ": " + e.getMessage(), e);
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -160,9 +197,9 @@ public class PlaywrightApiEngineClient implements ApiEngineClient {
         }
     }
 
-    private void recordTrafficSafely(String method, String endpoint, String reqHeaders, String reqBody, int statusCode, String respHeaders, String respBody) {
+    private String recordTrafficSafely(String method, String endpoint, String reqHeaders, String reqBody, int statusCode, String respHeaders, String respBody) {
         if (!ApiTrafficLogging.isEnabled()) {
-            return;
+            return "";
         }
         try {
             ApiTrafficRecorder recorder = new ApiTrafficRecorder(new TeswizScenarioDirectoryResolver());
@@ -170,8 +207,10 @@ public class PlaywrightApiEngineClient implements ApiEngineClient {
             String relativePath = recorder.record(record);
             LOGGER.info("API call {} {} -> {} | detail: {}",
                     record.method(), SensitiveDataMasker.mask(record.endpoint()), record.statusCode(), relativePath);
+            return relativePath;
         } catch (Exception e) {
             LOGGER.warn("Failed to record api-traffic for {} {}: {}", method, endpoint, e.getMessage());
+            return "";
         }
     }
 
