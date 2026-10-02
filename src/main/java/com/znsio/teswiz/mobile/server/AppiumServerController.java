@@ -116,6 +116,7 @@ public class AppiumServerController {
             builder.withArgument(GeneralServerFlag.BASEPATH, "/wd/hub");
         }
         AppiumDriverLocalService localService = builder.build();
+        localService.clearOutPutStreams();
         localService.start();
         LOGGER.info("{} Appium Server Started at......{}", LOGGER.getName(), localService.getUrl());
         setAppiumDriverLocalService(localService);
