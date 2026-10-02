@@ -29,6 +29,16 @@ Feature: Scenarios for "The App"
     Given I login with invalid credentials - "znsio1", "invalid password"
     Then I try to login again with invalid credentials - "znsio2", "another invalid password"
 
+#  IS_OCR_ENABLED=true CONFIG=./configs/theapp/theapp_local_web_config.properties PLATFORM=web TAG="@theapp_ocr" ./gradlew run
+#  IS_OCR_ENABLED=true CONFIG=./configs/theapp/theapp_local_android_config.properties PLATFORM=android TAG="@theapp_ocr" ./gradlew run
+#  IS_OCR_ENABLED=true CONFIG=./configs/theapp/theapp_local_ios_config.properties PLATFORM=iOS TAG="@theapp_ocr" ./gradlew run
+  @android @web @iOS @ocr @theapp_ocr
+  Scenario: Verify login screen element detection using Visual OCR across platforms
+    Given I start the app
+    When I visually inspect "Login screen element" using OCR text "Login"
+    Then I verify at least 1 visual elements are present using OCR text "Login"
+
+
 #  CONFIG=./configs/theapp/theapp_local_web_config.properties PLATFORM=web TAG="@theapp3 and @invalidLogin2" ./gradlew run
 #  CONFIG=./configs/theapp/theapp_local_android_config.properties PLATFORM=android TAG="@theapp3 and @invalidLogin2" ./gradlew run
   @android @web @invalidLogin @invalidLogin2 @theapp3

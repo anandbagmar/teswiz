@@ -35,6 +35,11 @@ public final class AppPathResolver {
         }
         String fileName = new File(appPath).getName();
         String localFilePath = saveToLocalDirectory + File.separator + fileName;
+        if (new File(localFilePath).exists()) {
+            LOGGER.info(String.format("App is already available at path: '%s'. Skipping network URL validation.",
+                    SensitiveDataMasker.mask(localFilePath)));
+            return localFilePath;
+        }
         if (isAppPathUrl(appPath)) {
             LOGGER.info(String.format("App url '%s' is provided in capabilities. Download it, if " +
                             "not already available at '%s'",
@@ -116,10 +121,20 @@ public final class AppPathResolver {
         try {
             HttpURLConnection connection = (HttpURLConnection) fileUrl.openConnection();
             connection.setRequestMethod("GET");
+            connection.setInstanceFollowRedirects(true);
             int timeoutMillis = getAppDownloadTimeoutMillis();
             connection.setConnectTimeout(timeoutMillis);
             connection.setReadTimeout(timeoutMillis);
             int responseCode = connection.getResponseCode();
+
+            if (isRedirect(responseCode)) {
+                String location = connection.getHeaderField("Location");
+                if (location != null && !location.isBlank()) {
+                    LOGGER.info("Following HTTP redirect to: " + location);
+                    return getHttpURLConnection(new URL(location));
+                }
+            }
+
             if (responseCode != HttpURLConnection.HTTP_OK) {
                 throw new InvalidTestDataException(
                         String.format("Unable to connect to url: '%s'. Got connection error '%d'", fileUrl,
@@ -151,10 +166,21 @@ public final class AppPathResolver {
         try {
             HttpURLConnection connection = (HttpURLConnection) new URL(appPathUrl).openConnection();
             connection.setRequestMethod("HEAD");
+            connection.setInstanceFollowRedirects(true);
             int timeoutMillis = getAppDownloadTimeoutMillis();
             connection.setConnectTimeout(timeoutMillis);
             connection.setReadTimeout(timeoutMillis);
             int responseCode = connection.getResponseCode();
+
+            if (isRedirect(responseCode)) {
+                String location = connection.getHeaderField("Location");
+                connection.disconnect();
+                if (location != null && !location.isBlank()) {
+                    validateAppUrl(location);
+                    return;
+                }
+            }
+
             connection.disconnect();
             if (responseCode != HttpURLConnection.HTTP_OK) {
                 LOGGER.info(String.format("'%s' is an invalid URL.", appPathUrl));
@@ -165,6 +191,14 @@ public final class AppPathResolver {
             throw new InvalidTestDataException(
                     String.format("Failed to make a connection using url: '%s'", appPathUrl) + e);
         }
+    }
+
+    private static boolean isRedirect(int statusCode) {
+        return statusCode == HttpURLConnection.HTTP_MOVED_TEMP
+                || statusCode == HttpURLConnection.HTTP_MOVED_PERM
+                || statusCode == HttpURLConnection.HTTP_SEE_OTHER
+                || statusCode == 307
+                || statusCode == 308;
     }
 
     static int getAppDownloadTimeoutMillis() {
