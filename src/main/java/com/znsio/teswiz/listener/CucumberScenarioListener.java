@@ -3,7 +3,7 @@ package com.znsio.teswiz.listener;
 import com.znsio.teswiz.context.SessionContext;
 import com.znsio.teswiz.context.TestExecutionContext;
 import com.znsio.teswiz.entities.TEST_CONTEXT;
-import com.znsio.teswiz.runner.AppiumServerManager;
+import com.znsio.teswiz.mobile.server.AppiumServerController;
 import com.znsio.teswiz.runner.FileLocations;
 import com.znsio.teswiz.config.browser.PlaywrightBrowserConfigMigrationReporter;
 import com.znsio.teswiz.runner.Visual;
@@ -99,7 +99,10 @@ public class CucumberScenarioListener implements ConcurrentEventListener {
         if (event.getTestStep() instanceof PickleStepTestStep pickleStepTestStep) {
             String stepText = pickleStepTestStep.getStep().getKeyword() + pickleStepTestStep.getStep().getText();
             CurrentStep.setStepText(Thread.currentThread().getId(), stepText);
-            LOGGER.info(String.format("--> STEP STARTED: %s", stepText));
+            LOGGER.info(String.format("%n--------------------------------------------------------------------------------%n"
+                            + "--> STEP STARTED: %s%n"
+                            + "--------------------------------------------------------------------------------",
+                    stepText));
         }
     }
 
@@ -108,7 +111,10 @@ public class CucumberScenarioListener implements ConcurrentEventListener {
             String stepText = pickleStepTestStep.getStep().getKeyword() + pickleStepTestStep.getStep().getText();
             Status status = event.getResult().getStatus();
             long durationMs = event.getResult().getDuration().toMillis();
-            LOGGER.info(String.format("<-- STEP FINISHED: %s [%s] (%d ms)", stepText, status, durationMs));
+            LOGGER.info(String.format("%n--------------------------------------------------------------------------------%n"
+                            + "<-- STEP FINISHED: %s [%s] (%d ms)%n"
+                            + "--------------------------------------------------------------------------------",
+                    stepText, status, durationMs));
             CurrentStep.clearStepText(Thread.currentThread().getId());
         }
     }
@@ -142,7 +148,7 @@ public class CucumberScenarioListener implements ConcurrentEventListener {
                 runningScenarioNumber.get(), passedCount.get(), failedCount.get(), skippedCount.get(), durationMillis));
         try {
             Visual.closeBatch();
-            AppiumServerManager.destroyAppiumNode();
+            AppiumServerController.destroyAppiumNode();
             PlaywrightBrowserConfigMigrationReporter.emitSummaryIfPresent();
             SessionContext.setReportPortalLaunchURL();
         } catch (Exception e) {
