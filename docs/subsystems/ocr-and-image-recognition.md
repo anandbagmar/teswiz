@@ -120,6 +120,9 @@ IS_OCR_ENABLED=false
 # Visual match confidence threshold (0.0 to 1.0, default 0.85)
 VISUAL_CONFIDENCE_THRESHOLD=0.85
 
+# Configurable post-action wait delay in seconds after visual clicks/inputs (default 0)
+VISUAL_ACTION_WAIT_SECONDS=0
+
 # Enable/Disable interactive element highlighting (default true)
 HIGHLIGHT_ELEMENTS=true
 ```
@@ -128,6 +131,7 @@ HIGHLIGHT_ELEMENTS=true
 System properties or environment variables take precedence over configuration files:
 - `IS_OCR_ENABLED=true`
 - `VISUAL_CONFIDENCE_THRESHOLD=0.90`
+- `VISUAL_ACTION_WAIT_SECONDS=2`
 - `HIGHLIGHT_ELEMENTS=true`
 
 ---

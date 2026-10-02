@@ -109,7 +109,7 @@ public class VisualOcrScreenWeb extends VisualOcrScreen {
         visually.checkWindow(SCREEN_NAME, "Before visual click OCR text: " + ocrText);
         element.click();
         driver.clearHighlight();
-        waitFor(5);
+        waitForVisualActionIfConfigured();
         visually.checkWindow(SCREEN_NAME, "After visual click OCR text: " + ocrText);
         return this;
     }
@@ -123,7 +123,7 @@ public class VisualOcrScreenWeb extends VisualOcrScreen {
         visually.checkWindow(SCREEN_NAME, "Before visual click: " + elementName);
         element.click();
         driver.clearHighlight();
-        waitFor(5);
+        waitForVisualActionIfConfigured();
         visually.checkWindow(SCREEN_NAME, "After visual click: " + elementName);
         return this;
     }
@@ -137,7 +137,7 @@ public class VisualOcrScreenWeb extends VisualOcrScreen {
         visually.checkWindow(SCREEN_NAME, "Before visual click: " + elementName);
         element.click();
         driver.clearHighlight();
-        waitFor(5);
+        waitForVisualActionIfConfigured();
         visually.checkWindow(SCREEN_NAME, "After visual click: " + elementName);
         return this;
     }
@@ -151,7 +151,7 @@ public class VisualOcrScreenWeb extends VisualOcrScreen {
         visually.checkWindow(SCREEN_NAME, "Before visual click: " + elementName);
         element.click();
         driver.clearHighlight();
-        waitFor(5);
+        waitForVisualActionIfConfigured();
         visually.checkWindow(SCREEN_NAME, "After visual click: " + elementName);
         return this;
     }
@@ -165,7 +165,7 @@ public class VisualOcrScreenWeb extends VisualOcrScreen {
         visually.checkWindow(SCREEN_NAME, "Before visual enter text: " + ocrText);
         element.sendKeys(textToEnter);
         driver.clearHighlight();
-        waitFor(2);
+        waitForVisualActionIfConfigured();
         visually.checkWindow(SCREEN_NAME, "After visual enter text: " + ocrText);
         return this;
     }
@@ -238,7 +238,7 @@ public class VisualOcrScreenWeb extends VisualOcrScreen {
         visually.checkWindow(SCREEN_NAME, "Before visual click at index " + index + " OCR text: " + ocrText);
         target.click();
         driver.clearHighlight();
-        waitFor(5);
+        waitForVisualActionIfConfigured();
         visually.checkWindow(SCREEN_NAME, "After visual click at index " + index + " OCR text: " + ocrText);
         return this;
     }
@@ -254,7 +254,7 @@ public class VisualOcrScreenWeb extends VisualOcrScreen {
         visually.checkWindow(SCREEN_NAME, "Before visual click position '" + positionText + "' OCR text: " + ocrText);
         target.click();
         driver.clearHighlight();
-        waitFor(5);
+        waitForVisualActionIfConfigured();
         visually.checkWindow(SCREEN_NAME, "After visual click position '" + positionText + "' OCR text: " + ocrText);
         return this;
     }
@@ -270,7 +270,7 @@ public class VisualOcrScreenWeb extends VisualOcrScreen {
         visually.checkWindow(SCREEN_NAME, "Before visual click position '" + positionText + "' image: " + imagePaths);
         target.click();
         driver.clearHighlight();
-        waitFor(5);
+        waitForVisualActionIfConfigured();
         visually.checkWindow(SCREEN_NAME, "After visual click position '" + positionText + "' image: " + imagePaths);
         return this;
     }
@@ -284,7 +284,7 @@ public class VisualOcrScreenWeb extends VisualOcrScreen {
         visually.checkWindow(SCREEN_NAME, "Before visual click relative: " + targetText);
         element.click();
         driver.clearHighlight();
-        waitFor(5);
+        waitForVisualActionIfConfigured();
         visually.checkWindow(SCREEN_NAME, "After visual click relative: " + targetText);
         return this;
     }
@@ -298,7 +298,7 @@ public class VisualOcrScreenWeb extends VisualOcrScreen {
         visually.checkWindow(SCREEN_NAME, "Before try visual click OCR text: " + ocrText);
         element.click();
         driver.clearHighlight();
-        waitFor(5);
+        waitForVisualActionIfConfigured();
         visually.checkWindow(SCREEN_NAME, "After try visual click OCR text: " + ocrText);
         return true;
     }
@@ -312,7 +312,7 @@ public class VisualOcrScreenWeb extends VisualOcrScreen {
         visually.checkWindow(SCREEN_NAME, "Before try visual click: " + elementName);
         element.click();
         driver.clearHighlight();
-        waitFor(5);
+        waitForVisualActionIfConfigured();
         visually.checkWindow(SCREEN_NAME, "After try visual click: " + elementName);
         return true;
     }
@@ -326,7 +326,7 @@ public class VisualOcrScreenWeb extends VisualOcrScreen {
         visually.checkWindow(SCREEN_NAME, "Before try visual click: " + elementName);
         element.click();
         driver.clearHighlight();
-        waitFor(5);
+        waitForVisualActionIfConfigured();
         visually.checkWindow(SCREEN_NAME, "After try visual click: " + elementName);
         return true;
     }
@@ -340,7 +340,7 @@ public class VisualOcrScreenWeb extends VisualOcrScreen {
         visually.checkWindow(SCREEN_NAME, "Before try visual click: " + elementName);
         element.click();
         driver.clearHighlight();
-        waitFor(5);
+        waitForVisualActionIfConfigured();
         visually.checkWindow(SCREEN_NAME, "After try visual click: " + elementName);
         return true;
     }
@@ -355,7 +355,7 @@ public class VisualOcrScreenWeb extends VisualOcrScreen {
             visually.checkWindow(SCREEN_NAME, "Before try visual click relative: " + targetText);
             element.click();
             driver.clearHighlight();
-            waitFor(5);
+            waitForVisualActionIfConfigured();
             visually.checkWindow(SCREEN_NAME, "After try visual click relative: " + targetText);
             return true;
         } catch (Exception e) {
