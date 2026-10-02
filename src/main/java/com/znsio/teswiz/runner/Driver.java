@@ -560,6 +560,9 @@ public class Driver {
     }
 
     public void clearHighlight() {
+        if (APPIUM_DRIVER.equals(type) || driver instanceof AppiumDriver) {
+            return;
+        }
         if (driver instanceof JavascriptExecutor js) {
             try {
                 js.executeScript(
@@ -586,6 +589,10 @@ public class Driver {
             return;
         }
         clearHighlight();
+        if (APPIUM_DRIVER.equals(type) || driver instanceof AppiumDriver) {
+            LOGGER.debug("DOM-based element highlighting is not supported on native mobile app.");
+            return;
+        }
         String color = Setup.getStringValueFromConfigs(Setup.HIGHLIGHT_COLOR, "#FF4500");
         String borderWidth = Setup.getStringValueFromConfigs(Setup.HIGHLIGHT_BORDER_WIDTH, "3px");
         if (driver instanceof JavascriptExecutor js) {
@@ -601,7 +608,7 @@ public class Driver {
                 , element);
                 LOGGER.info("Highlighted WebElement visually with outline color: " + color);
             } catch (Exception e) {
-                LOGGER.warn("Could not highlight web element: " + e.getMessage());
+                LOGGER.debug("Could not highlight web element: " + e.getMessage());
             }
         }
     }
@@ -611,6 +618,10 @@ public class Driver {
             return;
         }
         clearHighlight();
+        if (APPIUM_DRIVER.equals(type) || driver instanceof AppiumDriver) {
+            LOGGER.debug(String.format("DOM-based visual element highlighting is not supported on native mobile app at bounds [x=%d, y=%d, w=%d, h=%d]", x, y, width, height));
+            return;
+        }
         String color = Setup.getStringValueFromConfigs(Setup.HIGHLIGHT_COLOR, "#FF4500");
         String borderWidth = Setup.getStringValueFromConfigs(Setup.HIGHLIGHT_BORDER_WIDTH, "3px");
         if (driver instanceof JavascriptExecutor js) {
@@ -635,7 +646,7 @@ public class Driver {
                 );
                 LOGGER.info(String.format("Highlighted visual element at viewport bounds [x=%d, y=%d, w=%d, h=%d] with color %s", x, y, width, height, color));
             } catch (Exception e) {
-                LOGGER.warn("Could not highlight visual element at (" + x + ", " + y + "): " + e.getMessage());
+                LOGGER.debug("Could not highlight visual element at (" + x + ", " + y + "): " + e.getMessage());
             }
         }
     }
