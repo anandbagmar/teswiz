@@ -698,6 +698,20 @@ public class Driver {
         if (screenshotImageWidth <= 0) {
             return 1.0;
         }
+        if (APPIUM_DRIVER.equals(type) || driver instanceof AppiumDriver) {
+            try {
+                int viewportWidth = driver.manage().window().getSize().getWidth();
+                if (viewportWidth > 0) {
+                    double scale = (double) screenshotImageWidth / viewportWidth;
+                    LOGGER.info(String.format("Calculated mobile viewport scale factor: %.2f (screenshot width: %d px, window width: %d px)",
+                            scale, screenshotImageWidth, viewportWidth));
+                    return scale;
+                }
+            } catch (Exception e) {
+                LOGGER.debug("Could not get window size for Appium driver: " + e.getMessage());
+            }
+            return 1.0;
+        }
         if (driver instanceof JavascriptExecutor js) {
             try {
                 Object result = js.executeScript("return window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;");
@@ -709,7 +723,7 @@ public class Driver {
                     return scale;
                 }
             } catch (Exception e) {
-                LOGGER.warn("Failed to retrieve viewport width via JavaScript: " + e.getMessage());
+                LOGGER.debug("Failed to retrieve viewport width via JavaScript: " + e.getMessage());
             }
         }
         return 1.0;
