@@ -33,10 +33,11 @@ Feature: Scenarios for "The App"
 #  IS_OCR_ENABLED=true CONFIG=./configs/theapp/theapp_local_android_config.properties PLATFORM=android TAG="@theapp_ocr" ./gradlew run
 #  IS_OCR_ENABLED=true CONFIG=./configs/theapp/theapp_local_ios_config.properties PLATFORM=iOS TAG="@theapp_ocr" ./gradlew run
   @android @web @iOS @ocr @theapp_ocr
-  Scenario: Verify login screen element detection using Visual OCR across platforms
+  Scenario: Verify login screen element detection and interaction using Visual OCR across platforms
     Given I start the app
-    When I visually inspect "Login screen element" using OCR text "Login"
-    Then I verify at least 1 visual elements are present using OCR text "Login"
+    When I visually click "Login option" using OCR text "Login"
+    And I visually enter "znsio_user" into "Username input" using OCR text "Username"
+    Then I verify at least 1 visual elements are present using OCR text "Password"
 
 
 #  CONFIG=./configs/theapp/theapp_local_web_config.properties PLATFORM=web TAG="@theapp3 and @invalidLogin2" ./gradlew run

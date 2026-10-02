@@ -13,8 +13,9 @@ Feature: Scenarios for Visual OCR & Image Recognition capability
 #  IS_OCR_ENABLED=true CONFIG=./configs/theapp/theapp_local_android_config.properties PLATFORM=android TAG="@visualOcr and @crossPlatformOcr" ./gradlew run
 #  IS_OCR_ENABLED=true CONFIG=./configs/theapp/theapp_local_ios_config.properties PLATFORM=iOS TAG="@visualOcr and @crossPlatformOcr" ./gradlew run
   @android @web @iOS @ocr @crossPlatformOcr
-  Scenario: Visually inspect and verify elements using OCR across Web, Android, and iOS
+  Scenario: Visually click and enter text using OCR across Web, Android, and iOS
     Given I start the app
-    When I visually inspect "Login screen element" using OCR text "Login"
-    Then I verify at least 1 visual elements are present using OCR text "Login"
+    When I visually click "Login screen link" using OCR text "Login"
+    And I visually enter "test_user" into "Username input" using OCR text "Username"
+    Then I verify at least 1 visual elements are present using OCR text "Password"
 

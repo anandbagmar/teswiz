@@ -18,6 +18,11 @@ public class VisualOcrSteps {
         new VisualOcrBL().visuallyClickUsingOcrText(elementName, ocrText);
     }
 
+    @When("I visually enter {string} into {string} using OCR text {string}")
+    public void iVisuallyEnterTextIntoUsingOcrText(String textToEnter, String elementName, String ocrText) {
+        new VisualOcrBL().visuallyEnterTextUsingOcrText(elementName, textToEnter, ocrText);
+    }
+
     @When("I visually inspect {string} using OCR text {string}")
     public void iVisuallyInspectUsingOcrText(String elementName, String ocrText) {
         new VisualOcrBL().visuallyInspectUsingOcrText(elementName, ocrText);
