@@ -54,4 +54,11 @@ public abstract class VisualOcrScreen {
     public abstract boolean tryClickVisualElementByTextOrImage(String elementName, String ocrText, List<String> imagePaths);
     public abstract boolean tryClickVisualElementByImageOrText(String elementName, List<String> imagePaths, String ocrText);
     public abstract boolean tryClickVisualElementRelativeByText(String elementName, String targetText, SpatialDirection direction, String anchorText);
+
+    protected void waitForVisualActionIfConfigured() {
+        int waitSeconds = com.znsio.teswiz.runner.Setup.getIntegerValueFromConfigs(com.znsio.teswiz.runner.Setup.VISUAL_ACTION_WAIT_SECONDS);
+        if (waitSeconds > 0) {
+            com.znsio.teswiz.tools.Wait.waitFor(waitSeconds);
+        }
+    }
 }

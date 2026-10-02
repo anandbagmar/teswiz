@@ -36,6 +36,10 @@ public final class PlaywrightTsScreenActionExecutor {
             @net.bytebuddy.implementation.bind.annotation.Origin Method method,
             @net.bytebuddy.implementation.bind.annotation.AllArguments Object[] arguments) {
         Object actionResult = playwrightDriver().runScreenAction(screenModule, method.getName(), toJsonArray(arguments));
+        int waitSeconds = com.znsio.teswiz.runner.Setup.getIntegerValueFromConfigs(com.znsio.teswiz.runner.Setup.VISUAL_ACTION_WAIT_SECONDS);
+        if (waitSeconds > 0) {
+            com.znsio.teswiz.tools.Wait.waitFor(waitSeconds);
+        }
         visually.checkWindow(screenContract.getSimpleName(), method.getName());
         return adaptResult(currentScreen, method.getReturnType(), actionResult);
     }
