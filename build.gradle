@@ -66,8 +66,9 @@ idea {
 ext.libsDir = file("$projectDir/libs")
 
 def isJarInLocalCache(String group, String artifact, String version, String fileNameSuffix) {
+    def expectedJarName = "${artifact}-${version}${fileNameSuffix ?: ""}.jar"
     def m2Path = new File(System.getProperty("user.home"),
-            ".m2/repository/${group.replace('.', '/')}/${artifact}/${version}/${artifact}-${version}${fileNameSuffix}.jar")
+            ".m2/repository/${group.replace('.', '/')}/${artifact}/${version}/${expectedJarName}")
     def gradlePath = new File(System.getProperty("user.home"),
             ".gradle/caches/modules-2/files-2.1/${group}/${artifact}/${version}")
 
@@ -77,7 +78,7 @@ def isJarInLocalCache(String group, String artifact, String version, String file
     }
 
     if (gradlePath.exists()) {
-        def cachedJar = gradlePath.listFiles()?.find { it.name.endsWith(".jar") }
+        def cachedJar = fileTree(dir: gradlePath, include: "**/${expectedJarName}").files.find { it.exists() }
         if (cachedJar) {
             println "\t✔ Found in .gradle cache: ${cachedJar}"
             return cachedJar
