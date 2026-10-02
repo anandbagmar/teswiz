@@ -242,9 +242,36 @@ public class VisualElement {
             swipeSequence.addAction(finger.createPointerMove(Duration.ofMillis(0), PointerInput.Origin.viewport(), startX, startY));
             swipeSequence.addAction(finger.createPointerDown(PointerInput.MouseButton.LEFT.asArg()));
             swipeSequence.addAction(finger.createPointerMove(Duration.ofMillis(600), PointerInput.Origin.viewport(), endX, endY));
-            swipeSequence.addAction(finger.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
             appiumDriver.perform(List.of(swipeSequence));
         }
+    }
+
+    public void longPress(Duration duration) {
+        highlight();
+        Point center = getCenter();
+        LOGGER.info(String.format("Long-pressing visual element '%s' at (%d, %d) for %d ms", label, center.getX(), center.getY(), duration.toMillis()));
+        if (driverFacade != null && driverFacade.getInnerDriver() != null) {
+            if (Driver.APPIUM_DRIVER.equals(driverFacade.getType()) && driverFacade.getInnerDriver() instanceof AppiumDriver appiumDriver) {
+                PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
+                Sequence sequence = new Sequence(finger, 1);
+                sequence.addAction(finger.createPointerMove(Duration.ofMillis(0), PointerInput.Origin.viewport(), center.getX(), center.getY()));
+                sequence.addAction(finger.createPointerDown(PointerInput.MouseButton.LEFT.asArg()));
+                sequence.addAction(finger.createPointerMove(duration, PointerInput.Origin.viewport(), center.getX(), center.getY()));
+                sequence.addAction(finger.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
+                appiumDriver.perform(List.of(sequence));
+            } else if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.interactions.Interactive) {
+                Actions actions = new Actions(driverFacade.getInnerDriver());
+                actions.moveToLocation(center.getX(), center.getY())
+                        .clickAndHold()
+                        .pause(duration)
+                        .release()
+                        .perform();
+            }
+        }
+    }
+
+    public void longPress() {
+        longPress(Duration.ofSeconds(2));
     }
 
     private void performMobileTap(int tapX, int tapY) {

@@ -23,6 +23,26 @@ public class VisualOcrSteps {
         new VisualOcrBL().visuallyEnterTextUsingOcrText(elementName, textToEnter, ocrText);
     }
 
+    @When("I visually double-click {string} using OCR text {string}")
+    public void iVisuallyDoubleClickUsingOcrText(String elementName, String ocrText) {
+        new VisualOcrBL().visuallyDoubleClickUsingOcrText(elementName, ocrText);
+    }
+
+    @When("I visually hover over {string} using OCR text {string}")
+    public void iVisuallyHoverUsingOcrText(String elementName, String ocrText) {
+        new VisualOcrBL().visuallyHoverUsingOcrText(elementName, ocrText);
+    }
+
+    @When("I visually long-press {string} using OCR text {string}")
+    public void iVisuallyLongPressUsingOcrText(String elementName, String ocrText) {
+        new VisualOcrBL().visuallyLongPressUsingOcrText(elementName, ocrText);
+    }
+
+    @When("I visually swipe {string} on {string} using OCR text {string}")
+    public void iVisuallySwipeOnElementUsingOcrText(String directionText, String elementName, String ocrText) {
+        new VisualOcrBL().visuallySwipeOnElementUsingOcrText(elementName, directionText, ocrText);
+    }
+
     @When("I visually inspect {string} using OCR text {string}")
     public void iVisuallyInspectUsingOcrText(String elementName, String ocrText) {
         new VisualOcrBL().visuallyInspectUsingOcrText(elementName, ocrText);
