@@ -238,6 +238,20 @@ public class VisualOcrBL {
         return this;
     }
 
+    public VisualOcrBL visuallyEnterTextUsingOcrText(String elementName, String textToEnter, String ocrText) {
+        LOGGER.info(String.format("Visually clicking element '%s' using OCR text '%s' and entering text '%s'", elementName, ocrText, textToEnter));
+        VisualElement element = findVisualElementByText(ocrText);
+        assertThat(element).as("Visual element '" + elementName + "' with OCR text '" + ocrText + "' should be found")
+                .isNotNull();
+        element.highlight();
+        getDriver().getVisual().checkWindow(getClass().getSimpleName(), "Before visual enter text: " + ocrText);
+        element.sendKeys(textToEnter);
+        getDriver().clearHighlight();
+        waitFor(2);
+        getDriver().getVisual().checkWindow(getClass().getSimpleName(), "After visual enter text: " + ocrText);
+        return this;
+    }
+
     public VisualOcrBL visuallyInspectUsingOcrText(String elementName, String ocrText) {
         LOGGER.info(String.format("Visually inspecting element '%s' using OCR text '%s'", elementName, ocrText));
         VisualElement element = findVisualElementByText(ocrText);
