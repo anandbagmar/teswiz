@@ -80,7 +80,9 @@ public class CucumberScenarioListener implements ConcurrentEventListener {
         testExecutionContext.addTestState(TEST_CONTEXT.DEVICE_LOGS_DIRECTORY, deviceLogsDirectory);
         com.znsio.teswiz.filters.apitraffic.ApiCallContext.resetForNewScenario();
         LoggingContext.begin(scenarioName, scenarioNumber, currentExampleRowNumberForScenario, scenarioLogDirectory);
-        LOGGER.info(String.format("Scenario started: number=%d, name=\"%s\", exampleRow=%d",
+        LOGGER.info(String.format("%n================================================================================%n"
+                        + "SCENARIO STARTED [%d]: %s (Example Row: %d)%n"
+                        + "================================================================================",
                 scenarioNumber, scenarioName, currentExampleRowNumberForScenario));
     }
 
@@ -97,11 +99,16 @@ public class CucumberScenarioListener implements ConcurrentEventListener {
         if (event.getTestStep() instanceof PickleStepTestStep pickleStepTestStep) {
             String stepText = pickleStepTestStep.getStep().getKeyword() + pickleStepTestStep.getStep().getText();
             CurrentStep.setStepText(Thread.currentThread().getId(), stepText);
+            LOGGER.info(String.format("--> STEP STARTED: %s", stepText));
         }
     }
 
     private void stepFinishedHandler(TestStepFinished event) {
-        if (event.getTestStep() instanceof PickleStepTestStep) {
+        if (event.getTestStep() instanceof PickleStepTestStep pickleStepTestStep) {
+            String stepText = pickleStepTestStep.getStep().getKeyword() + pickleStepTestStep.getStep().getText();
+            Status status = event.getResult().getStatus();
+            long durationMs = event.getResult().getDuration().toMillis();
+            LOGGER.info(String.format("<-- STEP FINISHED: %s [%s] (%d ms)", stepText, status, durationMs));
             CurrentStep.clearStepText(Thread.currentThread().getId());
         }
     }
@@ -114,8 +121,10 @@ public class CucumberScenarioListener implements ConcurrentEventListener {
         if (status == Status.PASSED) passedCount.incrementAndGet();
         else if (status == Status.FAILED || status == Status.AMBIGUOUS) failedCount.incrementAndGet();
         else skippedCount.incrementAndGet();
-        LOGGER.info(String.format("Scenario finished: name=\"%s\", exampleRow=%d, status=%s",
-                scenarioName, currentExampleRowNumberForScenario, status));
+        LOGGER.info(String.format("%n================================================================================%n"
+                        + "SCENARIO FINISHED [%s]: %s (Example Row: %d)%n"
+                        + "================================================================================",
+                status, scenarioName, currentExampleRowNumberForScenario));
 
         long threadId = Thread.currentThread().getId();
         TestExecutionContext testExecutionContext = SessionContext.getTestExecutionContext(threadId);
