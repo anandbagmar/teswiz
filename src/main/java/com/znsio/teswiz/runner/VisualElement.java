@@ -281,6 +281,7 @@ public class VisualElement {
             clickPosition
                     .addAction(touch.createPointerMove(Duration.ofMillis(0), PointerInput.Origin.viewport(), tapX, tapY))
                     .addAction(touch.createPointerDown(PointerInput.MouseButton.LEFT.asArg()))
+                    .addAction(new org.openqa.selenium.interactions.Pause(touch, Duration.ofMillis(100)))
                     .addAction(touch.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
             appiumDriver.perform(List.of(clickPosition));
         }
