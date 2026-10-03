@@ -257,11 +257,11 @@ dependencies {
     // Optional visual & OCR subsystem compileOnly dependencies
     compileOnly "org.openpnp:opencv:4.9.0-0"
     compileOnly "net.sourceforge.tess4j:tess4j:5.11.0"
-    compileOnly "com.microsoft.onnxruntime:onnxruntime:1.17.1"
+    compileOnly "com.microsoft.onnxruntime:onnxruntime:1.30.0"
 
     testImplementation "org.openpnp:opencv:4.9.0-0"
     testImplementation "net.sourceforge.tess4j:tess4j:5.11.0"
-    testImplementation "com.microsoft.onnxruntime:onnxruntime:1.17.1"
+    testImplementation "com.microsoft.onnxruntime:onnxruntime:1.30.0"
 
     testImplementation "org.junit.jupiter:junit-jupiter:6.1.3"
     testImplementation "org.mockito:mockito-core:5.23.0"
