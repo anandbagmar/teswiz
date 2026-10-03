@@ -570,6 +570,9 @@ public class Driver {
         if (!Setup.getBooleanValueFromConfigs(Setup.HIGHLIGHT_ELEMENTS)) {
             return;
         }
+        if (APPIUM_DRIVER.equals(type) || driver instanceof AppiumDriver) {
+            return;
+        }
         if (driver instanceof JavascriptExecutor js) {
             try {
                 js.executeScript(
