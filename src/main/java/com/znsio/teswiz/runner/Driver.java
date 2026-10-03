@@ -559,8 +559,15 @@ public class Driver {
         waitFor(1);
     }
 
+    private org.openqa.selenium.Rectangle activeHighlightBounds;
+
+    public org.openqa.selenium.Rectangle getActiveHighlightBounds() {
+        return activeHighlightBounds;
+    }
+
     public void clearHighlight() {
-        if (APPIUM_DRIVER.equals(type) || driver instanceof AppiumDriver) {
+        this.activeHighlightBounds = null;
+        if (!Setup.getBooleanValueFromConfigs(Setup.HIGHLIGHT_ELEMENTS)) {
             return;
         }
         if (driver instanceof JavascriptExecutor js) {
@@ -618,8 +625,9 @@ public class Driver {
             return;
         }
         clearHighlight();
+        this.activeHighlightBounds = new org.openqa.selenium.Rectangle(x, y, height, width);
         if (APPIUM_DRIVER.equals(type) || driver instanceof AppiumDriver) {
-            LOGGER.debug(String.format("DOM-based visual element highlighting is not supported on native mobile app at bounds [x=%d, y=%d, w=%d, h=%d]", x, y, width, height));
+            LOGGER.info(String.format("Visual element screenshot image canvas highlighting active on native mobile app at bounds [x=%d, y=%d, w=%d, h=%d]", x, y, width, height));
             return;
         }
         String color = Setup.getStringValueFromConfigs(Setup.HIGHLIGHT_COLOR, "#FF4500");

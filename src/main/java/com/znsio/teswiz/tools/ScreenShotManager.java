@@ -35,6 +35,7 @@ public class ScreenShotManager {
                 File screenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
                 LOGGER.debug("Original screenshot : {}", screenshot.getAbsolutePath());
                 FileUtils.copyFile(screenshot, destinationFile);
+                annotateScreenshotIfHighlighted(destinationFile);
                 LOGGER.info("The screenshot is available here : {}", destinationFile.getAbsolutePath());
                 ReportPortalLogger.attachFileInReportPortal(fileName, destinationFile);
             } catch (RuntimeException e) {
@@ -43,6 +44,18 @@ public class ScreenShotManager {
             }
         } else {
             LOGGER.warn("Driver is not instantiated for this test");
+        }
+    }
+
+    private void annotateScreenshotIfHighlighted(File screenshotFile) {
+        try {
+            com.znsio.teswiz.runner.Driver driverFacade = com.znsio.teswiz.runner.Drivers.getDriverForCurrentUser(Thread.currentThread().getId());
+            if (driverFacade != null && driverFacade.getActiveHighlightBounds() != null) {
+                org.openqa.selenium.Rectangle bounds = driverFacade.getActiveHighlightBounds();
+                ImageCanvasHighlighter.annotateScreenshotFile(screenshotFile, bounds.getX(), bounds.getY(), bounds.getWidth(), bounds.getHeight());
+            }
+        } catch (Exception e) {
+            LOGGER.debug("Could not apply image canvas annotation to screenshot: " + e.getMessage());
         }
     }
 
