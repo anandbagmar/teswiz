@@ -99,6 +99,13 @@ public class OcrService {
                 return wordMatch.withOffset(cropped.offsetX, cropped.offsetY);
             }
 
+            BufferedImage preprocessed = preprocessForOcr(cropped.image);
+            List<Word> prepWords = tesseract.getWords(preprocessed, RIL_WORD);
+            VisualElement prepMatch = matchTextInWords(prepWords, normalizedSearch, searchText, scaleFactor, driverFacade);
+            if (prepMatch != null) {
+                return prepMatch.withOffset(cropped.offsetX, cropped.offsetY);
+            }
+
             VisualElement lineMatch = searchLineMatch(tesseract, cropped.image, normalizedSearch, searchText, scaleFactor, driverFacade);
             if (lineMatch != null) {
                 return lineMatch.withOffset(cropped.offsetX, cropped.offsetY);
@@ -153,11 +160,42 @@ public class OcrService {
                     matches.add(element.withOffset(cropped.offsetX, cropped.offsetY));
                 }
             }
+
+            if (matches.isEmpty()) {
+                BufferedImage preprocessed = preprocessForOcr(cropped.image);
+                List<Word> prepWords = tesseract.getWords(preprocessed, RIL_WORD);
+                for (Word word : prepWords) {
+                    String wordText = word.getText();
+                    if (wordText != null && isWordMatchingSearch(wordText, normalizedSearch)) {
+                        Rectangle rect = word.getBoundingBox();
+                        VisualElement element = buildScaledVisualElement(rect.x, rect.y, rect.width, rect.height, scaleFactor, wordText.trim(), driverFacade);
+                        matches.add(element.withOffset(cropped.offsetX, cropped.offsetY));
+                    }
+                }
+            }
         } catch (Throwable e) {
             LOGGER.warn("Tesseract OCR findAllTextMatches failed: " + e.getMessage());
         }
 
         return applyNonMaximumSuppression(matches);
+    }
+
+    private static BufferedImage preprocessForOcr(BufferedImage image) {
+        BufferedImage processed = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_BYTE_GRAY);
+        Graphics2D g2d = processed.createGraphics();
+        g2d.drawImage(image, 0, 0, null);
+        g2d.dispose();
+
+        int width = processed.getWidth();
+        int height = processed.getHeight();
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int gray = processed.getRaster().getSample(x, y, 0);
+                int newGray = (gray < 220) ? Math.max(0, gray - 50) : 255;
+                processed.getRaster().setSample(x, y, 0, newGray);
+            }
+        }
+        return processed;
     }
 
     private static Tesseract createTesseractInstance(String tessDataPath) {
