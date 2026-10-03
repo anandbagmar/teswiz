@@ -233,9 +233,41 @@ public class VisualOcrBL {
         return VisualOcrScreen.get().findAllVisualElementsByImageOrText(List.of(imageTemplatePath), ocrText);
     }
 
+    private List<VisualElement> pollUntilAtLeastN(java.util.function.Supplier<List<VisualElement>> query, int minCount) {
+        int maxAttempts = Math.max(1, com.znsio.teswiz.runner.Setup.getIntegerValueFromConfigs(com.znsio.teswiz.runner.Setup.VISUAL_ELEMENT_RETRY_ATTEMPTS));
+        int retryDelayMs = Math.max(1, com.znsio.teswiz.runner.Setup.getIntegerValueFromConfigs(com.znsio.teswiz.runner.Setup.VISUAL_ELEMENT_RETRY_DELAY_SECONDS)) * 1000;
+        List<VisualElement> elements = java.util.Collections.emptyList();
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            elements = query.get();
+            if (elements.size() >= minCount) {
+                return elements;
+            }
+            if (attempt < maxAttempts) {
+                try { Thread.sleep(retryDelayMs); } catch (InterruptedException ignored) {}
+            }
+        }
+        return elements;
+    }
+
+    private List<VisualElement> pollUntilExactCount(java.util.function.Supplier<List<VisualElement>> query, int expectedCount) {
+        int maxAttempts = Math.max(1, com.znsio.teswiz.runner.Setup.getIntegerValueFromConfigs(com.znsio.teswiz.runner.Setup.VISUAL_ELEMENT_RETRY_ATTEMPTS));
+        int retryDelayMs = Math.max(1, com.znsio.teswiz.runner.Setup.getIntegerValueFromConfigs(com.znsio.teswiz.runner.Setup.VISUAL_ELEMENT_RETRY_DELAY_SECONDS)) * 1000;
+        List<VisualElement> elements = java.util.Collections.emptyList();
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            elements = query.get();
+            if (elements.size() == expectedCount) {
+                return elements;
+            }
+            if (attempt < maxAttempts) {
+                try { Thread.sleep(retryDelayMs); } catch (InterruptedException ignored) {}
+            }
+        }
+        return elements;
+    }
+
     public VisualOcrBL verifyVisualElementCountByText(String elementName, String ocrText, int expectedCount) {
         LOGGER.info(String.format("Verifying %d visual elements named '%s' present using OCR text '%s'", expectedCount, elementName, ocrText));
-        List<VisualElement> elements = findAllVisualElementsByText(ocrText);
+        List<VisualElement> elements = pollUntilExactCount(() -> findAllVisualElementsByText(ocrText), expectedCount);
         assertThat(elements)
                 .as("Expected " + expectedCount + " visual elements matching OCR text '" + ocrText + "'")
                 .hasSize(expectedCount);
@@ -244,7 +276,7 @@ public class VisualOcrBL {
 
     public VisualOcrBL verifyVisualElementCountByImage(String elementName, String imageTemplatePath, int expectedCount) {
         LOGGER.info(String.format("Verifying %d visual elements named '%s' present using image template '%s'", expectedCount, elementName, imageTemplatePath));
-        List<VisualElement> elements = findAllVisualElementsByImage(imageTemplatePath);
+        List<VisualElement> elements = pollUntilExactCount(() -> findAllVisualElementsByImage(imageTemplatePath), expectedCount);
         assertThat(elements)
                 .as("Expected " + expectedCount + " visual elements matching image template '" + imageTemplatePath + "'")
                 .hasSize(expectedCount);
@@ -253,7 +285,7 @@ public class VisualOcrBL {
 
     public VisualOcrBL verifyAtLeastNVisualElementsPresentByText(String elementName, String ocrText, int minCount) {
         LOGGER.info(String.format("Verifying at least %d visual elements named '%s' present using OCR text '%s'", minCount, elementName, ocrText));
-        List<VisualElement> elements = findAllVisualElementsByText(ocrText);
+        List<VisualElement> elements = pollUntilAtLeastN(() -> findAllVisualElementsByText(ocrText), minCount);
         assertThat(elements)
                 .as("Expected at least " + minCount + " visual elements matching OCR text '" + ocrText + "'")
                 .hasSizeGreaterThanOrEqualTo(minCount);
@@ -262,7 +294,7 @@ public class VisualOcrBL {
 
     public VisualOcrBL verifyAtLeastNVisualElementsPresentByImage(String elementName, String imageTemplatePath, int minCount) {
         LOGGER.info(String.format("Verifying at least %d visual elements named '%s' present using image template '%s'", minCount, elementName, imageTemplatePath));
-        List<VisualElement> elements = findAllVisualElementsByImage(imageTemplatePath);
+        List<VisualElement> elements = pollUntilAtLeastN(() -> findAllVisualElementsByImage(imageTemplatePath), minCount);
         assertThat(elements)
                 .as("Expected at least " + minCount + " visual elements matching image template '" + imageTemplatePath + "'")
                 .hasSizeGreaterThanOrEqualTo(minCount);
