@@ -480,7 +480,7 @@ public class Setup {
                 Integer.parseInt(getStringValueFromPropertiesIfAvailable(VISUAL_ELEMENT_RETRY_DELAY_SECONDS, "1"))));
         configsInteger.put(VISUAL_ACTION_WAIT_SECONDS, getOverriddenIntValue(
                 VISUAL_ACTION_WAIT_SECONDS,
-                Integer.parseInt(getStringValueFromPropertiesIfAvailable(VISUAL_ACTION_WAIT_SECONDS, "0"))));
+                Integer.parseInt(getStringValueFromPropertiesIfAvailable(VISUAL_ACTION_WAIT_SECONDS, "1"))));
     }
 
     public static String getHostMachineName() {
