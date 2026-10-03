@@ -27,6 +27,7 @@ class DriversPlaywrightIntegrationTest {
     void cleanUp() {
         System.clearProperty("WEB_ENGINE");
         System.clearProperty("HEADLESS");
+        System.clearProperty("BASE_URL");
         SessionContext.remove(Thread.currentThread().getId());
     }
 
@@ -114,6 +115,7 @@ class DriversPlaywrightIntegrationTest {
     private void enablePlaywrightHeadless() {
         System.setProperty("WEB_ENGINE", "playwright-ts");
         System.setProperty("HEADLESS", "true");
+        System.setProperty("BASE_URL", "data:text/html,<html><body><h1>Test</h1></body></html>");
         Setup.load(CONFIG_FILE);
         Setup.loadAndUpdateConfigParameters(CONFIG_FILE);
         Setup.getExecutionArguments();
