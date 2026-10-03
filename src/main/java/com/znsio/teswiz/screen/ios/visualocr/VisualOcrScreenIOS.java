@@ -165,6 +165,7 @@ public class VisualOcrScreenIOS extends VisualOcrScreen {
         visually.checkWindow(SCREEN_NAME, "Before visual enter text: " + ocrText);
         element.sendKeys(textToEnter);
         driver.clearHighlight();
+        driver.hideKeyboard();
         waitForVisualActionIfConfigured();
         visually.checkWindow(SCREEN_NAME, "After visual enter text: " + ocrText);
         return this;

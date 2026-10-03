@@ -149,7 +149,13 @@ public class Driver {
     }
 
     public void hideKeyboard() {
-        ((HidesKeyboard) driver).hideKeyboard();
+        try {
+            if (driver instanceof io.appium.java_client.HidesKeyboard hidesKeyboard) {
+                hidesKeyboard.hideKeyboard();
+            }
+        } catch (Exception e) {
+            LOGGER.debug("Soft keyboard already hidden or unable to hide keyboard: " + e.getMessage());
+        }
     }
 
     public List<WebElement> findElements(By element) {
