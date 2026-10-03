@@ -1279,10 +1279,21 @@ public class Visual {
                 proxySettings);
     }
 
+    private int getVisualElementRetryAttempts() {
+        int attempts = Setup.getIntegerValueFromConfigs(Setup.VISUAL_ELEMENT_RETRY_ATTEMPTS);
+        return Math.max(1, attempts);
+    }
+
+    private int getVisualElementRetryDelayMs() {
+        int delaySeconds = Setup.getIntegerValueFromConfigs(Setup.VISUAL_ELEMENT_RETRY_DELAY_SECONDS);
+        return Math.max(1, delaySeconds) * 1000;
+    }
+
     public VisualElement findByText(String text) {
         verifyOcrEnabled();
         LOGGER.info(String.format("Locating visual element by text '%s'", text));
-        int maxAttempts = 5;
+        int maxAttempts = getVisualElementRetryAttempts();
+        int retryDelayMs = getVisualElementRetryDelayMs();
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             byte[] screenshot = captureScreenshotBytes();
             VisualElement match = com.znsio.teswiz.visual.OcrService.findTextMatch(screenshot, text, this.driverFacade);
@@ -1290,8 +1301,8 @@ public class Visual {
                 return match;
             }
             if (attempt < maxAttempts) {
-                LOGGER.info(String.format("Attempt %d of %d: Text '%s' not found via OCR, retrying after 1s...", attempt, maxAttempts, text));
-                try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
+                LOGGER.info(String.format("Attempt %d of %d: Text '%s' not found via OCR, retrying after %dms...", attempt, maxAttempts, text, retryDelayMs));
+                try { Thread.sleep(retryDelayMs); } catch (InterruptedException ignored) {}
             }
         }
         throw new com.znsio.teswiz.exceptions.NoSuchVisualElementException(
@@ -1301,7 +1312,8 @@ public class Visual {
     public VisualElement findByText(String text, com.znsio.teswiz.entities.VisualRegion region) {
         verifyOcrEnabled();
         LOGGER.info(String.format("Locating visual element by text '%s' within region %s", text, region));
-        int maxAttempts = 5;
+        int maxAttempts = getVisualElementRetryAttempts();
+        int retryDelayMs = getVisualElementRetryDelayMs();
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             byte[] screenshot = captureScreenshotBytes();
             VisualElement match = com.znsio.teswiz.visual.OcrService.findTextMatch(screenshot, text, region, this.driverFacade);
@@ -1309,8 +1321,8 @@ public class Visual {
                 return match;
             }
             if (attempt < maxAttempts) {
-                LOGGER.info(String.format("Attempt %d of %d: Text '%s' not found via OCR in region %s, retrying after 1s...", attempt, maxAttempts, text, region));
-                try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
+                LOGGER.info(String.format("Attempt %d of %d: Text '%s' not found via OCR in region %s, retrying after %dms...", attempt, maxAttempts, text, region, retryDelayMs));
+                try { Thread.sleep(retryDelayMs); } catch (InterruptedException ignored) {}
             }
         }
         throw new com.znsio.teswiz.exceptions.NoSuchVisualElementException(
@@ -1332,7 +1344,8 @@ public class Visual {
     public VisualElement findByImage(List<String> imageTemplatePaths, double confidenceThreshold, com.znsio.teswiz.entities.VisualRegion region) {
         verifyOcrEnabled();
         LOGGER.info(String.format("Locating visual element by candidate image templates %s with threshold %.2f within region %s", imageTemplatePaths, confidenceThreshold, region));
-        int maxAttempts = 5;
+        int maxAttempts = getVisualElementRetryAttempts();
+        int retryDelayMs = getVisualElementRetryDelayMs();
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             byte[] screenshot = captureScreenshotBytes();
             VisualElement match = com.znsio.teswiz.visual.ImageRecognitionService.findTemplateMatch(screenshot, imageTemplatePaths, confidenceThreshold, region, this.driverFacade);
@@ -1340,8 +1353,8 @@ public class Visual {
                 return match;
             }
             if (attempt < maxAttempts) {
-                LOGGER.info(String.format("Attempt %d of %d: Image templates %s not matched in region %s, retrying after 1s...", attempt, maxAttempts, imageTemplatePaths, region));
-                try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
+                LOGGER.info(String.format("Attempt %d of %d: Image templates %s not matched in region %s, retrying after %dms...", attempt, maxAttempts, imageTemplatePaths, region, retryDelayMs));
+                try { Thread.sleep(retryDelayMs); } catch (InterruptedException ignored) {}
             }
         }
         throw new com.znsio.teswiz.exceptions.NoSuchVisualElementException(
