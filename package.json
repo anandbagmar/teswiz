@@ -22,7 +22,7 @@
     "glob": "13.0.6",
     "ip": "2.0.1",
     "js-yaml": "5.2.1",
-    "minimatch": "10.2.6",
+    "minimatch": "10.2.5",
     "nanoid": "6.0.0",
     "multer": "2.2.0",
     "node-forge": "1.4.0",
@@ -72,7 +72,7 @@
   "author": "Anand Bagmar",
   "license": "ISC",
   "devDependencies": {
-    "@applitools/eyes-playwright": "^1.49.4",
+    "@applitools/eyes-playwright": "^1.49.3",
     "playwright": "1.63.0"
   }
 }
