@@ -640,15 +640,9 @@ rl.on("line", async (line) => {
       }
       case "navigateTo": {
         const session = getSession(payload.sessionId);
-        try {
-          await getCurrentPage(session).goto(payload.url, {
-            waitUntil: "domcontentloaded",
-          });
-        } catch (e) {
-          await getCurrentPage(session).goto(payload.url, {
-            waitUntil: "commit",
-          });
-        }
+        await getCurrentPage(session).goto(payload.url, {
+          waitUntil: "commit",
+        });
         process.stdout.write(`${okResponse(requestId, action, { status: "ok" })}\n`);
         break;
       }
@@ -863,7 +857,7 @@ rl.on("line", async (line) => {
       }
       case "screenshot": {
         const session = getSession(payload.sessionId);
-        const screenshot = await getCurrentPage(session).screenshot({ type: "png" });
+        const screenshot = await getCurrentPage(session).screenshot({ type: "png", animations: "disabled" });
         process.stdout.write(`${okResponse(requestId, action, { base64: screenshot.toString("base64") })}\n`);
         break;
       }

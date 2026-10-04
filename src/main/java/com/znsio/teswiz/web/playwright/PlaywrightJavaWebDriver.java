@@ -68,16 +68,9 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
 
     @Override
     public void get(String url) {
-        try {
-            session.page().navigate(url, new NavigateOptions()
-                    .setTimeout((double) pageLoadTimeout.toMillis())
-                    .setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
-        } catch (com.microsoft.playwright.TimeoutError e) {
-            LOGGER.warn(String.format("Playwright navigation to '%s' timed out after %dms waiting for DOMCONTENTLOADED. Retrying navigation with COMMIT wait state...", url, pageLoadTimeout.toMillis()));
-            session.page().navigate(url, new NavigateOptions()
-                    .setTimeout((double) pageLoadTimeout.toMillis())
-                    .setWaitUntil(WaitUntilState.COMMIT));
-        }
+        session.page().navigate(url, new NavigateOptions()
+                .setTimeout((double) pageLoadTimeout.toMillis())
+                .setWaitUntil(WaitUntilState.COMMIT));
     }
 
     @Override
@@ -426,7 +419,8 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
 
     @Override
     public <X> X getScreenshotAs(OutputType<X> target) {
-        return target.convertFromPngBytes(session.page().screenshot());
+        return target.convertFromPngBytes(session.page().screenshot(
+                new com.microsoft.playwright.Page.ScreenshotOptions().setAnimations(com.microsoft.playwright.options.ScreenshotAnimations.DISABLED)));
     }
 
     @Override
