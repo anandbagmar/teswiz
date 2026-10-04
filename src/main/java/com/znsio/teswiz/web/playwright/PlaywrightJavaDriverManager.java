@@ -173,8 +173,6 @@ public final class PlaywrightJavaDriverManager {
 
             if (null != browserConfig.channel() && !browserConfig.channel().isBlank()) {
                 options.setChannel(browserConfig.channel());
-            } else {
-                maybeSetDefaultChannel(browserConfig.browserName(), options);
             }
 
             if (null != browserConfig.executablePath() && !browserConfig.executablePath().isBlank()) {
@@ -186,14 +184,6 @@ public final class PlaywrightJavaDriverManager {
                 options.setProxy(toProxy(proxyMap));
             }
             return options;
-        }
-
-        private static void maybeSetDefaultChannel(String browserName, BrowserType.LaunchOptions options) {
-            if ("chrome".equalsIgnoreCase(browserName)) {
-                options.setChannel("chrome");
-            } else if ("edge".equalsIgnoreCase(browserName) || "msedge".equalsIgnoreCase(browserName)) {
-                options.setChannel("msedge");
-            }
         }
 
         private static Browser.NewContextOptions buildContextOptions(PlaywrightBrowserConfig browserConfig, Path harFile) {
