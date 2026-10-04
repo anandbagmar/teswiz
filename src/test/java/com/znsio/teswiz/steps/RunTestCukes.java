@@ -27,6 +27,7 @@ import com.znsio.teswiz.tools.ReportPortalLogger;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
 import io.cucumber.java.Scenario;
+import org.testng.ITestContext;
 import io.cucumber.testng.AbstractTestNGCucumberTests;
 
 public class RunTestCukes
@@ -43,9 +44,9 @@ public class RunTestCukes
 
     @Override
     @DataProvider(parallel = true)
-    public Object[][] scenarios() {
+    public Object[][] scenarios(ITestContext context) {
         LOGGER.info(String.format("RunTestCukes: ThreadId: %d: in overridden scenarios%n", Thread.currentThread().getId()));
-        Object[][] scenarios = super.scenarios();
+        Object[][] scenarios = super.scenarios(context);
         LOGGER.info(scenarios);
         return scenarios;
     }
