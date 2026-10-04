@@ -640,9 +640,15 @@ rl.on("line", async (line) => {
       }
       case "navigateTo": {
         const session = getSession(payload.sessionId);
-        await getCurrentPage(session).goto(payload.url, {
-          waitUntil: "load",
-        });
+        try {
+          await getCurrentPage(session).goto(payload.url, {
+            waitUntil: "domcontentloaded",
+          });
+        } catch (e) {
+          await getCurrentPage(session).goto(payload.url, {
+            waitUntil: "commit",
+          });
+        }
         process.stdout.write(`${okResponse(requestId, action, { status: "ok" })}\n`);
         break;
       }
