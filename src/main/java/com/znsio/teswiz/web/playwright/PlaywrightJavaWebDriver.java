@@ -36,9 +36,12 @@ import com.znsio.teswiz.visual.PlaywrightVisualDriver;
 import com.znsio.teswiz.visual.PlaywrightVisualSessionRequest;
 import com.znsio.teswiz.visual.PlaywrightVisualResults;
 import com.znsio.teswiz.web.playwright.screen.PlaywrightJavaScreenContext;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.selenium.JavascriptExecutor,
         org.openqa.selenium.TakesScreenshot, PlaywrightVisualDriver {
+    private static final Logger LOGGER = LogManager.getLogger(PlaywrightJavaWebDriver.class.getName());
     private static final String BROWSERSTACK_EXECUTOR_PREFIX = "browserstack_executor:";
     private static final String LAMBDATEST_ACTION_PREFIX = "lambdatest_action:";
     private static final String LEGACY_LAMBDATEST_NAME_PREFIX = "lambda-name=";
@@ -65,9 +68,16 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
 
     @Override
     public void get(String url) {
-        session.page().navigate(url, new NavigateOptions()
-                .setTimeout((double) pageLoadTimeout.toMillis())
-                .setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
+        try {
+            session.page().navigate(url, new NavigateOptions()
+                    .setTimeout((double) pageLoadTimeout.toMillis())
+                    .setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
+        } catch (com.microsoft.playwright.TimeoutError e) {
+            LOGGER.warn(String.format("Playwright navigation to '%s' timed out after %dms waiting for DOMCONTENTLOADED. Retrying navigation with COMMIT wait state...", url, pageLoadTimeout.toMillis()));
+            session.page().navigate(url, new NavigateOptions()
+                    .setTimeout((double) pageLoadTimeout.toMillis())
+                    .setWaitUntil(WaitUntilState.COMMIT));
+        }
     }
 
     @Override
