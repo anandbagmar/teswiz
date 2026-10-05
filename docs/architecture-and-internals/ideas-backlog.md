@@ -25,10 +25,12 @@ Captured ideas for future teswiz exploration.
   - Track how teswiz is being used across runs, platforms, engines, and CI environments.
   - Useful questions: what gets executed most often, where failures happen, and which features are adopted vs. ignored.
 
-- OCR and image recognition
-  - Explore OCR support for extracting text from screenshots, PDFs, or visual artifacts in web and native apps.
-  - Explore image recognition for locating and interacting with UI elements such as a spinner icon or other visual controls.
-  - Keep Applitools as the validation layer for image comparison and visual testing.
+## Completed Capabilities
+
+- OCR and image recognition (Shipped)
+  - Embedded 100% offline visual text recognition (Tesseract 5 / Tess4J) and multi-scale template matching (OpenCV 4.9 pyramid matcher).
+  - Fully integrated across Web (Selenium, Playwright-Java, Playwright-TS) and Mobile (Appium Android & iOS).
+  - See full documentation: [OCR & Image Recognition Subsystem Guide](../subsystems/ocr-and-image-recognition.md).
 
 ## High-Level Plan
 
