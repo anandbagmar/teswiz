@@ -183,8 +183,6 @@ public class DeviceSetup {
         ArrayList<String> iOSCukeArgs = new ArrayList<>();
         if (Setup.getPlatform().equals(Platform.iOS)) {
             verifyAppExistsAtMentionedPath();
-//            TODO
-//            fetchIOSAppVersion();
             if (Setup.getBooleanValueFromConfigs(RUN_IN_CI)) {
                 setupCloudExecution();
             } else {

@@ -49,6 +49,7 @@ import com.znsio.teswiz.tools.cmd.CommandLineExecutor;
 import com.znsio.teswiz.tools.cmd.CommandLineResponse;
 
 import io.appium.java_client.AppiumDriver;
+import io.appium.java_client.InteractsWithApps;
 import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.appmanagement.ApplicationState;
 import io.appium.java_client.ios.IOSDriver;
@@ -297,9 +298,9 @@ public class AppiumDriverManager {
         } else {
             logMessage = String.format("Closing WindowsDriver for App '%s' for user '%s'", appPackageName, userPersona);
             LOGGER.info(logMessage);
-            // todo - fix for appium 2.0, test terminateApp() on windows app in windows OS
-            AndroidDriver androidDriver = (AndroidDriver) appiumDriver;
-            androidDriver.terminateApp(appPackageName);
+            if (appiumDriver instanceof InteractsWithApps interactsWithApps) {
+                interactsWithApps.terminateApp(appPackageName);
+            }
             TestExecutionContext context = SessionContext.getTestExecutionContext(Thread.currentThread().getId());
             AppiumDriver atdAppiumDriver = (AppiumDriver) context.getTestState(TEST_CONTEXT.APPIUM_DRIVER);
             if (appiumDriver.equals(atdAppiumDriver)) {
