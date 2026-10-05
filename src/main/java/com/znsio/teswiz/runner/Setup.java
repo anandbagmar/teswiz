@@ -93,6 +93,10 @@ public class Setup {
     public static final String MASK_KEYS_OVERRIDE = "MASK_KEYS_OVERRIDE";
     public static final String API_TRAFFIC_LOGGING = "API_TRAFFIC_LOGGING";
     public static final String API_ENGINE = "API_ENGINE";
+    public static final String ENABLE_USAGE_ANALYTICS = "ENABLE_USAGE_ANALYTICS";
+    public static final String ORGANIZATION_NAME = "ORGANIZATION_NAME";
+    public static final String TELEMETRY_ENDPOINT = "TELEMETRY_ENDPOINT";
+    public static final String TELEMETRY_API_KEY = "TELEMETRY_API_KEY";
     public static final String STEP_ATTRIBUTION_ENABLED = "STEP_ATTRIBUTION_ENABLED";
     public static final String FRAMEWORK = "FRAMEWORK";
     public static final String FRAMEWORK_CUCUMBER = "cucumber";
@@ -331,6 +335,7 @@ public class Setup {
         initialiseApplitoolsConfiguration();
         ApiTrafficLogging.registerIfEnabled();
         registerEnvironmentIssueFilterIfEnabled();
+        com.znsio.teswiz.analytics.TelemetryCollector.sendRunStartedEvent();
 
         String rpAttributes = String.format(
                 "AutomationBranch:%s; ExecutedOn:%s; Installer:%s; OS:%s; ParallelCount:%d; " +

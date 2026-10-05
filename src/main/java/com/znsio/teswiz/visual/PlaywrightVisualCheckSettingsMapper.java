@@ -6,7 +6,6 @@ import java.util.List;
 
 import org.openqa.selenium.By;
 
-import com.applitools.eyes.MatchLevel;
 import com.applitools.eyes.Region;
 import com.applitools.eyes.fluent.GetRegion;
 import com.applitools.eyes.images.ImagesCheckSettings;

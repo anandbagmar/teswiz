@@ -1,10 +1,8 @@
 package com.znsio.teswiz.web.playwright;
 
-import java.io.File;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
-import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;

@@ -127,6 +127,7 @@ public class CucumberScenarioListener implements ConcurrentEventListener {
         if (status == Status.PASSED) passedCount.incrementAndGet();
         else if (status == Status.FAILED || status == Status.AMBIGUOUS) failedCount.incrementAndGet();
         else skippedCount.incrementAndGet();
+        com.znsio.teswiz.analytics.TelemetryCollector.recordScenarioOutcome(status == Status.PASSED);
         LOGGER.info(String.format("%n================================================================================%n"
                         + "SCENARIO FINISHED [%s]: %s (Example Row: %d)%n"
                         + "================================================================================",
@@ -151,6 +152,7 @@ public class CucumberScenarioListener implements ConcurrentEventListener {
             AppiumServerController.destroyAppiumNode();
             PlaywrightBrowserConfigMigrationReporter.emitSummaryIfPresent();
             SessionContext.setReportPortalLaunchURL();
+            com.znsio.teswiz.analytics.TelemetryCollector.sendRunCompletedEvent();
         } catch (Exception e) {
             ExceptionUtils.getStackTrace(e);
         }

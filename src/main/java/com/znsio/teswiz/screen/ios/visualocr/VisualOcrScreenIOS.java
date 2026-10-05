@@ -13,7 +13,6 @@ import com.znsio.teswiz.runner.Driver;
 import com.znsio.teswiz.runner.Visual;
 import com.znsio.teswiz.runner.VisualElement;
 import com.znsio.teswiz.screen.visualocr.VisualOcrScreen;
-import static com.znsio.teswiz.tools.Wait.waitFor;
 
 public class VisualOcrScreenIOS extends VisualOcrScreen {
     private static final String SCREEN_NAME = VisualOcrScreenIOS.class.getSimpleName();

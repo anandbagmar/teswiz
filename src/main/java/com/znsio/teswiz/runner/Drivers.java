@@ -9,7 +9,6 @@ import com.znsio.teswiz.session.SessionHandle;
 import com.znsio.teswiz.session.UserPersonaDetails;
 import com.znsio.teswiz.web.browser.BrowserDriverManager;
 import com.znsio.teswiz.web.browser.WebDriverSessionResult;
-import com.znsio.teswiz.web.playwright.PlaywrightWebDriver;
 import com.znsio.teswiz.web.provider.WebSessionMetadataBuilder;
 import com.znsio.teswiz.web.provider.WebExecutionProvider;
 import com.znsio.teswiz.web.provider.WebExecutionProviderResolver;

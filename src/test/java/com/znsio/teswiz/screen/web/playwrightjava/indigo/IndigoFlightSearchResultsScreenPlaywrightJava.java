@@ -1,7 +1,6 @@
 package com.znsio.teswiz.screen.web.playwrightjava.indigo;
 
 import com.microsoft.playwright.Locator;
-import com.znsio.teswiz.runner.Visual;
 import com.znsio.teswiz.screen.indigo.IndigoFlightSearchResultsScreen;
 import com.znsio.teswiz.web.playwright.screen.PlaywrightJavaScreenContext;
 
