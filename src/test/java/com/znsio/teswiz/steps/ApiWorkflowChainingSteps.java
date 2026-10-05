@@ -1,7 +1,6 @@
 package com.znsio.teswiz.steps;
 
 import com.znsio.teswiz.businessLayer.apiChaining.ApiWorkflowChainingBL;
-import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 

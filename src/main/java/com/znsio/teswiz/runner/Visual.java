@@ -50,7 +50,6 @@ import com.applitools.eyes.FileLogger;
 import com.applitools.eyes.MatchLevel;
 import com.applitools.eyes.ProxySettings;
 import com.applitools.eyes.RectangleSize;
-import com.applitools.eyes.Region;
 import com.applitools.eyes.TestResultContainer;
 import com.applitools.eyes.TestResults;
 import com.applitools.eyes.TestResultsStatus;

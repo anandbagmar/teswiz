@@ -43,6 +43,7 @@ public class TeswizTestNgListener implements ITestListener {
     @Override
     public void onTestSuccess(ITestResult result) {
         passedCount.incrementAndGet();
+        com.znsio.teswiz.analytics.TelemetryCollector.recordScenarioOutcome(true);
         recordOutcomeByGroup(result, true);
         recordScenarioReportData(result, TestNgCapturedStep.PASSED);
         new Hooks().afterScenario(result.getName(), false);
@@ -53,6 +54,7 @@ public class TeswizTestNgListener implements ITestListener {
     @Override
     public void onTestFailure(ITestResult result) {
         failedCount.incrementAndGet();
+        com.znsio.teswiz.analytics.TelemetryCollector.recordScenarioOutcome(false);
         recordOutcomeByGroup(result, false);
         recordScenarioReportData(result, TestNgCapturedStep.FAILED);
         new Hooks().afterScenario(result.getName(), true);
@@ -63,6 +65,7 @@ public class TeswizTestNgListener implements ITestListener {
     @Override
     public void onTestSkipped(ITestResult result) {
         skippedCount.incrementAndGet();
+        com.znsio.teswiz.analytics.TelemetryCollector.recordScenarioOutcome(false);
         recordScenarioReportData(result, TestNgCapturedStep.FAILED);
         new Hooks().afterScenario(result.getName(), true);
         LOGGER.info(String.format("Test finished: name=\"%s\", status=SKIPPED", result.getName()));
@@ -73,6 +76,7 @@ public class TeswizTestNgListener implements ITestListener {
         long durationMillis = java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAtNanos);
         LOGGER.info(String.format("Test run completed: total=%d, passed=%d, failed=%d, skipped=%d, durationMs=%d",
                 startedCount.get(), passedCount.get(), failedCount.get(), skippedCount.get(), durationMillis));
+        com.znsio.teswiz.analytics.TelemetryCollector.sendRunCompletedEvent();
     }
 
     private void recordScenarioReportData(ITestResult result, String status) {

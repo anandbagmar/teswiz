@@ -42,11 +42,8 @@ import static com.znsio.teswiz.runner.Runner.NOT_SET;
 import static com.znsio.teswiz.runner.Setup.CAPS;
 import com.znsio.teswiz.tools.JsonPrettyPrinter;
 import com.znsio.teswiz.tools.OsUtils;
-import static com.znsio.teswiz.tools.OverriddenVariable.getOverriddenStringValue;
 import com.znsio.teswiz.tools.ReportPortalLogger;
 import com.znsio.teswiz.tools.SensitiveDataMasker;
-import com.znsio.teswiz.tools.cmd.CommandLineExecutor;
-import com.znsio.teswiz.tools.cmd.CommandLineResponse;
 
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.InteractsWithApps;

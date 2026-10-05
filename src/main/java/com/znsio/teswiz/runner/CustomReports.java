@@ -2,7 +2,6 @@ package com.znsio.teswiz.runner;
 
 import com.znsio.teswiz.reporting.TestExecutionMetadataBuilder;
 import com.znsio.teswiz.entities.TEST_CONTEXT;
-import com.znsio.teswiz.tools.OsUtils;
 import net.masterthought.cucumber.Configuration;
 import net.masterthought.cucumber.ReportBuilder;
 import net.masterthought.cucumber.Reportable;

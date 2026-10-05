@@ -1,7 +1,6 @@
 package com.znsio.teswiz.runner;
 
 import com.znsio.teswiz.mobile.session.AppiumDeviceSessionRegistry;
-import com.znsio.teswiz.mobile.session.MobileDriverSession;
 
 /**
  * Device Manager - Handles all device related information's e.g UDID, Model, etc

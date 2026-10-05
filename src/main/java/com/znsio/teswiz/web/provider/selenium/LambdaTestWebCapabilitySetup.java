@@ -1,6 +1,5 @@
 package com.znsio.teswiz.web.provider.selenium;
 
-import com.znsio.teswiz.entities.Platform;
 import org.openqa.selenium.MutableCapabilities;
 
 import java.util.HashMap;

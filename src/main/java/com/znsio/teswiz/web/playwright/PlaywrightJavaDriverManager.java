@@ -26,7 +26,6 @@ import com.znsio.teswiz.entities.TEST_CONTEXT;
 import com.znsio.teswiz.exceptions.InvalidTestDataException;
 import com.znsio.teswiz.runner.Driver;
 import com.znsio.teswiz.runner.Drivers;
-import com.znsio.teswiz.runner.Runner;
 import com.znsio.teswiz.session.SessionHandle;
 import com.znsio.teswiz.web.WebEngine;
 import com.znsio.teswiz.web.browser.WebDriverSessionResult;
