@@ -68,9 +68,16 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
 
     @Override
     public void get(String url) {
-        session.page().navigate(url, new NavigateOptions()
-                .setTimeout((double) pageLoadTimeout.toMillis())
-                .setWaitUntil(WaitUntilState.COMMIT));
+        try {
+            session.page().navigate(url, new NavigateOptions()
+                    .setTimeout((double) pageLoadTimeout.toMillis())
+                    .setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
+        } catch (com.microsoft.playwright.PlaywrightException e) {
+            LOGGER.warn("DOMContentLoaded timeout for url: {}. Falling back to COMMIT navigation.", url, e);
+            session.page().navigate(url, new NavigateOptions()
+                    .setTimeout((double) pageLoadTimeout.toMillis())
+                    .setWaitUntil(WaitUntilState.COMMIT));
+        }
     }
 
     @Override
