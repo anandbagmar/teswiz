@@ -19,11 +19,13 @@ public class AppLaunchScreenPlaywrightJava extends AppLaunchScreen {
     private final Driver driver;
     private final Visual visually;
     private final Locator loginFormLink;
+    private final com.microsoft.playwright.Page page;
     private final String screenName = AppLaunchScreenPlaywrightJava.class.getSimpleName();
 
     public AppLaunchScreenPlaywrightJava(PlaywrightJavaScreenContext context) {
         this.driver = context.driver();
         this.visually = context.visual();
+        this.page = context.page();
         this.loginFormLink = context.page().locator(LOGIN_FORM_LINK);
         visually.checkWindow(screenName, "Home screen");
     }
@@ -31,7 +33,7 @@ public class AppLaunchScreenPlaywrightJava extends AppLaunchScreen {
     @Override
     public LoginScreen selectLogin() {
         driver.printAndSavePageSourceDump();
-        loginFormLink.click();
+        page.waitForNavigation(() -> loginFormLink.click());
         return LoginScreen.get();
     }
 
