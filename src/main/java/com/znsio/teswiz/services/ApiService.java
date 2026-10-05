@@ -5,8 +5,7 @@ import com.znsio.teswiz.api.ApiEngineClient;
 import com.znsio.teswiz.api.PlaywrightApiEngineClient;
 import com.znsio.teswiz.api.RestAssuredApiEngineClient;
 import com.znsio.teswiz.api.TeswizApiResponse;
-import com.znsio.teswiz.runner.Setup;
-import com.znsio.teswiz.tools.OverriddenVariable;
+import com.znsio.teswiz.runner.Runner;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -20,8 +19,7 @@ public class ApiService {
     }
 
     private static ApiEngineClient getClient() {
-        String configuredEngine = OverriddenVariable.getOverriddenStringValue(Setup.API_ENGINE, ApiEngine.REST_ASSURED.getConfigValue());
-        ApiEngine engine = ApiEngine.from(configuredEngine);
+        ApiEngine engine = Runner.getApiEngine();
         LOGGER.debug("Selected API engine: {}", engine.getConfigValue());
 
         if (engine == ApiEngine.PLAYWRIGHT_JAVA || engine == ApiEngine.PLAYWRIGHT_TS) {

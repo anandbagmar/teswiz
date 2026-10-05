@@ -44,13 +44,13 @@ public class RunTelemetry {
         }
 
         JSONObject executionConfig = new JSONObject();
-        executionConfig.put("framework", getOverriddenStringValue(Setup.FRAMEWORK, "cucumber"));
+        executionConfig.put("framework", Setup.getStringValueFromConfigs(Setup.FRAMEWORK, "cucumber"));
         executionConfig.put("platform", Setup.getPlatform() != null ? Setup.getPlatform().name().toLowerCase() : "unknown");
-        executionConfig.put("web_engine", getOverriddenStringValue(Setup.WEB_ENGINE, "selenium"));
-        executionConfig.put("api_engine", getOverriddenStringValue(Setup.API_ENGINE, "rest-assured"));
-        executionConfig.put("browser", getOverriddenStringValue(Setup.BROWSER, "chrome"));
+        executionConfig.put("web_engine", Setup.getStringValueFromConfigs(Setup.WEB_ENGINE, "selenium"));
+        executionConfig.put("api_engine", Setup.getStringValueFromConfigs(Setup.API_ENGINE, "rest-assured"));
+        executionConfig.put("browser", Setup.getStringValueFromConfigs(Setup.BROWSER, "chrome"));
         executionConfig.put("parallel_count", Setup.getIntegerValueAsStringFromConfigs(Setup.PARALLEL));
-        executionConfig.put("headless", getOverriddenBooleanValue(Setup.HEADLESS, false));
+        executionConfig.put("headless", Setup.getBooleanValueFromConfigs(Setup.HEADLESS));
         props.put("execution_config", executionConfig);
 
         JSONObject runEnvironment = new JSONObject();
@@ -91,11 +91,11 @@ public class RunTelemetry {
             props.put("org_identifier", orgName);
         }
 
-        props.put("framework", getOverriddenStringValue(Setup.FRAMEWORK, "cucumber"));
+        props.put("framework", Setup.getStringValueFromConfigs(Setup.FRAMEWORK, "cucumber"));
         props.put("platform", Setup.getPlatform() != null ? Setup.getPlatform().name().toLowerCase() : "unknown");
-        props.put("web_engine", getOverriddenStringValue(Setup.WEB_ENGINE, "selenium"));
-        props.put("api_engine", getOverriddenStringValue(Setup.API_ENGINE, "rest-assured"));
-        props.put("is_ci", getOverriddenBooleanValue(Setup.RUN_IN_CI, false));
+        props.put("web_engine", Setup.getStringValueFromConfigs(Setup.WEB_ENGINE, "selenium"));
+        props.put("api_engine", Setup.getStringValueFromConfigs(Setup.API_ENGINE, "rest-assured"));
+        props.put("is_ci", Setup.getBooleanValueFromConfigs(Setup.RUN_IN_CI));
 
         JSONObject runMetrics = new JSONObject();
         runMetrics.put("total_scenarios", totalScenarios);

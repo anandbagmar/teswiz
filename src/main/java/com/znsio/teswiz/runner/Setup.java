@@ -10,6 +10,7 @@ import com.znsio.teswiz.exceptions.EnvironmentSetupException;
 import com.znsio.teswiz.exceptions.InvalidTestDataException;
 import com.znsio.teswiz.filters.EnvironmentIssueFilter;
 import com.znsio.teswiz.filters.apitraffic.ApiTrafficLogging;
+import com.znsio.teswiz.api.ApiEngine;
 import com.znsio.teswiz.web.WebEngine;
 import com.znsio.teswiz.tools.JsonFile;
 import com.znsio.teswiz.tools.JsonPrettyPrinter;
@@ -411,6 +412,7 @@ public class Setup {
         configs.put(BRANCH_NAME, getOverriddenStringValue(configs.get(BRANCH_NAME), getBranchNameUsingGitCommand()));
         configs.put(BROWSER, getOverriddenStringValue(BROWSER, getStringValueFromPropertiesIfAvailable(BROWSER, CHROME)));
         configs.put(WEB_ENGINE, getOverriddenStringValue(WEB_ENGINE, getStringValueFromPropertiesIfAvailable(WEB_ENGINE, DEFAULT_WEB_ENGINE)));
+        configs.put(API_ENGINE, getOverriddenStringValue(API_ENGINE, getStringValueFromPropertiesIfAvailable(API_ENGINE, ApiEngine.REST_ASSURED.getConfigValue())));
         configs.put(BUILD_ID, getOverriddenStringValue(BUILD_ID, getStringValueFromPropertiesIfAvailable(BUILD_ID, NOT_SET)));
         configs.put(BUILD_ID, getOverriddenStringValue(configs.get(BUILD_ID), NOT_SET));
         configs.put(BUILD_INITIATION_REASON, getOverriddenStringValue(BUILD_INITIATION_REASON, getStringValueFromPropertiesIfAvailable(BUILD_INITIATION_REASON, NOT_SET)));

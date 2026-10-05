@@ -10,6 +10,7 @@ import com.znsio.teswiz.testng.TestNgGroupSelection;
 import com.znsio.teswiz.testng.TestNgRunner;
 import com.znsio.teswiz.testng.TestNgTagExpressionParser;
 import com.znsio.teswiz.testng.TestNgTestClassDiscovery;
+import com.znsio.teswiz.api.ApiEngine;
 import com.znsio.teswiz.web.WebEngine;
 import com.znsio.teswiz.tools.JsonPrettyPrinter;
 import com.znsio.teswiz.tools.SensitiveDataMasker;
@@ -337,6 +338,10 @@ public class Runner {
 
     public static WebEngine getWebEngine() {
         return WebEngine.from(Setup.getFromConfigs(Setup.WEB_ENGINE));
+    }
+
+    public static ApiEngine getApiEngine() {
+        return ApiEngine.from(Setup.getFromConfigs(Setup.API_ENGINE));
     }
 
     public static String getProxyURL() {
