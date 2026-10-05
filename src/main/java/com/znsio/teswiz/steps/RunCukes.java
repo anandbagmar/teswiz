@@ -7,14 +7,10 @@ import io.cucumber.java.After;
 import io.cucumber.java.Before;
 import io.cucumber.java.BeforeStep;
 import io.cucumber.java.Scenario;
-import io.cucumber.testng.AbstractTestNGCucumberTests;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.testng.ITestContext;
-import org.testng.annotations.DataProvider;
 
-public class RunCukes
-        extends AbstractTestNGCucumberTests {
+public class RunCukes {
     private static final Logger LOGGER = LogManager.getLogger(RunCukes.class.getName());
     private final TestExecutionContext context;
 
@@ -22,16 +18,6 @@ public class RunCukes
         long threadId = Thread.currentThread().getId();
         LOGGER.info(String.format("RunCukes: ThreadId: '%s': Constructor", threadId));
         context = SessionContext.getTestExecutionContext(threadId);
-    }
-
-    @Override
-    @DataProvider(parallel = true)
-    public Object[][] scenarios(ITestContext context) {
-        LOGGER.info(String.format("RunCukes: ThreadId: %d: in overridden scenarios%n",
-                                  Thread.currentThread().getId()));
-        Object[][] scenarios = super.scenarios(context);
-        LOGGER.info(scenarios);
-        return scenarios;
     }
 
     @Before

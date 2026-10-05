@@ -5,7 +5,6 @@ import java.util.HashMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.assertj.core.api.Assertions;
-import org.testng.annotations.DataProvider;
 
 import com.applitools.eyes.selenium.BrowserType;
 import com.applitools.eyes.selenium.Configuration;
@@ -27,11 +26,8 @@ import com.znsio.teswiz.tools.ReportPortalLogger;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
 import io.cucumber.java.Scenario;
-import org.testng.ITestContext;
-import io.cucumber.testng.AbstractTestNGCucumberTests;
 
-public class RunTestCukes
-        extends AbstractTestNGCucumberTests {
+public class RunTestCukes {
     private static final Logger LOGGER = LogManager.getLogger(RunTestCukes.class.getName());
     private final TestExecutionContext context;
 
@@ -40,15 +36,6 @@ public class RunTestCukes
         LOGGER.info("RunTestCukes: Constructor: ThreadId: " + threadId);
         context = SessionContext.getTestExecutionContext(threadId);
         System.setProperty(TEST_CONTEXT.TAGS_TO_EXCLUDE_FROM_CUCUMBER_REPORT, "@android,@web,@iOS,@api,@cli,@pdf");
-    }
-
-    @Override
-    @DataProvider(parallel = true)
-    public Object[][] scenarios(ITestContext context) {
-        LOGGER.info(String.format("RunTestCukes: ThreadId: %d: in overridden scenarios%n", Thread.currentThread().getId()));
-        Object[][] scenarios = super.scenarios(context);
-        LOGGER.info(scenarios);
-        return scenarios;
     }
 
     @Before
