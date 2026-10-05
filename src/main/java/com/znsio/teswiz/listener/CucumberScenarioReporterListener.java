@@ -1,22 +1,17 @@
 package com.znsio.teswiz.listener;
 
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
 
 import com.epam.reportportal.cucumber.ScenarioReporter;
-import com.epam.reportportal.utils.MemoizingSupplier;
-import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.znsio.teswiz.runner.AppiumServerManager;
 
 public class CucumberScenarioReporterListener extends ScenarioReporter {
 
     private static final Logger LOGGER = Logger.getLogger(
             CucumberScenarioReporterListener.class.getName());
-    private static final String DUMMY_ROOT_SUITE_NAME = "My Tests";
-    private static final String RP_STORY_TYPE = "SUITE";
     public AppiumServerManager appiumServerManager;
 
     private static final Map<String, String> MIME_TYPES_EXTENSIONS =
@@ -36,14 +31,4 @@ public class CucumberScenarioReporterListener extends ScenarioReporter {
         appiumServerManager = new AppiumServerManager();
     }
 
-    @Override
-    protected void startRootItem() {
-        this.rootSuiteId = new MemoizingSupplier(() -> {
-            StartTestItemRQ rq = new StartTestItemRQ();
-            rq.setName(DUMMY_ROOT_SUITE_NAME);
-            rq.setStartTime(Calendar.getInstance().getTime());
-            rq.setType(RP_STORY_TYPE);
-            return this.getLaunch().startTestItem(rq);
-        });
-    }
 }
