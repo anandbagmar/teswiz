@@ -317,7 +317,7 @@ update_version_in_project_files() {
   fi
 
   if [ -f docs/getting-started/getting-started-guide.md ]; then
-    sed -i '' -E 's/(implementation '\''com.github.anandbagmar:teswiz:')[^']*('\'')/\1'"$VERSION"'\2/' docs/getting-started/getting-started-guide.md
+    sed -i '' -E "s/(implementation ['\"]com\.github\.anandbagmar:teswiz:)[^'\"]*(['\"])/\1${VERSION}\2/" docs/getting-started/getting-started-guide.md
   fi
 
   if [ -f Changelog.MD ]; then
