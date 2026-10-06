@@ -1310,7 +1310,8 @@ public class Visual {
 
     public VisualElement findByText(String text, com.znsio.teswiz.entities.VisualRegion region) {
         verifyOcrEnabled();
-        LOGGER.info(String.format("Locating visual element by text '%s' within region %s", text, region));
+        String regionText = null != region ? region.toString() : "[entire screen]";
+        LOGGER.info(String.format("Locating visual element by text '%s' within region %s", text, regionText));
         int maxAttempts = getVisualElementRetryAttempts();
         int retryDelayMs = getVisualElementRetryDelayMs();
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -1320,12 +1321,12 @@ public class Visual {
                 return match;
             }
             if (attempt < maxAttempts) {
-                LOGGER.info(String.format("Attempt %d of %d: Text '%s' not found via OCR in region %s, retrying after %dms...", attempt, maxAttempts, text, region, retryDelayMs));
+                LOGGER.info(String.format("Attempt %d of %d: Text '%s' not found via OCR in region %s, retrying after %dms...", attempt, maxAttempts, text, regionText, retryDelayMs));
                 try { Thread.sleep(retryDelayMs); } catch (InterruptedException ignored) {}
             }
         }
         throw new com.znsio.teswiz.exceptions.NoSuchVisualElementException(
-                String.format("Visual element with text '%s' not found via OCR in region %s.", text, region));
+                String.format("Visual element with text '%s' not found via OCR in region %s.", text, regionText));
     }
 
     public VisualElement findByImage(List<String> imageTemplatePaths) {
@@ -1342,7 +1343,8 @@ public class Visual {
 
     public VisualElement findByImage(List<String> imageTemplatePaths, double confidenceThreshold, com.znsio.teswiz.entities.VisualRegion region) {
         verifyOcrEnabled();
-        LOGGER.info(String.format("Locating visual element by candidate image templates %s with threshold %.2f within region %s", imageTemplatePaths, confidenceThreshold, region));
+        String regionText = null != region ? region.toString() : "[entire screen]";
+        LOGGER.info(String.format("Locating visual element by candidate image templates %s with threshold %.2f within region %s", imageTemplatePaths, confidenceThreshold, regionText));
         int maxAttempts = getVisualElementRetryAttempts();
         int retryDelayMs = getVisualElementRetryDelayMs();
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -1352,12 +1354,12 @@ public class Visual {
                 return match;
             }
             if (attempt < maxAttempts) {
-                LOGGER.info(String.format("Attempt %d of %d: Image templates %s not matched in region %s, retrying after %dms...", attempt, maxAttempts, imageTemplatePaths, region, retryDelayMs));
+                LOGGER.info(String.format("Attempt %d of %d: Image templates %s not matched in region %s, retrying after %dms...", attempt, maxAttempts, imageTemplatePaths, regionText, retryDelayMs));
                 try { Thread.sleep(retryDelayMs); } catch (InterruptedException ignored) {}
             }
         }
         throw new com.znsio.teswiz.exceptions.NoSuchVisualElementException(
-                String.format("Visual element matching candidate image templates %s not found in region %s (confidence threshold: %.2f).", imageTemplatePaths, region, confidenceThreshold));
+                String.format("Visual element matching candidate image templates %s not found in region %s (confidence threshold: %.2f).", imageTemplatePaths, regionText, confidenceThreshold));
     }
 
     public VisualElement findByTextOrImage(String text, List<String> imageTemplatePaths) {
@@ -1369,7 +1371,8 @@ public class Visual {
         try {
             return findByText(text, region);
         } catch (com.znsio.teswiz.exceptions.NoSuchVisualElementException e) {
-            LOGGER.info(String.format("Text '%s' not found via OCR in region %s. Falling back to candidate image templates %s", text, region, imageTemplatePaths));
+            String regionText = null != region ? region.toString() : "[entire screen]";
+            LOGGER.info(String.format("Text '%s' not found via OCR in region %s. Falling back to candidate image templates %s", text, regionText, imageTemplatePaths));
             return findByImage(imageTemplatePaths, region);
         }
     }
@@ -1390,7 +1393,8 @@ public class Visual {
 
     public List<VisualElement> findAllByText(String text, com.znsio.teswiz.entities.VisualRegion region) {
         verifyOcrEnabled();
-        LOGGER.info(String.format("Locating all visual elements matching text '%s' within region %s", text, region));
+        String regionText = null != region ? region.toString() : "[entire screen]";
+        LOGGER.info(String.format("Locating all visual elements matching text '%s' within region %s", text, regionText));
         byte[] screenshot = captureScreenshotBytes();
         return com.znsio.teswiz.visual.OcrService.findAllTextMatches(screenshot, text, region, this.driverFacade);
     }
@@ -1409,7 +1413,8 @@ public class Visual {
 
     public List<VisualElement> findAllByImage(List<String> imageTemplatePaths, double confidenceThreshold, com.znsio.teswiz.entities.VisualRegion region) {
         verifyOcrEnabled();
-        LOGGER.info(String.format("Locating all visual elements matching image templates %s with threshold %.2f within region %s", imageTemplatePaths, confidenceThreshold, region));
+        String regionText = null != region ? region.toString() : "[entire screen]";
+        LOGGER.info(String.format("Locating all visual elements matching image templates %s with threshold %.2f within region %s", imageTemplatePaths, confidenceThreshold, regionText));
         byte[] screenshot = captureScreenshotBytes();
         return com.znsio.teswiz.visual.ImageRecognitionService.findAllTemplateMatches(screenshot, imageTemplatePaths, confidenceThreshold, region, this.driverFacade);
     }
