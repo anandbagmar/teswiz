@@ -85,7 +85,9 @@ public class WeatherAPIBL {
         String geocode_url = testData.get("geocode_url").toString();
         Map<String, Object> queryParams = new HashMap<>();
         queryParams.put("q", city);
-        TeswizApiResponse response = ApiService.get(geocode_url, queryParams);
+        Map<String, String> headers = new HashMap<>();
+        headers.put("User-Agent", "teswiz-weather-api-tests");
+        TeswizApiResponse response = ApiService.get(geocode_url, queryParams, headers);
         assertThat(response.getStatusCode()).as("API status code incorrect!")
                 .isEqualTo(200);
         return new JSONArray(response.getResponseBody()).getJSONObject(0);
