@@ -362,7 +362,18 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
                     @Override
                     public Dimension getSize() {
                         com.microsoft.playwright.options.ViewportSize size = session.page().viewportSize();
-                        return null != size ? new Dimension(size.width, size.height) : new Dimension(1280, 720);
+                        if (null != size) {
+                            return new Dimension(size.width, size.height);
+                        }
+                        try {
+                            Object widthObj = session.page().evaluate("() => window.innerWidth");
+                            Object heightObj = session.page().evaluate("() => window.innerHeight");
+                            if (null != widthObj && null != heightObj) {
+                                return new Dimension(Integer.parseInt(String.valueOf(widthObj)), Integer.parseInt(String.valueOf(heightObj)));
+                            }
+                        } catch (Exception ignored) {
+                        }
+                        return new Dimension(1280, 960);
                     }
 
                     @Override
@@ -372,6 +383,14 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
 
                     @Override
                     public void maximize() {
+                        try {
+                            Object widthObj = session.page().evaluate("() => window.screen.availWidth");
+                            Object heightObj = session.page().evaluate("() => window.screen.availHeight");
+                            if (null != widthObj && null != heightObj) {
+                                session.page().setViewportSize(Integer.parseInt(String.valueOf(widthObj)), Integer.parseInt(String.valueOf(heightObj)));
+                            }
+                        } catch (Exception ignored) {
+                        }
                     }
 
                     @Override
