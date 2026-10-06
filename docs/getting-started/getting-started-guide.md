@@ -15,7 +15,7 @@ Follow this step-by-step guide to integrate **teswiz** into a new or existing Ja
 3. Copy `build.gradle.sample` to your project root, rename it to `build.gradle`, and verify the `teswiz` dependency version:
    ```groovy
    dependencies {
-       implementation 'com.github.anandbagmar:teswiz:1.0.40'
+       implementation 'com.github.anandbagmar:teswiz:1.0.41'
    }
    ```
 4. Run `npm install` in your project root to install Node dependencies for Appium 2 and Playwright TS.

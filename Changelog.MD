@@ -1,3 +1,49 @@
+## 1.0.41
+# Release Notes - teswiz v1.0.41
+
+## 🚀 Key Highlights & Improvements
+
+### 🌐 Playwright Engine (`playwright-java` & `playwright-ts`)
+* **Default Browser Launch Alignment**: Aligned `playwright-java` browser launching with standard Playwright conventions, defaulting to Playwright’s bundled Chromium across local and CI environments without unnecessary channel overrides.
+* **Navigation & Timeout Resiliency**: Implemented graceful fallback to `COMMIT` navigation in `PlaywrightJavaWebDriver` and Node worker script (`worker.mjs`) when external third-party assets (such as tracking/analytics scripts) cause `DOMCONTENTLOADED` timeouts.
+* **Synchronized Page Transitions**: Updated screen element handlers to wrap link clicks with `page.waitForNavigation()` for deterministic page state transitions.
+* **Visual Testing Stability**: Disabled CSS animations during screenshot capture and aligned navigation wait strategies to eliminate visual check flakes.
+
+### 📡 API Subsystem & Telemetry
+* **Unified API Engine Access**: Refactored `ApiService` and `RunTelemetry` to utilize the new `Runner.getApiEngine()` helper for consistent engine selection (`rest-assured`, `playwright-java`, `playwright-ts`).
+* **External API Compliance**: Updated API Business Layer requests to include standard `User-Agent` headers, resolving HTTP `403 Forbidden` policy blocks on third-party services like OpenStreetMap/Nominatim.
+
+### 📦 Dependencies & Compatibility
+* **ReportPortal Cucumber 8 Support**: Upgraded `agent-java-cucumber7` to `5.4.10` for seamless compatibility with Cucumber 8 and TestNG reporting.
+* **Linux CI Tesseract Compatibility**: Pinned `tess4j` to `5.11.0` to resolve native `libtesseract` symbol loading errors (`pixBackgroundNormTo1MinMax`) on Linux runner environments.
+* **Deprecation Cleanups**: Removed deprecated `AbstractTestNGCucumberTests` inheritance from Cucumber glue runners (`RunCukes` and `RunTestCukes`).
+* **Configuration Cleanup**: Removed unused legacy configuration properties and streamlined property template contracts.
+
+---
+
+## 🛠️ Summary of Changed Files
+
+* `build.gradle` — Version bump to `1.0.41` and ReportPortal agent upgrade.
+* `src/main/java/com/znsio/teswiz/web/playwright/PlaywrightJavaWebDriver.java` — Navigation fallback to `COMMIT` on timeout.
+* `src/main/java/com/znsio/teswiz/web/playwright/PlaywrightJavaDriverManager.java` — Aligned browser channel defaults.
+* `playwright/worker.mjs` — Added navigation fallback handling for Node Playwright runner.
+* `src/main/java/com/znsio/teswiz/services/ApiService.java` & `src/main/java/com/znsio/teswiz/runner/Runner.java` — Added `Runner.getApiEngine()` helper and refactored client resolution.
+* `src/main/java/com/znsio/teswiz/listener/CucumberScenarioReporterListener.java` — ReportPortal listener updates.
+* `src/main/java/com/znsio/teswiz/steps/RunCukes.java` & `src/test/java/com/znsio/teswiz/steps/RunTestCukes.java` — Removed deprecated Cucumber TestNG class extensions.
+* `src/test/java/com/znsio/teswiz/businessLayer/weatherAPI/WeatherAPIBL.java` — Added `User-Agent` header for Nominatim API endpoints.
+* `src/test/java/com/znsio/teswiz/screen/web/playwrightjava/theapp/AppLaunchScreenPlaywrightJava.java` — Synchronized page navigation.
+
+---
+
+## 📋 Upgrade Instructions
+
+Update `build.gradle` in your project:
+
+```groovy
+dependencies {
+    implementation 'com.github.anandbagmar:teswiz:1.0.41'
+}
+
 ## 1.0.40
 - Update publishRelease.sh, AGENTS.md, and Changelog
 - Add documentation links across Capability Matrix and README
