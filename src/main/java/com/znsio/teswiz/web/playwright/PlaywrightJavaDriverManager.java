@@ -195,11 +195,18 @@ public final class PlaywrightJavaDriverManager {
                     && !baseUrl.isBlank()) {
                 options.setBaseURL(baseUrl);
             }
-            if (contextOptions.containsKey("viewport") && contextOptions.get("viewport") instanceof Map<?, ?> viewportMap) {
-                Object w = viewportMap.get("width");
-                Object h = viewportMap.get("height");
-                if (null != w && null != h) {
-                    options.setViewportSize(Integer.parseInt(String.valueOf(w)), Integer.parseInt(String.valueOf(h)));
+            if (contextOptions.containsKey("viewport")) {
+                Object viewportObj = contextOptions.get("viewport");
+                if (viewportObj instanceof Map<?, ?> viewportMap) {
+                    Object w = viewportMap.get("width");
+                    Object h = viewportMap.get("height");
+                    if (null != w && null != h) {
+                        options.setViewportSize(Integer.parseInt(String.valueOf(w)), Integer.parseInt(String.valueOf(h)));
+                    } else {
+                        options.setViewportSize((com.microsoft.playwright.options.ViewportSize) null);
+                    }
+                } else if (null == viewportObj) {
+                    options.setViewportSize((com.microsoft.playwright.options.ViewportSize) null);
                 }
             }
             if (contextOptions.containsKey("locale") && contextOptions.get("locale") instanceof String locale

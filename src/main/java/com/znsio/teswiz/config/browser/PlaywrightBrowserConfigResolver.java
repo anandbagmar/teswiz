@@ -49,19 +49,31 @@ public final class PlaywrightBrowserConfigResolver {
             addNormalizedArguments(playwrightLaunchOptions.optJSONArray("args"), launchArgs);
         }
 
+        boolean isMaximized = browserConfigForBrowserType.optBoolean("maximize", false);
+        if (launchArgs.stream().anyMatch(arg -> arg.contains("start-maximized"))) {
+            isMaximized = true;
+        }
+        if (isMaximized) {
+            launchArgs.add("--start-maximized");
+        }
+
         Map<String, Object> contextOptions = new LinkedHashMap<>();
         if (null != playwrightContextOptions) {
             contextOptions.putAll(playwrightContextOptions.toMap());
         }
         if (!contextOptions.containsKey("viewport")) {
-            int defaultWidth = com.znsio.teswiz.config.TeswizRuntimeConfiguration
-                    .getInt(com.znsio.teswiz.config.TeswizRuntimeConfiguration.DRIVER_VIEWPORT_WIDTH);
-            int defaultHeight = com.znsio.teswiz.config.TeswizRuntimeConfiguration
-                    .getInt(com.znsio.teswiz.config.TeswizRuntimeConfiguration.DRIVER_VIEWPORT_HEIGHT);
-            Map<String, Object> viewport = new LinkedHashMap<>();
-            viewport.put("width", defaultWidth);
-            viewport.put("height", defaultHeight);
-            contextOptions.put("viewport", viewport);
+            if (isMaximized) {
+                contextOptions.put("viewport", null);
+            } else {
+                int defaultWidth = com.znsio.teswiz.config.TeswizRuntimeConfiguration
+                        .getInt(com.znsio.teswiz.config.TeswizRuntimeConfiguration.DRIVER_VIEWPORT_WIDTH);
+                int defaultHeight = com.znsio.teswiz.config.TeswizRuntimeConfiguration
+                        .getInt(com.znsio.teswiz.config.TeswizRuntimeConfiguration.DRIVER_VIEWPORT_HEIGHT);
+                Map<String, Object> viewport = new LinkedHashMap<>();
+                viewport.put("width", defaultWidth);
+                viewport.put("height", defaultHeight);
+                contextOptions.put("viewport", viewport);
+            }
         }
         boolean ignoreHttpErrors = browserConfigForBrowserType.optBoolean("acceptInsecureCerts", false);
         if (null != playwrightContextOptions && playwrightContextOptions.has("ignoreHTTPSErrors")) {

@@ -93,7 +93,7 @@ class PlaywrightBrowserConfigResolverTest {
 
         assertThat(config.headless()).isTrue();
         assertThat(config.launchArgs()).contains("--use-fake-device-for-media-stream", "--lang=en-US",
-                "--disable-gpu");
+                "--disable-gpu", "--start-maximized");
         assertThat(config.channel()).isEqualTo("chrome");
         assertThat(config.executablePath())
                 .isEqualTo("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome");
@@ -153,8 +153,8 @@ class PlaywrightBrowserConfigResolverTest {
 
         PlaywrightBrowserConfig config = new PlaywrightBrowserConfigResolver().resolve("chrome", context);
 
-        assertThat(config.launchArgs()).containsExactly("--use-fake-device-for-media-stream", "--lang=en-US",
-                "--disable-gpu");
+        assertThat(config.launchArgs()).contains("--use-fake-device-for-media-stream", "--lang=en-US",
+                "--disable-gpu", "--start-maximized");
         assertThat(config.executablePath())
                 .isEqualTo("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome");
         assertThat(config.contextOptions()).containsEntry("ignoreHTTPSErrors", true)
@@ -224,10 +224,28 @@ class PlaywrightBrowserConfigResolverTest {
     }
 
     @Test
-    void shouldDefaultViewportInContextOptionsFromRuntimeConfigWhenOmitted() {
+    void shouldSetNullViewportInContextOptionsWhenMaximizeIsTrue() {
         Setup.load(CONFIG_FILE);
         Setup.loadAndUpdateConfigParameters(CONFIG_FILE);
-        TestExecutionContext context = new TestExecutionContext("playwright-browser-config-default-viewport");
+        TestExecutionContext context = new TestExecutionContext("playwright-browser-config-maximized");
+
+        PlaywrightBrowserConfig config = new PlaywrightBrowserConfigResolver().resolve("chrome", context);
+
+        assertThat(config.launchArgs()).contains("--start-maximized");
+        assertThat(config.contextOptions()).containsKey("viewport");
+        assertThat(config.contextOptions().get("viewport")).isNull();
+    }
+
+    @Test
+    void shouldDefaultViewportInContextOptionsFromRuntimeConfigWhenMaximizeIsFalseAndViewportOmitted() throws Exception {
+        Setup.load(CONFIG_FILE);
+        Setup.loadAndUpdateConfigParameters(CONFIG_FILE);
+        TestExecutionContext context = new TestExecutionContext("playwright-browser-config-fixed-viewport");
+        String defaultJson = Files.readString(Path.of("configs/browser_config.json"));
+        String unmaximizedJson = defaultJson.replace("\"maximize\": true", "\"maximize\": false");
+        Path customConfig = Files.createTempFile("playwright-browser-config-unmaximized-", ".json");
+        Files.writeString(customConfig, unmaximizedJson);
+        context.addTestState(TEST_CONTEXT.UPDATED_BROWSER_CONFIG_FILE_FOR_THIS_TEST, customConfig.toString());
 
         PlaywrightBrowserConfig config = new PlaywrightBrowserConfigResolver().resolve("chrome", context);
 
