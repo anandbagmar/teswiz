@@ -1,3 +1,58 @@
+## 1.0.42
+# Release Notes - teswiz v1.0.41
+
+## 🚀 Key Highlights & Enhancements
+
+### 🌐 Playwright Engine (`playwright-java` & `playwright-ts`)
+* **Maximized Window Mode Parity**: Fixed viewport resolution in `PlaywrightBrowserConfigResolver` to omit fixed viewport size (`1280x960`) when `"maximize": true` or `--start-maximized` is configured. This allows Playwright Java and TS engines to honor full-screen maximized windows without fixed viewport emulation overriding `--start-maximized`.
+* **Dynamic Window Controls**: Updated `PlaywrightJavaWebDriver.manage().window().maximize()` to expand viewport to screen available size (`window.screen.availWidth` x `availHeight`), and `getSize()` to evaluate actual inner window dimensions when viewport is `null`.
+* **Navigation & Timeout Resiliency**: Added automatic fallback to `COMMIT` navigation in `PlaywrightJavaWebDriver` and Node worker script (`worker.mjs`) when slow third-party scripts cause `DOMCONTENTLOADED` timeouts.
+* **Synchronized Page Transitions**: Wrapped link clicks with `page.waitForNavigation()` in Playwright Java screen handlers to ensure smooth navigation transitions.
+* **Visual Testing Parity**: Disabled CSS animations during screenshot capture and aligned navigation wait strategies to eliminate visual check flakes.
+
+### 👁️ Visual Subsystem & OCR Logging
+* **OCR Region Log Formatting**: Improved logger output in `Visual.java` to display `[entire screen]` instead of raw Java `null` when performing OCR or image template detection without an explicit bounding box crop.
+
+### 📡 API Subsystem & Telemetry
+* **Unified Engine Resolution**: Refactored `ApiService` and `RunTelemetry` to consume API engine settings uniformly via `Runner.getApiEngine()` (`rest-assured`, `playwright-java`, `playwright-ts`).
+* **API Policy Compliance**: Passed explicit `User-Agent` headers in `WeatherAPIBL` to satisfy OpenStreetMap/Nominatim policy requirements and eliminate HTTP `403 Forbidden` errors.
+
+### 🧹 Configuration & Repository Cleanups
+* **Configuration Normalization**: Removed redundant `# Historical properties...` and `# Project/provider-specific properties...` comment lines across all `configs/**/*.properties` files.
+* **Gradle Plugin Modernization**: Updated deprecated `com.github.ben-manes.versions` to `io.github.ben-manes.versions` in `build.gradle`.
+* **Publish Script Fix**: Resolved bash single-quote syntax errors on line 320 in `publishRelease.sh`.
+* **Cucumber Deprecation Cleanup**: Removed deprecated `AbstractTestNGCucumberTests` inheritance from Cucumber runners (`RunCukes` and `RunTestCukes`).
+
+### 📦 Dependencies & Compatibility
+* **ReportPortal Cucumber 8 Support**: Upgraded `agent-java-cucumber7` to `5.4.10` for full Cucumber 8 and TestNG compatibility.
+* **Linux CI Tesseract Support**: Pinned `tess4j` to `5.11.0` to prevent `libtesseract` missing symbol errors (`pixBackgroundNormTo1MinMax`) on Linux runners.
+
+---
+
+## 🛠️ Changed Files Summary
+
+* `build.gradle` — Version bump to `1.0.41`, plugin ID update, and dependency upgrades.
+* `src/main/java/com/znsio/teswiz/config/browser/PlaywrightBrowserConfigResolver.java` — Maximized viewport resolution logic.
+* `src/main/java/com/znsio/teswiz/web/playwright/PlaywrightJavaDriverManager.java` — Handled `null` viewport size in context options.
+* `src/main/java/com/znsio/teswiz/web/playwright/PlaywrightJavaWebDriver.java` — `maximize()`, `getSize()`, and navigation fallback to `COMMIT`.
+* `playwright/worker.mjs` — Maximized viewport support and navigation fallback in Node worker.
+* `src/main/java/com/znsio/teswiz/runner/Visual.java` — Formatted `null` OCR region logging output as `[entire screen]`.
+* `src/main/java/com/znsio/teswiz/services/ApiService.java` & `src/main/java/com/znsio/teswiz/runner/Runner.java` — Refactored API engine lookup.
+* `src/test/java/com/znsio/teswiz/businessLayer/weatherAPI/WeatherAPIBL.java` — Added `User-Agent` header for Nominatim API endpoints.
+* `publishRelease.sh` — Fixed quote escaping syntax error.
+* `configs/**/*.properties` — Cleaned up redundant comment headers.
+
+---
+
+## 📋 Installation & Upgrade
+
+To use version `1.0.41` in your Gradle project:
+
+```groovy
+dependencies {
+    implementation 'com.github.anandbagmar:teswiz:1.0.41'
+}
+
 ## 1.0.41
 # Release Notes - teswiz v1.0.41
 
