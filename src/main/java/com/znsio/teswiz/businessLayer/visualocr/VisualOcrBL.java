@@ -58,37 +58,51 @@ public class VisualOcrBL {
 
     public VisualElement findVisualElementByText(String ocrText) {
         LOGGER.info("Finding visual element by OCR text '{}'", ocrText);
-        return visualOcrScreen().findVisualElementByText(ocrText);
+        VisualElement element = visualOcrScreen().findVisualElementByText(ocrText);
+        LOGGER.info("Find by OCR text '{}' completed: {}", ocrText, describe(element));
+        return element;
     }
 
     public VisualElement findVisualElementByImage(String imageTemplatePath) {
         LOGGER.info("Finding visual element by image template '{}'", imageTemplatePath);
-        return visualOcrScreen().findVisualElementByImage(List.of(imageTemplatePath));
+        VisualElement element = visualOcrScreen().findVisualElementByImage(List.of(imageTemplatePath));
+        LOGGER.info("Find by image template '{}' completed: {}", imageTemplatePath, describe(element));
+        return element;
     }
 
     public VisualElement findVisualElementByImages(List<String> imageTemplatePaths) {
         LOGGER.info("Finding visual element by image templates {}", imageTemplatePaths);
-        return visualOcrScreen().findVisualElementByImage(imageTemplatePaths);
+        VisualElement element = visualOcrScreen().findVisualElementByImage(imageTemplatePaths);
+        LOGGER.info("Find by image templates {} completed: {}", imageTemplatePaths, describe(element));
+        return element;
     }
 
     public VisualElement findVisualElementByTextOrImage(String ocrText, String imageTemplatePath) {
         LOGGER.info("Finding visual element by OCR text '{}' falling back to image template '{}'", ocrText, imageTemplatePath);
-        return visualOcrScreen().findVisualElementByTextOrImage(ocrText, List.of(imageTemplatePath));
+        VisualElement element = visualOcrScreen().findVisualElementByTextOrImage(ocrText, List.of(imageTemplatePath));
+        LOGGER.info("Find by OCR text '{}' or image template '{}' completed: {}", ocrText, imageTemplatePath, describe(element));
+        return element;
     }
 
     public VisualElement findVisualElementByTextOrImages(String ocrText, List<String> imageTemplatePaths) {
         LOGGER.info("Finding visual element by OCR text '{}' falling back to image templates {}", ocrText, imageTemplatePaths);
-        return visualOcrScreen().findVisualElementByTextOrImage(ocrText, imageTemplatePaths);
+        VisualElement element = visualOcrScreen().findVisualElementByTextOrImage(ocrText, imageTemplatePaths);
+        LOGGER.info("Find by OCR text '{}' or image templates {} completed: {}", ocrText, imageTemplatePaths, describe(element));
+        return element;
     }
 
     public VisualElement findVisualElementByImageOrText(String imageTemplatePath, String ocrText) {
         LOGGER.info("Finding visual element by image template '{}' falling back to OCR text '{}'", imageTemplatePath, ocrText);
-        return visualOcrScreen().findVisualElementByImageOrText(List.of(imageTemplatePath), ocrText);
+        VisualElement element = visualOcrScreen().findVisualElementByImageOrText(List.of(imageTemplatePath), ocrText);
+        LOGGER.info("Find by image template '{}' or OCR text '{}' completed: {}", imageTemplatePath, ocrText, describe(element));
+        return element;
     }
 
     public VisualElement findVisualElementByImagesOrText(List<String> imageTemplatePaths, String ocrText) {
         LOGGER.info("Finding visual element by image templates {} falling back to OCR text '{}'", imageTemplatePaths, ocrText);
-        return visualOcrScreen().findVisualElementByImageOrText(imageTemplatePaths, ocrText);
+        VisualElement element = visualOcrScreen().findVisualElementByImageOrText(imageTemplatePaths, ocrText);
+        LOGGER.info("Find by image templates {} or OCR text '{}' completed: {}", imageTemplatePaths, ocrText, describe(element));
+        return element;
     }
 
     // ------------------------------------------------------------------------
@@ -97,37 +111,51 @@ public class VisualOcrBL {
 
     public List<VisualElement> findAllVisualElementsByText(String ocrText) {
         LOGGER.info("Finding all visual elements by OCR text '{}'", ocrText);
-        return visualOcrScreen().findAllVisualElementsByText(ocrText);
+        List<VisualElement> elements = visualOcrScreen().findAllVisualElementsByText(ocrText);
+        LOGGER.info("Find all by OCR text '{}' completed: {}", ocrText, describe(elements));
+        return elements;
     }
 
     public List<VisualElement> findAllVisualElementsByImage(String imageTemplatePath) {
         LOGGER.info("Finding all visual elements by image template '{}'", imageTemplatePath);
-        return visualOcrScreen().findAllVisualElementsByImage(List.of(imageTemplatePath));
+        List<VisualElement> elements = visualOcrScreen().findAllVisualElementsByImage(List.of(imageTemplatePath));
+        LOGGER.info("Find all by image template '{}' completed: {}", imageTemplatePath, describe(elements));
+        return elements;
     }
 
     public List<VisualElement> findAllVisualElementsByImages(List<String> imageTemplatePaths) {
         LOGGER.info("Finding all visual elements by image templates {}", imageTemplatePaths);
-        return visualOcrScreen().findAllVisualElementsByImage(imageTemplatePaths);
+        List<VisualElement> elements = visualOcrScreen().findAllVisualElementsByImage(imageTemplatePaths);
+        LOGGER.info("Find all by image templates {} completed: {}", imageTemplatePaths, describe(elements));
+        return elements;
     }
 
     public List<VisualElement> findAllVisualElementsByTextOrImage(String ocrText, String imageTemplatePath) {
         LOGGER.info("Finding all visual elements by OCR text '{}' falling back to image template '{}'", ocrText, imageTemplatePath);
-        return visualOcrScreen().findAllVisualElementsByTextOrImage(ocrText, List.of(imageTemplatePath));
+        List<VisualElement> elements = visualOcrScreen().findAllVisualElementsByTextOrImage(ocrText, List.of(imageTemplatePath));
+        LOGGER.info("Find all by OCR text '{}' or image template '{}' completed: {}", ocrText, imageTemplatePath, describe(elements));
+        return elements;
     }
 
     public List<VisualElement> findAllVisualElementsByTextOrImages(String ocrText, List<String> imageTemplatePaths) {
         LOGGER.info("Finding all visual elements by OCR text '{}' falling back to image templates {}", ocrText, imageTemplatePaths);
-        return visualOcrScreen().findAllVisualElementsByTextOrImage(ocrText, imageTemplatePaths);
+        List<VisualElement> elements = visualOcrScreen().findAllVisualElementsByTextOrImage(ocrText, imageTemplatePaths);
+        LOGGER.info("Find all by OCR text '{}' or image templates {} completed: {}", ocrText, imageTemplatePaths, describe(elements));
+        return elements;
     }
 
     public List<VisualElement> findAllVisualElementsByImageOrText(String imageTemplatePath, String ocrText) {
         LOGGER.info("Finding all visual elements by image template '{}' falling back to OCR text '{}'", imageTemplatePath, ocrText);
-        return findAllVisualElementsByImagePathsOrText(List.of(imageTemplatePath), ocrText);
+        List<VisualElement> elements = findAllVisualElementsByImagePathsOrText(List.of(imageTemplatePath), ocrText);
+        LOGGER.info("Find all by image template '{}' or OCR text '{}' completed: {}", imageTemplatePath, ocrText, describe(elements));
+        return elements;
     }
 
     public List<VisualElement> findAllVisualElementsByImagesOrText(List<String> imageTemplatePaths, String ocrText) {
         LOGGER.info("Finding all visual elements by image templates {} falling back to OCR text '{}'", imageTemplatePaths, ocrText);
-        return findAllVisualElementsByImagePathsOrText(imageTemplatePaths, ocrText);
+        List<VisualElement> elements = findAllVisualElementsByImagePathsOrText(imageTemplatePaths, ocrText);
+        LOGGER.info("Find all by image templates {} or OCR text '{}' completed: {}", imageTemplatePaths, ocrText, describe(elements));
+        return elements;
     }
 
     // ------------------------------------------------------------------------
@@ -137,6 +165,7 @@ public class VisualOcrBL {
     public VisualOcrBL verifyVisualElementIsPresentByText(String elementName, String ocrText) {
         LOGGER.info("Verifying visual element '{}' is present using OCR text '{}'", elementName, ocrText);
         VisualElement element = visualOcrScreen().findVisualElementByText(ocrText);
+        LOGGER.info("Presence check for '{}' by OCR text '{}' completed: {}", elementName, ocrText, describe(element));
         assertThat(element).as(presentByText(elementName, ocrText)).isNotNull();
         return this;
     }
@@ -144,6 +173,7 @@ public class VisualOcrBL {
     public VisualOcrBL verifyVisualElementIsNotPresentByText(String elementName, String ocrText) {
         LOGGER.info("Verifying visual element '{}' is NOT present using OCR text '{}'", elementName, ocrText);
         VisualElement element = visualOcrScreen().findVisualElementByText(ocrText);
+        LOGGER.info("Absence check for '{}' by OCR text '{}' completed: {}", elementName, ocrText, describe(element));
         assertThat(element).as(notPresentByText(elementName, ocrText)).isNull();
         return this;
     }
@@ -151,6 +181,7 @@ public class VisualOcrBL {
     public VisualOcrBL verifyVisualElementIsPresentByImage(String elementName, String imageTemplatePath) {
         LOGGER.info("Verifying visual element '{}' is present using image template '{}'", elementName, imageTemplatePath);
         VisualElement element = visualOcrScreen().findVisualElementByImage(List.of(imageTemplatePath));
+        LOGGER.info("Presence check for '{}' by image template '{}' completed: {}", elementName, imageTemplatePath, describe(element));
         assertThat(element).as(presentByImage(elementName, imageTemplatePath)).isNotNull();
         return this;
     }
@@ -158,6 +189,7 @@ public class VisualOcrBL {
     public VisualOcrBL verifyVisualElementIsNotPresentByImage(String elementName, String imageTemplatePath) {
         LOGGER.info("Verifying visual element '{}' is NOT present using image template '{}'", elementName, imageTemplatePath);
         VisualElement element = visualOcrScreen().findVisualElementByImage(List.of(imageTemplatePath));
+        LOGGER.info("Absence check for '{}' by image template '{}' completed: {}", elementName, imageTemplatePath, describe(element));
         assertThat(element).as(notPresentByImage(elementName, imageTemplatePath)).isNull();
         return this;
     }
@@ -165,6 +197,7 @@ public class VisualOcrBL {
     public VisualOcrBL verifyVisualElementIsPresentByFallbackTextOrImage(String elementName, String ocrText, String imageTemplatePath) {
         LOGGER.info("Verifying visual element '{}' is present using fallback OCR text '{}' or image template '{}'", elementName, ocrText, imageTemplatePath);
         VisualElement element = visualOcrScreen().findVisualElementByTextOrImage(ocrText, List.of(imageTemplatePath));
+        LOGGER.info("Presence check for '{}' by OCR text '{}' or image template '{}' completed: {}", elementName, ocrText, imageTemplatePath, describe(element));
         assertThat(element).as("Visual element '" + elementName + "' matched by text/image should be found").isNotNull();
         return this;
     }
@@ -172,6 +205,7 @@ public class VisualOcrBL {
     public VisualOcrBL verifyVisualElementIsPresentByFallbackImageOrText(String elementName, String imageTemplatePath, String ocrText) {
         LOGGER.info("Verifying visual element '{}' is present using fallback image template '{}' or OCR text '{}'", elementName, imageTemplatePath, ocrText);
         VisualElement element = visualOcrScreen().findVisualElementByImageOrText(List.of(imageTemplatePath), ocrText);
+        LOGGER.info("Presence check for '{}' by image template '{}' or OCR text '{}' completed: {}", elementName, imageTemplatePath, ocrText, describe(element));
         assertThat(element).as("Visual element '" + elementName + "' matched by image/text should be found").isNotNull();
         return this;
     }
@@ -179,6 +213,7 @@ public class VisualOcrBL {
     public VisualOcrBL verifyVisualElementIsPresentRelativeByText(String elementName, String targetText, String directionText, String anchorText) {
         LOGGER.info("Verifying visual element '{}' with OCR text '{}' present {} anchor text '{}'", elementName, targetText, directionText, anchorText);
         VisualElement element = visualOcrScreen().findVisualElementRelativeByText(targetText, SpatialDirection.fromString(directionText), anchorText);
+        LOGGER.info("Relative presence check for '{}' ('{}' {} '{}') completed: {}", elementName, targetText, directionText, anchorText, describe(element));
         assertThat(element).as("Visual element '" + elementName + "' relative to '" + anchorText + "' should be found").isNotNull();
         return this;
     }
@@ -187,6 +222,7 @@ public class VisualOcrBL {
         VisualRegion region = VisualRegion.inRegion(x, y, width, height);
         LOGGER.info("Verifying visual element '{}' with OCR text '{}' is present in region {}", elementName, ocrText, region);
         VisualElement element = visualOcrScreen().findVisualElementByTextInRegion(ocrText, region);
+        LOGGER.info("Region presence check for '{}' by OCR text '{}' in region {} completed: {}", elementName, ocrText, region, describe(element));
         assertThat(element).as("Visual element '" + elementName + "' in region " + region + " should be present").isNotNull();
         return this;
     }
@@ -198,6 +234,7 @@ public class VisualOcrBL {
     public VisualOcrBL verifyVisualElementCountByText(String elementName, String ocrText, int expectedCount) {
         LOGGER.info("Verifying {} visual elements named '{}' present using OCR text '{}'", expectedCount, elementName, ocrText);
         List<VisualElement> elements = pollUntilExactCount(() -> findAllVisualElementsByText(ocrText), expectedCount);
+        LOGGER.info("Count check for '{}' by OCR text '{}' completed: expected {}, {}", elementName, ocrText, expectedCount, describe(elements));
         assertThat(elements).as("Expected " + expectedCount + " visual elements matching OCR text '" + ocrText + "'").hasSize(expectedCount);
         return this;
     }
@@ -205,6 +242,7 @@ public class VisualOcrBL {
     public VisualOcrBL verifyVisualElementCountByImage(String elementName, String imageTemplatePath, int expectedCount) {
         LOGGER.info("Verifying {} visual elements named '{}' present using image template '{}'", expectedCount, elementName, imageTemplatePath);
         List<VisualElement> elements = pollUntilExactCount(() -> findAllVisualElementsByImage(imageTemplatePath), expectedCount);
+        LOGGER.info("Count check for '{}' by image template '{}' completed: expected {}, {}", elementName, imageTemplatePath, expectedCount, describe(elements));
         assertThat(elements).as("Expected " + expectedCount + " visual elements matching image template '" + imageTemplatePath + "'").hasSize(expectedCount);
         return this;
     }
@@ -212,6 +250,7 @@ public class VisualOcrBL {
     public VisualOcrBL verifyAtLeastNVisualElementsPresentByText(String elementName, String ocrText, int minCount) {
         LOGGER.info("Verifying at least {} visual elements named '{}' present using OCR text '{}'", minCount, elementName, ocrText);
         List<VisualElement> elements = pollUntilAtLeastN(() -> findAllVisualElementsByText(ocrText), minCount);
+        LOGGER.info("At-least-count check for '{}' by OCR text '{}' completed: expected at least {}, {}", elementName, ocrText, minCount, describe(elements));
         assertThat(elements).as("Expected at least " + minCount + " visual elements matching OCR text '" + ocrText + "'").hasSizeGreaterThanOrEqualTo(minCount);
         return this;
     }
@@ -219,6 +258,7 @@ public class VisualOcrBL {
     public VisualOcrBL verifyAtLeastNVisualElementsPresentByImage(String elementName, String imageTemplatePath, int minCount) {
         LOGGER.info("Verifying at least {} visual elements named '{}' present using image template '{}'", minCount, elementName, imageTemplatePath);
         List<VisualElement> elements = pollUntilAtLeastN(() -> findAllVisualElementsByImage(imageTemplatePath), minCount);
+        LOGGER.info("At-least-count check for '{}' by image template '{}' completed: expected at least {}, {}", elementName, imageTemplatePath, minCount, describe(elements));
         assertThat(elements).as("Expected at least " + minCount + " visual elements matching image template '" + imageTemplatePath + "'").hasSizeGreaterThanOrEqualTo(minCount);
         return this;
     }
@@ -230,114 +270,133 @@ public class VisualOcrBL {
     public VisualOcrBL visuallyClickUsingOcrText(String elementName, String ocrText) {
         LOGGER.info("Visually clicking '{}' using OCR text '{}'", elementName, ocrText);
         visualOcrScreen().clickVisualElementByText(elementName, ocrText);
+        LOGGER.info("Click on '{}' using OCR text '{}' completed", elementName, ocrText);
         return this;
     }
 
     public VisualOcrBL visuallyClickUsingImageTemplate(String elementName, String imageTemplatePath) {
         LOGGER.info("Visually clicking '{}' using image template '{}'", elementName, imageTemplatePath);
         visualOcrScreen().clickVisualElementByImage(elementName, List.of(imageTemplatePath));
+        LOGGER.info("Click on '{}' using image template '{}' completed", elementName, imageTemplatePath);
         return this;
     }
 
     public VisualOcrBL visuallyClickUsingFallbackOcrTextOrImageTemplate(String elementName, String ocrText, String imageTemplatePath) {
         LOGGER.info("Visually clicking '{}' using fallback OCR text '{}' or image template '{}'", elementName, ocrText, imageTemplatePath);
         visualOcrScreen().clickVisualElementByTextOrImage(elementName, ocrText, List.of(imageTemplatePath));
+        LOGGER.info("Click on '{}' using OCR text '{}' or image template '{}' completed", elementName, ocrText, imageTemplatePath);
         return this;
     }
 
     public VisualOcrBL visuallyClickUsingFallbackImageTemplateOrOcrText(String elementName, String imageTemplatePath, String ocrText) {
         LOGGER.info("Visually clicking '{}' using fallback image template '{}' or OCR text '{}'", elementName, imageTemplatePath, ocrText);
         visualOcrScreen().clickVisualElementByImageOrText(elementName, List.of(imageTemplatePath), ocrText);
+        LOGGER.info("Click on '{}' using image template '{}' or OCR text '{}' completed", elementName, imageTemplatePath, ocrText);
         return this;
     }
 
     public VisualOcrBL visuallyEnterTextUsingOcrText(String elementName, String textToEnter, String ocrText) {
         LOGGER.info("Visually entering text '{}' into '{}' using OCR text '{}'", textToEnter, elementName, ocrText);
         visualOcrScreen().enterTextIntoVisualElementByText(elementName, textToEnter, ocrText);
+        LOGGER.info("Enter text into '{}' using OCR text '{}' completed", elementName, ocrText);
         return this;
     }
 
     public VisualOcrBL visuallyDoubleClickUsingOcrText(String elementName, String ocrText) {
         LOGGER.info("Visually double-clicking '{}' using OCR text '{}'", elementName, ocrText);
         visualOcrScreen().doubleClickVisualElementByText(elementName, ocrText);
+        LOGGER.info("Double-click on '{}' using OCR text '{}' completed", elementName, ocrText);
         return this;
     }
 
     public VisualOcrBL visuallyHoverUsingOcrText(String elementName, String ocrText) {
         LOGGER.info("Visually hovering over '{}' using OCR text '{}'", elementName, ocrText);
         visualOcrScreen().hoverVisualElementByText(elementName, ocrText);
+        LOGGER.info("Hover over '{}' using OCR text '{}' completed", elementName, ocrText);
         return this;
     }
 
     public VisualOcrBL visuallyLongPressUsingOcrText(String elementName, String ocrText) {
         LOGGER.info("Visually long-pressing '{}' using OCR text '{}'", elementName, ocrText);
         visualOcrScreen().longPressVisualElementByText(elementName, ocrText);
+        LOGGER.info("Long-press on '{}' using OCR text '{}' completed", elementName, ocrText);
         return this;
     }
 
     public VisualOcrBL visuallySwipeOnElementUsingOcrText(String elementName, String directionText, String ocrText) {
         LOGGER.info("Visually swiping '{}' on '{}' using OCR text '{}'", directionText, elementName, ocrText);
         visualOcrScreen().swipeOnVisualElementByText(elementName, Direction.valueOf(directionText.toUpperCase()), ocrText);
+        LOGGER.info("Swipe '{}' on '{}' using OCR text '{}' completed", directionText, elementName, ocrText);
         return this;
     }
 
     public VisualOcrBL visuallyInspectUsingOcrText(String elementName, String ocrText) {
         LOGGER.info("Visually inspecting '{}' using OCR text '{}'", elementName, ocrText);
         visualOcrScreen().inspectVisualElementByText(elementName, ocrText);
+        LOGGER.info("Inspect of '{}' using OCR text '{}' completed", elementName, ocrText);
         return this;
     }
 
     public VisualOcrBL visuallyInspectUsingImageTemplate(String elementName, String imageTemplatePath) {
         LOGGER.info("Visually inspecting '{}' using image template '{}'", elementName, imageTemplatePath);
         visualOcrScreen().inspectVisualElementByImage(elementName, List.of(imageTemplatePath));
+        LOGGER.info("Inspect of '{}' using image template '{}' completed", elementName, imageTemplatePath);
         return this;
     }
 
     public VisualOcrBL visuallyClickElementAtIndexUsingOcrText(String elementName, int index, String ocrText) {
         LOGGER.info("Visually clicking '{}' at index {} using OCR text '{}'", elementName, index, ocrText);
         visualOcrScreen().clickVisualElementAtIndexByText(elementName, index, ocrText);
+        LOGGER.info("Click on '{}' at index {} using OCR text '{}' completed", elementName, index, ocrText);
         return this;
     }
 
     public VisualOcrBL visuallyClickElementByPositionUsingOcrText(String elementName, String positionText, String ocrText) {
         LOGGER.info("Visually clicking '{}' at position '{}' using OCR text '{}'", elementName, positionText, ocrText);
         visualOcrScreen().clickVisualElementByPositionByText(elementName, positionText, ocrText);
+        LOGGER.info("Click on '{}' at position '{}' using OCR text '{}' completed", elementName, positionText, ocrText);
         return this;
     }
 
     public VisualOcrBL visuallyClickElementByPositionUsingImageTemplate(String elementName, String positionText, String imageTemplatePath) {
         LOGGER.info("Visually clicking '{}' at position '{}' using image template '{}'", elementName, positionText, imageTemplatePath);
         visualOcrScreen().clickVisualElementByPositionByImage(elementName, positionText, List.of(imageTemplatePath));
+        LOGGER.info("Click on '{}' at position '{}' using image template '{}' completed", elementName, positionText, imageTemplatePath);
         return this;
     }
 
     public VisualOcrBL visuallyClickUsingOcrTextRelative(String elementName, String targetText, String directionText, String anchorText) {
         LOGGER.info("Visually clicking '{}' with OCR text '{}' {} anchor text '{}'", elementName, targetText, directionText, anchorText);
         visualOcrScreen().clickVisualElementRelativeByText(elementName, targetText, SpatialDirection.fromString(directionText), anchorText);
+        LOGGER.info("Relative click on '{}' ('{}' {} '{}') completed", elementName, targetText, directionText, anchorText);
         return this;
     }
 
     public VisualOcrBL visuallyFindAllInstancesUsingImageTemplate(String elementName, String imageTemplatePath) {
         LOGGER.info("Visually finding all instances of '{}' using image template '{}'", elementName, imageTemplatePath);
         visualOcrScreen().inspectVisualElementByImage(elementName, List.of(imageTemplatePath));
+        LOGGER.info("Find all instances of '{}' using image template '{}' completed", elementName, imageTemplatePath);
         return this;
     }
 
     public VisualOcrBL visuallyFindAllInstancesUsingOcrText(String elementName, String ocrText) {
         LOGGER.info("Visually finding all instances of '{}' using OCR text '{}'", elementName, ocrText);
         visualOcrScreen().inspectVisualElementByText(elementName, ocrText);
+        LOGGER.info("Find all instances of '{}' using OCR text '{}' completed", elementName, ocrText);
         return this;
     }
 
     public VisualOcrBL visuallyFindAllInstancesUsingFallbackOcrTextOrImageTemplate(String elementName, String ocrText, String imageTemplatePath) {
         LOGGER.info("Visually finding all instances of '{}' using fallback OCR text '{}' or image template '{}'", elementName, ocrText, imageTemplatePath);
         visualOcrScreen().clickVisualElementByTextOrImage(elementName, ocrText, List.of(imageTemplatePath));
+        LOGGER.info("Find all instances of '{}' using OCR text '{}' or image template '{}' completed", elementName, ocrText, imageTemplatePath);
         return this;
     }
 
     public VisualOcrBL visuallyFindAllInstancesUsingFallbackImageTemplateOrOcrText(String elementName, String imageTemplatePath, String ocrText) {
         LOGGER.info("Visually finding all instances of '{}' using fallback image template '{}' or OCR text '{}'", elementName, imageTemplatePath, ocrText);
         visualOcrScreen().clickVisualElementByImageOrText(elementName, List.of(imageTemplatePath), ocrText);
+        LOGGER.info("Find all instances of '{}' using image template '{}' or OCR text '{}' completed", elementName, imageTemplatePath, ocrText);
         return this;
     }
 
@@ -347,27 +406,37 @@ public class VisualOcrBL {
 
     public boolean tryVisuallyClickUsingOcrText(String elementName, String ocrText) {
         LOGGER.info("Attempting to visually click '{}' using OCR text '{}'", elementName, ocrText);
-        return visualOcrScreen().tryClickVisualElementByText(elementName, ocrText);
+        boolean clicked = visualOcrScreen().tryClickVisualElementByText(elementName, ocrText);
+        LOGGER.info("Attempt to click '{}' using OCR text '{}' completed: {}", elementName, ocrText, clicked ? "clicked" : "element not found");
+        return clicked;
     }
 
     public boolean tryVisuallyClickUsingImageTemplate(String elementName, String imageTemplatePath) {
         LOGGER.info("Attempting to visually click '{}' using image template '{}'", elementName, imageTemplatePath);
-        return visualOcrScreen().tryClickVisualElementByImage(elementName, List.of(imageTemplatePath));
+        boolean clicked = visualOcrScreen().tryClickVisualElementByImage(elementName, List.of(imageTemplatePath));
+        LOGGER.info("Attempt to click '{}' using image template '{}' completed: {}", elementName, imageTemplatePath, clicked ? "clicked" : "element not found");
+        return clicked;
     }
 
     public boolean tryVisuallyClickUsingFallbackOcrTextOrImageTemplate(String elementName, String ocrText, String imageTemplatePath) {
         LOGGER.info("Attempting to visually click '{}' using fallback OCR text '{}' or image template '{}'", elementName, ocrText, imageTemplatePath);
-        return visualOcrScreen().tryClickVisualElementByTextOrImage(elementName, ocrText, List.of(imageTemplatePath));
+        boolean clicked = visualOcrScreen().tryClickVisualElementByTextOrImage(elementName, ocrText, List.of(imageTemplatePath));
+        LOGGER.info("Attempt to click '{}' using OCR text '{}' or image template '{}' completed: {}", elementName, ocrText, imageTemplatePath, clicked ? "clicked" : "element not found");
+        return clicked;
     }
 
     public boolean tryVisuallyClickUsingFallbackImageTemplateOrOcrText(String elementName, String imageTemplatePath, String ocrText) {
         LOGGER.info("Attempting to visually click '{}' using fallback image template '{}' or OCR text '{}'", elementName, imageTemplatePath, ocrText);
-        return visualOcrScreen().tryClickVisualElementByImageOrText(elementName, List.of(imageTemplatePath), ocrText);
+        boolean clicked = visualOcrScreen().tryClickVisualElementByImageOrText(elementName, List.of(imageTemplatePath), ocrText);
+        LOGGER.info("Attempt to click '{}' using image template '{}' or OCR text '{}' completed: {}", elementName, imageTemplatePath, ocrText, clicked ? "clicked" : "element not found");
+        return clicked;
     }
 
     public boolean tryVisuallyClickUsingOcrTextRelative(String elementName, String targetText, String directionText, String anchorText) {
         LOGGER.info("Attempting to visually click '{}' with OCR text '{}' {} anchor text '{}'", elementName, targetText, directionText, anchorText);
-        return visualOcrScreen().tryClickVisualElementRelativeByText(elementName, targetText, SpatialDirection.fromString(directionText), anchorText);
+        boolean clicked = visualOcrScreen().tryClickVisualElementRelativeByText(elementName, targetText, SpatialDirection.fromString(directionText), anchorText);
+        LOGGER.info("Attempt to relatively click '{}' ('{}' {} '{}') completed: {}", elementName, targetText, directionText, anchorText, clicked ? "clicked" : "element not found");
+        return clicked;
     }
 
     // ------------------------------------------------------------------------
@@ -440,6 +509,14 @@ public class VisualOcrBL {
 
     private static VisualOcrScreen visualOcrScreen() {
         return VisualOcrScreen.get();
+    }
+
+    private static String describe(VisualElement element) {
+        return element == null ? "no matching element found" : "found " + element;
+    }
+
+    private static String describe(List<VisualElement> elements) {
+        return "found " + elements.size() + " matching element(s)";
     }
 
     private VisualOcrBL assertDisabledSubsystemThrows(Runnable disabledOperation) {
