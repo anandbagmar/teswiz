@@ -560,6 +560,8 @@ public class Visual {
         if (!isPlaywrightVisualDriver(innerDriver) || !driverType.equals(Driver.WEB_DRIVER)) {
             return null;
         }
+        LOGGER.debug(format("instantiatePlaywrightVisualDriver: isVisualTestingEnabled: %s",
+                isVisualTestingEnabled));
         FigmaApplitoolsConfig figmaApplitoolsConfig = getFigmaApplitoolsConfig(context);
         WebVisualNames visualNames = resolveWebVisualNames(platform, appName, testName, Runner.getWebEngine().getConfigValue(),
                 figmaApplitoolsConfig);
