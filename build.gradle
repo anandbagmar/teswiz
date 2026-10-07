@@ -2,6 +2,10 @@ import java.text.SimpleDateFormat
 import org.codehaus.groovy.runtime.GStringImpl
 
 buildscript {
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+    }
     ext {
     }
 }
