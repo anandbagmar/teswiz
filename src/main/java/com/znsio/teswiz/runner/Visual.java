@@ -97,10 +97,10 @@ public class Visual {
     private static final int DEFAULT_UFG_CONCURRENCY = 5;
     private static final String VISUAL_TESTING_DIFFERENCES_FOUND = "Visual testing differences " +
             "found? - " + "%s";
-    private static final String APP_CHECK_WINDOW_TIME_TAKEN = "%s :%s:: App: checkWindow: Time " +
-            "taken: %d" + " sec ";
-    private static final String WEB_CHECK_WINDOW_TIME_TAKEN = "%s :%s:: Web: checkWindow: Time " +
-            "taken: %d" + " sec ";
+    private static final String APP_CHECK_WINDOW_TIME_TAKEN = "{} :{}:: App: checkWindow: Time " +
+            "taken: {}" + " sec ";
+    private static final String WEB_CHECK_WINDOW_TIME_TAKEN = "{} :{}:: Web: checkWindow: Time " +
+            "taken: {}" + " sec ";
     private final Eyes eyesOnWeb;
     private final com.applitools.eyes.appium.Eyes eyesOnApp;
     private final TestExecutionContext context;
@@ -156,10 +156,7 @@ public class Visual {
     public Visual(String driverType, Platform platform, WebDriver innerDriver, String testName,
             String userPersona, String appName) {
         boolean isVisualTestingEnabled = isVisualTestingEnabled();
-        LOGGER.debug(format(
-                "Visual constructor: Driver type: %s, platform: %s, testName: %s, " +
-                        "isVisualTestingEnabled:  %s",
-                driverType, platform.name(), testName, isVisualTestingEnabled));
+        LOGGER.debug("Visual constructor: Driver type: {}, platform: {}, testName: {}, isVisualTestingEnabled:  {}", driverType, platform.name(), testName, isVisualTestingEnabled);
         this.context = SessionContext.getTestExecutionContext(Thread.currentThread().getId());
         long threadId = Thread.currentThread().getId();
         this.softly = getSoftAssertion(threadId);
@@ -186,11 +183,8 @@ public class Visual {
         File pdfFile = new File(pdfFileName);
         this.eyesOnApp = null;
         this.eyesOnWeb = null;
-        LOGGER.debug(format(
-                "Visual constructor: Driver type: %s, platform: %s, testName: %s, " +
-                        "pdfFileName:  %s",
-                "isVisualTestingEnabled:  %s",
-                driverType, platform.name(), testName, pdfFile.getName(), isVisualTestingEnabled));
+        LOGGER.debug("Visual constructor: Driver type: {}, platform: {}, testName: {}, pdfFileName: {}, isVisualTestingEnabled: {}",
+                driverType, platform.name(), testName, pdfFile.getName(), isVisualTestingEnabled);
         this.context = SessionContext.getTestExecutionContext(Thread.currentThread().getId());
         long threadId = Thread.currentThread().getId();
         this.softly = getSoftAssertion(threadId);
@@ -326,8 +320,7 @@ public class Visual {
         try {
             setProxyForPdfExecution(eyesImages);
             eyesImages.open(appName, testName);
-            LOGGER.debug(format("instantiateWebEyes:  Is Applitools Visual Testing enabled? - %s",
-                    !eyesImages.getIsDisabled()));
+            LOGGER.debug("instantiateWebEyes:  Is Applitools Visual Testing enabled? - {}", !eyesImages.getIsDisabled());
         } catch (IllegalArgumentException | EyesException e) {
             String message = format(
                     "Exception in instantiating Applitools for PDF: '%s'",
@@ -406,8 +399,7 @@ public class Visual {
         if (driverType.equals(Driver.WEB_DRIVER)) {
             isVisualTestingEnabled = false;
         }
-        LOGGER.debug(format("instantiateAppiumEyes: isVisualTestingEnabled: %s",
-                isVisualTestingEnabled));
+        LOGGER.debug("instantiateAppiumEyes: isVisualTestingEnabled: {}", isVisualTestingEnabled);
         com.applitools.eyes.appium.Eyes appEyes = new com.applitools.eyes.appium.Eyes();
         FigmaApplitoolsConfig figmaApplitoolsConfig = getFigmaApplitoolsConfig(context);
 
@@ -426,8 +418,7 @@ public class Visual {
                     ? figmaApplitoolsConfig.getBaselineEnvName()
                     : null);
             appEyes.open(innerDriver, appName, testName);
-            LOGGER.debug(format("instantiateAppiumEyes: Is Applitools Visual Testing enabled? - %s",
-                    !appEyes.getIsDisabled()));
+            LOGGER.debug("instantiateAppiumEyes: Is Applitools Visual Testing enabled? - {}", !appEyes.getIsDisabled());
         } catch (IllegalArgumentException | EyesException e) {
             String message = format(
                     "Exception in instantiating Applitools for App: '%s', Closing driver instance",
@@ -445,7 +436,7 @@ public class Visual {
     private void setProxyForAppExecution(com.applitools.eyes.appium.Eyes appEyes) {
         String proxyUrl = (String) applitoolsConfig.get(APPLITOOLS.PROXY_URL);
         if (null != proxyUrl) {
-            LOGGER.info(format("Set proxyUrl for appEyes: %s", proxyUrl));
+            LOGGER.info("Set proxyUrl for appEyes: {}", proxyUrl);
             appEyes.setProxy(new ProxySettings(proxyUrl));
         } else {
             LOGGER.debug("proxyUrl is null. No proxy set for appEyes");
@@ -495,8 +486,7 @@ public class Visual {
         if (driverType.equals(Driver.APPIUM_DRIVER)) {
             isVisualTestingEnabled = false;
         }
-        LOGGER.debug(format("instantiateWebEyes: isVisualTestingEnabled: %s",
-                isVisualTestingEnabled));
+        LOGGER.debug("instantiateWebEyes: isVisualTestingEnabled: {}", isVisualTestingEnabled);
         if (isPlaywrightVisualDriver(innerDriver)) {
             configureEyesRunnerForWeb(false);
             Eyes disabledEyes = new Eyes(seleniumEyesRunner);
@@ -529,13 +519,12 @@ public class Visual {
         addCustomPropertiesInWebTestExecution(platform, webEyes);
 
         RectangleSize setBrowserViewPortSize = getBrowserViewPortSize(driverType, innerDriver);
-        LOGGER.info(format("Using browser dimensions for Applitools: %s", setBrowserViewPortSize));
+        LOGGER.info("Using browser dimensions for Applitools: {}", setBrowserViewPortSize);
 
         try {
             setProxyForWebExecution(webEyes);
             webEyes.open(innerDriver, appName, testName, setBrowserViewPortSize);
-            LOGGER.debug(format("instantiateWebEyes:  Is Applitools Visual Testing enabled? - %s",
-                    !webEyes.getIsDisabled()));
+            LOGGER.debug("instantiateWebEyes:  Is Applitools Visual Testing enabled? - {}", !webEyes.getIsDisabled());
         } catch (IllegalArgumentException | EyesException e) {
             String message = format(
                     "Exception in instantiating Applitools for Web: '%s', Closing Web-driver " +
@@ -560,8 +549,7 @@ public class Visual {
         if (!isPlaywrightVisualDriver(innerDriver) || !driverType.equals(Driver.WEB_DRIVER)) {
             return null;
         }
-        LOGGER.debug(format("instantiatePlaywrightVisualDriver: isVisualTestingEnabled: %s",
-                isVisualTestingEnabled));
+        LOGGER.debug("instantiatePlaywrightVisualDriver: isVisualTestingEnabled: {}", isVisualTestingEnabled);
         FigmaApplitoolsConfig figmaApplitoolsConfig = getFigmaApplitoolsConfig(context);
         WebVisualNames visualNames = resolveWebVisualNames(platform, appName, testName, Runner.getWebEngine().getConfigValue(),
                 figmaApplitoolsConfig);
@@ -570,8 +558,7 @@ public class Visual {
         try {
             visualDriver.openVisualSession(createPlaywrightVisualSessionRequest(visualNames, figmaApplitoolsConfig,
                     isVisualTestingEnabled));
-            LOGGER.debug(format("instantiatePlaywrightVisualDriver: Is Applitools Visual Testing enabled? - %s",
-                    !visualDriver.isVisualSessionDisabled()));
+            LOGGER.debug("instantiatePlaywrightVisualDriver: Is Applitools Visual Testing enabled? - {}", !visualDriver.isVisualSessionDisabled());
         } catch (IllegalArgumentException | EyesException e) {
             String message = format(
                     "Exception in instantiating Applitools for Playwright Web: '%s', Closing Web-driver instance",
@@ -626,27 +613,27 @@ public class Visual {
                 }
             }
             appEyes.setConfiguration(config);
-            LOGGER.info(format("Using NML devices config for %s", getPlatform()));
+            LOGGER.info("Using NML devices config for {}", getPlatform());
         }
     }
 
     private void setBaselineEnvName(com.applitools.eyes.appium.Eyes appEyes, String baselineEnvName) {
         if (null != baselineEnvName && !baselineEnvName.isBlank()) {
-            LOGGER.info(format("Set Applitools baseline env name for app: '%s'", baselineEnvName));
+            LOGGER.info("Set Applitools baseline env name for app: '{}'", baselineEnvName);
             appEyes.setBaselineEnvName(baselineEnvName);
         }
     }
 
     private void setBaselineEnvName(Configuration configuration, String baselineEnvName) {
         if (null != baselineEnvName && !baselineEnvName.isBlank()) {
-            LOGGER.info(format("Set Applitools baseline env name for web: '%s'", baselineEnvName));
+            LOGGER.info("Set Applitools baseline env name for web: '{}'", baselineEnvName);
             configuration.setBaselineEnvName(baselineEnvName);
         }
     }
 
     private void setBaselineEnvName(com.applitools.eyes.config.Configuration configuration, String baselineEnvName) {
         if (null != baselineEnvName && !baselineEnvName.isBlank()) {
-            LOGGER.info(format("Set Applitools baseline env name for web: '%s'", baselineEnvName));
+            LOGGER.info("Set Applitools baseline env name for web: '{}'", baselineEnvName);
             configuration.setBaselineEnvName(baselineEnvName);
         }
     }
@@ -654,7 +641,7 @@ public class Visual {
     private void setProxyForWebExecution(Eyes webEyes) {
         String proxyUrl = (String) applitoolsConfig.get(APPLITOOLS.PROXY_URL);
         if (null != proxyUrl) {
-            LOGGER.info(format("Set proxyUrl for webEyes: %s", proxyUrl));
+            LOGGER.info("Set proxyUrl for webEyes: {}", proxyUrl);
             webEyes.setProxy(new ProxySettings(proxyUrl));
         } else {
             LOGGER.debug("proxyUrl is null. No proxy set for webEyes");
@@ -664,7 +651,7 @@ public class Visual {
     private void setProxyForPdfExecution(com.applitools.eyes.images.Eyes eyesImages) {
         String proxyUrl = (String) applitoolsConfig.get(APPLITOOLS.PROXY_URL);
         if (null != proxyUrl) {
-            LOGGER.info(format("Set proxyUrl for eyesImages: %s", proxyUrl));
+            LOGGER.info("Set proxyUrl for eyesImages: {}", proxyUrl);
             eyesImages.setProxy(new ProxySettings(proxyUrl));
         } else {
             LOGGER.debug("proxyUrl is null. No proxy set for eyesImages");
@@ -866,13 +853,11 @@ public class Visual {
     private List<RenderBrowserInfo> addBrowserAndDeviceConfigForUFG(boolean isUFG, Configuration ufgConfig) {
         if (null != context.getTestState(APPLITOOLS.UFG_CONFIG)) {
             ufgConfig = (Configuration) context.getTestState(APPLITOOLS.UFG_CONFIG);
-            LOGGER.debug(format("Using Browsers and devices in UFG_CONFIG provided by test: %s",
-                    ufgConfig.getBrowsersInfo()));
+            LOGGER.debug("Using Browsers and devices in UFG_CONFIG provided by test: {}", ufgConfig.getBrowsersInfo());
             return ufgConfig.getBrowsersInfo();
         } else {
             List<RenderBrowserInfo> defaultBrowserInfo = defaultApplitoolsUFGConfig();
-            LOGGER.debug(format("UFG_CONFIG NOT provided by test. Using default Browsers and devices in UFG_CONFIG: %s",
-                    defaultBrowserInfo));
+            LOGGER.debug("UFG_CONFIG NOT provided by test. Using default Browsers and devices in UFG_CONFIG: {}", defaultBrowserInfo);
             return defaultBrowserInfo;
         }
     }
@@ -882,8 +867,7 @@ public class Visual {
                 APPLITOOLS.RECTANGLE_SIZE);
         int providedBrowserViewPortSizeFromConfigHeight = providedBrowserViewPortSizeFromConfig.getHeight();
         int providedBrowserViewPortSizeFromConfigWidth = providedBrowserViewPortSizeFromConfig.getWidth();
-        LOGGER.info(format("Provided browser dimensions: %s",
-                providedBrowserViewPortSizeFromConfig));
+        LOGGER.info("Provided browser dimensions: {}", providedBrowserViewPortSizeFromConfig);
 
         if (driverType.equals(Driver.APPIUM_DRIVER) || null == innerDriver) {
             return providedBrowserViewPortSizeFromConfig;
@@ -896,7 +880,7 @@ public class Visual {
             } else {
                 actualBrowserSize = innerDriver.manage().window().getSize();
             }
-            LOGGER.info(format("Actual browser dimensions: %s", actualBrowserSize));
+            LOGGER.info("Actual browser dimensions: {}", actualBrowserSize);
             int actualHeight = convertValueFromConfigToInt(js.executeScript("return (window.innerHeight);"));
             int actualWidth = convertValueFromConfigToInt(js.executeScript("return (window.innerWidth);"));
 
@@ -914,8 +898,7 @@ public class Visual {
             return getBrowserViewPortSize(driverType, currentDriver);
         } catch (RuntimeException e) {
             RectangleSize configuredViewportSize = (RectangleSize) getValueFromConfig(APPLITOOLS.RECTANGLE_SIZE);
-            LOGGER.warn(format("Unable to resolve live browser viewport size for visual setup. Using configured viewport: %s. Cause: %s",
-                    configuredViewportSize, e.getMessage()));
+            LOGGER.warn("Unable to resolve live browser viewport size for visual setup. Using configured viewport: {}. Cause: {}", configuredViewportSize, e.getMessage());
             return configuredViewportSize;
         }
     }
@@ -951,12 +934,9 @@ public class Visual {
 
     public Visual checkWindow(String fromScreen, String tag) {
         String formattedTagName = getFormattedTagName(fromScreen, tag);
-        LOGGER.info(format("checkWindow: fromScreen: %s, tag: %s", fromScreen,
-                formattedTagName));
-        LOGGER.debug(format("checkWindow: eyesOnWeb.getIsDisabled(): %s",
-                eyesOnWeb.getIsDisabled()));
-        LOGGER.debug(format("checkWindow: eyesOnApp.getIsDisabled(): %s",
-                eyesOnApp.getIsDisabled()));
+        LOGGER.info("checkWindow: fromScreen: {}, tag: {}", fromScreen, formattedTagName);
+        LOGGER.debug("checkWindow: eyesOnWeb.getIsDisabled(): {}", eyesOnWeb.getIsDisabled());
+        LOGGER.debug("checkWindow: eyesOnApp.getIsDisabled(): {}", eyesOnApp.getIsDisabled());
 
         LocalDateTime webStart = LocalDateTime.now();
         if (null != playwrightVisualDriver) {
@@ -967,8 +947,7 @@ public class Visual {
         LocalDateTime webFinish = LocalDateTime.now();
         Duration webDuration = Duration.between(webStart, webFinish);
         if (isEnableBenchmarkPerValidation) {
-            LOGGER.info(format(WEB_CHECK_WINDOW_TIME_TAKEN, fromScreen, tag,
-                    webDuration.getSeconds()));
+            LOGGER.info(WEB_CHECK_WINDOW_TIME_TAKEN, fromScreen, tag, webDuration.getSeconds());
         }
 
         LocalDateTime appStart = LocalDateTime.now();
@@ -976,8 +955,7 @@ public class Visual {
         LocalDateTime appFinish = LocalDateTime.now();
         Duration appDuration = Duration.between(appStart, appFinish);
         if (isEnableBenchmarkPerValidation) {
-            LOGGER.info(format(APP_CHECK_WINDOW_TIME_TAKEN, fromScreen, tag,
-                    appDuration.getSeconds()));
+            LOGGER.info(APP_CHECK_WINDOW_TIME_TAKEN, fromScreen, tag, appDuration.getSeconds());
         }
 
         screenShotManager.takeScreenShot(innerDriver, formattedTagName);
@@ -992,11 +970,9 @@ public class Visual {
 
     public Visual check(String fromScreen, String tag, SeleniumCheckSettings checkSettings) {
         String formattedTagName = getFormattedTagName(fromScreen, tag);
-        LOGGER.info(format("check: fromScreen: %s, tag: %s", fromScreen, formattedTagName));
-        LOGGER.debug(
-                format("check: eyesOnWeb.getIsDisabled(): %s", eyesOnWeb.getIsDisabled()));
-        LOGGER.debug(
-                format("check: eyesOnApp.getIsDisabled(): %s", eyesOnApp.getIsDisabled()));
+        LOGGER.info("check: fromScreen: {}, tag: {}", fromScreen, formattedTagName);
+        LOGGER.debug("check: eyesOnWeb.getIsDisabled(): {}", eyesOnWeb.getIsDisabled());
+        LOGGER.debug("check: eyesOnApp.getIsDisabled(): {}", eyesOnApp.getIsDisabled());
 
         LocalDateTime webStart = LocalDateTime.now();
         if (null != playwrightVisualDriver) {
@@ -1007,8 +983,7 @@ public class Visual {
         LocalDateTime webFinish = LocalDateTime.now();
         Duration webDuration = Duration.between(webStart, webFinish);
         if (isEnableBenchmarkPerValidation) {
-            LOGGER.info(format(WEB_CHECK_WINDOW_TIME_TAKEN, fromScreen, tag,
-                    webDuration.getSeconds()));
+            LOGGER.info(WEB_CHECK_WINDOW_TIME_TAKEN, fromScreen, tag, webDuration.getSeconds());
         }
 
         LocalDateTime appStart = LocalDateTime.now();
@@ -1016,8 +991,7 @@ public class Visual {
         LocalDateTime appFinish = LocalDateTime.now();
         Duration appDuration = Duration.between(appStart, appFinish);
         if (isEnableBenchmarkPerValidation) {
-            LOGGER.info(format(APP_CHECK_WINDOW_TIME_TAKEN, fromScreen, tag,
-                    appDuration.getSeconds()));
+            LOGGER.info(APP_CHECK_WINDOW_TIME_TAKEN, fromScreen, tag, appDuration.getSeconds());
         }
 
         screenShotManager.takeScreenShot(innerDriver, formattedTagName);
@@ -1026,19 +1000,16 @@ public class Visual {
 
     public Visual check(String fromScreen, String tag, AppiumCheckSettings checkSettings) {
         String formattedTagName = getFormattedTagName(fromScreen, tag);
-        LOGGER.info(format("check: fromScreen: %s, tag: %s", fromScreen, formattedTagName));
-        LOGGER.debug(
-                format("check: eyesOnWeb.getIsDisabled(): %s", eyesOnWeb.getIsDisabled()));
-        LOGGER.debug(
-                format("check: eyesOnApp.getIsDisabled(): %s", eyesOnApp.getIsDisabled()));
+        LOGGER.info("check: fromScreen: {}, tag: {}", fromScreen, formattedTagName);
+        LOGGER.debug("check: eyesOnWeb.getIsDisabled(): {}", eyesOnWeb.getIsDisabled());
+        LOGGER.debug("check: eyesOnApp.getIsDisabled(): {}", eyesOnApp.getIsDisabled());
 
         LocalDateTime webStart = LocalDateTime.now();
         eyesOnWeb.check(formattedTagName, checkSettings);
         LocalDateTime webFinish = LocalDateTime.now();
         Duration webDuration = Duration.between(webStart, webFinish);
         if (isEnableBenchmarkPerValidation) {
-            LOGGER.info(format(WEB_CHECK_WINDOW_TIME_TAKEN, fromScreen, tag,
-                    webDuration.getSeconds()));
+            LOGGER.info(WEB_CHECK_WINDOW_TIME_TAKEN, fromScreen, tag, webDuration.getSeconds());
         }
 
         LocalDateTime appStart = LocalDateTime.now();
@@ -1046,8 +1017,7 @@ public class Visual {
         LocalDateTime appFinish = LocalDateTime.now();
         Duration appDuration = Duration.between(appStart, appFinish);
         if (isEnableBenchmarkPerValidation) {
-            LOGGER.info(format(APP_CHECK_WINDOW_TIME_TAKEN, fromScreen, tag,
-                    appDuration.getSeconds()));
+            LOGGER.info(APP_CHECK_WINDOW_TIME_TAKEN, fromScreen, tag, appDuration.getSeconds());
         }
 
         screenShotManager.takeScreenShot(innerDriver, formattedTagName);
@@ -1056,13 +1026,9 @@ public class Visual {
 
     public Visual checkWindow(String fromScreen, String tag, MatchLevel level) {
         String formattedTagName = getFormattedTagName(fromScreen, tag);
-        LOGGER.info(
-                format("checkWindow: fromScreen: %s, MatchLevel: %s, tag: %s", fromScreen,
-                        level, formattedTagName));
-        LOGGER.debug(format("checkWindow: eyesOnWeb.getIsDisabled(): %s",
-                eyesOnWeb.getIsDisabled()));
-        LOGGER.debug(format("checkWindow: eyesOnApp.getIsDisabled(): %s",
-                eyesOnApp.getIsDisabled()));
+        LOGGER.info("checkWindow: fromScreen: {}, MatchLevel: {}, tag: {}", fromScreen, level, formattedTagName);
+        LOGGER.debug("checkWindow: eyesOnWeb.getIsDisabled(): {}", eyesOnWeb.getIsDisabled());
+        LOGGER.debug("checkWindow: eyesOnApp.getIsDisabled(): {}", eyesOnApp.getIsDisabled());
 
         LocalDateTime webStart = LocalDateTime.now();
         if (null != playwrightVisualDriver) {
@@ -1073,9 +1039,7 @@ public class Visual {
         LocalDateTime webFinish = LocalDateTime.now();
         Duration webDuration = Duration.between(webStart, webFinish);
         if (isEnableBenchmarkPerValidation) {
-            LOGGER.info(format(
-                    "%s:%s:: Web: checkWindow with MatchLevel: %s: Time taken: %d sec", fromScreen,
-                    tag, level.name(), webDuration.getSeconds()));
+            LOGGER.info("{}:{}:: Web: checkWindow with MatchLevel: {}: Time taken: {} sec", fromScreen, tag, level.name(), webDuration.getSeconds());
         }
 
         LocalDateTime appStart = LocalDateTime.now();
@@ -1083,9 +1047,7 @@ public class Visual {
         LocalDateTime appFinish = LocalDateTime.now();
         Duration appDuration = Duration.between(appStart, appFinish);
         if (isEnableBenchmarkPerValidation) {
-            LOGGER.info(format(
-                    "%s:%s:: App: checkWindow with MatchLevel: %s: Time taken: %d sec", fromScreen,
-                    tag, level.name(), appDuration.getSeconds()));
+            LOGGER.info("{}:{}:: App: checkWindow with MatchLevel: {}: Time taken: {} sec", fromScreen, tag, level.name(), appDuration.getSeconds());
         }
 
         screenShotManager.takeScreenShot(innerDriver, getFormattedTagName(fromScreen, tag));
@@ -1121,20 +1083,20 @@ public class Visual {
             if (playwrightVisualDriver.isVisualSessionDisabled()) {
                 return;
             }
-            LOGGER.info(format("getVisualResultsFromWeb: user: %s", userPersona));
+            LOGGER.info("getVisualResultsFromWeb: user: {}", userPersona);
             PlaywrightVisualResults visualResults = playwrightVisualDriver.closeVisualSession();
             if (null != visualResults) {
                 for (PlaywrightVisualResults.Entry entry : visualResults.entries()) {
                     checkEachTestVisualResults(userPersona, "web", entry.browserInfo(), entry.testResults());
                 }
             }
-            LOGGER.info(format("Applitools logs available here: %s", applitoolsLogFileNameForWeb));
+            LOGGER.info("Applitools logs available here: {}", applitoolsLogFileNameForWeb);
             return;
         }
         if (Boolean.TRUE.equals(eyesOnWeb.getIsDisabled())) {
             return;
         }
-        LOGGER.info(format("getVisualResultsFromWeb: user: %s", userPersona));
+        LOGGER.info("getVisualResultsFromWeb: user: {}", userPersona);
         eyesOnWeb.closeAsync();
         TestResultsSummary allTestResults = seleniumEyesRunner.getAllTestResults(false);
         checkVisualTestResults(allTestResults, userPersona, "web", applitoolsLogFileNameForWeb);
@@ -1159,7 +1121,7 @@ public class Visual {
                 batchClose.setUrl(serverUrl);
                 String proxyUrl = (String) applitoolsConfiguration.get(APPLITOOLS.PROXY_URL);
                 if (null != proxyUrl) {
-                    LOGGER.info(format("Set proxyUrl for BatchClose: %s", proxyUrl));
+                    LOGGER.info("Set proxyUrl for BatchClose: {}", proxyUrl);
                     batchClose.setProxy(new ProxySettings(proxyUrl));
                 }
                 batchClose.setBatchId(batchIds).close();
@@ -1172,7 +1134,7 @@ public class Visual {
         if (Boolean.TRUE.equals(eyesOnApp.getIsDisabled())) {
             return;
         }
-        LOGGER.info(format("getVisualResultsFromApp: user: %s", userPersona));
+        LOGGER.info("getVisualResultsFromApp: user: {}", userPersona);
         TestResults allTestResults = eyesOnApp.close(false);
         checkEachTestVisualResults(userPersona, "app", (String) null, allTestResults);
     }
@@ -1185,7 +1147,7 @@ public class Visual {
                 checkEachTestVisualResults(userPersona, onPlatform, allTestResult.getBrowserInfo(),
                         result);
             }
-            LOGGER.info(format("Applitools logs available here: %s", applitoolsLogFileName));
+            LOGGER.info("Applitools logs available here: {}", applitoolsLogFileName);
         }
     }
 
@@ -1204,7 +1166,9 @@ public class Visual {
                 .equals(TestResultsStatus.Unresolved)
                 || result.getStatus()
                         .equals(TestResultsStatus.Failed);
-        LOGGER.info(format(VISUAL_TESTING_DIFFERENCES_FOUND, areVisualDifferenceFound));
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(format(VISUAL_TESTING_DIFFERENCES_FOUND, areVisualDifferenceFound));
+        }
         softlyFailTestIfDifferencesFound(userPersona, onPlatform, result, areVisualDifferenceFound);
     }
 
@@ -1233,8 +1197,10 @@ public class Visual {
         try {
             json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(resultMap);
         } catch (JsonProcessingException e) {
-            LOGGER.error(
+            if (LOGGER.isErrorEnabled()) {
+                LOGGER.error(
                     format("ERROR parsing Applitools results as a map%n%s", e.getMessage()));
+            }
         }
         String message = format(
                 "'%s' Visual Testing Results for user persona: '%s' :: Test: '%s'%n'%s'",
@@ -1292,7 +1258,7 @@ public class Visual {
 
     public VisualElement findByText(String text) {
         verifyOcrEnabled();
-        LOGGER.info(String.format("Locating visual element by text '%s'", text));
+        LOGGER.info("Locating visual element by text '{}'", text);
         int maxAttempts = getVisualElementRetryAttempts();
         int retryDelayMs = getVisualElementRetryDelayMs();
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -1302,7 +1268,7 @@ public class Visual {
                 return match;
             }
             if (attempt < maxAttempts) {
-                LOGGER.info(String.format("Attempt %d of %d: Text '%s' not found via OCR, retrying after %dms...", attempt, maxAttempts, text, retryDelayMs));
+                LOGGER.info("Attempt {} of {}: Text '{}' not found via OCR, retrying after {}ms...", attempt, maxAttempts, text, retryDelayMs);
                 try { Thread.sleep(retryDelayMs); } catch (InterruptedException ignored) {}
             }
         }
@@ -1313,7 +1279,7 @@ public class Visual {
     public VisualElement findByText(String text, com.znsio.teswiz.entities.VisualRegion region) {
         verifyOcrEnabled();
         String regionText = null != region ? region.toString() : "[entire screen]";
-        LOGGER.info(String.format("Locating visual element by text '%s' within region %s", text, regionText));
+        LOGGER.info("Locating visual element by text '{}' within region {}", text, regionText);
         int maxAttempts = getVisualElementRetryAttempts();
         int retryDelayMs = getVisualElementRetryDelayMs();
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -1323,7 +1289,7 @@ public class Visual {
                 return match;
             }
             if (attempt < maxAttempts) {
-                LOGGER.info(String.format("Attempt %d of %d: Text '%s' not found via OCR in region %s, retrying after %dms...", attempt, maxAttempts, text, regionText, retryDelayMs));
+                LOGGER.info("Attempt {} of {}: Text '{}' not found via OCR in region {}, retrying after {}ms...", attempt, maxAttempts, text, regionText, retryDelayMs);
                 try { Thread.sleep(retryDelayMs); } catch (InterruptedException ignored) {}
             }
         }
@@ -1346,7 +1312,9 @@ public class Visual {
     public VisualElement findByImage(List<String> imageTemplatePaths, double confidenceThreshold, com.znsio.teswiz.entities.VisualRegion region) {
         verifyOcrEnabled();
         String regionText = null != region ? region.toString() : "[entire screen]";
-        LOGGER.info(String.format("Locating visual element by candidate image templates %s with threshold %.2f within region %s", imageTemplatePaths, confidenceThreshold, regionText));
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(String.format("Locating visual element by candidate image templates %s with threshold %.2f within region %s", imageTemplatePaths, confidenceThreshold, regionText));
+        }
         int maxAttempts = getVisualElementRetryAttempts();
         int retryDelayMs = getVisualElementRetryDelayMs();
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -1356,7 +1324,7 @@ public class Visual {
                 return match;
             }
             if (attempt < maxAttempts) {
-                LOGGER.info(String.format("Attempt %d of %d: Image templates %s not matched in region %s, retrying after %dms...", attempt, maxAttempts, imageTemplatePaths, regionText, retryDelayMs));
+                LOGGER.info("Attempt {} of {}: Image templates {} not matched in region {}, retrying after {}ms...", attempt, maxAttempts, imageTemplatePaths, regionText, retryDelayMs);
                 try { Thread.sleep(retryDelayMs); } catch (InterruptedException ignored) {}
             }
         }
@@ -1374,7 +1342,7 @@ public class Visual {
             return findByText(text, region);
         } catch (com.znsio.teswiz.exceptions.NoSuchVisualElementException e) {
             String regionText = null != region ? region.toString() : "[entire screen]";
-            LOGGER.info(String.format("Text '%s' not found via OCR in region %s. Falling back to candidate image templates %s", text, regionText, imageTemplatePaths));
+            LOGGER.info("Text '{}' not found via OCR in region {}. Falling back to candidate image templates {}", text, regionText, imageTemplatePaths);
             return findByImage(imageTemplatePaths, region);
         }
     }
@@ -1384,7 +1352,7 @@ public class Visual {
         try {
             return findByImage(imageTemplatePaths);
         } catch (com.znsio.teswiz.exceptions.NoSuchVisualElementException e) {
-            LOGGER.info(String.format("Candidate images %s not matched. Falling back to OCR text '%s'", imageTemplatePaths, text));
+            LOGGER.info("Candidate images {} not matched. Falling back to OCR text '{}'", imageTemplatePaths, text);
             return findByText(text);
         }
     }
@@ -1396,7 +1364,7 @@ public class Visual {
     public List<VisualElement> findAllByText(String text, com.znsio.teswiz.entities.VisualRegion region) {
         verifyOcrEnabled();
         String regionText = null != region ? region.toString() : "[entire screen]";
-        LOGGER.info(String.format("Locating all visual elements matching text '%s' within region %s", text, regionText));
+        LOGGER.info("Locating all visual elements matching text '{}' within region {}", text, regionText);
         byte[] screenshot = captureScreenshotBytes();
         return com.znsio.teswiz.visual.OcrService.findAllTextMatches(screenshot, text, region, this.driverFacade);
     }
@@ -1416,7 +1384,9 @@ public class Visual {
     public List<VisualElement> findAllByImage(List<String> imageTemplatePaths, double confidenceThreshold, com.znsio.teswiz.entities.VisualRegion region) {
         verifyOcrEnabled();
         String regionText = null != region ? region.toString() : "[entire screen]";
-        LOGGER.info(String.format("Locating all visual elements matching image templates %s with threshold %.2f within region %s", imageTemplatePaths, confidenceThreshold, regionText));
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(String.format("Locating all visual elements matching image templates %s with threshold %.2f within region %s", imageTemplatePaths, confidenceThreshold, regionText));
+        }
         byte[] screenshot = captureScreenshotBytes();
         return com.znsio.teswiz.visual.ImageRecognitionService.findAllTemplateMatches(screenshot, imageTemplatePaths, confidenceThreshold, region, this.driverFacade);
     }
@@ -1441,7 +1411,7 @@ public class Visual {
 
     public VisualElement findRelativeByText(String targetText, com.znsio.teswiz.entities.SpatialDirection direction, String anchorText) {
         verifyOcrEnabled();
-        LOGGER.info(String.format("Locating visual element '%s' %s anchor text '%s'", targetText, direction.getDirection(), anchorText));
+        LOGGER.info("Locating visual element '{}' {} anchor text '{}'", targetText, direction.getDirection(), anchorText);
         VisualElement anchor = findByText(anchorText);
         List<VisualElement> candidates = findAllByText(targetText);
 
@@ -1455,7 +1425,7 @@ public class Visual {
 
     public VisualElement findRelativeByText(String targetText, com.znsio.teswiz.entities.SpatialDirection direction, VisualElement anchor) {
         verifyOcrEnabled();
-        LOGGER.info(String.format("Locating visual element '%s' %s anchor element", targetText, direction.getDirection()));
+        LOGGER.info("Locating visual element '{}' {} anchor element", targetText, direction.getDirection());
         List<VisualElement> candidates = findAllByText(targetText);
 
         VisualElement bestCandidate = filterAndSelectClosestRelative(anchor, candidates, direction);
@@ -1468,7 +1438,7 @@ public class Visual {
 
     public VisualElement findRelativeByImage(List<String> targetImagePaths, com.znsio.teswiz.entities.SpatialDirection direction, String anchorText) {
         verifyOcrEnabled();
-        LOGGER.info(String.format("Locating visual element matching images %s %s anchor text '%s'", targetImagePaths, direction.getDirection(), anchorText));
+        LOGGER.info("Locating visual element matching images {} {} anchor text '{}'", targetImagePaths, direction.getDirection(), anchorText);
         VisualElement anchor = findByText(anchorText);
         List<VisualElement> candidates = findAllByImage(targetImagePaths);
 
@@ -1482,7 +1452,7 @@ public class Visual {
 
     public VisualElement findRelativeByImage(List<String> targetImagePaths, com.znsio.teswiz.entities.SpatialDirection direction, VisualElement anchor) {
         verifyOcrEnabled();
-        LOGGER.info(String.format("Locating visual element matching images %s %s anchor element", targetImagePaths, direction.getDirection()));
+        LOGGER.info("Locating visual element matching images {} {} anchor element", targetImagePaths, direction.getDirection());
         List<VisualElement> candidates = findAllByImage(targetImagePaths);
 
         VisualElement bestCandidate = filterAndSelectClosestRelative(anchor, candidates, direction);

@@ -120,13 +120,13 @@ public final class LocalMobileDeviceSetup {
             JsonObject asJsonObject = JsonParser.parseString(commandOutput).getAsJsonObject();
             JsonArray deviceList = asJsonObject.get("deviceList").getAsJsonArray();
             int numberOfDevices = deviceList.size();
-            LOGGER.info(String.format("Number of iOS real devices: %d", numberOfDevices));
+            LOGGER.info("Number of iOS real devices: {}", numberOfDevices);
             LOGGER.debug("Connected iOS devices: {}",
                     SensitiveDataMasker.mask(JsonPrettyPrinter.prettyPrint(deviceList)));
             return numberOfDevices;
         }
         int numberOfDevices = commandOutput.split("\n").length;
-        LOGGER.info(String.format("Number of iOS simulators: %d", numberOfDevices));
+        LOGGER.info("Number of iOS simulators: {}", numberOfDevices);
         return numberOfDevices;
     }
 }

@@ -27,6 +27,6 @@ public final class LocalMobileExecutionProvider implements MobileExecutionProvid
                 "heads_up_notifications_enabled", "0" };
         CommandLineResponse disableNotificationsCommandResponse = CommandLineExecutor
                 .execCommand(disableNotificationsCommand);
-        LOGGER.info(String.format("disableNotificationsCommandResponse: %s", disableNotificationsCommandResponse));
+        LOGGER.info("disableNotificationsCommandResponse: {}", disableNotificationsCommandResponse);
     }
 }

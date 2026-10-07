@@ -29,37 +29,31 @@ public final class AppPathResolver {
 
     public static String resolveAppPath(String appPath, String saveToLocalDirectory) {
         if (isCloudHostedAppReference(appPath)) {
-            LOGGER.info(String.format("Cloud hosted app reference '%s' provided. Skipping local file validation.",
-                    SensitiveDataMasker.mask(appPath)));
+            LOGGER.info("Cloud hosted app reference '{}' provided. Skipping local file validation.", SensitiveDataMasker.mask(appPath));
             return appPath;
         }
         String fileName = new File(appPath).getName();
         String localFilePath = saveToLocalDirectory + File.separator + fileName;
         if (new File(localFilePath).exists()) {
-            LOGGER.info(String.format("App is already available at path: '%s'. Skipping network URL validation.",
-                    SensitiveDataMasker.mask(localFilePath)));
+            LOGGER.info("App is already available at path: '{}'. Skipping network URL validation.", SensitiveDataMasker.mask(localFilePath));
             return localFilePath;
         }
         if (isAppPathUrl(appPath)) {
-            LOGGER.info(String.format("App url '%s' is provided in capabilities. Download it, if " +
-                            "not already available at '%s'",
-                    SensitiveDataMasker.mask(appPath), SensitiveDataMasker.mask(localFilePath)));
+            LOGGER.info("App url '{}' is provided in capabilities. Download it, if not already available at '{}'", SensitiveDataMasker.mask(appPath), SensitiveDataMasker.mask(localFilePath));
             downloadFileIfDoesNotExist(appPath, localFilePath, saveToLocalDirectory);
             LOGGER.info("Changing value of appPath from URL to file path");
-            LOGGER.info(String.format("Before change, appPath value: %s", SensitiveDataMasker.mask(appPath)));
+            LOGGER.info("Before change, appPath value: {}", SensitiveDataMasker.mask(appPath));
             appPath = localFilePath;
-            LOGGER.info(String.format("After change, appPath value: %s", SensitiveDataMasker.mask(localFilePath)));
+            LOGGER.info("After change, appPath value: {}", SensitiveDataMasker.mask(localFilePath));
         } else {
-            LOGGER.info(String.format("App file path '%s' is provided in capabilities.",
-                    SensitiveDataMasker.mask(appPath)));
+            LOGGER.info("App file path '{}' is provided in capabilities.", SensitiveDataMasker.mask(appPath));
             if (!(new File(appPath).exists())) {
                 throw new InvalidTestDataException(
                         String.format("App file path '%s' provided in capabilities is incorrect", appPath));
             }
         }
-        LOGGER.info(String.format("App file path '%s' is provided in capabilities.",
-                SensitiveDataMasker.mask(appPath)));
-        LOGGER.info(String.format("File available at App file path '%s'", SensitiveDataMasker.mask(appPath)));
+        LOGGER.info("App file path '{}' is provided in capabilities.", SensitiveDataMasker.mask(appPath));
+        LOGGER.info("File available at App file path '{}'", SensitiveDataMasker.mask(appPath));
         return appPath;
     }
 
@@ -73,23 +67,23 @@ public final class AppPathResolver {
     public static boolean isAppPathUrl(String appPathUrl) {
         try {
             new URL(appPathUrl);
-            LOGGER.info(String.format("'%s' is a URL.", appPathUrl));
+            LOGGER.info("'{}' is a URL.", appPathUrl);
             validateAppUrl(appPathUrl);
             return true;
         } catch (MalformedURLException e) {
-            LOGGER.info(String.format("'%s' is not a URL.", appPathUrl));
+            LOGGER.info("'{}' is not a URL.", appPathUrl);
             return false;
         }
     }
 
     private static void downloadFile(String url, String filePath, String saveToDirectory) {
-        LOGGER.info(String.format("Downloading App from url: '%s'", url));
+        LOGGER.info("Downloading App from url: '{}'", url);
         try {
             URL fileUrl = new URL(url);
             HttpURLConnection connection = getHttpURLConnection(fileUrl);
             downloadFileFromHttpUrl(filePath, saveToDirectory, connection);
             String formattedSize = getDownloadedAppSize(Path.of(filePath));
-            LOGGER.info(String.format("App downloaded at path: '%s', having size: '%s MB'", filePath, formattedSize));
+            LOGGER.info("App downloaded at path: '{}', having size: '{} MB'", filePath, formattedSize);
         } catch (IOException e) {
             throw new InvalidTestDataException(
                     "An error occurred while opening the URL/downloading file: " + e.getMessage());
@@ -155,10 +149,10 @@ public final class AppPathResolver {
 
     private static void downloadFileIfDoesNotExist(String appPath, String filePath, String saveToDirectory) {
         if (!(new File(filePath).exists())) {
-            LOGGER.info(String.format("App is not available at path: '%s'. Download it.", appPath));
+            LOGGER.info("App is not available at path: '{}'. Download it.", appPath);
             downloadFile(appPath, filePath, saveToDirectory);
         } else {
-            LOGGER.info(String.format("App is already available at path: '%s'. No need to download it.", appPath));
+            LOGGER.info("App is already available at path: '{}'. No need to download it.", appPath);
         }
     }
 
@@ -183,10 +177,10 @@ public final class AppPathResolver {
 
             connection.disconnect();
             if (responseCode != HttpURLConnection.HTTP_OK) {
-                LOGGER.info(String.format("'%s' is an invalid URL.", appPathUrl));
+                LOGGER.info("'{}' is an invalid URL.", appPathUrl);
                 throw new InvalidTestDataException("URL is not accessible: " + appPathUrl);
             }
-            LOGGER.info(String.format("'%s' is a valid URL.", appPathUrl));
+            LOGGER.info("'{}' is a valid URL.", appPathUrl);
         } catch (IOException e) {
             throw new InvalidTestDataException(
                     String.format("Failed to make a connection using url: '%s'", appPathUrl) + e);

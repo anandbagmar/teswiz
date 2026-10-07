@@ -19,11 +19,11 @@ public final class CapabilityFileManager {
     }
 
     public static String getPathForFileInLogDir(String fullFilePath, String logDir) {
-        LOGGER.info(String.format("\tgetPathForFileInLogDir: fullFilePath: %s", fullFilePath));
+        LOGGER.info("\tgetPathForFileInLogDir: fullFilePath: {}", fullFilePath);
         Path path = Paths.get(fullFilePath);
         String fileName = path.getFileName().toString();
         String newFileName = new File(logDir + File.separator + fileName).getAbsolutePath();
-        LOGGER.info(String.format("\tNew file available here: %s", newFileName));
+        LOGGER.info("\tNew file available here: {}", newFileName);
         return newFileName;
     }
 
@@ -38,8 +38,10 @@ public final class CapabilityFileManager {
         Map cloudConfig = (Map) deviceFarm.get("cloud");
         cloudConfig.put("devices", listOfDevices);
 
-        LOGGER.info(String.format("Updated Device Lab Capabilities file: %n%s",
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(String.format("Updated Device Lab Capabilities file: %n%s",
                 JsonPrettyPrinter.prettyPrint(loadedCapabilityFile)));
+        }
 
         String updatedCapabilitiesFile = getPathForFileInLogDir(capabilityFile, logDir);
         JsonFile.saveJsonToFile(loadedCapabilityFile, updatedCapabilitiesFile);

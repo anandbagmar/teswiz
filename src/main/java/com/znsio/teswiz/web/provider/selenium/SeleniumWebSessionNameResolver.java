@@ -14,9 +14,7 @@ final class SeleniumWebSessionNameResolver {
             return Runner.getTestExecutionContext(Thread.currentThread().getId()).getTestName();
         } catch (RuntimeException e) {
             String fallbackSessionName = Setup.getFromConfigs(Setup.LAUNCH_NAME);
-            LOGGER.warn(String.format(
-                    "Unable to resolve test context name. Falling back to launch name for sessionName: '%s'",
-                    fallbackSessionName));
+            LOGGER.warn("Unable to resolve test context name. Falling back to launch name for sessionName: '{}'", fallbackSessionName);
             return fallbackSessionName;
         }
     }

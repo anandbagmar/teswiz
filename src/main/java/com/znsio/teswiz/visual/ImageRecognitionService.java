@@ -93,7 +93,7 @@ public class ImageRecognitionService {
                     VisualElement match = matchMultiScale(sceneMat, templateMat, templateName, confidenceThreshold, driverFacade);
                     if (match != null) {
                         VisualElement offsetMatch = match.withOffset(offsetX, offsetY);
-                        LOGGER.info(String.format("Successfully matched visual template '%s' at bounds %s", templateName, offsetMatch));
+                        LOGGER.info("Successfully matched visual template '{}' at bounds {}", templateName, offsetMatch);
                         return offsetMatch;
                     }
                 } finally {
@@ -250,7 +250,9 @@ public class ImageRecognitionService {
             return buildMatchedVisualElement(bestLoc, bestW, bestH, templateName, sceneWidth, bestVal, threshold, driverFacade);
         }
 
-        LOGGER.debug(String.format("Template '%s' best match score was %.4f (below threshold %.2f)", templateName, bestVal, threshold));
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(String.format("Template '%s' best match score was %.4f (below threshold %.2f)", templateName, bestVal, threshold));
+        }
         return null;
     }
 
@@ -302,14 +304,18 @@ public class ImageRecognitionService {
     }
 
     private static VisualElement buildMatchedVisualElement(Point bestLoc, int bestW, int bestH, String templateName, int sceneWidth, double matchVal, double threshold, Driver driverFacade) {
-        LOGGER.info(String.format("Template '%s' matched with score %.4f >= threshold %.2f", templateName, matchVal, threshold));
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(String.format("Template '%s' matched with score %.4f >= threshold %.2f", templateName, matchVal, threshold));
+        }
         double scaleFactor = (driverFacade != null) ? driverFacade.getViewportScaleFactor(sceneWidth) : 1.0;
         int logicalX = (int) Math.round(bestLoc.x / scaleFactor);
         int logicalY = (int) Math.round(bestLoc.y / scaleFactor);
         int logicalW = (int) Math.round(bestW / scaleFactor);
         int logicalH = (int) Math.round(bestH / scaleFactor);
-        LOGGER.info(String.format("Template '%s' matched at screenshot bounds [x=%d, y=%d, w=%d, h=%d] -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(String.format("Template '%s' matched at screenshot bounds [x=%d, y=%d, w=%d, h=%d] -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
                 templateName, (int) bestLoc.x, (int) bestLoc.y, bestW, bestH, logicalX, logicalY, logicalW, logicalH, scaleFactor));
+        }
         return new VisualElement(logicalX, logicalY, logicalW, logicalH, templateName, driverFacade);
     }
 

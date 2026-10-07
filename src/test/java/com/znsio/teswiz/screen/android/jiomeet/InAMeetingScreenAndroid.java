@@ -105,27 +105,21 @@ public class InAMeetingScreenAndroid
     }
 
     private void enableInMeetingControls(String calledFrom) {
-        LOGGER.info(String.format("enableInMeetingControls: Called from: '%s'%n", calledFrom));
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(String.format("enableInMeetingControls: Called from: '%s'%n", calledFrom));
+        }
         boolean isTopHeaderDisplayed = areInMeetingControlsDisplayed();
-        LOGGER.info(String.format(
-                "enableInMeetingControls: Called from: '%s': headers displayed?: '%s'", calledFrom,
-                isTopHeaderDisplayed));
+        LOGGER.info("enableInMeetingControls: Called from: '{}': headers displayed?: '{}'", calledFrom, isTopHeaderDisplayed);
         int retryAttempt = 0;
         if(!isTopHeaderDisplayed) {
             do {
                 int seconds = 1;
-                LOGGER.info(String.format(
-                        "enableInMeetingControls: Called from: '%s', ': headers not displayed. " +
-                                "Wait for '%d' sec and try again",
-                        calledFrom, seconds));
+                LOGGER.info("enableInMeetingControls: Called from: '{}', ': headers not displayed. Wait for '{}' sec and try again", calledFrom, seconds);
                 waitFor(seconds);
                 retryAttempt++;
                 driver.tapOnMiddleOfScreen();
                 isTopHeaderDisplayed = areInMeetingControlsDisplayed();
-                LOGGER.info(String.format(
-                        "enableInMeetingControls: Called from: '%s': retryAttempt: '%d' : are " +
-                                "headers displayed now: '%s'",
-                        calledFrom, retryAttempt, isTopHeaderDisplayed));
+                LOGGER.info("enableInMeetingControls: Called from: '{}': retryAttempt: '{}' : are headers displayed now: '{}'", calledFrom, retryAttempt, isTopHeaderDisplayed);
             } while(!isTopHeaderDisplayed && retryAttempt < 8);
             if(!isTopHeaderDisplayed) {
                 throw new InAMeetingException(

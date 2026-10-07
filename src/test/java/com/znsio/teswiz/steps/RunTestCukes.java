@@ -114,7 +114,7 @@ public class RunTestCukes {
     private void closeHeartBeatThreads() {
         if (null != context.getTestState(SAMPLE_TEST_CONTEXT.HEARTBEAT_MAP)) {
             HashMap<String, HeartBeat> heartbeatMap = (HashMap<String, HeartBeat>) context.getTestState(SAMPLE_TEST_CONTEXT.HEARTBEAT_MAP);
-            LOGGER.info(String.format("afterScenario: closeHeartBeatThreads: heartbeatMap: %d", heartbeatMap.size()));
+            LOGGER.info("afterScenario: closeHeartBeatThreads: heartbeatMap: {}", heartbeatMap.size());
             LOGGER.info("Active thread count before closing all heartBeats: " + Thread.activeCount());
             for (HeartBeat heartbeat : heartbeatMap.values()) {
                 heartbeat.stopHeartBeat();

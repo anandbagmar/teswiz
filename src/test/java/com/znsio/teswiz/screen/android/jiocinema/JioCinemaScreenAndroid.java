@@ -47,7 +47,7 @@ public class JioCinemaScreenAndroid extends JioCinemaScreen {
 
     @Override
     public boolean isMovieNumberVisibleOnScreen(int movieNumberOnScreen) {
-        LOGGER.info(String.format("validating if movie number %s is visible after swipe in 'trending in india' section", movieNumberOnScreen));
+        LOGGER.info("validating if movie number {} is visible after swipe in 'trending in india' section", movieNumberOnScreen);
         boolean isMovieVisibleOnScreen = driver.findElement(
                 AppiumBy.xpath(String.format(visibleMovieNumberXpath, movieNumberOnScreen))).isDisplayed();
         visually.check(SCREEN_NAME, String.format("movie number %s visible on screen", movieNumberOnScreen),
@@ -57,7 +57,7 @@ public class JioCinemaScreenAndroid extends JioCinemaScreen {
 
     @Override
     public JioCinemaScreen swipeTrendingItem(Direction direction, int movieNumberOnScreen) {
-        LOGGER.info(String.format("Swiping %s movie number : %s ", direction, movieNumberOnScreen));
+        LOGGER.info("Swiping {} movie number : {} ", direction, movieNumberOnScreen);
         WebElement movieTrending = driver.waitTillElementIsVisible(
                 By.xpath(String.format(movieXpath, movieNumberOnScreen)));
         driver.horizontalSwipeWithGesture(movieTrending, direction);

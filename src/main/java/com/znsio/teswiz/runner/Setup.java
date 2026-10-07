@@ -191,7 +191,7 @@ public class Setup {
         setBrowserConfigFilePath();
 
         System.setProperty(LOG_DIR, configs.get(LOG_DIR));
-        LOGGER.info(String.format("Runner called from user directory: %s", OsUtils.getUserDirectory()));
+        LOGGER.info("Runner called from user directory: {}", OsUtils.getUserDirectory());
         printLoadedConfigProperties(configFilePath);
 
         environmentConfiguration = loadEnvironmentConfiguration(configs.get(TARGET_ENVIRONMENT));
@@ -237,9 +237,9 @@ public class Setup {
 
     private static void setupDirectories() {
         List<String> files = listOfDirectoriesToCreate();
-        LOGGER.info(String.format("Create Directories: %s", files));
+        LOGGER.info("Create Directories: {}", files);
         for (String file : files) {
-            LOGGER.info(String.format("\tCreating directory: %s", file));
+            LOGGER.info("\tCreating directory: {}", file);
             try {
                 FileUtils.forceMkdir(new java.io.File(file));
             } catch (IOException e) {
@@ -279,8 +279,7 @@ public class Setup {
             } else {
                 // You're on SLF4JLoggerContext or something else (because log4j-to-slf4j is present)
                 // You cannot reconfigure Log4j Core via this context.
-                LOGGER.warn(String.format("Log4j is not using Core LoggerContext (found: %s). Skipping runtime reconfigure; set system property log4j.configurationFile=%s",
-                        ctx.getClass().getName(), configLocation));
+                LOGGER.warn("Log4j is not using Core LoggerContext (found: {}). Skipping runtime reconfigure; set system property log4j.configurationFile={}", ctx.getClass().getName(), configLocation);
             }
         } catch (Exception e) {
             throw new InvalidTestDataException("There was a problem while setting log properties file", e);
@@ -307,22 +306,24 @@ public class Setup {
                     normalized);
     }
     private static void printLoadedConfigProperties(String configFilePath) {
-        LOGGER.info(String.format("Loaded property file: %s", configFilePath));
+        LOGGER.info("Loaded property file: {}", configFilePath);
         Map<String, String> propertyValues = new LinkedHashMap<>();
         properties.forEach((k, v) -> propertyValues.put(String.valueOf(k), String.valueOf(v)));
-        LOGGER.info(String.format("Config properties: %s:%n%s", configFilePath,
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(String.format("Config properties: %s:%n%s", configFilePath,
                 SensitiveDataMasker.mask(JsonPrettyPrinter.prettyPrint(propertyValues))));
+        }
     }
 
     private static Map<String, Map> loadEnvironmentConfiguration(String environment) {
         String envConfigFile = configs.get(ENVIRONMENT_CONFIG_FILE);
-        LOGGER.info(String.format("Loading environment configuration from ENVIRONMENT_CONFIG_FILE: %s for " + "environment: %s", envConfigFile, environment));
+        LOGGER.info("Loading environment configuration from ENVIRONMENT_CONFIG_FILE: {} for environment: {}", envConfigFile, environment);
         return (NOT_SET.equalsIgnoreCase(envConfigFile)) ? new HashMap<>() : JsonFile.getNodeValueAsMapFromJsonFile(environment, envConfigFile);
     }
 
     private static Map<String, Map> loadTestDataForEnvironment(String environment) {
         String testDataFile = configs.get(TEST_DATA_FILE);
-        LOGGER.info(String.format("Loading test data from TEST_DATA_FILE: %s for environment: %s", testDataFile, environment));
+        LOGGER.info("Loading test data from TEST_DATA_FILE: {} for environment: {}", testDataFile, environment);
         return (NOT_SET.equalsIgnoreCase(testDataFile)) ? new HashMap<>() : JsonFile.getNodeValueAsMapFromJsonFile(environment, testDataFile);
     }
 
@@ -365,7 +366,7 @@ public class Setup {
             rpAttributes += String.format("BuildId: %s; ", configs.get(BUILD_ID));
         }
 
-        LOGGER.info(String.format("ReportPortal Test Execution Attributes: %s", rpAttributes));
+        LOGGER.info("ReportPortal Test Execution Attributes: {}", rpAttributes);
 
         // properties needed for atd
         System.setProperty(CLOUD_USERNAME, configs.get(CLOUD_USERNAME));
@@ -556,8 +557,8 @@ public class Setup {
 
         launchName += " " + configs.get(LAUNCH_NAME_SUFFIX);
 
-        LOGGER.info(String.format("\tRunning tests with platform: %s and the following tag criteria : %s", currentPlatform, inferredTags));
-        LOGGER.info(String.format("\tReportPortal Tests Launch name: %s", launchName));
+        LOGGER.info("\tRunning tests with platform: {} and the following tag criteria : {}", currentPlatform, inferredTags);
+        LOGGER.info("\tReportPortal Tests Launch name: {}", launchName);
 
         configs.put(PLATFORM, currentPlatform.name());
         configs.put(LAUNCH_NAME, launchName);
@@ -721,7 +722,7 @@ public class Setup {
         String[] getBranchNameCommand = new String[]{"git rev-parse --abbrev-ref HEAD"};
         CommandLineResponse response = CommandLineExecutor.execCommand(getBranchNameCommand);
         String branchName = response.getStdOut();
-        LOGGER.info(String.format("\tBranch name from git command: '%s': '%s'", Arrays.toString(getBranchNameCommand), branchName));
+        LOGGER.info("\tBranch name from git command: '{}': '{}'", Arrays.toString(getBranchNameCommand), branchName);
         return branchName;
     }
 
@@ -750,7 +751,7 @@ public class Setup {
             LOGGER.warn("-------------------------------------------------------------");
             configsBoolean.put(IS_VISUAL, false);
         } else {
-            LOGGER.info(String.format("Loading Applitools configuration from: %s", applitoolsConfigurationFileName));
+            LOGGER.info("Loading Applitools configuration from: {}", applitoolsConfigurationFileName);
             applitoolsConfiguration = JsonFile.loadJsonFile(applitoolsConfigurationFileName);
         }
     }

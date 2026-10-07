@@ -42,7 +42,7 @@ public class LandingBL {
         assertThat(hasMeetingStarted).as("Meeting should have been started").isTrue();
         String meetingId = inAMeetingScreen.getMeetingId();
         String meetingPassword = inAMeetingScreen.getMeetingPassword();
-        LOGGER.info(String.format("Meeting id: '%s', password: '%s'", meetingId, meetingPassword));
+        LOGGER.info("Meeting id: '{}', password: '{}'", meetingId, meetingPassword);
         context.addTestState(SAMPLE_TEST_CONTEXT.MEETING_ID, meetingId);
         context.addTestState(SAMPLE_TEST_CONTEXT.MEETING_PASSWORD, meetingPassword);
         return new InAMeetingBL();

@@ -33,8 +33,7 @@ public final class ImageCanvasHighlighter {
             if (image == null) return screenshotFile;
             annotateBufferedImage(image, x, y, width, height);
             ImageIO.write(image, "png", screenshotFile);
-            LOGGER.info(String.format("Annotated screenshot file '%s' on image canvas at bounds [x=%d, y=%d, w=%d, h=%d]",
-                    screenshotFile.getName(), x, y, width, height));
+            LOGGER.info("Annotated screenshot file '{}' on image canvas at bounds [x={}, y={}, w={}, h={}]", screenshotFile.getName(), x, y, width, height);
         } catch (Exception e) {
             LOGGER.warn("Failed to annotate screenshot file on image canvas: " + e.getMessage());
         }

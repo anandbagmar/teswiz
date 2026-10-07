@@ -272,8 +272,7 @@ public class OcrService {
                 int rectH = maxY - minY;
 
                 VisualElement candidate = buildScaledVisualElement(minX, minY, rectW, rectH, scaleFactor, searchText, driverFacade);
-                LOGGER.info(String.format("Found candidate OCR word sequence match '%s' at viewport bounds [x=%d, y=%d, w=%d, h=%d]",
-                        searchText, candidate.getX(), candidate.getY(), candidate.getWidth(), candidate.getHeight()));
+                LOGGER.info("Found candidate OCR word sequence match '{}' at viewport bounds [x={}, y={}, w={}, h={}]", searchText, candidate.getX(), candidate.getY(), candidate.getWidth(), candidate.getHeight());
                 return candidate;
             }
         }
@@ -288,8 +287,10 @@ public class OcrService {
                 if (wordText.trim().equalsIgnoreCase(normalizedSearch) || cleaned.equalsIgnoreCase(normalizedSearch)) {
                     Rectangle rect = word.getBoundingBox();
                     VisualElement element = buildScaledVisualElement(rect.x, rect.y, rect.width, rect.height, scaleFactor, wordText.trim(), driverFacade);
-                    LOGGER.info(String.format("Found exact OCR word match '%s' for search '%s' at screenshot bounds [x=%d, y=%d, w=%d, h=%d] -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
+                    if (LOGGER.isInfoEnabled()) {
+                        LOGGER.info(String.format("Found exact OCR word match '%s' for search '%s' at screenshot bounds [x=%d, y=%d, w=%d, h=%d] -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
                             wordText.trim(), searchText, rect.x, rect.y, rect.width, rect.height, element.getX(), element.getY(), element.getWidth(), element.getHeight(), scaleFactor));
+                    }
                     return element;
                 }
             }
@@ -304,8 +305,10 @@ public class OcrService {
             if (wordText != null && wordBoundaryPattern.matcher(wordText.trim()).find()) {
                 Rectangle rect = word.getBoundingBox();
                 VisualElement element = buildScaledVisualElement(rect.x, rect.y, rect.width, rect.height, scaleFactor, wordText.trim(), driverFacade);
-                LOGGER.info(String.format("Found word-boundary OCR match '%s' for search '%s' at screenshot bounds [x=%d, y=%d, w=%d, h=%d] -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
+                if (LOGGER.isInfoEnabled()) {
+                    LOGGER.info(String.format("Found word-boundary OCR match '%s' for search '%s' at screenshot bounds [x=%d, y=%d, w=%d, h=%d] -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
                         wordText.trim(), searchText, rect.x, rect.y, rect.width, rect.height, element.getX(), element.getY(), element.getWidth(), element.getHeight(), scaleFactor));
+                }
                 return element;
             }
         }
@@ -318,8 +321,10 @@ public class OcrService {
             if (wordText != null && wordText.trim().toLowerCase().contains(normalizedSearch)) {
                 Rectangle rect = word.getBoundingBox();
                 VisualElement element = buildScaledVisualElement(rect.x, rect.y, rect.width, rect.height, scaleFactor, wordText.trim(), driverFacade);
-                LOGGER.info(String.format("Found OCR word substring match '%s' for search '%s' at screenshot bounds [x=%d, y=%d, w=%d, h=%d] -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
+                if (LOGGER.isInfoEnabled()) {
+                    LOGGER.info(String.format("Found OCR word substring match '%s' for search '%s' at screenshot bounds [x=%d, y=%d, w=%d, h=%d] -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
                         wordText.trim(), searchText, rect.x, rect.y, rect.width, rect.height, element.getX(), element.getY(), element.getWidth(), element.getHeight(), scaleFactor));
+                }
                 return element;
             }
         }
@@ -333,8 +338,10 @@ public class OcrService {
             if (lineText != null && lineText.trim().toLowerCase().contains(normalizedSearch)) {
                 Rectangle rect = line.getBoundingBox();
                 VisualElement element = buildScaledVisualElement(rect.x, rect.y, rect.width, rect.height, scaleFactor, lineText.trim(), driverFacade);
-                LOGGER.info(String.format("Found OCR text line match '%s' for search '%s' at screenshot bounds [x=%d, y=%d, w=%d, h=%d] -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
+                if (LOGGER.isInfoEnabled()) {
+                    LOGGER.info(String.format("Found OCR text line match '%s' for search '%s' at screenshot bounds [x=%d, y=%d, w=%d, h=%d] -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
                         lineText.trim(), searchText, rect.x, rect.y, rect.width, rect.height, element.getX(), element.getY(), element.getWidth(), element.getHeight(), scaleFactor));
+                }
                 return element;
             }
         }
@@ -367,8 +374,10 @@ public class OcrService {
 
                 String matchedLabel = rawMatch.getLabel().startsWith("OCR: ") ? rawMatch.getLabel().substring(5) : rawMatch.getLabel();
                 VisualElement element = buildScaledVisualElement(mappedRect.x, mappedRect.y, mappedRect.width, mappedRect.height, scaleFactor, matchedLabel, driverFacade);
-                LOGGER.info(String.format("Found rotated OCR match '%s' for search '%s' during %s pass at angle %.1f° -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
+                if (LOGGER.isInfoEnabled()) {
+                    LOGGER.info(String.format("Found rotated OCR match '%s' for search '%s' during %s pass at angle %.1f° -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
                         matchedLabel, searchText, passName, angle, element.getX(), element.getY(), element.getWidth(), element.getHeight(), scaleFactor));
+                }
                 return element;
             }
         }

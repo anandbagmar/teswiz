@@ -49,7 +49,7 @@ public class SearchScreenAndroid
 
     @Override
     public boolean isProductListLoaded(String product) {
-        LOGGER.info(String.format("Verifying if %s list is loaded", product));
+        LOGGER.info("Verifying if {} list is loaded", product);
         if (!(driver.isElementPresent(byProductListTitleId)))
             driver.tapOnMiddleOfScreen();
         String productLoaded = driver.waitTillElementIsVisible(byProductListTitleId).getText().trim();

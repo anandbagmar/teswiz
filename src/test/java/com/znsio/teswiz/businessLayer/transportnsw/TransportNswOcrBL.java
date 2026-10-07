@@ -38,14 +38,14 @@ public class TransportNswOcrBL {
     }
 
     public TransportNswOcrBL clickElementUsingImageTemplate(String elementName, String imageTemplatePath) {
-        LOGGER.info(String.format("Visually clicking element '%s' using image template: %s", elementName, imageTemplatePath));
+        LOGGER.info("Visually clicking element '{}' using image template: {}", elementName, imageTemplatePath);
         VisualElement visualElement = TransportNswOcrScreen.get().clickElementByImage(elementName, imageTemplatePath);
         assertThat(visualElement).as("Visual element '" + elementName + "' should be found and clicked").isNotNull();
         return this;
     }
 
     public TransportNswOcrBL clickElementUsingOcrText(String elementName, String ocrText) {
-        LOGGER.info(String.format("Visually clicking element '%s' using OCR text: %s", elementName, ocrText));
+        LOGGER.info("Visually clicking element '{}' using OCR text: {}", elementName, ocrText);
         VisualElement visualElement = TransportNswOcrScreen.get().clickElementByOcrText(elementName, ocrText);
         assertThat(visualElement).as("Visual element '" + elementName + "' with OCR text '" + ocrText + "' should be found and clicked")
                 .isNotNull();

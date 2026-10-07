@@ -60,8 +60,10 @@ public class HeadSpinMobileSetup {
     }
 
     private static String uploadAPKToHeadspin(String authenticationKey, String appPath, String deviceLabURL) {
-        LOGGER.info(String.format("uploadAPKToHeadspin for: '%s'%n",
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(String.format("uploadAPKToHeadspin for: '%s'%n",
                 SensitiveDataMasker.maskSecret(authenticationKey)));
+        }
         String[] curlCommand = new String[]{
                 "curl --insecure " + Setup.getCurlProxyCommand() + " -X POST ",
                 "https://" + authenticationKey + "@" + deviceLabURL + "/app/upload " +
@@ -72,8 +74,7 @@ public class HeadSpinMobileSetup {
         JsonObject uploadResponse = JsonFile.convertToMap(uploadAPKToHeadspinResponse.getStdOut())
                 .getAsJsonObject();
         String uploadedApkId = uploadResponse.get("app_id").getAsString();
-        LOGGER.info(String.format("App: '%s' uploaded to Headspin. Response: '%s'", appPath,
-                SensitiveDataMasker.mask(JsonPrettyPrinter.prettyPrint(uploadResponse))));
+        LOGGER.info("App: '{}' uploaded to Headspin. Response: '{}'", appPath, SensitiveDataMasker.mask(JsonPrettyPrinter.prettyPrint(uploadResponse)));
 
         JsonObject listOfAppPackages = getListOfAppPackagesFromHeadSpin(authenticationKey, deviceLabURL);
         String uploadedAppName = NOT_SET;

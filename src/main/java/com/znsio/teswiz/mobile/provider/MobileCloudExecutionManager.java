@@ -58,7 +58,7 @@ public final class MobileCloudExecutionManager {
             case "lambdatest":
             case "saucelabs":
             case "docker":
-                LOGGER.info(String.format("No cleanup required for cloud: '%s'", cloudName));
+                LOGGER.info("No cleanup required for cloud: '{}'", cloudName);
                 break;
             default:
                 throw unsupportedCloud(cloudName);

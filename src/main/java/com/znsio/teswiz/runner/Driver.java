@@ -247,8 +247,10 @@ public class Driver {
         Dimension screenSize = appiumDriver.manage().window().getSize();
         int midHeight = screenSize.height / 2;
         int midWidth = screenSize.width / 2;
-        LOGGER.info(String.format("tapOnMiddleOfScreen: Screen dimensions: '%s'. Tapping on coordinates: %d:%d%n",
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(String.format("tapOnMiddleOfScreen: Screen dimensions: '%s'. Tapping on coordinates: %d:%d%n",
                 screenSize, midWidth, midHeight));
+        }
         PointerInput touch = new PointerInput(PointerInput.Kind.TOUCH, "touch");
         Sequence clickPosition = new Sequence(touch, 1);
         clickPosition
@@ -269,12 +271,12 @@ public class Driver {
         int midWidth = screenSize.width / 2;
         int currentPositionX = currentPosition.getX();
         int currentPositionY = currentPosition.getY();
-        LOGGER.info(String.format("Current position: '%d':'%d'", currentPositionX, currentPositionY));
+        LOGGER.info("Current position: '{}':'{}'", currentPositionX, currentPositionY);
 
         int offsetX = currentPositionX < midWidth ? 50 : -50;
         int offsetY = currentPositionY < midHeight ? 50 : -50;
 
-        LOGGER.info(String.format("Using offset: '%d':'%d'", offsetX, offsetY));
+        LOGGER.info("Using offset: '{}':'{}'", offsetX, offsetY);
 
         actions.moveByOffset(offsetX, offsetY).perform();
         waitFor(1);
@@ -306,7 +308,7 @@ public class Driver {
         int height = getWindowHeight() / 2;
         int fromWidth = (int) (getWindowWidth() * 0.2);
         int toWidth = (int) (getWindowWidth() * 0.7);
-        LOGGER.info(String.format("height: %s, from width: %s, to width: %s", height, fromWidth, toWidth));
+        LOGGER.info("height: {}, from width: {}, to width: {}", height, fromWidth, toWidth);
         swipe(height, fromWidth, toWidth);
     }
 
@@ -314,21 +316,18 @@ public class Driver {
         int height = getWindowHeight() / 2;
         int fromWidth = (int) (getWindowWidth() * 0.8);
         int toWidth = (int) (getWindowWidth() * 0.3);
-        LOGGER.info(String.format("height: %s, from width: %s, to width: %s", height, fromWidth, toWidth));
+        LOGGER.info("height: {}, from width: {}, to width: {}", height, fromWidth, toWidth);
         swipe(height, fromWidth, toWidth);
     }
 
     public void swipeByPassingPercentageAttributes(int percentScreenHeight, int fromPercentScreenWidth,
             int toPercentScreenWidth) {
-        LOGGER.info(String.format(
-                "percent attributes passed to method are: percentScreenHeight: %s, fromPercentScreenWidth: %s, toPercentScreenWidth: %s",
-                percentScreenHeight, fromPercentScreenWidth, toPercentScreenWidth));
+        LOGGER.info("percent attributes passed to method are: percentScreenHeight: {}, fromPercentScreenWidth: {}, toPercentScreenWidth: {}", percentScreenHeight, fromPercentScreenWidth, toPercentScreenWidth);
         checkPercentagesAreValid(percentScreenHeight, fromPercentScreenWidth, toPercentScreenWidth);
         int height = getWindowHeight() * percentScreenHeight / 100;
         int fromWidth = getWindowWidth() * fromPercentScreenWidth / 100;
         int toWidth = getWindowWidth() * toPercentScreenWidth / 100;
-        LOGGER.info(
-                String.format("swipe gesture at height: %s, from width: %s, to width: %s", height, fromWidth, toWidth));
+        LOGGER.info("swipe gesture at height: {}, from width: {}, to width: {}", height, fromWidth, toWidth);
         swipe(height, fromWidth, toWidth);
     }
 
@@ -636,7 +635,7 @@ public class Driver {
         clearHighlight();
         this.activeHighlightBounds = new org.openqa.selenium.Rectangle(x, y, height, width);
         if (APPIUM_DRIVER.equals(type) || driver instanceof AppiumDriver) {
-            LOGGER.info(String.format("Visual element screenshot image canvas highlighting active on native mobile app at bounds [x=%d, y=%d, w=%d, h=%d]", x, y, width, height));
+            LOGGER.info("Visual element screenshot image canvas highlighting active on native mobile app at bounds [x={}, y={}, w={}, h={}]", x, y, width, height);
             return;
         }
         String color = Setup.getStringValueFromConfigs(Setup.HIGHLIGHT_COLOR, "#FF4500");
@@ -661,7 +660,7 @@ public class Driver {
                     "box.style.boxSizing = 'border-box';" +
                     "box.style.transition = 'all 0.1s ease-in-out';"
                 );
-                LOGGER.info(String.format("Highlighted visual element at viewport bounds [x=%d, y=%d, w=%d, h=%d] with color %s", x, y, width, height, color));
+                LOGGER.info("Highlighted visual element at viewport bounds [x={}, y={}, w={}, h={}] with color {}", x, y, width, height, color);
             } catch (Exception e) {
                 LOGGER.debug("Could not highlight visual element at (" + x + ", " + y + "): " + e.getMessage());
             }
@@ -731,8 +730,10 @@ public class Driver {
                 int viewportWidth = driver.manage().window().getSize().getWidth();
                 if (viewportWidth > 0) {
                     double scale = (double) screenshotImageWidth / viewportWidth;
-                    LOGGER.info(String.format("Calculated mobile viewport scale factor: %.2f (screenshot width: %d px, window width: %d px)",
+                    if (LOGGER.isInfoEnabled()) {
+                        LOGGER.info(String.format("Calculated mobile viewport scale factor: %.2f (screenshot width: %d px, window width: %d px)",
                             scale, screenshotImageWidth, viewportWidth));
+                    }
                     return scale;
                 }
             } catch (Exception e) {
@@ -746,8 +747,10 @@ public class Driver {
                 if (result instanceof Number num && num.doubleValue() > 0) {
                     double viewportWidth = num.doubleValue();
                     double scale = (double) screenshotImageWidth / viewportWidth;
-                    LOGGER.info(String.format("Calculated viewport scale factor: %.2f (screenshot width: %d px, viewport width: %.0f px)",
+                    if (LOGGER.isInfoEnabled()) {
+                        LOGGER.info(String.format("Calculated viewport scale factor: %.2f (screenshot width: %d px, viewport width: %.0f px)",
                             scale, screenshotImageWidth, viewportWidth));
+                    }
                     return scale;
                 }
             } catch (Exception e) {

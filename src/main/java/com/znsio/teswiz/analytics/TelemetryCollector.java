@@ -98,7 +98,7 @@ public class TelemetryCollector {
                         .build();
 
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-                LOGGER.debug(String.format("Telemetry POST to %s returned status: %d", endpoint, response.statusCode()));
+                LOGGER.debug("Telemetry POST to {} returned status: {}", endpoint, response.statusCode());
             } catch (Exception e) {
                 LOGGER.debug("Fail-silent error sending telemetry POST to collector: " + e.getMessage());
             }

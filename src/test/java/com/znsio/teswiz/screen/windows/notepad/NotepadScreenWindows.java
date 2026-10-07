@@ -22,7 +22,7 @@ public class NotepadScreenWindows
 
     @Override
     public NotepadScreen typeMessage(String message) {
-        LOGGER.info(String.format("Typing message: '%s'", message));
+        LOGGER.info("Typing message: '{}'", message);
         driver.findElement(byEditorName).sendKeys(message);
         visually.checkWindow(SCREEN_NAME, "Typed message in Notepad");
         return this;

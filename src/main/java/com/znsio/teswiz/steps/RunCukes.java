@@ -16,7 +16,7 @@ public class RunCukes {
 
     public RunCukes() {
         long threadId = Thread.currentThread().getId();
-        LOGGER.info(String.format("RunCukes: ThreadId: '%s': Constructor", threadId));
+        LOGGER.info("RunCukes: ThreadId: '{}': Constructor", threadId);
         context = SessionContext.getTestExecutionContext(threadId);
     }
 

@@ -21,11 +21,11 @@ public class JsonSchemaValidator {
             LOGGER.debug("Loaded schema file into a json object: " + schemaFile);
 
             JSONObject jsonObject = new JSONObject(new JSONTokener(jsonContents));
-            LOGGER.debug(String.format("Loaded json contents from file '%s' to be validated against the schema into " + "a json object", jsonFilePath));
+            LOGGER.debug("Loaded json contents from file '{}' to be validated against the schema into a json object", jsonFilePath);
 
             Schema schema = SchemaLoader.load(schemaStreamObject);
             schema.validate(jsonObject);
-            LOGGER.debug(String.format("Json file '%s' validated successfully against the schema", jsonFilePath));
+            LOGGER.debug("Json file '{}' validated successfully against the schema", jsonFilePath);
             return jsonObject;
         } catch (ValidationException validationException) {
             String exceptionMessage = String.format("Json file '%s' failed schema checks:%n%s", jsonFilePath, validationException.getAllMessages());

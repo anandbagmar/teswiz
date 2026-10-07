@@ -81,16 +81,15 @@ public class DeviceSetup {
 
     static void verifyAppExistsAtMentionedPath() {
         String appPath = Setup.getFromConfigs(APP_PATH);
-        LOGGER.info(String.format("Original path to apk/app: %s", SensitiveDataMasker.mask(appPath)));
+        LOGGER.info("Original path to apk/app: {}", SensitiveDataMasker.mask(appPath));
         if (appPath.equals(NOT_SET)) {
             if (null == Setup.getLoadedCapabilities().get(Runner.getPlatform().name()).get("browserName")) {
                 appPath = downloadAppToDirectoryIfNeeded(getAppPathFromCapabilities(), DEFAULT_TEMP_SAMPLE_APP_DIRECTORY);
             }
-            LOGGER.info(String.format("Updated path to apk/app: %s", SensitiveDataMasker.mask(appPath)));
+            LOGGER.info("Updated path to apk/app: {}", SensitiveDataMasker.mask(appPath));
         } else {
             appPath = downloadAppToDirectoryIfNeeded(appPath, DEFAULT_TEMP_SAMPLE_APP_DIRECTORY);
-            LOGGER.info(String.format("\tUsing AppPath provided as environment variable -  %s",
-                    SensitiveDataMasker.mask(appPath)));
+            LOGGER.info("\tUsing AppPath provided as environment variable -  {}", SensitiveDataMasker.mask(appPath));
         }
         Setup.addToConfigs(APP_PATH, appPath);
     }
@@ -108,8 +107,7 @@ public class DeviceSetup {
                         .ifPresent(DeviceSetup::setAppVersion);
             }
         } catch (Exception e) {
-            LOGGER.info(
-                    String.format("fetchAndroidAppVersion: Exception: %s", e.getLocalizedMessage()));
+            LOGGER.info("fetchAndroidAppVersion: Exception: {}", e.getLocalizedMessage());
         }
     }
 
@@ -164,14 +162,13 @@ public class DeviceSetup {
             APP_VERSION_DETECTOR.detectWindowsAppVersion(Setup.getFromConfigs(APP_PATH))
                     .ifPresent(DeviceSetup::setAppVersion);
         } catch (IOException e) {
-            LOGGER.info(
-                    String.format("fetchWindowsAppVersion: Exception: %s", e.getLocalizedMessage()));
+            LOGGER.info("fetchWindowsAppVersion: Exception: {}", e.getLocalizedMessage());
         }
     }
 
     private static void setAppVersion(String appVersion) {
         Setup.addToConfigs(APP_VERSION, appVersion);
-        LOGGER.info(String.format("APP_VERSION: %s", appVersion));
+        LOGGER.info("APP_VERSION: {}", appVersion);
     }
 
     static void cleanupCloudExecution() {

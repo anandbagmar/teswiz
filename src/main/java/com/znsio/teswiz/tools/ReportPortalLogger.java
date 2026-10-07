@@ -21,12 +21,9 @@ public class ReportPortalLogger {
                                                            destinationFile);
         LOGGER.info(message);
         if(isEmitLogSuccessful) {
-            LOGGER.debug(
-                    String.format("'%s' - Upload of file: '%s'::'%s' to ReportPortal succeeded",
-                                  getCallingClassAndMethodName(), message, destinationFile));
+            LOGGER.debug("'{}' - Upload of file: '{}'::'{}' to ReportPortal succeeded", getCallingClassAndMethodName(), message, destinationFile);
         } else {
-            LOGGER.debug(String.format("'%s' - Upload of file: '%s'::'%s' to ReportPortal failed",
-                                       getCallingClassAndMethodName(), message, destinationFile));
+            LOGGER.debug("'{}' - Upload of file: '{}'::'{}' to ReportPortal failed", getCallingClassAndMethodName(), message, destinationFile);
         }
     }
 
@@ -58,12 +55,10 @@ public class ReportPortalLogger {
     private static void logMessage(String message, String level) {
         boolean isEmitLogSuccessful = ReportPortal.emitLog(message, level, new Date());
         if(isEmitLogSuccessful) {
-            LOGGER.debug(String.format("'%s' - Logging message: '%s' to ReportPortal succeeded",
-                                       getCallingClassAndMethodName(), message));
+            LOGGER.debug("'{}' - Logging message: '{}' to ReportPortal succeeded", getCallingClassAndMethodName(), message);
 
         } else {
-            LOGGER.debug(String.format("'%s' - Logging message: '%s' to ReportPortal failed",
-                                       getCallingClassAndMethodName(), message));
+            LOGGER.debug("'{}' - Logging message: '{}' to ReportPortal failed", getCallingClassAndMethodName(), message);
         }
     }
 }

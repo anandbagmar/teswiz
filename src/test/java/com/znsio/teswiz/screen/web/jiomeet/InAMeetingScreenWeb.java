@@ -113,7 +113,9 @@ public class InAMeetingScreenWeb
 
     private void enableInMeetingControls(String calledFrom) {
         try {
-            LOGGER.info(String.format("enableInMeetingControls: Called from: '%s'%n", calledFrom));
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info(String.format("enableInMeetingControls: Called from: '%s'%n", calledFrom));
+            }
             Actions actions = new Actions(innerDriver);
             actions.moveToElement(driver.waitForClickabilityOf(byMeetingInfoIconXpath))
                     .moveByOffset(25, 25).perform();

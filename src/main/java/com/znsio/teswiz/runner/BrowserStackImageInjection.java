@@ -27,15 +27,12 @@ class BrowserStackImageInjection {
                 "curl --insecure -u \"" + cloudUser + ":" + cloudKey + "\"",
                 "-X POST \"https://api-cloud.browserstack.com/app-automate/upload-media\"",
                 "-F \"file=@" + uploadFilePath + "\"", "-F \"custom_id=" + fileName + "\""};
-        LOGGER.info(
-                String.format("Uploading file: '%s' to '%s' using command: '%s'", uploadFilePath,
-                              cloudName, Arrays.toString(curlCommand)));
+        LOGGER.info("Uploading file: '{}' to '{}' using command: '{}'", uploadFilePath, cloudName, Arrays.toString(curlCommand));
         CommandLineResponse uploadFileResponse = CommandLineExecutor.execCommand(curlCommand);
         String stdOut = uploadFileResponse.getStdOut();
-        LOGGER.info(String.format("Response of upload command: '%s'", stdOut));
+        LOGGER.info("Response of upload command: '{}'", stdOut);
         mediaUrl = new JSONObject(stdOut).getString("media_url");
-        LOGGER.info(String.format("Uploaded file: '%s' to '%s'. Media URL: '%s'", uploadFilePath,
-                                  cloudName, mediaUrl));
+        LOGGER.info("Uploaded file: '{}' to '{}'. Media URL: '{}'", uploadFilePath, cloudName, mediaUrl);
         waitFor(5);
         return mediaUrl;
     }
@@ -44,13 +41,13 @@ class BrowserStackImageInjection {
                                       String cloudKey) {
         String mediaUrl = BrowserStackImageInjection.uploadToCloud(uploadFilePath, cloudUser,
                                                                    cloudKey);
-        LOGGER.info(String.format("Inject media url in driver: '%s'", mediaUrl));
+        LOGGER.info("Inject media url in driver: '{}'", mediaUrl);
         addMediaURLInDOM(mediaUrl, driver);
         return mediaUrl;
     }
 
     static void injectMediaToDriver(String mediaUrl, AppiumDriver driver) {
-        LOGGER.info(String.format("Browserstack media url provided is : '%s'", mediaUrl));
+        LOGGER.info("Browserstack media url provided is : '{}'", mediaUrl);
         addMediaURLInDOM(mediaUrl, driver);
     }
 

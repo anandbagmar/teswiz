@@ -303,11 +303,11 @@ public class Runner {
 
     public static String getBaseURLForWeb() {
         String baseUrlToBeUsed = Setup.getFromConfigs(Setup.BASE_URL_FOR_WEB);
-        LOGGER.info(String.format("Using baseUrl KEY in configs for web: '%s'", baseUrlToBeUsed));
+        LOGGER.info("Using baseUrl KEY in configs for web: '{}'", baseUrlToBeUsed);
         Object updatedBaseUrlForWeb = getTestExecutionContext(Thread.currentThread().getId()).getTestState(TEST_CONTEXT.UPDATED_BASE_URL_FOR_WEB);
         if (null != updatedBaseUrlForWeb) {
             baseUrlToBeUsed = updatedBaseUrlForWeb.toString();
-            LOGGER.info(String.format("Using updated baseUrl key for web: '%s'", baseUrlToBeUsed));
+            LOGGER.info("Using updated baseUrl key for web: '{}'", baseUrlToBeUsed);
         }
         return baseUrlToBeUsed;
     }
@@ -346,7 +346,7 @@ public class Runner {
 
     public static String getProxyURL() {
         String proxyURL = Setup.getFromConfigs(Setup.PROXY_URL);
-        LOGGER.info(String.format("Using proxyURL: %s", proxyURL));
+        LOGGER.info("Using proxyURL: {}", proxyURL);
         return proxyURL;
     }
 

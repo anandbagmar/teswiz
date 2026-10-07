@@ -83,10 +83,12 @@ public class SeleniumDriverManager {
     @NotNull
     public static WebDriverSessionResult createWebSessionForUser(String userPersona, String browserName,
             Platform forPlatform, TestExecutionContext context) {
-        LOGGER.info(String.format(
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(String.format(
                 "createWebSessionForUser: begin: userPersona: '%s', browserName: '%s', Platform: "
                         + "'%s', Number of WebDrivers: '%d'%n",
                 userPersona, browserName, forPlatform.name(), numberOfWebDriversUsed));
+        }
         LOGGER.debug("Active thread count: " + Thread.activeCount());
 
         String baseUrl = WebBaseUrlResolver.resolve(Drivers.getAppNamefor(userPersona));
@@ -99,9 +101,7 @@ public class SeleniumDriverManager {
         loadBaseUrl(baseUrl, newWebDriver);
         numberOfWebDriversUsed++;
 
-        LOGGER.info(String.format(
-                "createWebSessionForUser: done: userPersona: '%s', Platform: '%s', Number of WebDrivers: '%d'",
-                userPersona, forPlatform.name(), numberOfWebDriversUsed));
+        LOGGER.info("createWebSessionForUser: done: userPersona: '{}', Platform: '{}', Number of WebDrivers: '{}'", userPersona, forPlatform.name(), numberOfWebDriversUsed);
         return new WebDriverSessionResult(newWebDriver, isRunInHeadlessMode, null, null);
     }
 
@@ -130,7 +130,7 @@ public class SeleniumDriverManager {
 
     private static void checkConnectivityToBaseUrl(String baseUrl) {
         if (numberOfWebDriversUsed == 0) {
-            LOGGER.info(String.format("Check connectivity to baseUrl: '%s'", baseUrl));
+            LOGGER.info("Check connectivity to baseUrl: '{}'", baseUrl);
             String[] curlCommand = new String[] { "curl -m 60 --insecure -I " + baseUrl };
             CommandLineExecutor.execCommand(curlCommand);
         }
@@ -140,9 +140,7 @@ public class SeleniumDriverManager {
     private static WebDriver createNewWebDriver(String forUserPersona, String browserName,
             TestExecutionContext testExecutionContext) {
         JSONObject browserConfig = getBrowserConfig(testExecutionContext);
-        LOGGER.debug(String.format("Create new webdriver instance for: %s, on: %s, with browserConfig: %s",
-                forUserPersona, browserName,
-                SensitiveDataMasker.mask(JsonPrettyPrinter.prettyPrint(browserConfig.toMap()))));
+        LOGGER.debug("Create new webdriver instance for: {}, on: {}, with browserConfig: {}", forUserPersona, browserName, SensitiveDataMasker.mask(JsonPrettyPrinter.prettyPrint(browserConfig.toMap())));
 
         JSONObject browserConfigForBrowserType = browserConfig.getJSONObject(browserName.toLowerCase());
         WebDriver driver = createWebDriver(forUserPersona, testExecutionContext, browserName,
@@ -216,7 +214,7 @@ public class SeleniumDriverManager {
         setProxyInChromeOptions(chromeOptions, chromeConfiguration);
         setHeadlessInChromeOptions(chromeConfiguration, chromeOptions);
         setEmulationModeInChromeOptions(testExecutionContext, chromeOptions);
-        LOGGER.debug(String.format("ChromeOptions: %s", JsonPrettyPrinter.prettyPrint(chromeOptions.asMap())));
+        LOGGER.debug("ChromeOptions: {}", JsonPrettyPrinter.prettyPrint(chromeOptions.asMap()));
         return chromeOptions;
     }
 
@@ -257,7 +255,7 @@ public class SeleniumDriverManager {
         setLoggingPrefsInFirefoxOptions(firefoxConfiguration, firefoxOptions);
         setProxyInFirefoxOptions(firefoxOptions, firefoxConfiguration);
         setHeadlessInFirefoxOptions(firefoxConfiguration, firefoxOptions);
-        LOGGER.debug(String.format("FirefoxOptions: %s", firefoxOptions.asMap()));
+        LOGGER.debug("FirefoxOptions: {}", firefoxOptions.asMap());
         return firefoxOptions;
     }
 
@@ -445,14 +443,14 @@ public class SeleniumDriverManager {
         // setUseTechnologyPreview is false by default
         safariOptions.setUseTechnologyPreview(setUseTechnologyPreview); //
         setProxyInSafariOptions(safariOptions);
-        LOGGER.debug(String.format("SafariOptions: %s", safariOptions.asMap()));
+        LOGGER.debug("SafariOptions: {}", safariOptions.asMap());
         return safariOptions;
     }
 
     private static void setProxyInSafariOptions(SafariOptions safariOptions) {
         String proxyUrl = Runner.getProxyURL();
         if (null != proxyUrl) {
-            LOGGER.info(String.format("%s%s", "Setting Proxy for browser: ", proxyUrl));
+            LOGGER.info("{}{}", "Setting Proxy for browser: ", proxyUrl);
             safariOptions.setProxy(new Proxy().setHttpProxy(proxyUrl));
         }
     }
@@ -496,12 +494,9 @@ public class SeleniumDriverManager {
             String remoteUrl = request.remoteUrl();
             MutableCapabilities resolvedCapabilities = request.capabilities();
 
-            LOGGER.info(String.format("Starting RemoteWebDriver using url: %s with capabilities: '%s'",
-                    SensitiveDataMasker.mask(remoteUrl),
-                    SensitiveDataMasker.mask(JsonPrettyPrinter.prettyPrint(resolvedCapabilities))));
+            LOGGER.info("Starting RemoteWebDriver using url: {} with capabilities: '{}'", SensitiveDataMasker.mask(remoteUrl), SensitiveDataMasker.mask(JsonPrettyPrinter.prettyPrint(resolvedCapabilities)));
             RemoteWebDriver remoteWebDriver = new RemoteWebDriver(new URL(remoteUrl), resolvedCapabilities);
-            LOGGER.info(String.format("RemoteWebDriver created using url: %s",
-                    SensitiveDataMasker.mask(remoteUrl)));
+            LOGGER.info("RemoteWebDriver created using url: {}", SensitiveDataMasker.mask(remoteUrl));
             return remoteWebDriver;
         } catch (MalformedURLException e) {
             throw new EnvironmentSetupException("Unable to create a new RemoteWebDriver", e);
@@ -571,10 +566,12 @@ public class SeleniumDriverManager {
     @NotNull
     public static Driver createElectronDriverForUser(String userPersona, String browserName,
             Platform forPlatform, TestExecutionContext context) {
-        LOGGER.info(String.format(
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(String.format(
                 "createElectronDriverForUser: begin: userPersona: '%s', browserName: '%s', Platform: "
                         + "'%s', Number of ElectronDrivers: '%d'%n",
                 userPersona, browserName, forPlatform.name(), numberOfWebDriversUsed));
+        }
         LOGGER.debug("Active thread count: " + Thread.activeCount());
 
         String baseUrl = WebBaseUrlResolver.resolve(Drivers.getAppNamefor(userPersona));
@@ -586,9 +583,7 @@ public class SeleniumDriverManager {
         String runningOn = Runner.isRunningInCI() ? "CI" : "local";
         context.addTestState(TEST_CONTEXT.ELECTRON_BROWSER_ON, runningOn);
         JSONObject browserConfig = getBrowserConfig(context);
-        LOGGER.debug(String.format("Create new electrondriver instance for: %s, on: %s, with browserConfig: %s",
-                userPersona, browserName,
-                SensitiveDataMasker.mask(JsonPrettyPrinter.prettyPrint(browserConfig.toMap()))));
+        LOGGER.debug("Create new electrondriver instance for: {}, on: {}, with browserConfig: {}", userPersona, browserName, SensitiveDataMasker.mask(JsonPrettyPrinter.prettyPrint(browserConfig.toMap())));
         JSONObject browserConfigForBrowserType = browserConfig.getJSONObject(browserName.toLowerCase());
         ChromeOptions chromeOptions = getChromeOptions(userPersona, context, browserConfigForBrowserType);
         addWindowSizeToChromeOptions(browserConfigForBrowserType, chromeOptions);
@@ -603,7 +598,7 @@ public class SeleniumDriverManager {
                 .driverVersion(chromeVersion);
         String proxyUrl = Runner.getProxyURL();
         if (null != proxyUrl) {
-            LOGGER.info(String.format("Adding proxy: %s to WebDriverManager", proxyUrl));
+            LOGGER.info("Adding proxy: {} to WebDriverManager", proxyUrl);
             webDriverManager = webDriverManager.proxy(String.valueOf(new Proxy().setHttpProxy(proxyUrl)));
         }
         webDriverManager.setup();
@@ -623,9 +618,7 @@ public class SeleniumDriverManager {
         Driver currentDriver = new Driver(updatedTestName, forPlatform, userPersona, appName, driver,
                 isRunInHeadlessMode);
         numberOfWebDriversUsed++;
-        LOGGER.info(String.format(
-                "createElectronDriverForUser: done: userPersona: '%s', Platform: '%s', appName: '%s', Number of ElectronDrivers: '%d'",
-                userPersona, forPlatform.name(), appName, numberOfWebDriversUsed));
+        LOGGER.info("createElectronDriverForUser: done: userPersona: '{}', Platform: '{}', appName: '{}', Number of ElectronDrivers: '{}'", userPersona, forPlatform.name(), appName, numberOfWebDriversUsed);
         return currentDriver;
     }
 
@@ -633,7 +626,7 @@ public class SeleniumDriverManager {
         LOGGER.info("Handle loading window for electron application");
         Set<String> windowHandles = new java.util.HashSet<>();
         String parentWindowHandle = driver.getWindowHandle();
-        LOGGER.info(String.format("Current window handle %s", parentWindowHandle));
+        LOGGER.info("Current window handle {}", parentWindowHandle);
         long startTime = System.currentTimeMillis();
 
         while (windowHandles.size() <= 1) {
@@ -645,11 +638,11 @@ public class SeleniumDriverManager {
             }
         }
 
-        LOGGER.info(String.format("All the window handles available %s", windowHandles));
+        LOGGER.info("All the window handles available {}", windowHandles);
         for (String handle : windowHandles) {
             if (!handle.equals(parentWindowHandle)) {
                 driver.switchTo().window(handle);
-                LOGGER.info(String.format("Current window handle after switching %s", driver.getWindowHandle()));
+                LOGGER.info("Current window handle after switching {}", driver.getWindowHandle());
                 break;
             }
         }

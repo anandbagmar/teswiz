@@ -38,9 +38,7 @@ public final class BrowserStackWebCapabilitySetup {
 
         browserstackOptions.put("sessionName", sessionName);
         if (useLocalTesting) {
-            LOGGER.info(String.format(
-                    "CLOUD_USE_LOCAL_TESTING=true. Setting up BrowserStackLocal testing using identified: '%s'",
-                    BROWSERSTACK_LOCAL_IDENTIFIER));
+            LOGGER.info("CLOUD_USE_LOCAL_TESTING=true. Setting up BrowserStackLocal testing using identified: '{}'", BROWSERSTACK_LOCAL_IDENTIFIER);
             startBrowserStackLocal(authenticationKey, BROWSERSTACK_LOCAL_IDENTIFIER, useProxy, proxyUrl);
             browserstackOptions.put(ACCEPT_INSECURE_CERTS, "true");
             browserstackOptions.put("local", "true");
@@ -80,16 +78,15 @@ public final class BrowserStackWebCapabilitySetup {
                 URL url = new URL(proxyUrl);
                 String host = url.getHost();
                 int port = url.getPort() == -1 ? url.getDefaultPort() : url.getPort();
-                LOGGER.info(String.format("Using proxyHost: %s", host));
-                LOGGER.info(String.format("Using proxyPort: %d", port));
+                LOGGER.info("Using proxyHost: {}", host);
+                LOGGER.info("Using proxyPort: {}", port);
                 bsLocalArgs.put("proxyHost", host);
                 bsLocalArgs.put("proxyPort", String.valueOf(port));
             }
 
-            LOGGER.info(String.format("Start BrowserStackLocal using: %s",
-                    SensitiveDataMasker.mask(JsonPrettyPrinter.prettyPrint(bsLocalArgs))));
+            LOGGER.info("Start BrowserStackLocal using: {}", SensitiveDataMasker.mask(JsonPrettyPrinter.prettyPrint(bsLocalArgs)));
             bsLocal.start(bsLocalArgs);
-            LOGGER.info(String.format("Is BrowserStackLocal started? - %s", bsLocal.isRunning()));
+            LOGGER.info("Is BrowserStackLocal started? - {}", bsLocal.isRunning());
         } catch (Exception e) {
             throw new EnvironmentSetupException("Error starting BrowserStackLocal", e);
         }

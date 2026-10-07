@@ -50,7 +50,7 @@ public class HeartBeatBL {
             context.addTestState(SAMPLE_TEST_CONTEXT.HEARTBEAT_MAP, heartbeatMap);
         } else {
             heartbeatMap = (HashMap<String, HeartBeat>) context.getTestState(SAMPLE_TEST_CONTEXT.HEARTBEAT_MAP);
-            LOGGER.info(String.format("HeartBeat hashmap already initialised and has '%d' heartbeats registered", heartbeatMap.values().size()));
+            LOGGER.info("HeartBeat hashmap already initialised and has '{}' heartbeats registered", heartbeatMap.values().size());
         }
         return heartbeatMap;
     }
@@ -63,7 +63,7 @@ public class HeartBeatBL {
             throw new InvalidTestDataException(String.format("HeartBeat not running for userPersona: '%s'", userPersona));
         }
         int heartBeatCounter = heartBeat.getHeartBeatCounter();
-        LOGGER.info(String.format("userPersona: '%s': HeartBeat counter '%d'", userPersona, heartBeatCounter));
+        LOGGER.info("userPersona: '{}': HeartBeat counter '{}'", userPersona, heartBeatCounter);
         assertThat(heartBeatCounter).as("HeartBeat counter is less than expected").isGreaterThan(2);
         LOGGER.info("Active thread count: " + Thread.activeCount());
         return this;

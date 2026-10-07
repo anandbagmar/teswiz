@@ -30,10 +30,7 @@ public class TheAppSteps {
 
     @When("I login with invalid credentials - {string}, {string}")
     public void iLoginWithInvalidCredentials(String username, String password) {
-        LOGGER.info(String.format(
-                "iLoginWithInvalidCredentials - Persona:'%s', Username: '%s', Password:'%s', " +
-                "Platform: '%s'",
-                SAMPLE_TEST_CONTEXT.ME, username, password, Runner.getPlatform()));
+        LOGGER.info("iLoginWithInvalidCredentials - Persona:'{}', Username: '{}', Password:'{}', Platform: '{}'", SAMPLE_TEST_CONTEXT.ME, username, password, Runner.getPlatform());
         context.addTestState(TEST_CONTEXT.UPDATED_BROWSER_CONFIG_FILE_FOR_THIS_TEST,
                              "./configs/browser_config.json");
         context.addTestState(TEST_CONTEXT.UPDATED_BASE_URL_FOR_WEB, "BASE_URL");
@@ -51,10 +48,7 @@ public class TheAppSteps {
     @Given("{string} login with invalid credentials - {string}, {string} on {string}")
     public void loginWithInvalidCredentialsOn(String userPersona, String username, String password,
                                               String onPlatform) {
-        LOGGER.info(String.format(
-                "LoginWithInvalidCredentials - Persona:'%s', Username: '%s', Password:'%s', " +
-                "Platform: '%s'",
-                userPersona, username, password, onPlatform));
+        LOGGER.info("LoginWithInvalidCredentials - Persona:'{}', Username: '{}', Password:'{}', Platform: '{}'", userPersona, username, password, onPlatform);
         context.addTestState(userPersona, username);
         Drivers.createDriverFor(userPersona, Platform.valueOf(onPlatform), context);
         new AppBL(userPersona, Platform.valueOf(onPlatform)).provideInvalidDetailsForSignup(
@@ -63,19 +57,14 @@ public class TheAppSteps {
 
     @Then("I try to login again with invalid credentials - {string}, {string}")
     public void iTryToLoginAgainWithInvalidCredentials(String username, String password) {
-        LOGGER.info(String.format(
-                "iTryToLoginAgainWithInvalidCredentials - Username: '%s', Password:'%s'", username,
-                password));
+        LOGGER.info("iTryToLoginAgainWithInvalidCredentials - Username: '{}', Password:'{}'", username, password);
         new AppBL().loginAgain(username, password);
     }
 
     @When("{string} login with invalid credentials - {string}, {string}")
     public void loginWithInvalidCredentials(String userPersona, String username, String password) {
         Platform onPlatform = Runner.getPlatformForUser(userPersona);
-        LOGGER.info(String.format(
-                "LoginWithInvalidCredentials - Persona:'%s', Username: '%s', Password:'%s', " +
-                "Platform: '%s'",
-                SAMPLE_TEST_CONTEXT.ME, username, password, onPlatform.name()));
+        LOGGER.info("LoginWithInvalidCredentials - Persona:'{}', Username: '{}', Password:'{}', Platform: '{}'", SAMPLE_TEST_CONTEXT.ME, username, password, onPlatform.name());
         new AppBL(userPersona, onPlatform).provideInvalidDetailsForSignup(username, password);
     }
 
@@ -83,10 +72,7 @@ public class TheAppSteps {
     public void loginAgainWithInvalidCredentials(String userPersona, String username,
                                                  String password) {
         Platform onPlatform = Runner.getPlatformForUser(userPersona);
-        LOGGER.info(String.format(
-                "LoginWithInvalidCredentials - Persona:'%s', Username: '%s', Password:'%s', " +
-                "Platform: '%s'",
-                SAMPLE_TEST_CONTEXT.ME, username, password, onPlatform.name()));
+        LOGGER.info("LoginWithInvalidCredentials - Persona:'{}', Username: '{}', Password:'{}', Platform: '{}'", SAMPLE_TEST_CONTEXT.ME, username, password, onPlatform.name());
         new AppBL(userPersona, onPlatform).loginAgain(username, password);
     }
 
@@ -97,7 +83,7 @@ public class TheAppSteps {
 
     @Given("I start the app")
     public void iStartTheApp() {
-        LOGGER.info(String.format("iStartTheApp - Persona:'%s'", SAMPLE_TEST_CONTEXT.ME));
+        LOGGER.info("iStartTheApp - Persona:'{}'", SAMPLE_TEST_CONTEXT.ME);
         Drivers.createDriverFor(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform(), context);
         new AppBL(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform());
     }
@@ -115,7 +101,7 @@ public class TheAppSteps {
 
     @Given("I save {string} in the clipboard")
     public void iSaveInTheClipboard(String content) {
-        LOGGER.info(String.format("iStartTheApp - Persona:'%s'", SAMPLE_TEST_CONTEXT.ME));
+        LOGGER.info("iStartTheApp - Persona:'{}'", SAMPLE_TEST_CONTEXT.ME);
         Drivers.createDriverFor(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform(), context);
         new ClipboardBL(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform()).saveContentInClipboard(
                 content);
@@ -123,7 +109,7 @@ public class TheAppSteps {
 
     @Given("I am on file upload page")
     public void iAmOnFileUploadPage() {
-        LOGGER.info(String.format("iStartTheApp - Persona:'%s'", SAMPLE_TEST_CONTEXT.ME));
+        LOGGER.info("iStartTheApp - Persona:'{}'", SAMPLE_TEST_CONTEXT.ME);
         Drivers.createDriverFor(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform(), context);
         new FileUploadBL(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform()).navigationToUploadScreen();
     }
@@ -146,9 +132,7 @@ public class TheAppSteps {
     @Then("{string} can login again with invalid credentials - {string}, {string}")
     public void canLoginAgainWithInvalidCredentials(String userPersona, String username,
                                                     String password) {
-        LOGGER.info(String.format(
-                "'%s' canLoginAgainWithInvalidCredentials - Username: '%s', Password:'%s'",
-                userPersona, username, password));
+        LOGGER.info("'{}' canLoginAgainWithInvalidCredentials - Username: '{}', Password:'{}'", userPersona, username, password);
         Platform platformForUser = Runner.getPlatformForUser(userPersona);
         new AppBL(userPersona, platformForUser).loginAgain(username, password);
     }
@@ -157,9 +141,7 @@ public class TheAppSteps {
     public void loginToTheAppWithInvalidCredentials(String userPersona, String username,
                                                     String password) {
         LOGGER.info("Active thread count: " + Thread.activeCount());
-        LOGGER.info(String.format(
-                "'%s' loginToTheAppWithInvalidCredentials - Username: '%s', Password:'%s'",
-                userPersona, username, password));
+        LOGGER.info("'{}' loginToTheAppWithInvalidCredentials - Username: '{}', Password:'{}'", userPersona, username, password);
         Platform currentPlatform = Runner.getPlatform();
         Drivers.createDriverFor(userPersona, currentPlatform, context);
         LOGGER.info("Active thread count: " + Thread.activeCount());

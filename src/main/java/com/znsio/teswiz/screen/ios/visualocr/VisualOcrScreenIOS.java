@@ -77,31 +77,31 @@ public class VisualOcrScreenIOS extends VisualOcrScreen {
 
     @Override
     public VisualElement findVisualElementRelativeByText(String targetText, SpatialDirection direction, String anchorText) {
-        LOGGER.info(String.format("Finding visual element '%s' %s anchor text '%s'", targetText, direction.getDirection(), anchorText));
+        LOGGER.info("Finding visual element '{}' {} anchor text '{}'", targetText, direction.getDirection(), anchorText);
         return driver.findRelativeByText(targetText, direction, anchorText);
     }
 
     @Override
     public VisualElement findVisualElementRelativeByImage(List<String> imagePaths, SpatialDirection direction, String anchorText) {
-        LOGGER.info(String.format("Finding visual element matching image %s %s anchor text '%s'", imagePaths, direction.getDirection(), anchorText));
+        LOGGER.info("Finding visual element matching image {} {} anchor text '{}'", imagePaths, direction.getDirection(), anchorText);
         return driver.findRelativeByImage(imagePaths, direction, anchorText);
     }
 
     @Override
     public VisualElement findVisualElementByTextInRegion(String text, VisualRegion region) {
-        LOGGER.info(String.format("Finding visual element '%s' in region %s", text, region));
+        LOGGER.info("Finding visual element '{}' in region {}", text, region);
         return driver.findByText(text, region);
     }
 
     @Override
     public VisualElement findVisualElementByImageInRegion(List<String> imagePaths, VisualRegion region) {
-        LOGGER.info(String.format("Finding visual element matching image %s in region %s", imagePaths, region));
+        LOGGER.info("Finding visual element matching image {} in region {}", imagePaths, region);
         return driver.findByImage(imagePaths, region);
     }
 
     @Override
     public VisualOcrScreen clickVisualElementByText(String elementName, String ocrText) {
-        LOGGER.info(String.format("Visually clicking element '%s' using OCR text '%s'", elementName, ocrText));
+        LOGGER.info("Visually clicking element '{}' using OCR text '{}'", elementName, ocrText);
         VisualElement element = findVisualElementByText(ocrText);
         assertThat(element).as("Visual element '" + elementName + "' with OCR text '" + ocrText + "' should be found").isNotNull();
         element.highlight();
@@ -115,7 +115,7 @@ public class VisualOcrScreenIOS extends VisualOcrScreen {
 
     @Override
     public VisualOcrScreen clickVisualElementByImage(String elementName, List<String> imagePaths) {
-        LOGGER.info(String.format("Visually clicking element '%s' using image template '%s'", elementName, imagePaths));
+        LOGGER.info("Visually clicking element '{}' using image template '{}'", elementName, imagePaths);
         VisualElement element = findVisualElementByImage(imagePaths);
         assertThat(element).as("Visual element '" + elementName + "' matched by image template '" + imagePaths + "' should be found").isNotNull();
         element.highlight();
@@ -129,7 +129,7 @@ public class VisualOcrScreenIOS extends VisualOcrScreen {
 
     @Override
     public VisualOcrScreen clickVisualElementByTextOrImage(String elementName, String ocrText, List<String> imagePaths) {
-        LOGGER.info(String.format("Visually clicking element '%s' using fallback OCR text '%s' or image template '%s'", elementName, ocrText, imagePaths));
+        LOGGER.info("Visually clicking element '{}' using fallback OCR text '{}' or image template '{}'", elementName, ocrText, imagePaths);
         VisualElement element = findVisualElementByTextOrImage(ocrText, imagePaths);
         assertThat(element).as("Visual element '" + elementName + "' matched by text/image should be found").isNotNull();
         element.highlight();
@@ -143,7 +143,7 @@ public class VisualOcrScreenIOS extends VisualOcrScreen {
 
     @Override
     public VisualOcrScreen clickVisualElementByImageOrText(String elementName, List<String> imagePaths, String ocrText) {
-        LOGGER.info(String.format("Visually clicking element '%s' using fallback image template '%s' or OCR text '%s'", elementName, imagePaths, ocrText));
+        LOGGER.info("Visually clicking element '{}' using fallback image template '{}' or OCR text '{}'", elementName, imagePaths, ocrText);
         VisualElement element = findVisualElementByImageOrText(imagePaths, ocrText);
         assertThat(element).as("Visual element '" + elementName + "' matched by image/text should be found").isNotNull();
         element.highlight();
@@ -157,7 +157,7 @@ public class VisualOcrScreenIOS extends VisualOcrScreen {
 
     @Override
     public VisualOcrScreen enterTextIntoVisualElementByText(String elementName, String textToEnter, String ocrText) {
-        LOGGER.info(String.format("Visually clicking element '%s' using OCR text '%s' and entering text '%s'", elementName, ocrText, textToEnter));
+        LOGGER.info("Visually clicking element '{}' using OCR text '{}' and entering text '{}'", elementName, ocrText, textToEnter);
         VisualElement element = findVisualElementByText(ocrText);
         assertThat(element).as("Visual element '" + elementName + "' with OCR text '" + ocrText + "' should be found").isNotNull();
         element.highlight();
@@ -172,7 +172,7 @@ public class VisualOcrScreenIOS extends VisualOcrScreen {
 
     @Override
     public VisualOcrScreen inspectVisualElementByText(String elementName, String ocrText) {
-        LOGGER.info(String.format("Visually inspecting element '%s' using OCR text '%s'", elementName, ocrText));
+        LOGGER.info("Visually inspecting element '{}' using OCR text '{}'", elementName, ocrText);
         VisualElement element = findVisualElementByText(ocrText);
         assertThat(element).as("Visual element '" + elementName + "' with OCR text '" + ocrText + "' should be found").isNotNull();
         element.highlight();
@@ -183,7 +183,7 @@ public class VisualOcrScreenIOS extends VisualOcrScreen {
 
     @Override
     public VisualOcrScreen inspectVisualElementByImage(String elementName, List<String> imagePaths) {
-        LOGGER.info(String.format("Visually inspecting element '%s' using image template '%s'", elementName, imagePaths));
+        LOGGER.info("Visually inspecting element '{}' using image template '{}'", elementName, imagePaths);
         VisualElement element = findVisualElementByImage(imagePaths);
         assertThat(element).as("Visual element '" + elementName + "' matched by image template '" + imagePaths + "' should be found").isNotNull();
         element.highlight();
@@ -194,7 +194,7 @@ public class VisualOcrScreenIOS extends VisualOcrScreen {
 
     @Override
     public VisualOcrScreen doubleClickVisualElementByText(String elementName, String ocrText) {
-        LOGGER.info(String.format("Visually double-clicking element '%s' using OCR text '%s'", elementName, ocrText));
+        LOGGER.info("Visually double-clicking element '{}' using OCR text '{}'", elementName, ocrText);
         VisualElement element = findVisualElementByText(ocrText);
         assertThat(element).as("Visual element '" + elementName + "' with OCR text '" + ocrText + "' should be found").isNotNull();
         element.highlight();
@@ -208,7 +208,7 @@ public class VisualOcrScreenIOS extends VisualOcrScreen {
 
     @Override
     public VisualOcrScreen hoverVisualElementByText(String elementName, String ocrText) {
-        LOGGER.info(String.format("Visually hovering over element '%s' using OCR text '%s'", elementName, ocrText));
+        LOGGER.info("Visually hovering over element '{}' using OCR text '{}'", elementName, ocrText);
         VisualElement element = findVisualElementByText(ocrText);
         assertThat(element).as("Visual element '" + elementName + "' with OCR text '" + ocrText + "' should be found").isNotNull();
         element.highlight();
@@ -222,7 +222,7 @@ public class VisualOcrScreenIOS extends VisualOcrScreen {
 
     @Override
     public VisualOcrScreen longPressVisualElementByText(String elementName, String ocrText) {
-        LOGGER.info(String.format("Visually long-pressing element '%s' using OCR text '%s'", elementName, ocrText));
+        LOGGER.info("Visually long-pressing element '{}' using OCR text '{}'", elementName, ocrText);
         VisualElement element = findVisualElementByText(ocrText);
         assertThat(element).as("Visual element '" + elementName + "' with OCR text '" + ocrText + "' should be found").isNotNull();
         element.highlight();
@@ -236,7 +236,7 @@ public class VisualOcrScreenIOS extends VisualOcrScreen {
 
     @Override
     public VisualOcrScreen swipeOnVisualElementByText(String elementName, Direction direction, String ocrText) {
-        LOGGER.info(String.format("Visually swiping %s on element '%s' using OCR text '%s'", direction, elementName, ocrText));
+        LOGGER.info("Visually swiping {} on element '{}' using OCR text '{}'", direction, elementName, ocrText);
         VisualElement element = findVisualElementByText(ocrText);
         assertThat(element).as("Visual element '" + elementName + "' with OCR text '" + ocrText + "' should be found").isNotNull();
         element.highlight();
@@ -250,7 +250,7 @@ public class VisualOcrScreenIOS extends VisualOcrScreen {
 
     @Override
     public VisualOcrScreen clickVisualElementAtIndexByText(String elementName, int index, String ocrText) {
-        LOGGER.info(String.format("Visually clicking element '%s' at index %d using OCR text '%s'", elementName, index, ocrText));
+        LOGGER.info("Visually clicking element '{}' at index {} using OCR text '{}'", elementName, index, ocrText);
         List<VisualElement> elements = findAllVisualElementsByText(ocrText);
         assertThat(elements).as("Expected at least " + (index + 1) + " visual elements matching OCR text '" + ocrText + "'").hasSizeGreaterThan(index);
         VisualElement target = elements.get(index);
@@ -265,7 +265,7 @@ public class VisualOcrScreenIOS extends VisualOcrScreen {
 
     @Override
     public VisualOcrScreen clickVisualElementByPositionByText(String elementName, String positionText, String ocrText) {
-        LOGGER.info(String.format("Visually clicking '%s' element '%s' using OCR text '%s'", positionText, elementName, ocrText));
+        LOGGER.info("Visually clicking '{}' element '{}' using OCR text '{}'", positionText, elementName, ocrText);
         List<VisualElement> elements = findAllVisualElementsByText(ocrText);
         assertThat(elements).as("Expected at least 1 visual element matching OCR text '" + ocrText + "'").isNotEmpty();
         int targetIndex = parsePositionIndex(positionText, elements.size());
@@ -281,7 +281,7 @@ public class VisualOcrScreenIOS extends VisualOcrScreen {
 
     @Override
     public VisualOcrScreen clickVisualElementByPositionByImage(String elementName, String positionText, List<String> imagePaths) {
-        LOGGER.info(String.format("Visually clicking '%s' element '%s' using image template '%s'", positionText, elementName, imagePaths));
+        LOGGER.info("Visually clicking '{}' element '{}' using image template '{}'", positionText, elementName, imagePaths);
         List<VisualElement> elements = findAllVisualElementsByImage(imagePaths);
         assertThat(elements).as("Expected at least 1 visual element matching image template '" + imagePaths + "'").isNotEmpty();
         int targetIndex = parsePositionIndex(positionText, elements.size());
@@ -297,7 +297,7 @@ public class VisualOcrScreenIOS extends VisualOcrScreen {
 
     @Override
     public VisualOcrScreen clickVisualElementRelativeByText(String elementName, String targetText, SpatialDirection direction, String anchorText) {
-        LOGGER.info(String.format("Visually clicking element '%s' with OCR text '%s' %s anchor text '%s'", elementName, targetText, direction.getDirection(), anchorText));
+        LOGGER.info("Visually clicking element '{}' with OCR text '{}' {} anchor text '{}'", elementName, targetText, direction.getDirection(), anchorText);
         VisualElement element = findVisualElementRelativeByText(targetText, direction, anchorText);
         assertThat(element).as("Visual element '" + elementName + "' relative to '" + anchorText + "' should be found").isNotNull();
         element.highlight();
@@ -311,7 +311,7 @@ public class VisualOcrScreenIOS extends VisualOcrScreen {
 
     @Override
     public boolean tryClickVisualElementByText(String elementName, String ocrText) {
-        LOGGER.info(String.format("Attempting optional visual click on element '%s' using OCR text '%s'", elementName, ocrText));
+        LOGGER.info("Attempting optional visual click on element '{}' using OCR text '{}'", elementName, ocrText);
         VisualElement element = findVisualElementByText(ocrText);
         if (element == null) return false;
         element.highlight();
@@ -325,7 +325,7 @@ public class VisualOcrScreenIOS extends VisualOcrScreen {
 
     @Override
     public boolean tryClickVisualElementByImage(String elementName, List<String> imagePaths) {
-        LOGGER.info(String.format("Attempting optional visual click on element '%s' using image template '%s'", elementName, imagePaths));
+        LOGGER.info("Attempting optional visual click on element '{}' using image template '{}'", elementName, imagePaths);
         VisualElement element = findVisualElementByImage(imagePaths);
         if (element == null) return false;
         element.highlight();
@@ -339,7 +339,7 @@ public class VisualOcrScreenIOS extends VisualOcrScreen {
 
     @Override
     public boolean tryClickVisualElementByTextOrImage(String elementName, String ocrText, List<String> imagePaths) {
-        LOGGER.info(String.format("Attempting optional visual click on element '%s' using fallback OCR text '%s' or image template '%s'", elementName, ocrText, imagePaths));
+        LOGGER.info("Attempting optional visual click on element '{}' using fallback OCR text '{}' or image template '{}'", elementName, ocrText, imagePaths);
         VisualElement element = findVisualElementByTextOrImage(ocrText, imagePaths);
         if (element == null) return false;
         element.highlight();
@@ -353,7 +353,7 @@ public class VisualOcrScreenIOS extends VisualOcrScreen {
 
     @Override
     public boolean tryClickVisualElementByImageOrText(String elementName, List<String> imagePaths, String ocrText) {
-        LOGGER.info(String.format("Attempting optional visual click on element '%s' using fallback image template '%s' or OCR text '%s'", elementName, imagePaths, ocrText));
+        LOGGER.info("Attempting optional visual click on element '{}' using fallback image template '{}' or OCR text '{}'", elementName, imagePaths, ocrText);
         VisualElement element = findVisualElementByImageOrText(imagePaths, ocrText);
         if (element == null) return false;
         element.highlight();
@@ -367,7 +367,7 @@ public class VisualOcrScreenIOS extends VisualOcrScreen {
 
     @Override
     public boolean tryClickVisualElementRelativeByText(String elementName, String targetText, SpatialDirection direction, String anchorText) {
-        LOGGER.info(String.format("Attempting optional visual click on element '%s' with OCR text '%s' %s anchor text '%s'", elementName, targetText, direction.getDirection(), anchorText));
+        LOGGER.info("Attempting optional visual click on element '{}' with OCR text '{}' {} anchor text '{}'", elementName, targetText, direction.getDirection(), anchorText);
         try {
             VisualElement element = findVisualElementRelativeByText(targetText, direction, anchorText);
             if (element == null) return false;

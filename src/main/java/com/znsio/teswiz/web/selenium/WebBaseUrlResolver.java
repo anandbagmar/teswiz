@@ -18,14 +18,14 @@ public final class WebBaseUrlResolver {
         if (!appName.equalsIgnoreCase(Runner.DEFAULT)) {
             providedBaseUrlKey = appName.toUpperCase() + "_BASE_URL";
         }
-        LOGGER.info(String.format("Using BASE_URL key: %s", providedBaseUrlKey));
+        LOGGER.info("Using BASE_URL key: {}", providedBaseUrlKey);
 
         if (null == providedBaseUrlKey) {
             throw new IllegalStateException("baseUrl key not provided");
         }
         String retrievedBaseUrl = String.valueOf(Runner.getFromEnvironmentConfiguration(providedBaseUrlKey));
         retrievedBaseUrl = getOverriddenStringValue(providedBaseUrlKey, retrievedBaseUrl);
-        LOGGER.info(String.format("baseUrl: %s", retrievedBaseUrl));
+        LOGGER.info("baseUrl: {}", retrievedBaseUrl);
         return retrievedBaseUrl;
     }
 }

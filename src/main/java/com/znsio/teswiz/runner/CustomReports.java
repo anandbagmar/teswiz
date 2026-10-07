@@ -35,7 +35,7 @@ class CustomReports {
 
         LOGGER.info(
                 "================================================================================================");
-        LOGGER.info(String.format("Generating reports here: '%s'", reportsDir));
+        LOGGER.info("Generating reports here: '{}'", reportsDir);
         LOGGER.info(
                 "================================================================================================");
 
@@ -72,7 +72,7 @@ class CustomReports {
     @NotNull
     private static Configuration createCucumberReportsConfiguration(String reportsDir) {
         String richReportsPath = reportsDir + File.separator + "richReports";
-        LOGGER.info(String.format("\tCreating rich reports: %s", richReportsPath));
+        LOGGER.info("\tCreating rich reports: {}", richReportsPath);
         Configuration config = new Configuration(new File(richReportsPath),
                                                  Setup.getFromConfigs(APP_NAME));
         return addTestExecutionMetaDataToReportConfig(excludeCustomTagsFromReport(config), reportsDir);
@@ -95,13 +95,13 @@ class CustomReports {
                 .filter(CustomReports::isCucumberResultJsonFile)
                 .sorted(Comparator.comparing(File::getAbsolutePath))
                 .toList();
-        LOGGER.info(String.format("\tFound '%s' Cucumber result files for processing", cucumberJsonFiles.size()));
+        LOGGER.info("\tFound '{}' Cucumber result files for processing", cucumberJsonFiles.size());
         if (cucumberJsonFiles.isEmpty()) {
             LOGGER.info("Reports not generated");
         }
         List<String> jsonPaths = new ArrayList<>(cucumberJsonFiles.size());
         cucumberJsonFiles.forEach(file -> {
-            LOGGER.info(String.format("\tProcessing result file: %s", file.getAbsolutePath()));
+            LOGGER.info("\tProcessing result file: {}", file.getAbsolutePath());
             jsonPaths.add(file.getAbsolutePath());
         });
         return jsonPaths;
@@ -126,11 +126,13 @@ class CustomReports {
 
         Set<String> processedKeys = new HashSet<>();
         for (Map.Entry<String, List<String>> categoryEntry : categories.entrySet()) {
-            LOGGER.info(String.format("  --- %s ---", categoryEntry.getKey()));
+            LOGGER.info("  --- {} ---", categoryEntry.getKey());
             for (String key : categoryEntry.getValue()) {
                 if (testRunMetadata.containsKey(key)) {
                     Object val = testRunMetadata.get(key);
-                    LOGGER.info(String.format("    %-25s : %s", key, val));
+                    if (LOGGER.isInfoEnabled()) {
+                        LOGGER.info(String.format("    %-25s : %s", key, val));
+                    }
                     config.addClassifications(key, String.valueOf(val));
                     processedKeys.add(key);
                 }
@@ -146,7 +148,9 @@ class CustomReports {
             LOGGER.info("  --- Additional Session Metadata ---");
             for (String key : remainingKeys) {
                 Object val = testRunMetadata.get(key);
-                LOGGER.info(String.format("    %-25s : %s", key, val));
+                if (LOGGER.isInfoEnabled()) {
+                    LOGGER.info(String.format("    %-25s : %s", key, val));
+                }
                 config.addClassifications(key, String.valueOf(val));
             }
         }

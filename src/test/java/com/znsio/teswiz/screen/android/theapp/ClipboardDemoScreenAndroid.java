@@ -42,8 +42,7 @@ public class ClipboardDemoScreenAndroid
         visually.checkWindow(SCREEN_NAME, "Clipboard refreshed");
         boolean isElementPresentByAccessibilityId = driver.isElementPresentByAccessibilityId(
                 contentExpectedInClipboard);
-        LOGGER.info(String.format("Is content present in clipboad: '%s':: '%s'",
-                                  contentExpectedInClipboard, isElementPresentByAccessibilityId));
+        LOGGER.info("Is content present in clipboad: '{}':: '{}'", contentExpectedInClipboard, isElementPresentByAccessibilityId);
         return isElementPresentByAccessibilityId;
     }
 

@@ -20,9 +20,7 @@ public class FigmaSteps {
 
     @When("I have my Figma design with app name {string}, test name {string} and baseline name {string} available in Applitools")
     public void iHaveMyFigmaDesignAvailableInApplitools(String appName, String testName, String baselineName) {
-        LOGGER.info(String.format(
-                "I have my Figma design with app name: '%s', test name: '%s', baseline name: '%s'",
-                appName, testName, baselineName));
+        LOGGER.info("I have my Figma design with app name: '{}', test name: '{}', baseline name: '{}'", appName, testName, baselineName);
         addFigmaDesignDetailsToContext(context, appName, testName, baselineName);
     }
 

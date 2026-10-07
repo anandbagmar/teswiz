@@ -85,7 +85,7 @@ public class VisualElement {
     public void click() {
         highlight();
         Point center = getCenter();
-        LOGGER.info(String.format("Clicking visual element '%s' at center coordinates (%d, %d)", label, center.getX(), center.getY()));
+        LOGGER.info("Clicking visual element '{}' at center coordinates ({}, {})", label, center.getX(), center.getY());
         if (!hasInnerDriver()) {
             warnNotPerformed("click");
             return;
@@ -123,7 +123,7 @@ public class VisualElement {
     public void doubleClick() {
         highlight();
         Point center = getCenter();
-        LOGGER.info(String.format("Double-clicking visual element '%s' at (%d, %d)", label, center.getX(), center.getY()));
+        LOGGER.info("Double-clicking visual element '{}' at ({}, {})", label, center.getX(), center.getY());
         if (!hasInnerDriver()) {
             warnNotPerformed("doubleClick");
             return;
@@ -158,7 +158,7 @@ public class VisualElement {
     public void hover() {
         highlight();
         Point center = getCenter();
-        LOGGER.info(String.format("Hovering over visual element '%s' at (%d, %d)", label, center.getX(), center.getY()));
+        LOGGER.info("Hovering over visual element '{}' at ({}, {})", label, center.getX(), center.getY());
         if (!hasInnerDriver()) {
             warnNotPerformed("hover");
             return;
@@ -188,7 +188,7 @@ public class VisualElement {
     public void sendKeys(CharSequence... keysToSend) {
         click();
         String keys = String.join("", keysToSend);
-        LOGGER.info(String.format("Sending keys '%s' to visual element '%s'", keys, label));
+        LOGGER.info("Sending keys '{}' to visual element '{}'", keys, label);
         if (!hasInnerDriver()) {
             warnNotPerformed("sendKeys");
             return;
@@ -199,12 +199,12 @@ public class VisualElement {
                 return;
             }
         } catch (RuntimeException e) {
-            LOGGER.debug(String.format("Actions sendKeys failed, trying activeElement fallback: %s", e.getMessage()));
+            LOGGER.debug("Actions sendKeys failed, trying activeElement fallback: {}", e.getMessage());
         }
         try {
             driverFacade.getInnerDriver().switchTo().activeElement().sendKeys(keys);
         } catch (RuntimeException e) {
-            LOGGER.debug(String.format("Could not send keys to activeElement: %s", e.getMessage()));
+            LOGGER.debug("Could not send keys to activeElement: {}", e.getMessage());
         }
     }
 
@@ -218,7 +218,7 @@ public class VisualElement {
 
     public void dragAndDropTo(WebElement target) {
         Point center = getCenter();
-        LOGGER.info(String.format("Dragging visual element '%s' from (%d, %d) to target element", label, center.getX(), center.getY()));
+        LOGGER.info("Dragging visual element '{}' from ({}, {}) to target element", label, center.getX(), center.getY());
         if (!hasInnerDriver()) {
             warnNotPerformed("dragAndDropTo");
             return;
@@ -252,20 +252,24 @@ public class VisualElement {
     }
 
     public void zoom(double scaleFactor) {
-        LOGGER.warn(String.format(
+        if (LOGGER.isWarnEnabled()) {
+            LOGGER.warn(String.format(
                 "Zoom (scale: %.2f) on visual element '%s' is not implemented; the gesture was not performed",
                 scaleFactor, label));
+        }
     }
 
     public void pinch(double scaleFactor) {
-        LOGGER.warn(String.format(
+        if (LOGGER.isWarnEnabled()) {
+            LOGGER.warn(String.format(
                 "Pinch (scale: %.2f) on visual element '%s' is not implemented; the gesture was not performed",
                 scaleFactor, label));
+        }
     }
 
     public void swipe(Direction direction) {
         Point center = getCenter();
-        LOGGER.info(String.format("Swiping '%s' on visual element '%s' at (%d, %d)", direction, label, center.getX(), center.getY()));
+        LOGGER.info("Swiping '{}' on visual element '{}' at ({}, {})", direction, label, center.getX(), center.getY());
         if (!hasInnerDriver()) {
             warnNotPerformed("swipe");
             return;
@@ -290,7 +294,7 @@ public class VisualElement {
     public void longPress(Duration duration) {
         highlight();
         Point center = getCenter();
-        LOGGER.info(String.format("Long-pressing visual element '%s' at (%d, %d) for %d ms", label, center.getX(), center.getY(), duration.toMillis()));
+        LOGGER.info("Long-pressing visual element '{}' at ({}, {}) for {} ms", label, center.getX(), center.getY(), duration.toMillis());
         if (!hasInnerDriver()) {
             warnNotPerformed("longPress");
             return;
@@ -363,9 +367,7 @@ public class VisualElement {
      * @param action the action being attempted, for the message
      */
     private void warnSyntheticFallback(String action) {
-        LOGGER.warn(String.format(
-                "Performing '%s' on visual element '%s' via synthesised DOM events: this driver exposes no native "
-                        + "coordinate input, so the action will NOT reach <canvas> content", action, label));
+        LOGGER.warn("Performing '{}' on visual element '{}' via synthesised DOM events: this driver exposes no native coordinate input, so the action will NOT reach <canvas> content", action, label);
     }
 
     /**
@@ -375,9 +377,7 @@ public class VisualElement {
      * @param action the action that could not be performed, for the message
      */
     private void warnNotPerformed(String action) {
-        LOGGER.warn(String.format(
-                "Unable to perform '%s' on visual element '%s': driver or inner driver is null, or supports no "
-                        + "known input mechanism", action, label));
+        LOGGER.warn("Unable to perform '{}' on visual element '{}': driver or inner driver is null, or supports no known input mechanism", action, label);
     }
 
     private boolean hasInnerDriver() {
@@ -464,7 +464,7 @@ public class VisualElement {
                             return null;
                         } catch (Exception e) {
                             if (i == retries) throw e;
-                            LOGGER.warn(String.format("Visual element click failed on attempt %d of %d, retrying after %ds: %s", i, retries, delaySeconds, e.getMessage()));
+                            LOGGER.warn("Visual element click failed on attempt {} of {}, retrying after {}s: {}", i, retries, delaySeconds, e.getMessage());
                             sleepQuietly(Duration.ofSeconds(delaySeconds));
                         }
                     }

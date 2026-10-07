@@ -45,7 +45,7 @@ public class DuckDuckGoScreenAndroid
         driver.setWebViewContext();
         byGetDefaultTextFromWebViewId = AppiumBy.id("com.duckduckgo.mobile.android.debug:id/dialogTextCta");
         String defaultText = driver.waitTillElementIsPresent(byGetDefaultTextFromWebViewId).getText();
-        LOGGER.info(String.format("Default text in webview: '%s'", defaultText));
+        LOGGER.info("Default text in webview: '{}'", defaultText);
         return defaultText;
     }
 

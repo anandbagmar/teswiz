@@ -48,7 +48,7 @@ public class TransportNswOcrScreenPlaywrightJava extends TransportNswOcrScreen {
 
     @Override
     public VisualElement clickElementByImage(String elementName, String imagePath) {
-        LOGGER.info(String.format("Playwright Java - Finding and clicking '%s' using image template: %s", elementName, imagePath));
+        LOGGER.info("Playwright Java - Finding and clicking '{}' using image template: {}", elementName, imagePath);
         VisualElement visualElement = driver.findByImage(List.of(imagePath));
         visually.checkWindow(SCREEN_NAME, "Before clicking: " + elementName);
         visualElement.click();
@@ -58,7 +58,7 @@ public class TransportNswOcrScreenPlaywrightJava extends TransportNswOcrScreen {
 
     @Override
     public VisualElement clickElementByOcrText(String elementName, String ocrText) {
-        LOGGER.info(String.format("Playwright Java - Finding and clicking '%s' using OCR text: %s", elementName, ocrText));
+        LOGGER.info("Playwright Java - Finding and clicking '{}' using OCR text: {}", elementName, ocrText);
         VisualElement stationElement = driver.findByText(ocrText);
         visually.checkWindow(SCREEN_NAME, "Before clicking: " + elementName);
         stationElement.click();

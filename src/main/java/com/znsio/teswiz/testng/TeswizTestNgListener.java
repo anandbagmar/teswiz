@@ -35,7 +35,7 @@ public class TeswizTestNgListener implements ITestListener {
         startedCount.incrementAndGet();
         LoggingContext.begin(result.getName(), testNumber, 1,
                 context.getTestStateAsString(TEST_CONTEXT.SCENARIO_LOG_DIRECTORY));
-        LOGGER.info(String.format("Test started: number=%d, name=\"%s\"", testNumber, result.getName()));
+        LOGGER.info("Test started: number={}, name=\"{}\"", testNumber, result.getName());
         TestNgStepRecorder.startCapturingStepsForCurrentThread();
         new Hooks().beforeScenario(result.getName());
     }
@@ -47,7 +47,7 @@ public class TeswizTestNgListener implements ITestListener {
         recordOutcomeByGroup(result, true);
         recordScenarioReportData(result, TestNgCapturedStep.PASSED);
         new Hooks().afterScenario(result.getName(), false);
-        LOGGER.info(String.format("Test finished: name=\"%s\", status=PASSED", result.getName()));
+        LOGGER.info("Test finished: name=\"{}\", status=PASSED", result.getName());
         LoggingContext.clear();
     }
 
@@ -58,7 +58,7 @@ public class TeswizTestNgListener implements ITestListener {
         recordOutcomeByGroup(result, false);
         recordScenarioReportData(result, TestNgCapturedStep.FAILED);
         new Hooks().afterScenario(result.getName(), true);
-        LOGGER.info(String.format("Test finished: name=\"%s\", status=FAILED", result.getName()));
+        LOGGER.info("Test finished: name=\"{}\", status=FAILED", result.getName());
         LoggingContext.clear();
     }
 
@@ -68,14 +68,13 @@ public class TeswizTestNgListener implements ITestListener {
         com.znsio.teswiz.analytics.TelemetryCollector.recordScenarioOutcome(false);
         recordScenarioReportData(result, TestNgCapturedStep.FAILED);
         new Hooks().afterScenario(result.getName(), true);
-        LOGGER.info(String.format("Test finished: name=\"%s\", status=SKIPPED", result.getName()));
+        LOGGER.info("Test finished: name=\"{}\", status=SKIPPED", result.getName());
         LoggingContext.clear();
     }
 
     void logExecutionSummary() {
         long durationMillis = java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAtNanos);
-        LOGGER.info(String.format("Test run completed: total=%d, passed=%d, failed=%d, skipped=%d, durationMs=%d",
-                startedCount.get(), passedCount.get(), failedCount.get(), skippedCount.get(), durationMillis));
+        LOGGER.info("Test run completed: total={}, passed={}, failed={}, skipped={}, durationMs={}", startedCount.get(), passedCount.get(), failedCount.get(), skippedCount.get(), durationMillis);
         com.znsio.teswiz.analytics.TelemetryCollector.sendRunCompletedEvent();
     }
 

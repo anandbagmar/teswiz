@@ -51,9 +51,7 @@ public class BrowserStackMobileSetup {
         Object appiumVersion = loadedPlatformCapability.get("browserstack.appiumVersion");
         boolean useLocalTesting = Setup.getBooleanValueFromConfigs(Setup.CLOUD_USE_LOCAL_TESTING);
         if (useLocalTesting) {
-            LOGGER.info(String.format(
-                    "CLOUD_USE_LOCAL_TESTING=true. Setting up BrowserStackLocal testing using identified: '%s'",
-                    BROWSERSTACK_LOCAL_IDENTIFIER));
+            LOGGER.info("CLOUD_USE_LOCAL_TESTING=true. Setting up BrowserStackLocal testing using identified: '{}'", BROWSERSTACK_LOCAL_IDENTIFIER);
             startBrowserStackLocal(authenticationKey, BROWSERSTACK_LOCAL_IDENTIFIER);
         }
         BrowserStackMobileCapabilitySetup.prepareCapabilities(
@@ -77,13 +75,13 @@ public class BrowserStackMobileSetup {
                                                                       String authenticationKey) {
         Object browserName = loadedPlatformCapability.get("browserName");
         if (null != browserName) {
-            LOGGER.info(String.format("app Id retrieved from browser stack is: %s", browserName));
+            LOGGER.info("app Id retrieved from browser stack is: {}", browserName);
             loadedPlatformCapability.put("browserstack.browserName", browserName);
         } else {
             String appPath = new File(Setup.getFromConfigs(Setup.APP_PATH)).getAbsolutePath();
             String appIdFromBrowserStack = getAppIdFromBrowserStack(authenticationUser,
                     authenticationKey, appPath, deviceLabURL);
-            LOGGER.info(String.format("app Id retrieved from browser stack is: %s", appIdFromBrowserStack));
+            LOGGER.info("app Id retrieved from browser stack is: {}", appIdFromBrowserStack);
             loadedPlatformCapability.put("app", appIdFromBrowserStack);
         }
     }
@@ -93,9 +91,7 @@ public class BrowserStackMobileSetup {
             return Runner.getTestExecutionContext(Thread.currentThread().getId()).getTestName();
         } catch (RuntimeException e) {
             String fallbackSessionName = Setup.getFromConfigs(Setup.LAUNCH_NAME);
-            LOGGER.warn(String.format(
-                    "Unable to resolve test context name. Falling back to launch name for sessionName: '%s'",
-                    fallbackSessionName));
+            LOGGER.warn("Unable to resolve test context name. Falling back to launch name for sessionName: '{}'", fallbackSessionName);
             return fallbackSessionName;
         }
     }
@@ -103,7 +99,7 @@ public class BrowserStackMobileSetup {
     private static String getAppIdFromBrowserStack(String authenticationUser,
                                                    String authenticationKey, String appPath,
                                                    String apiUrl) {
-        LOGGER.info(String.format("getAppIdFromBrowserStack: for %s", appPath));
+        LOGGER.info("getAppIdFromBrowserStack: for {}", appPath);
         String appIdFromBrowserStack;
         if(Setup.getBooleanValueFromConfigs(Setup.CLOUD_UPLOAD_APP)) {
             appIdFromBrowserStack = uploadToBrowserStack(
@@ -134,16 +130,15 @@ public class BrowserStackMobileSetup {
                 URL url = new URL(proxyUrl);
                 String host = url.getHost();
                 int port = url.getPort() == -1 ? url.getDefaultPort() : url.getPort();
-                LOGGER.info(String.format("Using proxyHost: %s", host));
-                LOGGER.info(String.format("Using proxyPort: %d", port));
+                LOGGER.info("Using proxyHost: {}", host);
+                LOGGER.info("Using proxyPort: {}", port);
                 bsLocalArgs.put("proxyHost", host);
                 bsLocalArgs.put("proxyPort", String.valueOf(port));
             }
 
-            LOGGER.info(String.format("Start BrowserStackLocal using: %s",
-                    SensitiveDataMasker.mask(JsonPrettyPrinter.prettyPrint(bsLocalArgs))));
+            LOGGER.info("Start BrowserStackLocal using: {}", SensitiveDataMasker.mask(JsonPrettyPrinter.prettyPrint(bsLocalArgs)));
             bsLocal.start(bsLocalArgs);
-            LOGGER.info(String.format("Is BrowserStackLocal started? - %s", bsLocal.isRunning()));
+            LOGGER.info("Is BrowserStackLocal started? - {}", bsLocal.isRunning());
         } catch(Exception e) {
             throw new EnvironmentSetupException("Error starting BrowserStackLocal", e);
         }
@@ -174,8 +169,7 @@ public class BrowserStackMobileSetup {
 
         int deviceCount = Math.min(availableDevices.size(), Setup.getIntegerValueFromConfigs(
                 Setup.MAX_NUMBER_OF_APPIUM_DRIVERS));
-        LOGGER.info(String.format("Adding '%d' available devices for executing on BrowserStack",
-                                  deviceCount));
+        LOGGER.info("Adding '{}' available devices for executing on BrowserStack", deviceCount);
         for(int numDevices = 0; numDevices < deviceCount; numDevices++) {
             Map<String, String> deviceInfo = new HashMap<>();
             deviceInfo.put("platform", platformName.toLowerCase());
@@ -194,8 +188,10 @@ public class BrowserStackMobileSetup {
 
     private static String uploadToBrowserStack(String authenticationKey, String appPath,
                                                    String uploadUrl) {
-        LOGGER.info(String.format("uploadToBrowserStack for: '%s'%n",
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(String.format("uploadToBrowserStack for: '%s'%n",
                 SensitiveDataMasker.maskSecret(authenticationKey)));
+        }
 
         String[] curlCommand = buildUploadAppCurlCommand(authenticationKey, appPath, uploadUrl,
                 Setup.getCurlProxyCommand());
@@ -224,8 +220,7 @@ public class BrowserStackMobileSetup {
                     "Failed to upload app '%s' to BrowserStack. %s", appPath, errorMessage));
         }
         String uploadedApkId = appUrl.getAsString();
-        LOGGER.info(String.format("App: '%s' uploaded to BrowserStack. Response: '%s'", appPath,
-                SensitiveDataMasker.mask(JsonPrettyPrinter.prettyPrint(uploadResponse))));
+        LOGGER.info("App: '{}' uploaded to BrowserStack. Response: '{}'", appPath, SensitiveDataMasker.mask(JsonPrettyPrinter.prettyPrint(uploadResponse)));
         Setup.addToConfigs(Setup.APP_PATH, uploadedApkId);
         return uploadedApkId;
     }
@@ -256,8 +251,10 @@ public class BrowserStackMobileSetup {
     private static String getAppIdFromBrowserStack(String authenticationKey, String appPath,
                                                    String apiUrl) {
         String appName = getAppName(appPath);
-        LOGGER.info(String.format("getAppIdFromBrowserStack for: '%s' and appName: '%s'%n",
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(String.format("getAppIdFromBrowserStack for: '%s' and appName: '%s'%n",
                 SensitiveDataMasker.maskSecret(authenticationKey), appName));
+        }
         String[] curlCommand = new String[]{
                 "curl --insecure " + Setup.getCurlProxyCommand() + " -u \"" + authenticationKey + "\"",
                 "-X GET \"" + apiUrl + "recent_apps/" + appName + "\""};
@@ -277,8 +274,10 @@ public class BrowserStackMobileSetup {
                     "App with id: '%s' is not uploaded to BrowserStack. %nError: '%s'", appName,
                     e.getMessage()));
         }
-        LOGGER.info(String.format("getAppIdFromBrowserStack: AppId: '%s'%n",
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(String.format("getAppIdFromBrowserStack: AppId: '%s'%n",
                                   uploadedAppIdFromBrowserStack));
+        }
         return uploadedAppIdFromBrowserStack;
     }
 
@@ -291,17 +290,14 @@ public class BrowserStackMobileSetup {
     }
 
     private static void stopBrowserStackLocal() {
-        LOGGER.info(String.format("stopBrowserStackLocal: CLOUD_USE_LOCAL_TESTING=%s",
-                                  Setup.getBooleanValueFromConfigs(Setup.CLOUD_USE_LOCAL_TESTING)));
+        LOGGER.info("stopBrowserStackLocal: CLOUD_USE_LOCAL_TESTING={}", Setup.getBooleanValueFromConfigs(Setup.CLOUD_USE_LOCAL_TESTING));
         if(Setup.getBooleanValueFromConfigs(Setup.CLOUD_USE_LOCAL_TESTING)) {
             try {
-                LOGGER.info(
-                        String.format("Is BrowserStackLocal running? - %s", bsLocal.isRunning()));
+                LOGGER.info("Is BrowserStackLocal running? - {}", bsLocal.isRunning());
                 if(bsLocal.isRunning()) {
                     LOGGER.info("Stopping BrowserStackLocal");
                     bsLocal.stop();
-                    LOGGER.info(String.format("Is BrowserStackLocal stopped? - %s",
-                                              !bsLocal.isRunning()));
+                    LOGGER.info("Is BrowserStackLocal stopped? - {}", !bsLocal.isRunning());
                 }
             } catch(Exception e) {
                 throw new EnvironmentSetupException("Exception in stopping BrowserStackLocal", e);

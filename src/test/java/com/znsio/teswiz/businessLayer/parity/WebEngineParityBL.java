@@ -35,39 +35,39 @@ public class WebEngineParityBL {
     }
 
     public WebEngineParityBL addSessionCookie(String key, String value) {
-        LOGGER.info(String.format("Adding cookie '%s' = '%s'", key, value));
+        LOGGER.info("Adding cookie '{}' = '{}'", key, value);
         WebEngineParityScreen.get().addCookie(key, value);
         return this;
     }
 
     public WebEngineParityBL verifyCookiePresent(String key) {
-        LOGGER.info(String.format("Verifying cookie '%s' is present", key));
+        LOGGER.info("Verifying cookie '{}' is present", key);
         boolean isPresent = WebEngineParityScreen.get().isCookiePresent(key);
         softly.assertThat(isPresent).as("Cookie '" + key + "' should be present in session").isTrue();
         return this;
     }
 
     public WebEngineParityBL deleteSessionCookie(String key) {
-        LOGGER.info(String.format("Deleting cookie '%s'", key));
+        LOGGER.info("Deleting cookie '{}'", key);
         WebEngineParityScreen.get().deleteCookie(key);
         return this;
     }
 
     public WebEngineParityBL verifyCookieNotPresent(String key) {
-        LOGGER.info(String.format("Verifying cookie '%s' is not present", key));
+        LOGGER.info("Verifying cookie '{}' is not present", key);
         boolean isPresent = WebEngineParityScreen.get().isCookiePresent(key);
         softly.assertThat(isPresent).as("Cookie '" + key + "' should not be present in session").isFalse();
         return this;
     }
 
     public WebEngineParityBL setViewportSize(int width, int height) {
-        LOGGER.info(String.format("Setting viewport size to %dx%d", width, height));
+        LOGGER.info("Setting viewport size to {}x{}", width, height);
         WebEngineParityScreen.get().setViewport(width, height);
         return this;
     }
 
     public WebEngineParityBL verifyViewportSize(int expectedWidth, int expectedHeight) {
-        LOGGER.info(String.format("Verifying viewport size is %dx%d", expectedWidth, expectedHeight));
+        LOGGER.info("Verifying viewport size is {}x{}", expectedWidth, expectedHeight);
         int[] actualSize = WebEngineParityScreen.get().getViewportSize();
         softly.assertThat(actualSize[0]).as("Viewport width").isEqualTo(expectedWidth);
         softly.assertThat(actualSize[1]).as("Viewport height").isEqualTo(expectedHeight);
@@ -75,14 +75,14 @@ public class WebEngineParityBL {
     }
 
     public WebEngineParityBL executeAsyncScript(int delayMs, String expectedReturn) {
-        LOGGER.info(String.format("Executing async script with %dms delay, expecting return '%s'", delayMs, expectedReturn));
+        LOGGER.info("Executing async script with {}ms delay, expecting return '{}'", delayMs, expectedReturn);
         Object result = WebEngineParityScreen.get().executeAsyncScript(delayMs, expectedReturn);
         context.addTestState("asyncScriptResult", result);
         return this;
     }
 
     public WebEngineParityBL verifyAsyncScriptResult(String expectedReturn) {
-        LOGGER.info(String.format("Verifying async script result matches '%s'", expectedReturn));
+        LOGGER.info("Verifying async script result matches '{}'", expectedReturn);
         Object result = context.getTestState("asyncScriptResult");
         softly.assertThat(result).as("Async script result").isEqualTo(expectedReturn);
         return this;

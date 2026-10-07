@@ -79,7 +79,7 @@ public class HomeScreenAndroid
 
     @Override
     public SearchScreen selectProductFromCategory(String product, String category, String gender) {
-        LOGGER.info(String.format("Selecting %s for %s", product, gender));
+        LOGGER.info("Selecting {} for {}", product, gender);
         driver.waitTillElementIsVisible(By.xpath(String.format(byFilterProductXpath, gender))).click();
         driver.scrollVertically(20, 60, 50);
         driver.waitTillElementIsVisible(By.xpath(String.format(byFilterProductXpath, category))).click();

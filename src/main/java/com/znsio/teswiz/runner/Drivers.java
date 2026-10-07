@@ -44,7 +44,7 @@ public class Drivers {
     }
 
     public static Driver setDriverFor(String userPersona, Platform forPlatform, TestExecutionContext context) {
-        LOGGER.info(String.format("setDriverFor: start: userPersona: '%s', Platform: '%s'", userPersona, forPlatform.name()));
+        LOGGER.info("setDriverFor: start: userPersona: '{}', Platform: '{}'", userPersona, forPlatform.name());
         UserPersonaDetails userPersonaDetails = getUserPersonaDetails(context);
         if (!userPersonaDetails.isDriverAssignedForUser(userPersona)) {
             String message = String.format("ERROR: Driver for user persona: '%s' DOES NOT EXIST%nAvailable drivers: '%s'", userPersona, userPersonaDetails.getAllUserPersonasForAssignedDrivers());
@@ -73,7 +73,7 @@ public class Drivers {
     }
 
     public static Driver createDriverFor(String userPersona, String appName, String browserName, Platform forPlatform, TestExecutionContext context) {
-        LOGGER.info(String.format("createDriverFor: start: userPersona: '%s', Platform: '%s'", userPersona, forPlatform.name()));
+        LOGGER.info("createDriverFor: start: userPersona: '{}', Platform: '{}'", userPersona, forPlatform.name());
         context.addTestState(TEST_CONTEXT.CURRENT_USER_PERSONA, userPersona);
         context.addTestState(TEST_CONTEXT.CURRENT_PLATFORM, forPlatform);
         UserPersonaDetails userPersonaDetails = getUserPersonaDetails(context);
@@ -92,7 +92,9 @@ public class Drivers {
         context.addTestState(TEST_CONTEXT.CURRENT_SESSION_HANDLE, sessionHandle);
         userPersonaDetails.addDriver(userPersona, currentDriver);
         userPersonaDetails.addSessionHandle(userPersona, sessionHandle);
-        LOGGER.info(String.format("createDriverFor: done: userPersona: '%s', Platform: '%s'%n", userPersona, forPlatform.name()));
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(String.format("createDriverFor: done: userPersona: '%s', Platform: '%s'%n", userPersona, forPlatform.name()));
+        }
         updateTestNameWithProvider(currentDriver.getInnerDriver(), context.getTestName(), userPersona);
         return currentDriver;
     }
@@ -261,7 +263,7 @@ public class Drivers {
             scenarioFailureReasons = scenarioFailureReasons.toLowerCase().contains("failure") ? scenarioFailureReasons + ", and " + scenarioSoftFailureReasons : scenarioSoftFailureReasons;
         }
 
-        LOGGER.info(String.format("Scenario status: '%s' :: '%s'", scenarioStatus, scenarioFailureReasons));
+        LOGGER.info("Scenario status: '{}' :: '{}'", scenarioStatus, scenarioFailureReasons);
 
         if (driver instanceof JavascriptExecutor) {
             WebExecutionProvider provider = WEB_EXECUTION_PROVIDER_RESOLVER.resolve();
@@ -270,7 +272,7 @@ public class Drivers {
     }
 
     private static void validateVisualTestResults(String userPersona, Driver driver) {
-        LOGGER.info(String.format("\tGetting visual validation results for: User Persona: %s", userPersona));
+        LOGGER.info("\tGetting visual validation results for: User Persona: {}", userPersona);
         driver.getVisual().handleTestResults(userPersona, driver.getType());
     }
 
@@ -279,7 +281,7 @@ public class Drivers {
         if (!driver.getType().equalsIgnoreCase(Driver.PDF_DRIVER)) {
             driverName = driver.getInnerDriver().getClass().getSimpleName();
         }
-        LOGGER.info(String.format("attachLogsAndCloseDriver: %s - %s - %s", userPersona, driver.getType(), driverName));
+        LOGGER.info("attachLogsAndCloseDriver: {} - {} - {}", userPersona, driver.getType(), driverName);
         switch (driver.getType()) {
             case Driver.WEB_DRIVER:
                 BrowserDriverManager.closeWebDriver(userPersona, driver);
@@ -319,7 +321,7 @@ public class Drivers {
 
         userPersonaDetails.assignNewPersonaForUser(userPersona, newUserPersona);
 
-        LOGGER.info(String.format("assignNewPersonaToExistingDriver: Persona updated from '%s' to '%s'", userPersona, newUserPersona));
+        LOGGER.info("assignNewPersonaToExistingDriver: Persona updated from '{}' to '{}'", userPersona, newUserPersona);
     }
 
     public static void addUserPersonaDriverCapabilities(String userPersona, Capabilities capabilities) {
@@ -359,7 +361,9 @@ public class Drivers {
                 context.getTestStateAsString(TEST_CONTEXT.SCENARIO_LOG_DIRECTORY), Map.of("pdfFileName", pdfFileName));
         context.addTestState(TEST_CONTEXT.CURRENT_SESSION_HANDLE, sessionHandle);
         userPersonaDetails.addSessionHandle(userPersona, sessionHandle);
-        LOGGER.info(String.format("createDriverFor: done: userPersona: '%s', Platform: '%s'%n", userPersona, forPlatform.name()));
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(String.format("createDriverFor: done: userPersona: '%s', Platform: '%s'%n", userPersona, forPlatform.name()));
+        }
     }
 
     private static SessionHandle buildSessionHandle(String userPersona, String browserName, Platform forPlatform,

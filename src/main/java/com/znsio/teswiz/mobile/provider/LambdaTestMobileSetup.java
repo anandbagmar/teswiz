@@ -56,12 +56,11 @@ public class LambdaTestMobileSetup {
             String appPath = new File(Setup.getFromConfigs(Setup.APP_PATH)).getAbsolutePath();
             String appIdFromLambdaTest = uploadAppToLambdaTest(authenticationUser, authenticationKey,
                     appPath, apiUrl);
-            LOGGER.info(String.format("App uploaded to LambdaTest with app url: %s", appIdFromLambdaTest));
+            LOGGER.info("App uploaded to LambdaTest with app url: {}", appIdFromLambdaTest);
             loadedPlatformCapability.put("app", appIdFromLambdaTest);
         } else {
             String lambdaTestAppReference = getLambdaTestAppReference(loadedPlatformCapability);
-            LOGGER.info(String.format("Skip uploading the app to LambdaTest. Using app reference: %s",
-                    lambdaTestAppReference));
+            LOGGER.info("Skip uploading the app to LambdaTest. Using app reference: {}", lambdaTestAppReference);
             loadedPlatformCapability.put("app", lambdaTestAppReference);
         }
     }
