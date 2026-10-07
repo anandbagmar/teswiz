@@ -105,11 +105,10 @@ public class VisualOcrScreenPlaywrightJava extends VisualOcrScreen {
         VisualElement element = findVisualElementByText(ocrText);
         assertThat(element).as("Visual element '" + elementName + "' with OCR text '" + ocrText + "' should be found").isNotNull();
         element.highlight();
-        visually.checkWindow(SCREEN_NAME, "Before visual click OCR text: " + ocrText);
+        visually.takeScreenshot(SCREEN_NAME, "Before visual click OCR text: " + ocrText);
         element.click();
-        driver.clearHighlight();
         waitForVisualActionIfConfigured();
-        visually.checkWindow(SCREEN_NAME, "After visual click OCR text: " + ocrText);
+        visually.takeScreenshot(SCREEN_NAME, "After visual click OCR text: " + ocrText);
         return this;
     }
 
@@ -119,11 +118,10 @@ public class VisualOcrScreenPlaywrightJava extends VisualOcrScreen {
         VisualElement element = findVisualElementByImage(imagePaths);
         assertThat(element).as("Visual element '" + elementName + "' matched by image template '" + imagePaths + "' should be found").isNotNull();
         element.highlight();
-        visually.checkWindow(SCREEN_NAME, "Before visual click: " + elementName);
+        visually.takeScreenshot(SCREEN_NAME, "Before visual click: " + elementName);
         element.click();
-        driver.clearHighlight();
         waitForVisualActionIfConfigured();
-        visually.checkWindow(SCREEN_NAME, "After visual click: " + elementName);
+        visually.takeScreenshot(SCREEN_NAME, "After visual click: " + elementName);
         return this;
     }
 
@@ -133,11 +131,10 @@ public class VisualOcrScreenPlaywrightJava extends VisualOcrScreen {
         VisualElement element = findVisualElementByTextOrImage(ocrText, imagePaths);
         assertThat(element).as("Visual element '" + elementName + "' matched by text/image should be found").isNotNull();
         element.highlight();
-        visually.checkWindow(SCREEN_NAME, "Before visual click: " + elementName);
+        visually.takeScreenshot(SCREEN_NAME, "Before visual click: " + elementName);
         element.click();
-        driver.clearHighlight();
         waitForVisualActionIfConfigured();
-        visually.checkWindow(SCREEN_NAME, "After visual click: " + elementName);
+        visually.takeScreenshot(SCREEN_NAME, "After visual click: " + elementName);
         return this;
     }
 
@@ -147,11 +144,10 @@ public class VisualOcrScreenPlaywrightJava extends VisualOcrScreen {
         VisualElement element = findVisualElementByImageOrText(imagePaths, ocrText);
         assertThat(element).as("Visual element '" + elementName + "' matched by image/text should be found").isNotNull();
         element.highlight();
-        visually.checkWindow(SCREEN_NAME, "Before visual click: " + elementName);
+        visually.takeScreenshot(SCREEN_NAME, "Before visual click: " + elementName);
         element.click();
-        driver.clearHighlight();
         waitForVisualActionIfConfigured();
-        visually.checkWindow(SCREEN_NAME, "After visual click: " + elementName);
+        visually.takeScreenshot(SCREEN_NAME, "After visual click: " + elementName);
         return this;
     }
 
@@ -161,11 +157,10 @@ public class VisualOcrScreenPlaywrightJava extends VisualOcrScreen {
         VisualElement element = findVisualElementByText(ocrText);
         assertThat(element).as("Visual element '" + elementName + "' with OCR text '" + ocrText + "' should be found").isNotNull();
         element.highlight();
-        visually.checkWindow(SCREEN_NAME, "Before visual enter text: " + ocrText);
+        visually.takeScreenshot(SCREEN_NAME, "Before visual enter text: " + ocrText);
         element.sendKeys(textToEnter);
-        driver.clearHighlight();
         waitForVisualActionIfConfigured();
-        visually.checkWindow(SCREEN_NAME, "After visual enter text: " + ocrText);
+        visually.takeScreenshot(SCREEN_NAME, "After visual enter text: " + ocrText);
         return this;
     }
 
@@ -175,8 +170,7 @@ public class VisualOcrScreenPlaywrightJava extends VisualOcrScreen {
         VisualElement element = findVisualElementByText(ocrText);
         assertThat(element).as("Visual element '" + elementName + "' with OCR text '" + ocrText + "' should be found").isNotNull();
         element.highlight();
-        visually.checkWindow(SCREEN_NAME, "Inspecting OCR text: " + ocrText);
-        driver.clearHighlight();
+        visually.takeScreenshot(SCREEN_NAME, "Inspecting OCR text: " + ocrText);
         return this;
     }
 
@@ -186,8 +180,7 @@ public class VisualOcrScreenPlaywrightJava extends VisualOcrScreen {
         VisualElement element = findVisualElementByImage(imagePaths);
         assertThat(element).as("Visual element '" + elementName + "' matched by image template '" + imagePaths + "' should be found").isNotNull();
         element.highlight();
-        visually.checkWindow(SCREEN_NAME, "Inspecting image template: " + imagePaths);
-        driver.clearHighlight();
+        visually.takeScreenshot(SCREEN_NAME, "Inspecting image template: " + imagePaths);
         return this;
     }
 
@@ -197,11 +190,10 @@ public class VisualOcrScreenPlaywrightJava extends VisualOcrScreen {
         VisualElement element = findVisualElementByText(ocrText);
         assertThat(element).as("Visual element '" + elementName + "' with OCR text '" + ocrText + "' should be found").isNotNull();
         element.highlight();
-        visually.checkWindow(SCREEN_NAME, "Before visual double-click OCR text: " + ocrText);
+        visually.takeScreenshot(SCREEN_NAME, "Before visual double-click OCR text: " + ocrText);
         element.doubleClick();
-        driver.clearHighlight();
         waitForVisualActionIfConfigured();
-        visually.checkWindow(SCREEN_NAME, "After visual double-click OCR text: " + ocrText);
+        visually.takeScreenshot(SCREEN_NAME, "After visual double-click OCR text: " + ocrText);
         return this;
     }
 
@@ -211,11 +203,10 @@ public class VisualOcrScreenPlaywrightJava extends VisualOcrScreen {
         VisualElement element = findVisualElementByText(ocrText);
         assertThat(element).as("Visual element '" + elementName + "' with OCR text '" + ocrText + "' should be found").isNotNull();
         element.highlight();
-        visually.checkWindow(SCREEN_NAME, "Before visual hover OCR text: " + ocrText);
+        visually.takeScreenshot(SCREEN_NAME, "Before visual hover OCR text: " + ocrText);
         element.hover();
-        driver.clearHighlight();
         waitForVisualActionIfConfigured();
-        visually.checkWindow(SCREEN_NAME, "After visual hover OCR text: " + ocrText);
+        visually.takeScreenshot(SCREEN_NAME, "After visual hover OCR text: " + ocrText);
         return this;
     }
 
@@ -225,11 +216,10 @@ public class VisualOcrScreenPlaywrightJava extends VisualOcrScreen {
         VisualElement element = findVisualElementByText(ocrText);
         assertThat(element).as("Visual element '" + elementName + "' with OCR text '" + ocrText + "' should be found").isNotNull();
         element.highlight();
-        visually.checkWindow(SCREEN_NAME, "Before visual long-press OCR text: " + ocrText);
+        visually.takeScreenshot(SCREEN_NAME, "Before visual long-press OCR text: " + ocrText);
         element.longPress();
-        driver.clearHighlight();
         waitForVisualActionIfConfigured();
-        visually.checkWindow(SCREEN_NAME, "After visual long-press OCR text: " + ocrText);
+        visually.takeScreenshot(SCREEN_NAME, "After visual long-press OCR text: " + ocrText);
         return this;
     }
 
@@ -239,11 +229,10 @@ public class VisualOcrScreenPlaywrightJava extends VisualOcrScreen {
         VisualElement element = findVisualElementByText(ocrText);
         assertThat(element).as("Visual element '" + elementName + "' with OCR text '" + ocrText + "' should be found").isNotNull();
         element.highlight();
-        visually.checkWindow(SCREEN_NAME, "Before visual swipe " + direction + " OCR text: " + ocrText);
+        visually.takeScreenshot(SCREEN_NAME, "Before visual swipe " + direction + " OCR text: " + ocrText);
         element.swipe(direction);
-        driver.clearHighlight();
         waitForVisualActionIfConfigured();
-        visually.checkWindow(SCREEN_NAME, "After visual swipe " + direction + " OCR text: " + ocrText);
+        visually.takeScreenshot(SCREEN_NAME, "After visual swipe " + direction + " OCR text: " + ocrText);
         return this;
     }
 
@@ -254,11 +243,10 @@ public class VisualOcrScreenPlaywrightJava extends VisualOcrScreen {
         assertThat(elements).as("Expected at least " + (index + 1) + " visual elements matching OCR text '" + ocrText + "'").hasSizeGreaterThan(index);
         VisualElement target = elements.get(index);
         target.highlight();
-        visually.checkWindow(SCREEN_NAME, "Before visual click at index " + index + " OCR text: " + ocrText);
+        visually.takeScreenshot(SCREEN_NAME, "Before visual click at index " + index + " OCR text: " + ocrText);
         target.click();
-        driver.clearHighlight();
         waitForVisualActionIfConfigured();
-        visually.checkWindow(SCREEN_NAME, "After visual click at index " + index + " OCR text: " + ocrText);
+        visually.takeScreenshot(SCREEN_NAME, "After visual click at index " + index + " OCR text: " + ocrText);
         return this;
     }
 
@@ -270,11 +258,10 @@ public class VisualOcrScreenPlaywrightJava extends VisualOcrScreen {
         int targetIndex = parsePositionIndex(positionText, elements.size());
         VisualElement target = elements.get(targetIndex);
         target.highlight();
-        visually.checkWindow(SCREEN_NAME, "Before visual click position '" + positionText + "' OCR text: " + ocrText);
+        visually.takeScreenshot(SCREEN_NAME, "Before visual click position '" + positionText + "' OCR text: " + ocrText);
         target.click();
-        driver.clearHighlight();
         waitForVisualActionIfConfigured();
-        visually.checkWindow(SCREEN_NAME, "After visual click position '" + positionText + "' OCR text: " + ocrText);
+        visually.takeScreenshot(SCREEN_NAME, "After visual click position '" + positionText + "' OCR text: " + ocrText);
         return this;
     }
 
@@ -286,11 +273,10 @@ public class VisualOcrScreenPlaywrightJava extends VisualOcrScreen {
         int targetIndex = parsePositionIndex(positionText, elements.size());
         VisualElement target = elements.get(targetIndex);
         target.highlight();
-        visually.checkWindow(SCREEN_NAME, "Before visual click position '" + positionText + "' image: " + imagePaths);
+        visually.takeScreenshot(SCREEN_NAME, "Before visual click position '" + positionText + "' image: " + imagePaths);
         target.click();
-        driver.clearHighlight();
         waitForVisualActionIfConfigured();
-        visually.checkWindow(SCREEN_NAME, "After visual click position '" + positionText + "' image: " + imagePaths);
+        visually.takeScreenshot(SCREEN_NAME, "After visual click position '" + positionText + "' image: " + imagePaths);
         return this;
     }
 
@@ -300,11 +286,10 @@ public class VisualOcrScreenPlaywrightJava extends VisualOcrScreen {
         VisualElement element = findVisualElementRelativeByText(targetText, direction, anchorText);
         assertThat(element).as("Visual element '" + elementName + "' relative to '" + anchorText + "' should be found").isNotNull();
         element.highlight();
-        visually.checkWindow(SCREEN_NAME, "Before visual click relative: " + targetText);
+        visually.takeScreenshot(SCREEN_NAME, "Before visual click relative: " + targetText);
         element.click();
-        driver.clearHighlight();
         waitForVisualActionIfConfigured();
-        visually.checkWindow(SCREEN_NAME, "After visual click relative: " + targetText);
+        visually.takeScreenshot(SCREEN_NAME, "After visual click relative: " + targetText);
         return this;
     }
 
@@ -314,11 +299,10 @@ public class VisualOcrScreenPlaywrightJava extends VisualOcrScreen {
         VisualElement element = findVisualElementByText(ocrText);
         if (element == null) return false;
         element.highlight();
-        visually.checkWindow(SCREEN_NAME, "Before try visual click OCR text: " + ocrText);
+        visually.takeScreenshot(SCREEN_NAME, "Before try visual click OCR text: " + ocrText);
         element.click();
-        driver.clearHighlight();
         waitForVisualActionIfConfigured();
-        visually.checkWindow(SCREEN_NAME, "After try visual click OCR text: " + ocrText);
+        visually.takeScreenshot(SCREEN_NAME, "After try visual click OCR text: " + ocrText);
         return true;
     }
 
@@ -328,11 +312,10 @@ public class VisualOcrScreenPlaywrightJava extends VisualOcrScreen {
         VisualElement element = findVisualElementByImage(imagePaths);
         if (element == null) return false;
         element.highlight();
-        visually.checkWindow(SCREEN_NAME, "Before try visual click: " + elementName);
+        visually.takeScreenshot(SCREEN_NAME, "Before try visual click: " + elementName);
         element.click();
-        driver.clearHighlight();
         waitForVisualActionIfConfigured();
-        visually.checkWindow(SCREEN_NAME, "After try visual click: " + elementName);
+        visually.takeScreenshot(SCREEN_NAME, "After try visual click: " + elementName);
         return true;
     }
 
@@ -342,11 +325,10 @@ public class VisualOcrScreenPlaywrightJava extends VisualOcrScreen {
         VisualElement element = findVisualElementByTextOrImage(ocrText, imagePaths);
         if (element == null) return false;
         element.highlight();
-        visually.checkWindow(SCREEN_NAME, "Before try visual click: " + elementName);
+        visually.takeScreenshot(SCREEN_NAME, "Before try visual click: " + elementName);
         element.click();
-        driver.clearHighlight();
         waitForVisualActionIfConfigured();
-        visually.checkWindow(SCREEN_NAME, "After try visual click: " + elementName);
+        visually.takeScreenshot(SCREEN_NAME, "After try visual click: " + elementName);
         return true;
     }
 
@@ -356,11 +338,10 @@ public class VisualOcrScreenPlaywrightJava extends VisualOcrScreen {
         VisualElement element = findVisualElementByImageOrText(imagePaths, ocrText);
         if (element == null) return false;
         element.highlight();
-        visually.checkWindow(SCREEN_NAME, "Before try visual click: " + elementName);
+        visually.takeScreenshot(SCREEN_NAME, "Before try visual click: " + elementName);
         element.click();
-        driver.clearHighlight();
         waitForVisualActionIfConfigured();
-        visually.checkWindow(SCREEN_NAME, "After try visual click: " + elementName);
+        visually.takeScreenshot(SCREEN_NAME, "After try visual click: " + elementName);
         return true;
     }
 
@@ -371,11 +352,10 @@ public class VisualOcrScreenPlaywrightJava extends VisualOcrScreen {
             VisualElement element = findVisualElementRelativeByText(targetText, direction, anchorText);
             if (element == null) return false;
             element.highlight();
-            visually.checkWindow(SCREEN_NAME, "Before try visual click relative: " + targetText);
+            visually.takeScreenshot(SCREEN_NAME, "Before try visual click relative: " + targetText);
             element.click();
-            driver.clearHighlight();
             waitForVisualActionIfConfigured();
-            visually.checkWindow(SCREEN_NAME, "After try visual click relative: " + targetText);
+            visually.takeScreenshot(SCREEN_NAME, "After try visual click relative: " + targetText);
             return true;
         } catch (Exception e) {
             return false;

@@ -82,8 +82,22 @@ public class VisualElement {
         return this;
     }
 
+    private void clearHighlight() {
+        if (driverFacade != null) {
+            driverFacade.clearHighlight();
+        }
+    }
+
     public void click() {
         highlight();
+        try {
+            performClick();
+        } finally {
+            clearHighlight();
+        }
+    }
+
+    private void performClick() {
         Point center = getCenter();
         LOGGER.info("Clicking visual element '{}' at center coordinates ({}, {})", label, center.getX(), center.getY());
         if (!hasInnerDriver()) {
@@ -106,15 +120,11 @@ public class VisualElement {
         }
         if (jsExecutor() != null) {
             warnSyntheticFallback("click");
-            jsExecutor().executeScript(
-                    "var el = document.elementFromPoint(arguments[0], arguments[1]); " +
-                    "if (el) { " +
-                    "  el.dispatchEvent(new MouseEvent('mousedown', {bubbles: true, cancelable: true, clientX: arguments[0], clientY: arguments[1]})); " +
-                    "  el.dispatchEvent(new MouseEvent('mouseup', {bubbles: true, cancelable: true, clientX: arguments[0], clientY: arguments[1]})); " +
-                    "  el.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true, clientX: arguments[0], clientY: arguments[1]})); " +
-                    "  if (typeof el.click === 'function') { el.click(); } " +
-                    "}",
-                    center.getX(), center.getY());
+            jsExecutor().executeScript("var el = document.elementFromPoint(arguments[0], arguments[1]); " + "if (el) { "
+                    + "  el.dispatchEvent(new MouseEvent('mousedown', {bubbles: true, cancelable: true, clientX: arguments[0], clientY: arguments[1]})); "
+                    + "  el.dispatchEvent(new MouseEvent('mouseup', {bubbles: true, cancelable: true, clientX: arguments[0], clientY: arguments[1]})); "
+                    + "  el.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true, clientX: arguments[0], clientY: arguments[1]})); "
+                    + "  if (typeof el.click === 'function') { el.click(); } " + "}", center.getX(), center.getY());
             return;
         }
         warnNotPerformed("click");
@@ -122,6 +132,14 @@ public class VisualElement {
 
     public void doubleClick() {
         highlight();
+        try {
+            performDoubleClick();
+        } finally {
+            clearHighlight();
+        }
+    }
+
+    private void performDoubleClick() {
         Point center = getCenter();
         LOGGER.info("Double-clicking visual element '{}' at ({}, {})", label, center.getX(), center.getY());
         if (!hasInnerDriver()) {
@@ -139,17 +157,15 @@ public class VisualElement {
             return;
         }
         if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.interactions.Interactive) {
-            new Actions(driverFacade.getInnerDriver()).moveToLocation(center.getX(), center.getY()).doubleClick().perform();
+            new Actions(driverFacade.getInnerDriver()).moveToLocation(center.getX(), center.getY()).doubleClick()
+                    .perform();
             return;
         }
         if (jsExecutor() != null) {
             warnSyntheticFallback("doubleClick");
-            jsExecutor().executeScript(
-                    "var el = document.elementFromPoint(arguments[0], arguments[1]); " +
-                    "if (el) { " +
-                    "  el.dispatchEvent(new MouseEvent('dblclick', {bubbles: true, cancelable: true, clientX: arguments[0], clientY: arguments[1]})); " +
-                    "}",
-                    center.getX(), center.getY());
+            jsExecutor().executeScript("var el = document.elementFromPoint(arguments[0], arguments[1]); " + "if (el) { "
+                    + "  el.dispatchEvent(new MouseEvent('dblclick', {bubbles: true, cancelable: true, clientX: arguments[0], clientY: arguments[1]})); "
+                    + "}", center.getX(), center.getY());
             return;
         }
         warnNotPerformed("doubleClick");
@@ -157,6 +173,14 @@ public class VisualElement {
 
     public void hover() {
         highlight();
+        try {
+            performHover();
+        } finally {
+            clearHighlight();
+        }
+    }
+
+    private void performHover() {
         Point center = getCenter();
         LOGGER.info("Hovering over visual element '{}' at ({}, {})", label, center.getX(), center.getY());
         if (!hasInnerDriver()) {
@@ -173,19 +197,25 @@ public class VisualElement {
         }
         if (jsExecutor() != null) {
             warnSyntheticFallback("hover");
-            jsExecutor().executeScript(
-                    "var el = document.elementFromPoint(arguments[0], arguments[1]); " +
-                    "if (el) { " +
-                    "  el.dispatchEvent(new MouseEvent('mousemove', {bubbles: true, cancelable: true, clientX: arguments[0], clientY: arguments[1]})); " +
-                    "  el.dispatchEvent(new MouseEvent('mouseover', {bubbles: true, cancelable: true, clientX: arguments[0], clientY: arguments[1]})); " +
-                    "}",
-                    center.getX(), center.getY());
+            jsExecutor().executeScript("var el = document.elementFromPoint(arguments[0], arguments[1]); " + "if (el) { "
+                    + "  el.dispatchEvent(new MouseEvent('mousemove', {bubbles: true, cancelable: true, clientX: arguments[0], clientY: arguments[1]})); "
+                    + "  el.dispatchEvent(new MouseEvent('mouseover', {bubbles: true, cancelable: true, clientX: arguments[0], clientY: arguments[1]})); "
+                    + "}", center.getX(), center.getY());
             return;
         }
         warnNotPerformed("hover");
     }
 
     public void sendKeys(CharSequence... keysToSend) {
+        highlight();
+        try {
+            performSendKeys(keysToSend);
+        } finally {
+            clearHighlight();
+        }
+    }
+
+    private void performSendKeys(CharSequence... keysToSend) {
         click();
         String keys = String.join("", keysToSend);
         LOGGER.info("Sending keys '{}' to visual element '{}'", keys, label);
@@ -217,8 +247,17 @@ public class VisualElement {
     }
 
     public void dragAndDropTo(WebElement target) {
+        try {
+            performDragAndDropTo(target);
+        } finally {
+            clearHighlight();
+        }
+    }
+
+    private void performDragAndDropTo(WebElement target) {
         Point center = getCenter();
-        LOGGER.info("Dragging visual element '{}' from ({}, {}) to target element", label, center.getX(), center.getY());
+        LOGGER.info("Dragging visual element '{}' from ({}, {}) to target element", label, center.getX(),
+                center.getY());
         if (!hasInnerDriver()) {
             warnNotPerformed("dragAndDropTo");
             return;
@@ -229,22 +268,18 @@ public class VisualElement {
             return;
         }
         if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.interactions.Interactive) {
-            new Actions(driverFacade.getInnerDriver()).moveToLocation(center.getX(), center.getY())
-                    .clickAndHold()
-                    .moveToElement(target)
-                    .release()
-                    .perform();
+            new Actions(driverFacade.getInnerDriver()).moveToLocation(center.getX(), center.getY()).clickAndHold()
+                    .moveToElement(target).release().perform();
             return;
         }
         if (jsExecutor() != null) {
             warnSyntheticFallback("dragAndDropTo");
             jsExecutor().executeScript(
-                    "var source = document.elementFromPoint(arguments[0], arguments[1]); " +
-                    "if (source && arguments[2]) { " +
-                    "  source.dispatchEvent(new MouseEvent('dragstart', {bubbles: true})); " +
-                    "  arguments[2].dispatchEvent(new MouseEvent('drop', {bubbles: true})); " +
-                    "  source.dispatchEvent(new MouseEvent('dragend', {bubbles: true})); " +
-                    "}",
+                    "var source = document.elementFromPoint(arguments[0], arguments[1]); "
+                            + "if (source && arguments[2]) { "
+                            + "  source.dispatchEvent(new MouseEvent('dragstart', {bubbles: true})); "
+                            + "  arguments[2].dispatchEvent(new MouseEvent('drop', {bubbles: true})); "
+                            + "  source.dispatchEvent(new MouseEvent('dragend', {bubbles: true})); " + "}",
                     center.getX(), center.getY(), target);
             return;
         }
@@ -254,20 +289,28 @@ public class VisualElement {
     public void zoom(double scaleFactor) {
         if (LOGGER.isWarnEnabled()) {
             LOGGER.warn(String.format(
-                "Zoom (scale: %.2f) on visual element '%s' is not implemented; the gesture was not performed",
-                scaleFactor, label));
+                    "Zoom (scale: %.2f) on visual element '%s' is not implemented; the gesture was not performed",
+                    scaleFactor, label));
         }
     }
 
     public void pinch(double scaleFactor) {
         if (LOGGER.isWarnEnabled()) {
             LOGGER.warn(String.format(
-                "Pinch (scale: %.2f) on visual element '%s' is not implemented; the gesture was not performed",
-                scaleFactor, label));
+                    "Pinch (scale: %.2f) on visual element '%s' is not implemented; the gesture was not performed",
+                    scaleFactor, label));
         }
     }
 
     public void swipe(Direction direction) {
+        try {
+            performSwipe(direction);
+        } finally {
+            clearHighlight();
+        }
+    }
+
+    private void performSwipe(Direction direction) {
         Point center = getCenter();
         LOGGER.info("Swiping '{}' on visual element '{}' at ({}, {})", direction, label, center.getX(), center.getY());
         if (!hasInnerDriver()) {
@@ -278,9 +321,11 @@ public class VisualElement {
         if (isAppium()) {
             PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
             Sequence swipeSequence = new Sequence(finger, 1);
-            swipeSequence.addAction(finger.createPointerMove(Duration.ofMillis(0), PointerInput.Origin.viewport(), center.getX(), center.getY()));
+            swipeSequence.addAction(finger.createPointerMove(Duration.ofMillis(0), PointerInput.Origin.viewport(),
+                    center.getX(), center.getY()));
             swipeSequence.addAction(finger.createPointerDown(PointerInput.MouseButton.LEFT.asArg()));
-            swipeSequence.addAction(finger.createPointerMove(SWIPE_DURATION, PointerInput.Origin.viewport(), end.getX(), end.getY()));
+            swipeSequence.addAction(
+                    finger.createPointerMove(SWIPE_DURATION, PointerInput.Origin.viewport(), end.getX(), end.getY()));
             appiumDriver().perform(List.of(swipeSequence));
             return;
         }
@@ -293,8 +338,17 @@ public class VisualElement {
 
     public void longPress(Duration duration) {
         highlight();
+        try {
+            performLongPress(duration);
+        } finally {
+            clearHighlight();
+        }
+    }
+
+    private void performLongPress(Duration duration) {
         Point center = getCenter();
-        LOGGER.info("Long-pressing visual element '{}' at ({}, {}) for {} ms", label, center.getX(), center.getY(), duration.toMillis());
+        LOGGER.info("Long-pressing visual element '{}' at ({}, {}) for {} ms", label, center.getX(), center.getY(),
+                duration.toMillis());
         if (!hasInnerDriver()) {
             warnNotPerformed("longPress");
             return;
@@ -302,9 +356,11 @@ public class VisualElement {
         if (isAppium()) {
             PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
             Sequence sequence = new Sequence(finger, 1);
-            sequence.addAction(finger.createPointerMove(Duration.ofMillis(0), PointerInput.Origin.viewport(), center.getX(), center.getY()));
+            sequence.addAction(finger.createPointerMove(Duration.ofMillis(0), PointerInput.Origin.viewport(),
+                    center.getX(), center.getY()));
             sequence.addAction(finger.createPointerDown(PointerInput.MouseButton.LEFT.asArg()));
-            sequence.addAction(finger.createPointerMove(duration, PointerInput.Origin.viewport(), center.getX(), center.getY()));
+            sequence.addAction(
+                    finger.createPointerMove(duration, PointerInput.Origin.viewport(), center.getX(), center.getY()));
             sequence.addAction(finger.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
             appiumDriver().perform(List.of(sequence));
             return;
@@ -314,11 +370,8 @@ public class VisualElement {
             return;
         }
         if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.interactions.Interactive) {
-            new Actions(driverFacade.getInnerDriver()).moveToLocation(center.getX(), center.getY())
-                    .clickAndHold()
-                    .pause(duration)
-                    .release()
-                    .perform();
+            new Actions(driverFacade.getInnerDriver()).moveToLocation(center.getX(), center.getY()).clickAndHold()
+                    .pause(duration).release().perform();
             return;
         }
         warnNotPerformed("longPress");
@@ -329,8 +382,8 @@ public class VisualElement {
     }
 
     /**
-     * The point a swipe in the given direction should end at, derived from the element's own size so the gesture
-     * stays proportional to what was matched.
+     * The point a swipe in the given direction should end at, derived from the element's own size so the gesture stays
+     * proportional to what was matched.
      *
      * @param center    the element's centre
      * @param direction the swipe direction
@@ -348,8 +401,8 @@ public class VisualElement {
     }
 
     /**
-     * Returns the swipe distance for an element dimension: half the element, but never a distance so small that
-     * the gesture reads as a tap. Shared by the native-web and Appium swipe paths so both travel equally far.
+     * Returns the swipe distance for an element dimension: half the element, but never a distance so small that the
+     * gesture reads as a tap. Shared by the native-web and Appium swipe paths so both travel equally far.
      *
      * @param elementSize the element's width or height, in pixels
      * @return the swipe distance in pixels
@@ -360,14 +413,16 @@ public class VisualElement {
     }
 
     /**
-     * Warns that an action is falling back to synthesised DOM events. That path cannot drive {@code <canvas>}
-     * content, and previously failed silently - the action logged success while the application never reacted - so
-     * the degradation is called out explicitly rather than left to be discovered from screenshots.
+     * Warns that an action is falling back to synthesised DOM events. That path cannot drive {@code <canvas>} content,
+     * and previously failed silently - the action logged success while the application never reacted - so the
+     * degradation is called out explicitly rather than left to be discovered from screenshots.
      *
      * @param action the action being attempted, for the message
      */
     private void warnSyntheticFallback(String action) {
-        LOGGER.warn("Performing '{}' on visual element '{}' via synthesised DOM events: this driver exposes no native coordinate input, so the action will NOT reach <canvas> content", action, label);
+        LOGGER.warn(
+                "Performing '{}' on visual element '{}' via synthesised DOM events: this driver exposes no native coordinate input, so the action will NOT reach <canvas> content",
+                action, label);
     }
 
     /**
@@ -377,7 +432,9 @@ public class VisualElement {
      * @param action the action that could not be performed, for the message
      */
     private void warnNotPerformed(String action) {
-        LOGGER.warn("Unable to perform '{}' on visual element '{}': driver or inner driver is null, or supports no known input mechanism", action, label);
+        LOGGER.warn(
+                "Unable to perform '{}' on visual element '{}': driver or inner driver is null, or supports no known input mechanism",
+                action, label);
     }
 
     private boolean hasInnerDriver() {
@@ -395,7 +452,8 @@ public class VisualElement {
 
     private com.znsio.teswiz.visual.NativeCoordinateInput nativeInput() {
         return driverFacade.getInnerDriver() instanceof com.znsio.teswiz.visual.NativeCoordinateInput nativeInput
-                ? nativeInput : null;
+                ? nativeInput
+                : null;
     }
 
     private org.openqa.selenium.JavascriptExecutor jsExecutor() {
@@ -421,7 +479,8 @@ public class VisualElement {
             PointerInput touch = new PointerInput(PointerInput.Kind.TOUCH, "touch");
             Sequence clickPosition = new Sequence(touch, 1);
             clickPosition
-                    .addAction(touch.createPointerMove(Duration.ofMillis(0), PointerInput.Origin.viewport(), tapX, tapY))
+                    .addAction(
+                            touch.createPointerMove(Duration.ofMillis(0), PointerInput.Origin.viewport(), tapX, tapY))
                     .addAction(touch.createPointerDown(PointerInput.MouseButton.LEFT.asArg()))
                     .addAction(new org.openqa.selenium.interactions.Pause(touch, Duration.ofMillis(100)))
                     .addAction(touch.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
@@ -435,11 +494,8 @@ public class VisualElement {
     }
 
     public WebElement toWebElement() {
-        return (WebElement) java.lang.reflect.Proxy.newProxyInstance(
-                VisualElement.class.getClassLoader(),
-                new Class<?>[]{WebElement.class},
-                new VisualElementWebElementInvocationHandler(this)
-        );
+        return (WebElement) java.lang.reflect.Proxy.newProxyInstance(VisualElement.class.getClassLoader(),
+                new Class<?>[] { WebElement.class }, new VisualElementWebElementInvocationHandler(this));
     }
 
     private static class VisualElementWebElementInvocationHandler implements java.lang.reflect.InvocationHandler {
@@ -455,16 +511,20 @@ public class VisualElement {
             switch (methodName) {
                 case "click":
                     int retries = Setup.getIntegerValueFromConfigs(Setup.VISUAL_ELEMENT_RETRY_ATTEMPTS);
-                    if (retries < 1) retries = 3;
+                    if (retries < 1)
+                        retries = 3;
                     int delaySeconds = Setup.getIntegerValueFromConfigs(Setup.VISUAL_ELEMENT_RETRY_DELAY_SECONDS);
-                    if (delaySeconds < 1) delaySeconds = 1;
+                    if (delaySeconds < 1)
+                        delaySeconds = 1;
                     for (int i = 1; i <= retries; i++) {
                         try {
                             visualElement.click();
                             return null;
                         } catch (Exception e) {
-                            if (i == retries) throw e;
-                            LOGGER.warn("Visual element click failed on attempt {} of {}, retrying after {}s: {}", i, retries, delaySeconds, e.getMessage());
+                            if (i == retries)
+                                throw e;
+                            LOGGER.warn("Visual element click failed on attempt {} of {}, retrying after {}s: {}", i,
+                                    retries, delaySeconds, e.getMessage());
                             sleepQuietly(Duration.ofSeconds(delaySeconds));
                         }
                     }
@@ -491,7 +551,8 @@ public class VisualElement {
                 case "getSize":
                     return visualElement.getSize();
                 case "getRect":
-                    return new org.openqa.selenium.Rectangle(visualElement.getX(), visualElement.getY(), visualElement.getHeight(), visualElement.getWidth());
+                    return new org.openqa.selenium.Rectangle(visualElement.getX(), visualElement.getY(),
+                            visualElement.getHeight(), visualElement.getWidth());
                 case "toString":
                     return visualElement.toString();
                 default:
@@ -500,4 +561,3 @@ public class VisualElement {
         }
     }
 }
-

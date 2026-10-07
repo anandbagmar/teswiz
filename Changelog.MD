@@ -1,3 +1,11 @@
+## 1.0.4305
+# Release Notes - teswiz v1.0.4305
+## 🚀 Key Highlights & Enhancements
+### 👁️ Visual Subsystem — self-clearing gestures and diagnostic captures
+* **Visual gestures now clean up their own highlight overlay.** `VisualElement.click()`, `doubleClick()`, `hover()`, `longPress()`, `sendKeys()`, `swipe()` and `dragAndDropTo()` now clear the highlight they draw, via a `try/finally` around the gesture body (each body extracted into a `performX()` helper). Previously the highlight was removed only by the `VisualOcrScreen.clickVisualElementBy*` ritual, so any caller that located an element and acted on it directly (e.g. `findVisualElementByImage(...).click()`) left the orange highlight box painted on the page. On a canvas with the SPIN control at the same position across screens, that leftover overlay was then captured in the next locate screenshot and masked the template, breaking the subsequent match. The cleanup is driver-agnostic — `Driver.clearHighlight()` already no-ops safely on Appium — so Selenium, `playwright-java`, `playwright-ts` and Appium all benefit.
+* **Before/After visual captures are now plain diagnostic screenshots, not Applitools baseline checks.** Across all four `VisualOcrScreen` implementations (web, playwright-java, iOS, Android) the per-action `visually.checkWindow(...)` Before/After calls are replaced with `visually.takeScreenshot(...)`, and the now-redundant explicit `driver.clearHighlight()` lines are removed (the gesture self-clears). These captures were always meant as "what did the action do" evidence, not product visual-regression assertions; routing them through `takeScreenshot` keeps the framework-injected highlight out of consumers' Applitools baselines and stops incidental per-action pixel changes raising false visual diffs.
+* **Breaking change for visual-regression users:** the ~60 per-action `checkWindow` checkpoints across the four Screen classes are gone. Consumers who relied on those as regression gates will no longer get an Applitools comparison on each visual action; add explicit `checkWindow` calls where a product-UI baseline is genuinely wanted.
+
 ## 1.0.42
 # Release Notes - teswiz v1.0.41
 
