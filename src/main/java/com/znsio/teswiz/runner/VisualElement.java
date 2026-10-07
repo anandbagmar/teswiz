@@ -20,6 +20,7 @@ public class VisualElement {
     private static final int MINIMUM_SWIPE_DELTA = 50;
     private static final int DEFAULT_SWIPE_DELTA = 100;
     private static final Duration SWIPE_DURATION = Duration.ofMillis(600);
+    private static final Duration MOBILE_DOUBLE_TAP_GAP = Duration.ofMillis(100);
 
     private static final Logger LOGGER = LogManager.getLogger(VisualElement.class.getName());
 
@@ -85,109 +86,125 @@ public class VisualElement {
         highlight();
         Point center = getCenter();
         LOGGER.info(String.format("Clicking visual element '%s' at center coordinates (%d, %d)", label, center.getX(), center.getY()));
-        if (driverFacade != null && driverFacade.getInnerDriver() != null) {
-            if (Driver.APPIUM_DRIVER.equals(driverFacade.getType())) {
-                performMobileTap(center.getX(), center.getY());
-            } else if (driverFacade.getInnerDriver()
-                    instanceof com.znsio.teswiz.visual.NativeCoordinateInput nativeInput) {
-                // Preferred: real browser input, so the click also reaches <canvas> content, which ignores the
-                // synthesised DOM events used by the JavascriptExecutor fallback below.
-                nativeInput.clickAtViewportPoint(center.getX(), center.getY());
-            } else if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.interactions.Interactive) {
-                Actions actions = new Actions(driverFacade.getInnerDriver());
-                actions.moveToLocation(center.getX(), center.getY()).click().perform();
-            } else if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.JavascriptExecutor js) {
-                warnSyntheticFallback("click");
-                js.executeScript(
-                        "var el = document.elementFromPoint(arguments[0], arguments[1]); " +
-                        "if (el) { " +
-                        "  el.dispatchEvent(new MouseEvent('mousedown', {bubbles: true, cancelable: true, clientX: arguments[0], clientY: arguments[1]})); " +
-                        "  el.dispatchEvent(new MouseEvent('mouseup', {bubbles: true, cancelable: true, clientX: arguments[0], clientY: arguments[1]})); " +
-                        "  el.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true, clientX: arguments[0], clientY: arguments[1]})); " +
-                        "  if (typeof el.click === 'function') { el.click(); } " +
-                        "}",
-                        center.getX(), center.getY()
-                );
-            } else {
-                LOGGER.warn(String.format("Unable to perform click on visual element '%s': driver does not support Interactive or JavascriptExecutor", label));
-            }
-        } else {
-            LOGGER.warn(String.format("Unable to click visual element '%s': driverFacade or inner driver is null", label));
+        if (!hasInnerDriver()) {
+            warnNotPerformed("click");
+            return;
         }
+        if (isAppium()) {
+            performMobileTap(center.getX(), center.getY());
+            return;
+        }
+        // Preferred: real browser input, so the click also reaches <canvas> content, which ignores the
+        // synthesised DOM events used by the JavascriptExecutor fallback below.
+        if (nativeInput() != null) {
+            nativeInput().clickAtViewportPoint(center.getX(), center.getY());
+            return;
+        }
+        if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.interactions.Interactive) {
+            new Actions(driverFacade.getInnerDriver()).moveToLocation(center.getX(), center.getY()).click().perform();
+            return;
+        }
+        if (jsExecutor() != null) {
+            warnSyntheticFallback("click");
+            jsExecutor().executeScript(
+                    "var el = document.elementFromPoint(arguments[0], arguments[1]); " +
+                    "if (el) { " +
+                    "  el.dispatchEvent(new MouseEvent('mousedown', {bubbles: true, cancelable: true, clientX: arguments[0], clientY: arguments[1]})); " +
+                    "  el.dispatchEvent(new MouseEvent('mouseup', {bubbles: true, cancelable: true, clientX: arguments[0], clientY: arguments[1]})); " +
+                    "  el.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true, clientX: arguments[0], clientY: arguments[1]})); " +
+                    "  if (typeof el.click === 'function') { el.click(); } " +
+                    "}",
+                    center.getX(), center.getY());
+            return;
+        }
+        warnNotPerformed("click");
     }
 
     public void doubleClick() {
         highlight();
         Point center = getCenter();
         LOGGER.info(String.format("Double-clicking visual element '%s' at (%d, %d)", label, center.getX(), center.getY()));
-        if (driverFacade != null && driverFacade.getInnerDriver() != null) {
-            if (Driver.APPIUM_DRIVER.equals(driverFacade.getType())) {
-                performMobileTap(center.getX(), center.getY());
-                try { Thread.sleep(100); } catch (InterruptedException ignored) {}
-                performMobileTap(center.getX(), center.getY());
-            } else if (driverFacade.getInnerDriver()
-                    instanceof com.znsio.teswiz.visual.NativeCoordinateInput nativeInput) {
-                nativeInput.doubleClickAtViewportPoint(center.getX(), center.getY());
-            } else if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.interactions.Interactive) {
-                Actions actions = new Actions(driverFacade.getInnerDriver());
-                actions.moveToLocation(center.getX(), center.getY()).doubleClick().perform();
-            } else if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.JavascriptExecutor js) {
-                warnSyntheticFallback("doubleClick");
-                js.executeScript(
-                        "var el = document.elementFromPoint(arguments[0], arguments[1]); " +
-                        "if (el) { " +
-                        "  el.dispatchEvent(new MouseEvent('dblclick', {bubbles: true, cancelable: true, clientX: arguments[0], clientY: arguments[1]})); " +
-                        "}",
-                        center.getX(), center.getY()
-                );
-            }
+        if (!hasInnerDriver()) {
+            warnNotPerformed("doubleClick");
+            return;
         }
+        if (isAppium()) {
+            performMobileTap(center.getX(), center.getY());
+            sleepQuietly(MOBILE_DOUBLE_TAP_GAP);
+            performMobileTap(center.getX(), center.getY());
+            return;
+        }
+        if (nativeInput() != null) {
+            nativeInput().doubleClickAtViewportPoint(center.getX(), center.getY());
+            return;
+        }
+        if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.interactions.Interactive) {
+            new Actions(driverFacade.getInnerDriver()).moveToLocation(center.getX(), center.getY()).doubleClick().perform();
+            return;
+        }
+        if (jsExecutor() != null) {
+            warnSyntheticFallback("doubleClick");
+            jsExecutor().executeScript(
+                    "var el = document.elementFromPoint(arguments[0], arguments[1]); " +
+                    "if (el) { " +
+                    "  el.dispatchEvent(new MouseEvent('dblclick', {bubbles: true, cancelable: true, clientX: arguments[0], clientY: arguments[1]})); " +
+                    "}",
+                    center.getX(), center.getY());
+            return;
+        }
+        warnNotPerformed("doubleClick");
     }
 
     public void hover() {
         highlight();
         Point center = getCenter();
         LOGGER.info(String.format("Hovering over visual element '%s' at (%d, %d)", label, center.getX(), center.getY()));
-        if (driverFacade != null && driverFacade.getInnerDriver() != null) {
-            if (driverFacade.getInnerDriver()
-                    instanceof com.znsio.teswiz.visual.NativeCoordinateInput nativeInput) {
-                nativeInput.hoverAtViewportPoint(center.getX(), center.getY());
-            } else if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.interactions.Interactive) {
-                Actions actions = new Actions(driverFacade.getInnerDriver());
-                actions.moveToLocation(center.getX(), center.getY()).perform();
-            } else if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.JavascriptExecutor js) {
-                warnSyntheticFallback("hover");
-                js.executeScript(
-                        "var el = document.elementFromPoint(arguments[0], arguments[1]); " +
-                        "if (el) { " +
-                        "  el.dispatchEvent(new MouseEvent('mousemove', {bubbles: true, cancelable: true, clientX: arguments[0], clientY: arguments[1]})); " +
-                        "  el.dispatchEvent(new MouseEvent('mouseover', {bubbles: true, cancelable: true, clientX: arguments[0], clientY: arguments[1]})); " +
-                        "}",
-                        center.getX(), center.getY()
-                );
-            }
+        if (!hasInnerDriver()) {
+            warnNotPerformed("hover");
+            return;
         }
+        if (nativeInput() != null) {
+            nativeInput().hoverAtViewportPoint(center.getX(), center.getY());
+            return;
+        }
+        if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.interactions.Interactive) {
+            new Actions(driverFacade.getInnerDriver()).moveToLocation(center.getX(), center.getY()).perform();
+            return;
+        }
+        if (jsExecutor() != null) {
+            warnSyntheticFallback("hover");
+            jsExecutor().executeScript(
+                    "var el = document.elementFromPoint(arguments[0], arguments[1]); " +
+                    "if (el) { " +
+                    "  el.dispatchEvent(new MouseEvent('mousemove', {bubbles: true, cancelable: true, clientX: arguments[0], clientY: arguments[1]})); " +
+                    "  el.dispatchEvent(new MouseEvent('mouseover', {bubbles: true, cancelable: true, clientX: arguments[0], clientY: arguments[1]})); " +
+                    "}",
+                    center.getX(), center.getY());
+            return;
+        }
+        warnNotPerformed("hover");
     }
 
     public void sendKeys(CharSequence... keysToSend) {
         click();
-        LOGGER.info(String.format("Sending keys '%s' to visual element '%s'", String.join("", keysToSend), label));
-        if (driverFacade != null && driverFacade.getInnerDriver() != null) {
-            String keys = String.join("", keysToSend);
-            try {
-                if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.interactions.Interactive) {
-                    Actions actions = new Actions(driverFacade.getInnerDriver());
-                    actions.sendKeys(keysToSend).perform();
-                    return;
-                }
-            } catch (Exception e) {
-                LOGGER.debug("Actions sendKeys failed, trying activeElement fallback: " + e.getMessage());
+        String keys = String.join("", keysToSend);
+        LOGGER.info(String.format("Sending keys '%s' to visual element '%s'", keys, label));
+        if (!hasInnerDriver()) {
+            warnNotPerformed("sendKeys");
+            return;
+        }
+        try {
+            if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.interactions.Interactive) {
+                new Actions(driverFacade.getInnerDriver()).sendKeys(keysToSend).perform();
+                return;
             }
-            try {
-                driverFacade.getInnerDriver().switchTo().activeElement().sendKeys(keys);
-            } catch (Exception e) {
-                LOGGER.debug("Could not send keys to activeElement: " + e.getMessage());
-            }
+        } catch (RuntimeException e) {
+            LOGGER.debug(String.format("Actions sendKeys failed, trying activeElement fallback: %s", e.getMessage()));
+        }
+        try {
+            driverFacade.getInnerDriver().switchTo().activeElement().sendKeys(keys);
+        } catch (RuntimeException e) {
+            LOGGER.debug(String.format("Could not send keys to activeElement: %s", e.getMessage()));
         }
     }
 
@@ -202,89 +219,105 @@ public class VisualElement {
     public void dragAndDropTo(WebElement target) {
         Point center = getCenter();
         LOGGER.info(String.format("Dragging visual element '%s' from (%d, %d) to target element", label, center.getX(), center.getY()));
-        if (driverFacade != null && driverFacade.getInnerDriver() != null) {
-            if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.interactions.Interactive) {
-                Actions actions = new Actions(driverFacade.getInnerDriver());
-                actions.moveToLocation(center.getX(), center.getY())
-                        .clickAndHold()
-                        .moveToElement(target)
-                        .release()
-                        .perform();
-            } else if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.JavascriptExecutor js) {
-                js.executeScript(
-                        "var source = document.elementFromPoint(arguments[0], arguments[1]); " +
-                        "if (source && arguments[2]) { " +
-                        "  source.dispatchEvent(new MouseEvent('dragstart', {bubbles: true})); " +
-                        "  arguments[2].dispatchEvent(new MouseEvent('drop', {bubbles: true})); " +
-                        "  source.dispatchEvent(new MouseEvent('dragend', {bubbles: true})); " +
-                        "}",
-                        center.getX(), center.getY(), target
-                );
-            }
+        if (!hasInnerDriver()) {
+            warnNotPerformed("dragAndDropTo");
+            return;
         }
+        if (nativeInput() != null) {
+            Point targetCenter = elementCenter(target);
+            nativeInput().dragFromViewportPoint(center.getX(), center.getY(), targetCenter.getX(), targetCenter.getY());
+            return;
+        }
+        if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.interactions.Interactive) {
+            new Actions(driverFacade.getInnerDriver()).moveToLocation(center.getX(), center.getY())
+                    .clickAndHold()
+                    .moveToElement(target)
+                    .release()
+                    .perform();
+            return;
+        }
+        if (jsExecutor() != null) {
+            warnSyntheticFallback("dragAndDropTo");
+            jsExecutor().executeScript(
+                    "var source = document.elementFromPoint(arguments[0], arguments[1]); " +
+                    "if (source && arguments[2]) { " +
+                    "  source.dispatchEvent(new MouseEvent('dragstart', {bubbles: true})); " +
+                    "  arguments[2].dispatchEvent(new MouseEvent('drop', {bubbles: true})); " +
+                    "  source.dispatchEvent(new MouseEvent('dragend', {bubbles: true})); " +
+                    "}",
+                    center.getX(), center.getY(), target);
+            return;
+        }
+        warnNotPerformed("dragAndDropTo");
     }
 
     public void zoom(double scaleFactor) {
-        LOGGER.info(String.format("Performing zoom (scale: %.2f) on visual element '%s'", scaleFactor, label));
+        LOGGER.warn(String.format(
+                "Zoom (scale: %.2f) on visual element '%s' is not implemented; the gesture was not performed",
+                scaleFactor, label));
     }
 
     public void pinch(double scaleFactor) {
-        LOGGER.info(String.format("Performing pinch (scale: %.2f) on visual element '%s'", scaleFactor, label));
+        LOGGER.warn(String.format(
+                "Pinch (scale: %.2f) on visual element '%s' is not implemented; the gesture was not performed",
+                scaleFactor, label));
     }
 
     public void swipe(Direction direction) {
         Point center = getCenter();
         LOGGER.info(String.format("Swiping '%s' on visual element '%s' at (%d, %d)", direction, label, center.getX(), center.getY()));
-        if (driverFacade != null
-                && driverFacade.getInnerDriver() instanceof com.znsio.teswiz.visual.NativeCoordinateInput nativeInput) {
-            Point end = swipeEndPoint(center, direction);
-            nativeInput.dragFromViewportPoint(center.getX(), center.getY(), end.getX(), end.getY());
+        if (!hasInnerDriver()) {
+            warnNotPerformed("swipe");
             return;
         }
-        if (driverFacade != null && driverFacade.getInnerDriver() instanceof AppiumDriver appiumDriver) {
-            Point end = swipeEndPoint(center, direction);
+        Point end = swipeEndPoint(center, direction);
+        if (isAppium()) {
             PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
             Sequence swipeSequence = new Sequence(finger, 1);
             swipeSequence.addAction(finger.createPointerMove(Duration.ofMillis(0), PointerInput.Origin.viewport(), center.getX(), center.getY()));
             swipeSequence.addAction(finger.createPointerDown(PointerInput.MouseButton.LEFT.asArg()));
             swipeSequence.addAction(finger.createPointerMove(SWIPE_DURATION, PointerInput.Origin.viewport(), end.getX(), end.getY()));
-            appiumDriver.perform(List.of(swipeSequence));
+            appiumDriver().perform(List.of(swipeSequence));
             return;
         }
-        LOGGER.warn(String.format(
-                "Cannot swipe visual element '%s': this driver exposes neither native coordinate input nor an "
-                        + "Appium touch pointer, so the gesture was not performed", label));
+        if (nativeInput() != null) {
+            nativeInput().dragFromViewportPoint(center.getX(), center.getY(), end.getX(), end.getY());
+            return;
+        }
+        warnNotPerformed("swipe");
     }
 
     public void longPress(Duration duration) {
         highlight();
         Point center = getCenter();
         LOGGER.info(String.format("Long-pressing visual element '%s' at (%d, %d) for %d ms", label, center.getX(), center.getY(), duration.toMillis()));
-        if (driverFacade != null && driverFacade.getInnerDriver() != null) {
-            if (Driver.APPIUM_DRIVER.equals(driverFacade.getType()) && driverFacade.getInnerDriver() instanceof AppiumDriver appiumDriver) {
-                PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
-                Sequence sequence = new Sequence(finger, 1);
-                sequence.addAction(finger.createPointerMove(Duration.ofMillis(0), PointerInput.Origin.viewport(), center.getX(), center.getY()));
-                sequence.addAction(finger.createPointerDown(PointerInput.MouseButton.LEFT.asArg()));
-                sequence.addAction(finger.createPointerMove(duration, PointerInput.Origin.viewport(), center.getX(), center.getY()));
-                sequence.addAction(finger.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
-                appiumDriver.perform(List.of(sequence));
-            } else if (driverFacade.getInnerDriver()
-                    instanceof com.znsio.teswiz.visual.NativeCoordinateInput nativeInput) {
-                nativeInput.longPressAtViewportPoint(center.getX(), center.getY(), duration);
-            } else if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.interactions.Interactive) {
-                Actions actions = new Actions(driverFacade.getInnerDriver());
-                actions.moveToLocation(center.getX(), center.getY())
-                        .clickAndHold()
-                        .pause(duration)
-                        .release()
-                        .perform();
-            } else {
-                LOGGER.warn(String.format(
-                        "Unable to long-press visual element '%s': driver supports neither native coordinate input "
-                                + "nor Interactive", label));
-            }
+        if (!hasInnerDriver()) {
+            warnNotPerformed("longPress");
+            return;
         }
+        if (isAppium()) {
+            PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
+            Sequence sequence = new Sequence(finger, 1);
+            sequence.addAction(finger.createPointerMove(Duration.ofMillis(0), PointerInput.Origin.viewport(), center.getX(), center.getY()));
+            sequence.addAction(finger.createPointerDown(PointerInput.MouseButton.LEFT.asArg()));
+            sequence.addAction(finger.createPointerMove(duration, PointerInput.Origin.viewport(), center.getX(), center.getY()));
+            sequence.addAction(finger.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
+            appiumDriver().perform(List.of(sequence));
+            return;
+        }
+        if (nativeInput() != null) {
+            nativeInput().longPressAtViewportPoint(center.getX(), center.getY(), duration);
+            return;
+        }
+        if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.interactions.Interactive) {
+            new Actions(driverFacade.getInnerDriver()).moveToLocation(center.getX(), center.getY())
+                    .clickAndHold()
+                    .pause(duration)
+                    .release()
+                    .perform();
+            return;
+        }
+        warnNotPerformed("longPress");
     }
 
     public void longPress() {
@@ -333,6 +366,54 @@ public class VisualElement {
         LOGGER.warn(String.format(
                 "Performing '%s' on visual element '%s' via synthesised DOM events: this driver exposes no native "
                         + "coordinate input, so the action will NOT reach <canvas> content", action, label));
+    }
+
+    /**
+     * Warns that an action could not be performed because the current driver supports none of the required input
+     * mechanisms. Keeps every gesture consistent: an unsupported action is always reported, never silently dropped.
+     *
+     * @param action the action that could not be performed, for the message
+     */
+    private void warnNotPerformed(String action) {
+        LOGGER.warn(String.format(
+                "Unable to perform '%s' on visual element '%s': driver or inner driver is null, or supports no "
+                        + "known input mechanism", action, label));
+    }
+
+    private boolean hasInnerDriver() {
+        return driverFacade != null && driverFacade.getInnerDriver() != null;
+    }
+
+    private boolean isAppium() {
+        return Driver.APPIUM_DRIVER.equals(driverFacade.getType())
+                && driverFacade.getInnerDriver() instanceof AppiumDriver;
+    }
+
+    private AppiumDriver appiumDriver() {
+        return (AppiumDriver) driverFacade.getInnerDriver();
+    }
+
+    private com.znsio.teswiz.visual.NativeCoordinateInput nativeInput() {
+        return driverFacade.getInnerDriver() instanceof com.znsio.teswiz.visual.NativeCoordinateInput nativeInput
+                ? nativeInput : null;
+    }
+
+    private org.openqa.selenium.JavascriptExecutor jsExecutor() {
+        return driverFacade.getInnerDriver() instanceof org.openqa.selenium.JavascriptExecutor js ? js : null;
+    }
+
+    private static Point elementCenter(WebElement element) {
+        Point location = element.getLocation();
+        Dimension size = element.getSize();
+        return new Point(location.getX() + size.getWidth() / 2, location.getY() + size.getHeight() / 2);
+    }
+
+    private static void sleepQuietly(Duration duration) {
+        try {
+            Thread.sleep(duration.toMillis());
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     private void performMobileTap(int tapX, int tapY) {
@@ -384,7 +465,7 @@ public class VisualElement {
                         } catch (Exception e) {
                             if (i == retries) throw e;
                             LOGGER.warn(String.format("Visual element click failed on attempt %d of %d, retrying after %ds: %s", i, retries, delaySeconds, e.getMessage()));
-                            try { Thread.sleep(delaySeconds * 1000L); } catch (InterruptedException ignored) {}
+                            sleepQuietly(Duration.ofSeconds(delaySeconds));
                         }
                     }
                     return null;
