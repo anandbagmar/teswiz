@@ -150,6 +150,21 @@ async function openVisualSession(session, request) {
     ? new VisualGridRunner(new RunnerOptions().testConcurrency(request.testConcurrency))
     : new ClassicRunner();
   const eyes = new Eyes(runner);
+  eyes.setIsDisabled(!request.enabled);
+
+  // When visual testing is disabled the SDK does no visual work, so there is nothing to open
+  // against the Applitools server. Skip configuring and opening Eyes entirely: eyes.open()
+  // validates the apiKey format even for a disabled session, and teswiz intentionally sends the
+  // "not-set" sentinel when disabled (see Visual.getApplitoolsAPIKey), which would otherwise fail.
+  if (!request.enabled) {
+    session.visualSession = {
+      eyes,
+      runner,
+      disabled: true,
+    };
+    return;
+  }
+
   const configuration = new Configuration();
   configuration.setServerUrl(request.serverUrl);
   configuration.setApiKey(request.apiKey);
@@ -165,7 +180,6 @@ async function openVisualSession(session, request) {
     addUfgTargets(configuration, request.ufgTargets || []);
   }
   eyes.setConfiguration(configuration);
-  eyes.setIsDisabled(!request.enabled);
   addVisualProperties(eyes, request.customProperties);
   await eyes.open(
     getCurrentPage(session),
@@ -176,7 +190,7 @@ async function openVisualSession(session, request) {
   session.visualSession = {
     eyes,
     runner,
-    disabled: !request.enabled,
+    disabled: false,
   };
 }
 
