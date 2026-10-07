@@ -196,7 +196,12 @@ public class VisualOcrScreenPlaywrightJava extends VisualOcrScreen {
         LOGGER.info(String.format("Playwright Java - Visually double-clicking element '%s' using OCR text '%s'", elementName, ocrText));
         VisualElement element = findVisualElementByText(ocrText);
         assertThat(element).as("Visual element '" + elementName + "' with OCR text '" + ocrText + "' should be found").isNotNull();
+        element.highlight();
+        visually.checkWindow(SCREEN_NAME, "Before visual double-click OCR text: " + ocrText);
         element.doubleClick();
+        driver.clearHighlight();
+        waitForVisualActionIfConfigured();
+        visually.checkWindow(SCREEN_NAME, "After visual double-click OCR text: " + ocrText);
         return this;
     }
 
@@ -205,7 +210,12 @@ public class VisualOcrScreenPlaywrightJava extends VisualOcrScreen {
         LOGGER.info(String.format("Playwright Java - Visually hovering over element '%s' using OCR text '%s'", elementName, ocrText));
         VisualElement element = findVisualElementByText(ocrText);
         assertThat(element).as("Visual element '" + elementName + "' with OCR text '" + ocrText + "' should be found").isNotNull();
+        element.highlight();
+        visually.checkWindow(SCREEN_NAME, "Before visual hover OCR text: " + ocrText);
         element.hover();
+        driver.clearHighlight();
+        waitForVisualActionIfConfigured();
+        visually.checkWindow(SCREEN_NAME, "After visual hover OCR text: " + ocrText);
         return this;
     }
 
@@ -214,7 +224,12 @@ public class VisualOcrScreenPlaywrightJava extends VisualOcrScreen {
         LOGGER.info(String.format("Playwright Java - Visually long-pressing element '%s' using OCR text '%s'", elementName, ocrText));
         VisualElement element = findVisualElementByText(ocrText);
         assertThat(element).as("Visual element '" + elementName + "' with OCR text '" + ocrText + "' should be found").isNotNull();
+        element.highlight();
+        visually.checkWindow(SCREEN_NAME, "Before visual long-press OCR text: " + ocrText);
         element.longPress();
+        driver.clearHighlight();
+        waitForVisualActionIfConfigured();
+        visually.checkWindow(SCREEN_NAME, "After visual long-press OCR text: " + ocrText);
         return this;
     }
 
@@ -223,7 +238,12 @@ public class VisualOcrScreenPlaywrightJava extends VisualOcrScreen {
         LOGGER.info(String.format("Playwright Java - Visually swiping %s on element '%s' using OCR text '%s'", direction, elementName, ocrText));
         VisualElement element = findVisualElementByText(ocrText);
         assertThat(element).as("Visual element '" + elementName + "' with OCR text '" + ocrText + "' should be found").isNotNull();
+        element.highlight();
+        visually.checkWindow(SCREEN_NAME, "Before visual swipe " + direction + " OCR text: " + ocrText);
         element.swipe(direction);
+        driver.clearHighlight();
+        waitForVisualActionIfConfigured();
+        visually.checkWindow(SCREEN_NAME, "After visual swipe " + direction + " OCR text: " + ocrText);
         return this;
     }
 
