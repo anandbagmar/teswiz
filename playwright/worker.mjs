@@ -767,6 +767,39 @@ rl.on("line", async (line) => {
         process.stdout.write(`${okResponse(requestId, action, { status: "ok" })}\n`);
         break;
       }
+      case "nativeMouseAction": {
+        const session = getSession(payload.sessionId);
+        const page = getCurrentPage(session);
+        const mouse = page.mouse;
+        switch (payload.mouseAction) {
+          case "click":
+            await mouse.click(payload.x, payload.y);
+            break;
+          case "doubleClick":
+            await mouse.dblclick(payload.x, payload.y);
+            break;
+          case "hover":
+            await mouse.move(payload.x, payload.y);
+            break;
+          case "longPress":
+            await mouse.move(payload.x, payload.y);
+            await mouse.down();
+            await page.waitForTimeout(payload.durationMs);
+            await mouse.up();
+            break;
+          case "drag":
+            await mouse.move(payload.x, payload.y);
+            await mouse.down();
+            await mouse.move((payload.x + payload.endX) / 2, (payload.y + payload.endY) / 2);
+            await mouse.move(payload.endX, payload.endY);
+            await mouse.up();
+            break;
+          default:
+            throw new Error(`Unsupported native mouse action: ${payload.mouseAction}`);
+        }
+        process.stdout.write(`${okResponse(requestId, action, { status: "ok" })}\n`);
+        break;
+      }
       case "getWindowSize": {
         const session = getSession(payload.sessionId);
         const size = await getViewportSize(getCurrentPage(session));

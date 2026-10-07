@@ -17,6 +17,10 @@ import com.znsio.teswiz.entities.Direction;
 import io.appium.java_client.AppiumDriver;
 
 public class VisualElement {
+    private static final int MINIMUM_SWIPE_DELTA = 50;
+    private static final int DEFAULT_SWIPE_DELTA = 100;
+    private static final Duration SWIPE_DURATION = Duration.ofMillis(600);
+
     private static final Logger LOGGER = LogManager.getLogger(VisualElement.class.getName());
 
     private final int x;
@@ -84,10 +88,16 @@ public class VisualElement {
         if (driverFacade != null && driverFacade.getInnerDriver() != null) {
             if (Driver.APPIUM_DRIVER.equals(driverFacade.getType())) {
                 performMobileTap(center.getX(), center.getY());
+            } else if (driverFacade.getInnerDriver()
+                    instanceof com.znsio.teswiz.visual.NativeCoordinateInput nativeInput) {
+                // Preferred: real browser input, so the click also reaches <canvas> content, which ignores the
+                // synthesised DOM events used by the JavascriptExecutor fallback below.
+                nativeInput.clickAtViewportPoint(center.getX(), center.getY());
             } else if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.interactions.Interactive) {
                 Actions actions = new Actions(driverFacade.getInnerDriver());
                 actions.moveToLocation(center.getX(), center.getY()).click().perform();
             } else if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.JavascriptExecutor js) {
+                warnSyntheticFallback("click");
                 js.executeScript(
                         "var el = document.elementFromPoint(arguments[0], arguments[1]); " +
                         "if (el) { " +
@@ -115,10 +125,14 @@ public class VisualElement {
                 performMobileTap(center.getX(), center.getY());
                 try { Thread.sleep(100); } catch (InterruptedException ignored) {}
                 performMobileTap(center.getX(), center.getY());
+            } else if (driverFacade.getInnerDriver()
+                    instanceof com.znsio.teswiz.visual.NativeCoordinateInput nativeInput) {
+                nativeInput.doubleClickAtViewportPoint(center.getX(), center.getY());
             } else if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.interactions.Interactive) {
                 Actions actions = new Actions(driverFacade.getInnerDriver());
                 actions.moveToLocation(center.getX(), center.getY()).doubleClick().perform();
             } else if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.JavascriptExecutor js) {
+                warnSyntheticFallback("doubleClick");
                 js.executeScript(
                         "var el = document.elementFromPoint(arguments[0], arguments[1]); " +
                         "if (el) { " +
@@ -135,10 +149,14 @@ public class VisualElement {
         Point center = getCenter();
         LOGGER.info(String.format("Hovering over visual element '%s' at (%d, %d)", label, center.getX(), center.getY()));
         if (driverFacade != null && driverFacade.getInnerDriver() != null) {
-            if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.interactions.Interactive) {
+            if (driverFacade.getInnerDriver()
+                    instanceof com.znsio.teswiz.visual.NativeCoordinateInput nativeInput) {
+                nativeInput.hoverAtViewportPoint(center.getX(), center.getY());
+            } else if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.interactions.Interactive) {
                 Actions actions = new Actions(driverFacade.getInnerDriver());
                 actions.moveToLocation(center.getX(), center.getY()).perform();
             } else if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.JavascriptExecutor js) {
+                warnSyntheticFallback("hover");
                 js.executeScript(
                         "var el = document.elementFromPoint(arguments[0], arguments[1]); " +
                         "if (el) { " +
@@ -217,31 +235,25 @@ public class VisualElement {
     public void swipe(Direction direction) {
         Point center = getCenter();
         LOGGER.info(String.format("Swiping '%s' on visual element '%s' at (%d, %d)", direction, label, center.getX(), center.getY()));
+        if (driverFacade != null
+                && driverFacade.getInnerDriver() instanceof com.znsio.teswiz.visual.NativeCoordinateInput nativeInput) {
+            Point end = swipeEndPoint(center, direction);
+            nativeInput.dragFromViewportPoint(center.getX(), center.getY(), end.getX(), end.getY());
+            return;
+        }
         if (driverFacade != null && driverFacade.getInnerDriver() instanceof AppiumDriver appiumDriver) {
-            int startX = center.getX();
-            int startY = center.getY();
-            int endX = startX;
-            int endY = startY;
-
-            int deltaX = width / 2;
-            int deltaY = height / 2;
-            if (deltaX < 50) deltaX = 100;
-            if (deltaY < 50) deltaY = 100;
-
-            switch (direction) {
-                case UP -> endY = startY - deltaY;
-                case DOWN -> endY = startY + deltaY;
-                case LEFT -> endX = startX - deltaX;
-                case RIGHT -> endX = startX + deltaX;
-            }
-
+            Point end = swipeEndPoint(center, direction);
             PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
             Sequence swipeSequence = new Sequence(finger, 1);
-            swipeSequence.addAction(finger.createPointerMove(Duration.ofMillis(0), PointerInput.Origin.viewport(), startX, startY));
+            swipeSequence.addAction(finger.createPointerMove(Duration.ofMillis(0), PointerInput.Origin.viewport(), center.getX(), center.getY()));
             swipeSequence.addAction(finger.createPointerDown(PointerInput.MouseButton.LEFT.asArg()));
-            swipeSequence.addAction(finger.createPointerMove(Duration.ofMillis(600), PointerInput.Origin.viewport(), endX, endY));
+            swipeSequence.addAction(finger.createPointerMove(SWIPE_DURATION, PointerInput.Origin.viewport(), end.getX(), end.getY()));
             appiumDriver.perform(List.of(swipeSequence));
+            return;
         }
+        LOGGER.warn(String.format(
+                "Cannot swipe visual element '%s': this driver exposes neither native coordinate input nor an "
+                        + "Appium touch pointer, so the gesture was not performed", label));
     }
 
     public void longPress(Duration duration) {
@@ -257,6 +269,9 @@ public class VisualElement {
                 sequence.addAction(finger.createPointerMove(duration, PointerInput.Origin.viewport(), center.getX(), center.getY()));
                 sequence.addAction(finger.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
                 appiumDriver.perform(List.of(sequence));
+            } else if (driverFacade.getInnerDriver()
+                    instanceof com.znsio.teswiz.visual.NativeCoordinateInput nativeInput) {
+                nativeInput.longPressAtViewportPoint(center.getX(), center.getY(), duration);
             } else if (driverFacade.getInnerDriver() instanceof org.openqa.selenium.interactions.Interactive) {
                 Actions actions = new Actions(driverFacade.getInnerDriver());
                 actions.moveToLocation(center.getX(), center.getY())
@@ -264,12 +279,60 @@ public class VisualElement {
                         .pause(duration)
                         .release()
                         .perform();
+            } else {
+                LOGGER.warn(String.format(
+                        "Unable to long-press visual element '%s': driver supports neither native coordinate input "
+                                + "nor Interactive", label));
             }
         }
     }
 
     public void longPress() {
         longPress(Duration.ofSeconds(2));
+    }
+
+    /**
+     * The point a swipe in the given direction should end at, derived from the element's own size so the gesture
+     * stays proportional to what was matched.
+     *
+     * @param center    the element's centre
+     * @param direction the swipe direction
+     * @return the end point of the swipe
+     */
+    private Point swipeEndPoint(Point center, Direction direction) {
+        int deltaX = swipeDelta(width);
+        int deltaY = swipeDelta(height);
+        return switch (direction) {
+            case UP -> new Point(center.getX(), center.getY() - deltaY);
+            case DOWN -> new Point(center.getX(), center.getY() + deltaY);
+            case LEFT -> new Point(center.getX() - deltaX, center.getY());
+            case RIGHT -> new Point(center.getX() + deltaX, center.getY());
+        };
+    }
+
+    /**
+     * Returns the swipe distance for an element dimension: half the element, but never a distance so small that
+     * the gesture reads as a tap. Shared by the native-web and Appium swipe paths so both travel equally far.
+     *
+     * @param elementSize the element's width or height, in pixels
+     * @return the swipe distance in pixels
+     */
+    private int swipeDelta(int elementSize) {
+        int delta = elementSize / 2;
+        return delta < MINIMUM_SWIPE_DELTA ? DEFAULT_SWIPE_DELTA : delta;
+    }
+
+    /**
+     * Warns that an action is falling back to synthesised DOM events. That path cannot drive {@code <canvas>}
+     * content, and previously failed silently - the action logged success while the application never reacted - so
+     * the degradation is called out explicitly rather than left to be discovered from screenshots.
+     *
+     * @param action the action being attempted, for the message
+     */
+    private void warnSyntheticFallback(String action) {
+        LOGGER.warn(String.format(
+                "Performing '%s' on visual element '%s' via synthesised DOM events: this driver exposes no native "
+                        + "coordinate input, so the action will NOT reach <canvas> content", action, label));
     }
 
     private void performMobileTap(int tapX, int tapY) {

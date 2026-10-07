@@ -32,11 +32,13 @@ import org.openqa.selenium.logging.Logs;
 
 import com.znsio.teswiz.exceptions.InvalidTestDataException;
 import com.znsio.teswiz.config.TeswizRuntimeConfiguration;
+import com.znsio.teswiz.visual.NativeCoordinateInput;
 import com.znsio.teswiz.visual.PlaywrightVisualDriver;
 import com.znsio.teswiz.visual.PlaywrightVisualSessionRequest;
 import com.znsio.teswiz.visual.PlaywrightVisualResults;
 
-public final class PlaywrightWebDriver implements WebDriver, JavascriptExecutor, TakesScreenshot, PlaywrightVisualDriver {
+public final class PlaywrightWebDriver implements WebDriver, JavascriptExecutor,
+        TakesScreenshot, PlaywrightVisualDriver, NativeCoordinateInput {
     private final PlaywrightWorkerClient workerClient;
     private final PlaywrightWorkerSession session;
     private Duration implicitWaitTimeout = Duration.ZERO;
@@ -54,6 +56,36 @@ public final class PlaywrightWebDriver implements WebDriver, JavascriptExecutor,
     public void get(String url) {
         workerClient.navigateTo(session.sessionId(), url);
     }
+
+    // --- NativeCoordinateInput ---
+    // Viewport-point input routed to Playwright's real mouse in the worker process, so these reach canvas
+    // content. The generic fallback in VisualElement synthesises DOM events, which canvas applications ignore.
+
+    @Override
+    public void clickAtViewportPoint(int x, int y) {
+        workerClient.nativeMouseAction(session.sessionId(), "click", x, y);
+    }
+
+    @Override
+    public void doubleClickAtViewportPoint(int x, int y) {
+        workerClient.nativeMouseAction(session.sessionId(), "doubleClick", x, y);
+    }
+
+    @Override
+    public void hoverAtViewportPoint(int x, int y) {
+        workerClient.nativeMouseAction(session.sessionId(), "hover", x, y);
+    }
+
+    @Override
+    public void longPressAtViewportPoint(int x, int y, Duration duration) {
+        workerClient.nativeLongPress(session.sessionId(), x, y, duration);
+    }
+
+    @Override
+    public void dragFromViewportPoint(int startX, int startY, int endX, int endY) {
+        workerClient.nativeDrag(session.sessionId(), startX, startY, endX, endY);
+    }
+
 
     @Override
     public String getCurrentUrl() {

@@ -203,6 +203,33 @@ public class PlaywrightWorkerClient implements AutoCloseable {
         return new org.openqa.selenium.Point(payload.getInt("x"), payload.getInt("y"));
     }
 
+    public synchronized void nativeMouseAction(String sessionId, String mouseAction, int x, int y) {
+        sendCommand("nativeMouseAction", new JSONObject()
+                .put("sessionId", sessionId)
+                .put("mouseAction", mouseAction)
+                .put("x", x)
+                .put("y", y));
+    }
+
+    public synchronized void nativeLongPress(String sessionId, int x, int y, Duration duration) {
+        sendCommand("nativeMouseAction", new JSONObject()
+                .put("sessionId", sessionId)
+                .put("mouseAction", "longPress")
+                .put("x", x)
+                .put("y", y)
+                .put("durationMs", duration.toMillis()));
+    }
+
+    public synchronized void nativeDrag(String sessionId, int startX, int startY, int endX, int endY) {
+        sendCommand("nativeMouseAction", new JSONObject()
+                .put("sessionId", sessionId)
+                .put("mouseAction", "drag")
+                .put("x", startX)
+                .put("y", startY)
+                .put("endX", endX)
+                .put("endY", endY));
+    }
+
     public synchronized void setWindowSize(String sessionId, org.openqa.selenium.Dimension size) {
         sendCommand("setWindowSize", new JSONObject()
                 .put("sessionId", sessionId)

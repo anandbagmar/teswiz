@@ -39,7 +39,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.selenium.JavascriptExecutor,
-        org.openqa.selenium.TakesScreenshot, PlaywrightVisualDriver {
+        org.openqa.selenium.TakesScreenshot, PlaywrightVisualDriver,
+        com.znsio.teswiz.visual.NativeCoordinateInput {
     private static final Logger LOGGER = LogManager.getLogger(PlaywrightJavaWebDriver.class.getName());
     private static final String BROWSERSTACK_EXECUTOR_PREFIX = "browserstack_executor:";
     private static final String LAMBDATEST_ACTION_PREFIX = "lambdatest_action:";
@@ -63,6 +64,49 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
 
     public PlaywrightJavaScreenContext createScreenContext(Driver driver, Visual visual) {
         return new PlaywrightJavaScreenContext(driver, visual, this, session.browserContext(), session.page());
+    }
+
+    // --- NativeCoordinateInput ---
+    // Viewport-point input through Playwright's real mouse (CDP), so these reach canvas content. The generic
+    // fallback in VisualElement synthesises DOM events, which canvas applications ignore.
+
+    @Override
+    public void clickAtViewportPoint(int x, int y) {
+        LOGGER.info("Clicking at viewport point ({}, {}) using Playwright native mouse input", x, y);
+        session.page().mouse().click(x, y);
+    }
+
+    @Override
+    public void doubleClickAtViewportPoint(int x, int y) {
+        LOGGER.info("Double-clicking at viewport point ({}, {}) using Playwright native mouse input", x, y);
+        session.page().mouse().dblclick(x, y);
+    }
+
+    @Override
+    public void hoverAtViewportPoint(int x, int y) {
+        LOGGER.info("Moving pointer to viewport point ({}, {}) using Playwright native mouse input", x, y);
+        session.page().mouse().move(x, y);
+    }
+
+    @Override
+    public void longPressAtViewportPoint(int x, int y, java.time.Duration duration) {
+        LOGGER.info("Long-pressing at viewport point ({}, {}) for {} ms using Playwright native mouse input",
+                x, y, duration.toMillis());
+        session.page().mouse().move(x, y);
+        session.page().mouse().down();
+        session.page().waitForTimeout(duration.toMillis());
+        session.page().mouse().up();
+    }
+
+    @Override
+    public void dragFromViewportPoint(int startX, int startY, int endX, int endY) {
+        LOGGER.info("Dragging from viewport point ({}, {}) to ({}, {}) using Playwright native mouse input",
+                startX, startY, endX, endY);
+        session.page().mouse().move(startX, startY);
+        session.page().mouse().down();
+        session.page().mouse().move((startX + endX) / 2.0, (startY + endY) / 2.0);
+        session.page().mouse().move(endX, endY);
+        session.page().mouse().up();
     }
 
     @Override
