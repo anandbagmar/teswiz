@@ -53,6 +53,14 @@ public abstract class VisualBy extends By implements Serializable {
         return region;
     }
 
+    @Override
+    public List<WebElement> findElements(SearchContext context) {
+        if (context instanceof Driver) {
+            return ((Driver) context).findElements(this);
+        }
+        throw new UnsupportedOperationException("VisualBy locators require a Driver context.");
+    }
+
     public static VisualBy ocr(String text) {
         return new ByOcrText(text, null);
     }
@@ -95,14 +103,6 @@ public abstract class VisualBy extends By implements Serializable {
         }
 
         @Override
-        public List<WebElement> findElements(SearchContext context) {
-            if (context instanceof Driver) {
-                return ((Driver) context).findElements(this);
-            }
-            throw new UnsupportedOperationException("VisualBy locators require a Driver context.");
-        }
-
-        @Override
         public String toString() {
             return "VisualBy.ocr: " + getText() + (getRegion() != null ? " in " + getRegion() : "");
         }
@@ -118,14 +118,6 @@ public abstract class VisualBy extends By implements Serializable {
         }
 
         @Override
-        public List<WebElement> findElements(SearchContext context) {
-            if (context instanceof Driver) {
-                return ((Driver) context).findElements(this);
-            }
-            throw new UnsupportedOperationException("VisualBy locators require a Driver context.");
-        }
-
-        @Override
         public String toString() {
             return "VisualBy.image: " + getImagePath() + (getRegion() != null ? " in " + getRegion() : "");
         }
@@ -138,14 +130,6 @@ public abstract class VisualBy extends By implements Serializable {
 
         public ByFallbackTextImage(String text, String imagePath, double confidenceThreshold, com.znsio.teswiz.entities.VisualRegion region) {
             super(VisualByType.FALLBACK_TEXT_IMAGE, text, imagePath, confidenceThreshold, region);
-        }
-
-        @Override
-        public List<WebElement> findElements(SearchContext context) {
-            if (context instanceof Driver) {
-                return ((Driver) context).findElements(this);
-            }
-            throw new UnsupportedOperationException("VisualBy locators require a Driver context.");
         }
 
         @Override

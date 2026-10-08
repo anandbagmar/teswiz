@@ -256,9 +256,9 @@ Phase 5  browser_config unify  — independent of 0–4; benefits from 3
 
 ## Progress tracker
 
-- [ ] 0.1 Correctness nits
-- [ ] 0.2 Provider resolver registries
-- [ ] 0.3 VisualBy de-duplication
+- [x] 0.1 Correctness nits
+- [x] 0.2 Provider resolver registries
+- [x] 0.3 VisualBy de-duplication
 - [ ] 1.1 OcrEngine / ImageMatcher abstractions
 - [ ] 1.2 Extract VisualFinder
 - [ ] 2.1 DriverManager contract
