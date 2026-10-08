@@ -269,8 +269,8 @@ Phase 5  browser_config unify  — independent of 0–4; benefits from 3
   - [x] PlatformTagResolver — multi-user tag -> (Platform, launch-name suffix) table replacing the if/else chain
   - [x] ReportPortalEnvironmentPublisher — rpAttributes formatting + ATD/ReportPortal System.setProperty block
   - [x] CucumberArgsBuilder — reporting --plugin args (pretty/html/junit/json/message/timeline) for a log dir
-  - [ ] ConfigLoader
-  - [ ] ApplitoolsConfigFactory
+  - [x] ApplitoolsConfigFactory (partial) — extracted ApplitoolsBatchInfoFactory (batch name + BatchInfo build). The remaining initialiseApplitoolsConfiguration machinery (mutable applitoolsConfiguration map + ~12 interdependent helpers, a public static entry point via Runner.getApplitoolsConfiguration) is deferred: a full lift is high-risk for low incremental value and better paired with the Visual engine split in Phase 4.2.
+  - [ ] ConfigLoader — property loading + buildMapOfRequiredProperties (large override/default + git-branch resolution)
 - [ ] 4.1 Extract MobileGestures / ElementHighlighter / ElementFinder; drop Visual pass-throughs
 - [ ] 4.2 Visual behind VisualEngine strategy
 - [ ] 5.1 WindowSizingResolver
