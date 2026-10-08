@@ -117,6 +117,8 @@ public class Visual {
     private String applitoolsLogFileNameForWeb = NOT_SET;
     private EyesRunner seleniumEyesRunner;
     private Driver driverFacade;
+    private final com.znsio.teswiz.visual.OcrEngine ocrEngine = new com.znsio.teswiz.visual.TesseractOcrEngine();
+    private final com.znsio.teswiz.visual.ImageMatcher imageMatcher = new com.znsio.teswiz.visual.OpenCvImageMatcher();
 
     public void setDriverFacade(Driver driverFacade) {
         this.driverFacade = driverFacade;
@@ -1263,7 +1265,7 @@ public class Visual {
         int retryDelayMs = getVisualElementRetryDelayMs();
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             byte[] screenshot = captureScreenshotBytes();
-            VisualElement match = com.znsio.teswiz.visual.OcrService.findTextMatch(screenshot, text, this.driverFacade);
+            VisualElement match = this.ocrEngine.findTextMatch(screenshot, text, null, this.driverFacade);
             if (match != null) {
                 return match;
             }
@@ -1289,7 +1291,7 @@ public class Visual {
         int retryDelayMs = getVisualElementRetryDelayMs();
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             byte[] screenshot = captureScreenshotBytes();
-            VisualElement match = com.znsio.teswiz.visual.OcrService.findTextMatch(screenshot, text, region, this.driverFacade);
+            VisualElement match = this.ocrEngine.findTextMatch(screenshot, text, region, this.driverFacade);
             if (match != null) {
                 return match;
             }
@@ -1329,7 +1331,7 @@ public class Visual {
         int retryDelayMs = getVisualElementRetryDelayMs();
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             byte[] screenshot = captureScreenshotBytes();
-            VisualElement match = com.znsio.teswiz.visual.ImageRecognitionService.findTemplateMatch(screenshot, imageTemplatePaths, confidenceThreshold, region, this.driverFacade);
+            VisualElement match = this.imageMatcher.findTemplateMatch(screenshot, imageTemplatePaths, confidenceThreshold, region, this.driverFacade);
             if (match != null) {
                 return match;
             }
@@ -1381,7 +1383,7 @@ public class Visual {
         String regionText = null != region ? region.toString() : "[entire screen]";
         LOGGER.info("Locating all visual elements matching text '{}' within region {}", text, regionText);
         byte[] screenshot = captureScreenshotBytes();
-        return com.znsio.teswiz.visual.OcrService.findAllTextMatches(screenshot, text, region, this.driverFacade);
+        return this.ocrEngine.findAllTextMatches(screenshot, text, region, this.driverFacade);
     }
 
     public List<VisualElement> findAllByImage(List<String> imageTemplatePaths) {
@@ -1403,7 +1405,7 @@ public class Visual {
             LOGGER.info(String.format("Locating all visual elements matching image templates %s with threshold %.2f within region %s", imageTemplatePaths, confidenceThreshold, regionText));
         }
         byte[] screenshot = captureScreenshotBytes();
-        return com.znsio.teswiz.visual.ImageRecognitionService.findAllTemplateMatches(screenshot, imageTemplatePaths, confidenceThreshold, region, this.driverFacade);
+        return this.imageMatcher.findAllTemplateMatches(screenshot, imageTemplatePaths, confidenceThreshold, region, this.driverFacade);
     }
 
     public List<VisualElement> findAllByTextOrImage(String text, List<String> imageTemplatePaths) {
