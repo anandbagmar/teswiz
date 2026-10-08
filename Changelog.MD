@@ -1,3 +1,41 @@
+## 1.0.43
+# Release Notes - teswiz v1.0.43
+
+_Previous release: v1.0.42_
+
+## 🚀 Key Highlights & Enhancements
+
+### 👁️ Visual Subsystem — wait-until-visible and screen-layer consolidation
+
+* **New `waitUntilVisualElementIsVisible*` methods on `VisualOcrBL`.** Four locator variants — by OCR text, by image template, by fallback text-or-image, and by fallback image-or-text — each with a default-budget overload and an overload taking an explicit maximum wait in seconds. They poll the existing engine-agnostic finders until the element is located on screen (non-null = visible) or the budget elapses, then assert visibility. The default budget derives from `VISUAL_ELEMENT_RETRY_ATTEMPTS × VISUAL_ELEMENT_RETRY_DELAY_SECONDS`; the inter-poll sleep is `VISUAL_ELEMENT_RETRY_DELAY_SECONDS`. Paired Gherkin steps (default and `within {int} seconds`) are added for all four variants. Works for Selenium, `playwright-java`, `playwright-ts` and Appium with no new TypeScript worker primitive, because the polling lives in the business layer and drives the already-abstract find operations.
+* **The four `VisualOcrScreen` platform classes are consolidated behind a shared template.** `VisualOcrScreen` is now a pure abstract contract; a new `AbstractVisualOcrScreen` owns the single find → assert → highlight → screenshot(before) → act → wait → screenshot(after) choreography plus `parsePositionIndex`. The Android/iOS/web/playwright-java classes reduce to a constructor (Android/iOS additionally override an `afterTextEntry()` hook to dismiss the keyboard), removing roughly 1,400 lines of duplication. The contract stays abstract with a no-arg constructor so the dynamically generated `playwright-ts` bridge continues to work unchanged.
+
+### 🧱 Visual Subsystem — encapsulation and SOLID clean-up
+
+* **Gesture dispatch moved out of `VisualElement` into the `Driver` facade.** `VisualElement` is now a pure immutable value object (bounds + label) that forwards each gesture to the facade with its own centre/geometry; the engine-specific "how" lives in a new `VisualGestureDispatcher` (Appium touch → native coordinate input → Selenium `Actions` → synthesised DOM events). This removes the driver-type `instanceof` ladders and the `getInnerDriver()`/`getType()` coupling from the element.
+* **`VisualElement`'s `WebElement` adapter extracted** into `VisualElementWebElementAdapter`, so the value object no longer also carries the Selenium-proxy responsibility.
+* **`VisualOcrScreen` contract segregated** into role interfaces `VisualElementFinder`, `VisualElementActions`, and `VisualElementInspector`; the class remains the aggregate so callers and the `playwright-ts` bridge are unaffected.
+* **Unsupported gestures now throw `UnsupportedVisualGestureException`** instead of logging and continuing. A swipe/long-press on a plain Selenium web driver (no touch, no native coordinate input) and `zoom`/`pinch` on any engine fail loudly rather than passing against an unchanged app. **Parity note:** `click`/`doubleClick`/`hover`/`sendKeys` work on all engines; `swipe`/`longPress` require touch (Appium) or native coordinate input (Playwright), so parity is intentionally not provided on a mouse-only Selenium web driver.
+
+### 🧹 Logging Modernization
+
+* **Migrated the last four Log4j 1.x files to Log4j2** (`SessionContext`, `TestExecutionContext`, `CucumberScenarioListener`, `CucumberScenarioReporterListener`) and removed the `log4j1.compatibility` shim. No source now imports `org.apache.log4j.*`.
+
+---
+
+## 🛠️ Changed Files Summary
+
+* `build.gradle` — Version bump to `1.0.43`.
+* `src/main/java/com/znsio/teswiz/businessLayer/visualocr/VisualOcrBL.java` — Added `waitUntilVisualElementIsVisible*` methods (four variants, each with default-budget and explicit-timeout overloads).
+* `src/test/java/com/znsio/teswiz/steps/VisualOcrSteps.java` — Added paired Gherkin step bindings (default and `within {int} seconds`) for the new wait methods.
+* `src/main/java/com/znsio/teswiz/screen/.../VisualOcrScreen*.java` — Consolidated the four platform classes behind a new `AbstractVisualOcrScreen` template; `VisualOcrScreen` reduced to a pure abstract contract.
+* `src/main/java/com/znsio/teswiz/visual/VisualGestureDispatcher.java` — New engine-specific gesture dispatcher (Appium touch → native coordinate input → Selenium `Actions` → synthesised DOM events).
+* `src/main/java/com/znsio/teswiz/visual/NativeCoordinateInput.java` — New native coordinate input used for Playwright gestures.
+* `VisualElement` / `VisualElementWebElementAdapter` — `VisualElement` reduced to an immutable value object; `WebElement` adapter extracted into its own class.
+* Role interfaces `VisualElementFinder`, `VisualElementActions`, `VisualElementInspector` — Segregated contract for the visual screen.
+* Log4j2 migration — `SessionContext`, `TestExecutionContext`, `CucumberScenarioListener`, `CucumberScenarioReporterListener`; removed the Log4j 1.x compatibility shim.
+* Tests — `VisualElementForwardingTest`, `VisualElementHighlightTest`, `VisualGestureDispatcherTest` added.
+
 ## Unreleased
 # Release Notes - teswiz (unreleased)
 ## 🚀 Key Highlights & Enhancements
