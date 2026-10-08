@@ -90,6 +90,28 @@ sequenceDiagram
     Driver->>Screen: Perform native W3C WebDriver / Playwright / Appium action
 ```
 
+### Class Responsibilities
+
+The subsystem follows the Feature → Step → BL → Screen pattern, with responsibilities kept separated:
+
+- **`VisualOcrBL`** — business layer; thin, well-traced orchestration over the screen contract (finders,
+  verifications, `waitUntilVisualElementIsVisible*`, actions).
+- **`VisualOcrScreen`** — the screen contract, segregated into role interfaces: `VisualElementFinder` (locate),
+  `VisualElementActions` (act), and `VisualElementInspector` (inspect). It is an abstract aggregate implementing
+  all three, kept abstract with a no-arg constructor so the dynamically generated `playwright-ts` bridge can
+  subclass it.
+- **`AbstractVisualOcrScreen`** — shared implementation of the single action choreography (find → assert →
+  highlight → screenshot-before → act → wait → screenshot-after) for the convention-resolved platform screens
+  (Android, iOS, web/Selenium, web/Playwright-Java). Platform classes are thin: a constructor plus an
+  `afterTextEntry()` hook (mobile dismisses the keyboard).
+- **`VisualElement`** — an immutable geometric value object (bounds + label). It forwards each gesture to the
+  `Driver` facade with its own centre/geometry and never inspects the driver type.
+- **`Driver` + `VisualGestureDispatcher`** — the facade exposes intent methods (`visualClickAt`, `visualSwipe`,
+  …) and delegates to `VisualGestureDispatcher`, which owns the single place that maps a gesture onto Appium
+  touch, native coordinate input, Selenium `Actions`, or synthesised DOM events.
+- **`VisualElementWebElementAdapter`** — adapts a `VisualElement` to the Selenium `WebElement` API (used by
+  `VisualBy` locators), kept separate from the value object.
+
 ---
 
 ## 🖥️ High-DPI / Retina Display Scaling & Portability
@@ -331,10 +353,28 @@ element.swipe(Direction.UP);           // W3C gesture swipe UP on element
 element.dragAndDropTo(targetElement); // Drag element center to target element
 ```
 
-Each visual element gesture is dispatched through the real input pipeline for the active engine. The dispatch
-order is Appium touch → browser native coordinate input (used by Playwright, so gestures also reach `<canvas>`
-content) → Selenium `Actions` → synthesised DOM events as a last resort. If a driver supports none of these for a
-given gesture, the action is logged as not performed rather than failing silently.
+Each visual element gesture is dispatched through the real input pipeline for the active engine. A
+`VisualElement` is a pure geometric value object: it forwards each gesture to the `Driver` facade with its own
+centre/geometry, and the facade's `VisualGestureDispatcher` chooses the mechanism. The dispatch order is Appium
+touch → browser native coordinate input (used by Playwright, so gestures also reach `<canvas>` content) →
+Selenium `Actions` → synthesised DOM events as a last resort.
+
+If a driver supports none of these mechanisms for a requested gesture, a `UnsupportedVisualGestureException` is
+thrown rather than silently doing nothing — a skipped gesture would otherwise let a test pass against an
+application that never reacted.
+
+**Engine parity for gestures:**
+
+| Gesture | Selenium | Playwright-Java | Playwright-TS | Appium |
+|---|---|---|---|---|
+| click, doubleClick, hover, sendKeys | ✅ | ✅ | ✅ | ✅ |
+| swipe, longPress | native input only¹ | ✅ | ✅ | ✅ |
+| zoom, pinch | ❌ (not implemented on any engine) | ❌ | ❌ | ❌ |
+
+¹ `swipe` and `longPress` need touch (Appium) or native coordinate input (Playwright). On a **plain Selenium web
+driver** that exposes neither, they are genuinely unsupported and throw `UnsupportedVisualGestureException` —
+**parity is not required here**, because a mouse-only web driver has no touch gesture to perform. `zoom`/`pinch`
+are not implemented on any engine today and always throw.
 
 ### Before / After Screenshots on Visual Actions
 
@@ -361,6 +401,16 @@ If an element cannot be matched visually above `VISUAL_CONFIDENCE_THRESHOLD`:
 ```
 com.znsio.teswiz.exceptions.NoSuchVisualElementException: 
 [teswiz] Unable to locate visual element by text/image template matching on screen. Target: 'Login', Threshold: 0.85
+```
+
+If a gesture is requested on an engine that provides no mechanism to perform it (e.g. a swipe or long-press on a
+plain Selenium web driver with no touch and no native coordinate input), `UnsupportedVisualGestureException` is
+thrown instead of silently skipping the gesture:
+
+```
+com.znsio.teswiz.exceptions.UnsupportedVisualGestureException:
+Cannot perform 'swipe' on visual element 'map tile': the active driver supports no touch, native coordinate input,
+Selenium Actions, or JavascriptExecutor mechanism for this gesture
 ```
 
 ---

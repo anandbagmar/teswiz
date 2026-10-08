@@ -673,6 +673,55 @@ public class Driver {
         }
     }
 
+    // ------------------------------------------------------------------------
+    // Visual element gesture dispatch
+    //
+    // The engine-specific "how" (Appium touch / native coordinate input / Selenium Actions / synthesised DOM)
+    // lives in VisualGestureDispatcher. VisualElement forwards here with its own geometry, so it stays a value
+    // object and never inspects the inner driver type.
+    // ------------------------------------------------------------------------
+
+    private com.znsio.teswiz.visual.VisualGestureDispatcher visualGestureDispatcher() {
+        return new com.znsio.teswiz.visual.VisualGestureDispatcher(driver, APPIUM_DRIVER.equals(type));
+    }
+
+    public void visualClickAt(org.openqa.selenium.Point point, String label) {
+        visualGestureDispatcher().click(point, label);
+    }
+
+    public void visualDoubleClickAt(org.openqa.selenium.Point point, String label) {
+        visualGestureDispatcher().doubleClick(point, label);
+    }
+
+    public void visualHoverAt(org.openqa.selenium.Point point, String label) {
+        visualGestureDispatcher().hover(point, label);
+    }
+
+    public void visualEnterTextAt(org.openqa.selenium.Point point, String label, CharSequence... keysToSend) {
+        visualGestureDispatcher().enterText(point, label, keysToSend);
+    }
+
+    public void visualLongPressAt(org.openqa.selenium.Point point, Duration duration, String label) {
+        visualGestureDispatcher().longPress(point, duration, label);
+    }
+
+    public void visualSwipe(org.openqa.selenium.Point center, int width, int height,
+            com.znsio.teswiz.entities.Direction direction, String label) {
+        visualGestureDispatcher().swipe(center, width, height, direction, label);
+    }
+
+    public void visualDragAndDropTo(org.openqa.selenium.Point source, WebElement target, String label) {
+        visualGestureDispatcher().dragAndDropTo(source, target, label);
+    }
+
+    public void visualZoom(double scaleFactor, String label) {
+        visualGestureDispatcher().zoom(scaleFactor, label);
+    }
+
+    public void visualPinch(double scaleFactor, String label) {
+        visualGestureDispatcher().pinch(scaleFactor, label);
+    }
+
     private WebElement decorateElement(WebElement element) {
         if (element == null) {
             return null;

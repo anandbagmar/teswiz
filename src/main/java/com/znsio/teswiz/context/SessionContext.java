@@ -1,6 +1,7 @@
 package com.znsio.teswiz.context;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import com.znsio.teswiz.tools.SensitiveDataMasker;
 
 import java.io.File;
@@ -14,7 +15,7 @@ import static com.znsio.teswiz.tools.OverriddenVariable.getOverriddenStringValue
 public class SessionContext {
     static final String TEST_RUNNER = "testrunner";
     private static final HashMap<String, TestExecutionContext> allTestsExecutionContext;
-    private static final Logger LOGGER = Logger.getLogger(SessionContext.class.getName());
+    private static final Logger LOGGER = LogManager.getLogger(SessionContext.class.getName());
     private static final Properties reportPortalProperties;
     private static String reportPortalLaunchURL = "";
 
@@ -28,7 +29,7 @@ public class SessionContext {
 
     static synchronized void addContext(long threadId, TestExecutionContext testExecutionContext) {
         allTestsExecutionContext.put(String.valueOf(threadId), testExecutionContext);
-        LOGGER.info(String.format("Adding context for thread - %s", threadId));
+        LOGGER.info("Adding context for thread - {}", threadId);
     }
 
     public static synchronized TestExecutionContext getTestExecutionContext(long threadId) {
@@ -36,7 +37,7 @@ public class SessionContext {
     }
 
     public static synchronized void remove(long threadId) {
-        LOGGER.info(String.format("Removing context for thread - %s", threadId));
+        LOGGER.info("Removing context for thread - {}", threadId);
         allTestsExecutionContext.remove(String.valueOf(threadId));
     }
 
@@ -45,19 +46,18 @@ public class SessionContext {
         try {
             String reportPortalPropertiesFile = "src/test/resources/reportportal.properties";
             getOverriddenStringValue("REPORT_PORTAL_FILE", reportPortalPropertiesFile);
-            LOGGER.info("Using reportportal.properties file from "
-                        + reportPortalPropertiesFile);
+            LOGGER.info("Using reportportal.properties file from {}", reportPortalPropertiesFile);
             File reportPortalFile = new File(reportPortalPropertiesFile);
             String absolutePath = reportPortalFile.getAbsolutePath();
             if (reportPortalFile.exists()) {
                 properties.load(new FileInputStream(absolutePath));
-                LOGGER.info("Loaded reportportal.properties file - " + absolutePath);
+                LOGGER.info("Loaded reportportal.properties file - {}", absolutePath);
             } else {
-                LOGGER.info("reportportal.properties file NOT FOUND - " + absolutePath);
+                LOGGER.info("reportportal.properties file NOT FOUND - {}", absolutePath);
             }
 
         } catch (IOException e) {
-            LOGGER.info("ERROR in loading reportportal.properties file\n" + e.getMessage());
+            LOGGER.info("ERROR in loading reportportal.properties file\n{}", e.getMessage());
             throw new RuntimeException(e.getMessage());
         }
         return properties;
@@ -74,15 +74,12 @@ public class SessionContext {
                         .equalsIgnoreCase("true")));
         if (isReportPortalEnabledInProperties) {
             String rpLaunchId = System.getProperty("rp.launch.id");
-            LOGGER.debug(String.format("System property: rp.launch.id: '%s'",
-                    SensitiveDataMasker.mask(rpLaunchId)));
+            LOGGER.debug("System property: rp.launch.id: '{}'", SensitiveDataMasker.mask(rpLaunchId));
             reportPortalLaunchURL = String.format("%s/ui/#%s/launches/all/%s",
                                                   reportPortalProperties.getProperty("rp.endpoint"),
                                                   reportPortalProperties.getProperty("rp.project"),
                                                   rpLaunchId);
-            LOGGER.info(String.format(
-                    "**** ReportPortal URL - %s ****",
-                    reportPortalLaunchURL));
+            LOGGER.info("**** ReportPortal URL - {} ****", reportPortalLaunchURL);
         }
     }
 }

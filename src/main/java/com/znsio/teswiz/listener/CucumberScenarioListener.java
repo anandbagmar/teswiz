@@ -15,7 +15,8 @@ import com.znsio.teswiz.runner.CurrentStep;
 import io.cucumber.plugin.ConcurrentEventListener;
 import io.cucumber.plugin.event.*;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.util.Map;
@@ -24,7 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.TimeUnit;
 
 public class CucumberScenarioListener implements ConcurrentEventListener {
-    private static final Logger LOGGER = Logger.getLogger(CucumberScenarioListener.class.getName());
+    private static final Logger LOGGER = LogManager.getLogger(CucumberScenarioListener.class.getName());
     private final Map<String, AtomicInteger> numberOfExamplesForScenario = new ConcurrentHashMap<>();
     private final AtomicInteger runningScenarioNumber = new AtomicInteger();
     private final AtomicInteger passedCount = new AtomicInteger();
@@ -34,13 +35,7 @@ public class CucumberScenarioListener implements ConcurrentEventListener {
 
     public CucumberScenarioListener() {
         LOGGER.info(String.format("ThreadID: %d: CucumberScenarioListener%n", Thread.currentThread().getId()));
-        setLog4jCompatibility();
         FileUtils.createDirectoryIn(OsUtils.getUserDirectory(), FileLocations.OUTPUT_DIRECTORY);
-    }
-
-    private void setLog4jCompatibility() {
-        // Migrating from Log4j 1.x to 2.x - https://logging.apache.org/log4j/2.x/manual/migration.html
-        System.setProperty("log4j1.compatibility", "true");
     }
 
     @Override

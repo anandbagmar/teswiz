@@ -10,10 +10,11 @@ import java.time.Duration;
  * This exists for visually-located elements. {@code VisualElement} knows only a bounding box from OCR or template
  * matching - there is no DOM node to act on - so it has to act on a point. Its fallback path dispatches synthetic
  * events at {@code document.elementFromPoint(x, y)}, which is enough for ordinary DOM pages but not for content
- * rendered into a {@code <canvas>}: a canvas application does its own hit-testing from pointer listeners bound to the
- * canvas, and synthesised events are additionally {@code isTrusted: false}. The action appears to succeed and the
- * application never reac * application never reac * application never reac * application never reac * application never reacywright, through CDP), so it is
- * indistinguishable from a user and reaches canvas content.
+ * rendered into a {@code <canvas>}: a canvas application does its own hit-testing from pointer listeners bound to
+ * the canvas, and synthesised events are additionally {@code isTrusted: false}, so the action appears to succeed
+ * while the application never reacts. A driver implementing this interface instead dispatches input through the
+ * browser's real input pipeline (for Playwright, through CDP), so it is indistinguishable from a user and reaches
+ * canvas content.
  *
  * <p>
  * All coordinates are viewport-relative, matching the bounds {@code VisualElement} resolves.
