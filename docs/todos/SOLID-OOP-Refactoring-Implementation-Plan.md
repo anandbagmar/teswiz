@@ -270,7 +270,7 @@ Phase 5  browser_config unify  — independent of 0–4; benefits from 3
   - [x] ReportPortalEnvironmentPublisher — rpAttributes formatting + ATD/ReportPortal System.setProperty block
   - [x] CucumberArgsBuilder — reporting --plugin args (pretty/html/junit/json/message/timeline) for a log dir
   - [x] ApplitoolsConfigFactory (partial) — extracted ApplitoolsBatchInfoFactory (batch name + BatchInfo build). The remaining initialiseApplitoolsConfiguration machinery (mutable applitoolsConfiguration map + ~12 interdependent helpers, a public static entry point via Runner.getApplitoolsConfiguration) is deferred: a full lift is high-risk for low incremental value and better paired with the Visual engine split in Phase 4.2.
-  - [ ] ConfigLoader — property loading + buildMapOfRequiredProperties (large override/default + git-branch resolution)
+  - [ ] ConfigLoader — DEFERRED (deliberately). buildMapOfRequiredProperties is ~90 lines of `configs.put(KEY, getOverriddenX(KEY, getYFromProperties(KEY, default)))` bound to the `properties` field, the OverriddenVariable helpers, ~40 key constants, and the three maps. Relocating it verbatim is a high-risk, low-value lift against the most central init method every test depends on; it would still just mutate Setup's static maps. The injectable/typed-config value this step targets was already delivered by TeswizConfiguration (3.1), so this extraction is not worth its regression risk on its own.
 - [ ] 4.1 Extract MobileGestures / ElementHighlighter / ElementFinder; drop Visual pass-throughs
 - [ ] 4.2 Visual behind VisualEngine strategy
 - [ ] 5.1 WindowSizingResolver
