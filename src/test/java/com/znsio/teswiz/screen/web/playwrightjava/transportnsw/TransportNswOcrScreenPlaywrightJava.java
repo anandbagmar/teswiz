@@ -49,7 +49,7 @@ public class TransportNswOcrScreenPlaywrightJava extends TransportNswOcrScreen {
     @Override
     public VisualElement clickElementByImage(String elementName, String imagePath) {
         LOGGER.info("Playwright Java - Finding and clicking '{}' using image template: {}", elementName, imagePath);
-        VisualElement visualElement = driver.findByImage(List.of(imagePath));
+        VisualElement visualElement = visually.findByImage(List.of(imagePath));
         visually.checkWindow(SCREEN_NAME, "Before clicking: " + elementName);
         visualElement.click();
         visually.checkWindow(SCREEN_NAME, "After clicking: " + elementName);
@@ -59,7 +59,7 @@ public class TransportNswOcrScreenPlaywrightJava extends TransportNswOcrScreen {
     @Override
     public VisualElement clickElementByOcrText(String elementName, String ocrText) {
         LOGGER.info("Playwright Java - Finding and clicking '{}' using OCR text: {}", elementName, ocrText);
-        VisualElement stationElement = driver.findByText(ocrText);
+        VisualElement stationElement = visually.findByText(ocrText);
         visually.checkWindow(SCREEN_NAME, "Before clicking: " + elementName);
         stationElement.click();
         visually.checkWindow(SCREEN_NAME, "After clicking: " + elementName);
@@ -69,7 +69,7 @@ public class TransportNswOcrScreenPlaywrightJava extends TransportNswOcrScreen {
     @Override
     public VisualElement clickCalloutOptionByText(String text) {
         LOGGER.info("Playwright Java - Finding and clicking callout option using OCR text: " + text);
-        VisualElement calloutOption = driver.findByText(text);
+        VisualElement calloutOption = visually.findByText(text);
         visually.checkWindow(SCREEN_NAME, "Callout popup option: " + text);
         calloutOption.click();
         visually.checkWindow(SCREEN_NAME, "Clicked callout option: " + text);
@@ -79,7 +79,7 @@ public class TransportNswOcrScreenPlaywrightJava extends TransportNswOcrScreen {
     @Override
     public VisualElement clickStationNameOnMapByText(String stationName) {
         LOGGER.info("Playwright Java - Finding and clicking station name on map using OCR text: " + stationName);
-        VisualElement stationElement = driver.findByText(stationName);
+        VisualElement stationElement = visually.findByText(stationName);
         visually.checkWindow(SCREEN_NAME, "Station map view: " + stationName);
         stationElement.click();
         visually.checkWindow(SCREEN_NAME, "Clicked station name on map: " + stationName);

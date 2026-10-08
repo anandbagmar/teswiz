@@ -271,7 +271,11 @@ Phase 5  browser_config unify  — independent of 0–4; benefits from 3
   - [x] CucumberArgsBuilder — reporting --plugin args (pretty/html/junit/json/message/timeline) for a log dir
   - [x] ApplitoolsConfigFactory (partial) — extracted ApplitoolsBatchInfoFactory (batch name + BatchInfo build). The remaining initialiseApplitoolsConfiguration machinery (mutable applitoolsConfiguration map + ~12 interdependent helpers, a public static entry point via Runner.getApplitoolsConfiguration) is deferred: a full lift is high-risk for low incremental value and better paired with the Visual engine split in Phase 4.2.
   - [ ] ConfigLoader — DEFERRED (deliberately). buildMapOfRequiredProperties is ~90 lines of `configs.put(KEY, getOverriddenX(KEY, getYFromProperties(KEY, default)))` bound to the `properties` field, the OverriddenVariable helpers, ~40 key constants, and the three maps. Relocating it verbatim is a high-risk, low-value lift against the most central init method every test depends on; it would still just mutate Setup's static maps. The injectable/typed-config value this step targets was already delivered by TeswizConfiguration (3.1), so this extraction is not worth its regression risk on its own.
-- [ ] 4.1 Extract MobileGestures / ElementHighlighter / ElementFinder; drop Visual pass-throughs
+- [~] 4.1 Extract MobileGestures / ElementHighlighter / ElementFinder; retire Visual pass-throughs (in progress):
+  - [x] Deprecate (not delete) the 24 Driver Visual find pass-throughs. Chose option A (non-breaking): `@Deprecated` + `@deprecated` Javadoc pointing to `getVisual().<same>()`; repointed all in-repo callers (AbstractVisualOcrScreen x12, two transportnsw screens x8, Driver's own findElement(VisualBy)/findElements(VisualBy) x6) to getVisual()/the Visual handle. Migration path = mechanical rename (identical signatures), no tooling needed. Hard removal deferred to a future major release (version TBD by maintainer).
+  - [ ] Extract ElementHighlighter (web JS highlight cluster + activeHighlightBounds)
+  - [ ] Extract MobileGestures (Appium gesture surface)
+  - [ ] Extract ElementFinder (By-based find + decorate proxy)
 - [ ] 4.2 Visual behind VisualEngine strategy
 - [ ] 5.1 WindowSizingResolver
 - [ ] 5.2 BrowserConfig model + normalizer

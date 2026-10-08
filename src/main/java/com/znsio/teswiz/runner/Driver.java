@@ -1303,98 +1303,156 @@ public class Driver {
         }
     }
 
+    // ------------------------------------------------------------------------
+    // DEPRECATED: Visual element find pass-throughs.
+    //
+    // These forward to the Visual subsystem and are a redundant second hop. Call
+    // getVisual().<sameMethod>(...) instead - the signatures are identical, so migration is a
+    // mechanical rename. All in-repo callers have been repointed to getVisual()/the Visual handle.
+    // Scheduled for removal in a future major release (see Changelog). Kept for one release so
+    // downstream consumers can migrate without a hard break.
+    // ------------------------------------------------------------------------
+
+    /** @deprecated use {@code getVisual().findByText(text)} */
+    @Deprecated
     public VisualElement findByText(String text) {
         return this.visually.findByText(text);
     }
 
+    /** @deprecated use {@code getVisual().findByImage(...)} */
+    @Deprecated
     public VisualElement findByImage(String... imageTemplatePaths) {
-        return findByImage(Arrays.asList(imageTemplatePaths));
+        return this.visually.findByImage(Arrays.asList(imageTemplatePaths));
     }
 
+    /** @deprecated use {@code getVisual().findByImage(imageTemplatePaths)} */
+    @Deprecated
     public VisualElement findByImage(List<String> imageTemplatePaths) {
         return this.visually.findByImage(imageTemplatePaths);
     }
 
+    /** @deprecated use {@code getVisual().findByImage(imageTemplatePaths, confidenceThreshold)} */
+    @Deprecated
     public VisualElement findByImage(List<String> imageTemplatePaths, double confidenceThreshold) {
         return this.visually.findByImage(imageTemplatePaths, confidenceThreshold);
     }
 
+    /** @deprecated use {@code getVisual().findByImage(imageTemplatePaths, confidenceThreshold, region)} */
+    @Deprecated
     public VisualElement findByImage(List<String> imageTemplatePaths, double confidenceThreshold, com.znsio.teswiz.entities.VisualRegion region) {
         return this.visually.findByImage(imageTemplatePaths, confidenceThreshold, region);
     }
 
+    /** @deprecated use {@code getVisual().findByTextOrImage(...)} */
+    @Deprecated
     public VisualElement findByTextOrImage(String text, String... imageTemplatePaths) {
-        return findByTextOrImage(text, Arrays.asList(imageTemplatePaths));
+        return this.visually.findByTextOrImage(text, Arrays.asList(imageTemplatePaths));
     }
 
+    /** @deprecated use {@code getVisual().findByTextOrImage(text, imageTemplatePaths)} */
+    @Deprecated
     public VisualElement findByTextOrImage(String text, List<String> imageTemplatePaths) {
         return this.visually.findByTextOrImage(text, imageTemplatePaths);
     }
 
+    /** @deprecated use {@code getVisual().findByTextOrImage(text, imageTemplatePaths, region)} */
+    @Deprecated
     public VisualElement findByTextOrImage(String text, List<String> imageTemplatePaths, com.znsio.teswiz.entities.VisualRegion region) {
         return this.visually.findByTextOrImage(text, imageTemplatePaths, region);
     }
 
+    /** @deprecated use {@code getVisual().findByImageOrText(imageTemplatePaths, text)} */
+    @Deprecated
     public VisualElement findByImageOrText(List<String> imageTemplatePaths, String text) {
         return this.visually.findByImageOrText(imageTemplatePaths, text);
     }
 
+    /** @deprecated use {@code getVisual().findAllByText(text)} */
+    @Deprecated
     public List<VisualElement> findAllByText(String text) {
         return this.visually.findAllByText(text);
     }
 
+    /** @deprecated use {@code getVisual().findAllByImage(...)} */
+    @Deprecated
     public List<VisualElement> findAllByImage(String... imageTemplatePaths) {
-        return findAllByImage(Arrays.asList(imageTemplatePaths));
+        return this.visually.findAllByImage(Arrays.asList(imageTemplatePaths));
     }
 
+    /** @deprecated use {@code getVisual().findAllByImage(imageTemplatePaths)} */
+    @Deprecated
     public List<VisualElement> findAllByImage(List<String> imageTemplatePaths) {
         return this.visually.findAllByImage(imageTemplatePaths);
     }
 
+    /** @deprecated use {@code getVisual().findAllByImage(imageTemplatePaths, confidenceThreshold)} */
+    @Deprecated
     public List<VisualElement> findAllByImage(List<String> imageTemplatePaths, double confidenceThreshold) {
         return this.visually.findAllByImage(imageTemplatePaths, confidenceThreshold);
     }
 
+    /** @deprecated use {@code getVisual().findAllByTextOrImage(...)} */
+    @Deprecated
     public List<VisualElement> findAllByTextOrImage(String text, String... imageTemplatePaths) {
-        return findAllByTextOrImage(text, Arrays.asList(imageTemplatePaths));
+        return this.visually.findAllByTextOrImage(text, Arrays.asList(imageTemplatePaths));
     }
 
+    /** @deprecated use {@code getVisual().findAllByTextOrImage(text, imageTemplatePaths)} */
+    @Deprecated
     public List<VisualElement> findAllByTextOrImage(String text, List<String> imageTemplatePaths) {
         return this.visually.findAllByTextOrImage(text, imageTemplatePaths);
     }
 
+    /** @deprecated use {@code getVisual().findAllByImageOrText(imageTemplatePaths, text)} */
+    @Deprecated
     public List<VisualElement> findAllByImageOrText(List<String> imageTemplatePaths, String text) {
         return this.visually.findAllByImageOrText(imageTemplatePaths, text);
     }
 
+    /** @deprecated use {@code getVisual().findRelativeByText(targetText, direction, anchorText)} */
+    @Deprecated
     public VisualElement findRelativeByText(String targetText, com.znsio.teswiz.entities.SpatialDirection direction, String anchorText) {
         return this.visually.findRelativeByText(targetText, direction, anchorText);
     }
 
+    /** @deprecated use {@code getVisual().findRelativeByText(targetText, direction, anchor)} */
+    @Deprecated
     public VisualElement findRelativeByText(String targetText, com.znsio.teswiz.entities.SpatialDirection direction, VisualElement anchor) {
         return this.visually.findRelativeByText(targetText, direction, anchor);
     }
 
+    /** @deprecated use {@code getVisual().findRelativeByImage(targetImagePaths, direction, anchorText)} */
+    @Deprecated
     public VisualElement findRelativeByImage(List<String> targetImagePaths, com.znsio.teswiz.entities.SpatialDirection direction, String anchorText) {
         return this.visually.findRelativeByImage(targetImagePaths, direction, anchorText);
     }
 
+    /** @deprecated use {@code getVisual().findRelativeByImage(targetImagePaths, direction, anchor)} */
+    @Deprecated
     public VisualElement findRelativeByImage(List<String> targetImagePaths, com.znsio.teswiz.entities.SpatialDirection direction, VisualElement anchor) {
         return this.visually.findRelativeByImage(targetImagePaths, direction, anchor);
     }
 
+    /** @deprecated use {@code getVisual().findByText(text, region)} */
+    @Deprecated
     public VisualElement findByText(String text, com.znsio.teswiz.entities.VisualRegion region) {
         return this.visually.findByText(text, region);
     }
 
+    /** @deprecated use {@code getVisual().findByImage(imageTemplatePaths, region)} */
+    @Deprecated
     public VisualElement findByImage(List<String> imageTemplatePaths, com.znsio.teswiz.entities.VisualRegion region) {
         return this.visually.findByImage(imageTemplatePaths, region);
     }
 
+    /** @deprecated use {@code getVisual().findAllByText(text, region)} */
+    @Deprecated
     public List<VisualElement> findAllByText(String text, com.znsio.teswiz.entities.VisualRegion region) {
         return this.visually.findAllByText(text, region);
     }
 
+    /** @deprecated use {@code getVisual().findAllByImage(imageTemplatePaths, region)} */
+    @Deprecated
     public List<VisualElement> findAllByImage(List<String> imageTemplatePaths, com.znsio.teswiz.entities.VisualRegion region) {
         return this.visually.findAllByImage(imageTemplatePaths, region);
     }
@@ -1405,14 +1463,14 @@ public class Driver {
         }
         switch (visualBy.getType()) {
             case OCR_TEXT:
-                VisualElement ocrElement = visualBy.getRegion() != null ? findByText(visualBy.getText(), visualBy.getRegion()) : findByText(visualBy.getText());
+                VisualElement ocrElement = visualBy.getRegion() != null ? this.visually.findByText(visualBy.getText(), visualBy.getRegion()) : this.visually.findByText(visualBy.getText());
                 return ocrElement != null ? ocrElement.toWebElement() : null;
             case IMAGE_TEMPLATE:
-                VisualElement imageElement = visualBy.getRegion() != null ? findByImage(List.of(visualBy.getImagePath()), visualBy.getConfidenceThreshold(), visualBy.getRegion()) : findByImage(List.of(visualBy.getImagePath()), visualBy.getConfidenceThreshold());
+                VisualElement imageElement = visualBy.getRegion() != null ? this.visually.findByImage(List.of(visualBy.getImagePath()), visualBy.getConfidenceThreshold(), visualBy.getRegion()) : this.visually.findByImage(List.of(visualBy.getImagePath()), visualBy.getConfidenceThreshold());
                 return imageElement != null ? imageElement.toWebElement() : null;
             case FALLBACK_TEXT_IMAGE:
             default:
-                VisualElement fallbackElement = visualBy.getRegion() != null ? findByTextOrImage(visualBy.getText(), List.of(visualBy.getImagePath()), visualBy.getRegion()) : findByTextOrImage(visualBy.getText(), List.of(visualBy.getImagePath()));
+                VisualElement fallbackElement = visualBy.getRegion() != null ? this.visually.findByTextOrImage(visualBy.getText(), List.of(visualBy.getImagePath()), visualBy.getRegion()) : this.visually.findByTextOrImage(visualBy.getText(), List.of(visualBy.getImagePath()));
                 return fallbackElement != null ? fallbackElement.toWebElement() : null;
         }
     }
@@ -1424,14 +1482,14 @@ public class Driver {
         List<VisualElement> visualElements;
         switch (visualBy.getType()) {
             case OCR_TEXT:
-                visualElements = findAllByText(visualBy.getText());
+                visualElements = this.visually.findAllByText(visualBy.getText());
                 break;
             case IMAGE_TEMPLATE:
-                visualElements = findAllByImage(List.of(visualBy.getImagePath()), visualBy.getConfidenceThreshold());
+                visualElements = this.visually.findAllByImage(List.of(visualBy.getImagePath()), visualBy.getConfidenceThreshold());
                 break;
             case FALLBACK_TEXT_IMAGE:
             default:
-                visualElements = findAllByTextOrImage(visualBy.getText(), List.of(visualBy.getImagePath()));
+                visualElements = this.visually.findAllByTextOrImage(visualBy.getText(), List.of(visualBy.getImagePath()));
                 break;
         }
         return visualElements.stream().map(VisualElement::toWebElement).collect(Collectors.toList());
