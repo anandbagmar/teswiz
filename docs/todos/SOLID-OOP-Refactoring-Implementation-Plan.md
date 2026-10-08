@@ -264,7 +264,7 @@ Phase 5  browser_config unify  — independent of 0–4; benefits from 3
 - [x] 2.1 DriverManager contract — scoped to web engines: `WebEngineDriverManager` interface
 - [x] 2.2 Driver create/close registry — `WebEngine`-keyed registry in `BrowserDriverManager`
 - [ ] 2.x (deferred) Normalize `AppiumDriverManager` to return `WebDriverSessionResult`, and collapse the `Platform` create switch + `driver.getType()` close switch in `Drivers`. Deferred: this needs relocating side-effectful `Driver` construction out of `AppiumDriverManager` (device-log capture, session-reuse counters, notifications), a materially wider blast radius than the web-engine dispatch. Best done alongside Phase 4's Driver decomposition.
-- [ ] 3.1 TeswizConfiguration holder
+- [x] 3.1 TeswizConfiguration holder — holder owns the 3 config maps with typed/NPE-safe getters; Setup delegates
 - [ ] 3.2 Split Setup (ConfigLoader / PlatformTagResolver / ApplitoolsConfigFactory / CucumberArgsBuilder / ReportPortalEnvironmentPublisher)
 - [ ] 4.1 Extract MobileGestures / ElementHighlighter / ElementFinder; drop Visual pass-throughs
 - [ ] 4.2 Visual behind VisualEngine strategy

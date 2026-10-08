@@ -102,9 +102,10 @@ public class Setup {
     public static final String FRAMEWORK = "FRAMEWORK";
     public static final String FRAMEWORK_CUCUMBER = "cucumber";
     public static final String FRAMEWORK_TESTNG = "testng";
-    private static final Map<String, String> configs = new HashMap<>();
-    private static final Map<String, Boolean> configsBoolean = new HashMap<>();
-    private static final Map<String, Integer> configsInteger = new HashMap<>();
+    private static final TeswizConfiguration CONFIGURATION = new TeswizConfiguration();
+    private static final Map<String, String> configs = CONFIGURATION.strings();
+    private static final Map<String, Boolean> configsBoolean = CONFIGURATION.booleans();
+    private static final Map<String, Integer> configsInteger = CONFIGURATION.integers();
     private static final String RP_DESCRIPTION = "RP_DESCRIPTION";
     private static final String RP_DEFAULT_DESCRIPTION = "End-2-End scenarios";
     private static Map<String, Map> loadedCapabilityFile;
@@ -154,9 +155,7 @@ public class Setup {
 
     private static void reset() {
         properties = null;
-        configs.clear();
-        configsBoolean.clear();
-        configsInteger.clear();
+        CONFIGURATION.clear();
         applitoolsConfiguration.clear();
         SensitiveDataMasker.setShowSensitiveData(false);
         SensitiveDataMasker.resetSensitiveKeysToDefault();
@@ -810,27 +809,27 @@ public class Setup {
     }
 
     public static String getFromConfigs(String key) {
-        return configs.get(key);
+        return CONFIGURATION.getString(key);
     }
 
     public static String getBooleanValueAsStringFromConfigs(String key) {
-        return String.valueOf(configsBoolean.get(key));
+        return CONFIGURATION.getBooleanAsString(key);
     }
 
     public static boolean getBooleanValueFromConfigs(String key) {
-        return Boolean.TRUE.equals(configsBoolean.get(key));
+        return CONFIGURATION.getBoolean(key);
     }
 
     public static void addBooleanValueToConfigs(String key, boolean value) {
-        configsBoolean.put(key, value);
+        CONFIGURATION.putBoolean(key, value);
     }
 
     public static String getStringValueFromConfigs(String key, String defaultValue) {
-        return configs.getOrDefault(key, defaultValue);
+        return CONFIGURATION.getStringOrDefault(key, defaultValue);
     }
 
     public static void addToConfigs(String key, String value) {
-        configs.put(key, value);
+        CONFIGURATION.putString(key, value);
     }
 
     /**
@@ -839,7 +838,7 @@ public class Setup {
      * key would otherwise throw.
      */
     public static int getIntegerValueFromConfigs(String key) {
-        return configsInteger.getOrDefault(key, 0);
+        return CONFIGURATION.getInteger(key);
     }
 
     public static boolean isTestNgExecutionMode() {
@@ -851,11 +850,11 @@ public class Setup {
     }
 
     public static String getIntegerValueAsStringFromConfigs(String key) {
-        return String.valueOf(configsInteger.getOrDefault(key, 0));
+        return CONFIGURATION.getIntegerAsString(key);
     }
 
     public static void addIntegerValueToConfigs(String key, Integer value) {
-        configsInteger.put(key, value);
+        CONFIGURATION.putInteger(key, value);
     }
 
     public static String getTestDataValueAsStringForEnvironmentFor(String key) {
