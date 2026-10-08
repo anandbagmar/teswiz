@@ -60,7 +60,11 @@ For the complete property list and all available defaults, use the
     ENVIRONMENT_CONFIG_FILE=./src/test/resources/environments.json -> Environment specific configuration file
     IS_FAILING_TEST_SUITE=false -> Do not run failing tests. Refer to [Hard Gate](hard-gate.md) for more information
     IS_VISUAL=false -> Should enable Applitools Visual Testing? If yes, set to true
-    VISUAL_ACTION_WAIT_SECONDS=0 -> Configurable post-action wait delay in seconds applied after visual element clicks/inputs (default: 0).
+    IS_OCR_ENABLED=false -> Enable the embedded, offline Visual OCR & image-recognition subsystem (findByText/findByImage, waitUntilVisualElementIsVisible*, etc.). Default is false; see [OCR & Image Recognition](../subsystems/ocr-and-image-recognition.md).
+    VISUAL_CONFIDENCE_THRESHOLD=0.85 -> Minimum match confidence (0.0 to 1.0) for a visual element to be considered a match (default: 0.85).
+    VISUAL_ELEMENT_RETRY_ATTEMPTS=3 -> Number of attempts when polling for a visual element in count/at-least verifications and when deriving the default waitUntilVisualElementIsVisible* budget (default: 3).
+    VISUAL_ELEMENT_RETRY_DELAY_SECONDS=1 -> Delay in seconds between visual-element polling attempts; also the inter-poll sleep for waitUntilVisualElementIsVisible* (default: 1).
+    VISUAL_ACTION_WAIT_SECONDS=1 -> Configurable post-action settle delay in seconds applied after visual element clicks/inputs, and captured between the before/after screenshots of each visual action (default: 1).
     HIGHLIGHT_ELEMENTS=true -> Should interactive UI elements (Selenium, Playwright-Java, Playwright-TS, Appium, OCR/Visual) be highlighted with an orange-red box during test execution? Default is true. Previous highlights are automatically cleared before the next action.
     FAIL_TEST_ON_VISUAL_DIFFERENCE=true -> 
         If visual testing is enabled, and this is set to true, then the test will fail if there are any visual differences found

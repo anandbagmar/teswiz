@@ -19,8 +19,9 @@
   - [3. Fallback Strategies (`findByTextOrImage` & `findByImageOrText`)](#3-fallback-strategies-findbytextorimage--findbyimageortext)
   - [4. Extract All Visual Elements (`findAllByText` & `findAllByImage`)](#4-extract-all-visual-elements-findallbytext--findallbyimage)
   - [BDD Step Definitions for Multi-Match & Positions](#bdd-step-definitions-for-multi-match--positions)
-  - [5. Proximity & Spatial Relative Locators (`findRelativeByText` & `findRelativeByImage`)](#5-proximity--spatial-relative-locators-findrelativebytext--findrelativebyimage)
-  - [6. Dynamic Proxy Locators (`VisualBy`)](#6-dynamic-proxy-locators-visualby)
+  - [5. Wait Until an Element Becomes Visible (`waitUntilVisualElementIsVisible*`)](#5-wait-until-an-element-becomes-visible-waituntilvisualelementisvisible)
+  - [6. Proximity & Spatial Relative Locators (`findRelativeByText` & `findRelativeByImage`)](#6-proximity--spatial-relative-locators-findrelativebytext--findrelativebyimage)
+  - [7. Dynamic Proxy Locators (`VisualBy`)](#7-dynamic-proxy-locators-visualby)
 - [VisualElement & Web Actions with Auto-Highlighting](#visualelement--web-actions-with-auto-highlighting)
 - [Exception Handling](#exception-handling)
 - [Verification & Build Validation](#verification--build-validation)
@@ -114,23 +115,34 @@ The visual subsystem handles screen resolutions, High-DPI displays (macOS Retina
 Configure visual parameters in canonical template `configs/teswiz/teswiz_config.properties.template` or your project execution `.properties` file:
 
 ```properties
-# Enable/Disable Visual OCR & Image Recognition capability
+# Enable/Disable Visual OCR & Image Recognition capability (default false)
 IS_OCR_ENABLED=false
 
 # Visual match confidence threshold (0.0 to 1.0, default 0.85)
 VISUAL_CONFIDENCE_THRESHOLD=0.85
 
-# Configurable post-action wait delay in seconds after visual clicks/inputs (default 0)
-VISUAL_ACTION_WAIT_SECONDS=0
+# Number of attempts and per-attempt delay (seconds) used when polling for a visual element -
+# e.g. count/at-least verifications and waitUntilVisualElementIsVisible* (defaults: 3 attempts, 1 second).
+VISUAL_ELEMENT_RETRY_ATTEMPTS=3
+VISUAL_ELEMENT_RETRY_DELAY_SECONDS=1
+
+# Configurable post-action settle delay in seconds after visual clicks/inputs (default 1)
+VISUAL_ACTION_WAIT_SECONDS=1
 
 # Enable/Disable interactive element highlighting (default true)
 HIGHLIGHT_ELEMENTS=true
 ```
 
+> The default maximum wait for `waitUntilVisualElementIsVisible*` (when no explicit timeout is passed) is derived
+> from `VISUAL_ELEMENT_RETRY_ATTEMPTS x VISUAL_ELEMENT_RETRY_DELAY_SECONDS`, and the inter-poll sleep is
+> `VISUAL_ELEMENT_RETRY_DELAY_SECONDS`.
+
 ### Environment Variable Overrides
 System properties or environment variables take precedence over configuration files:
 - `IS_OCR_ENABLED=true`
 - `VISUAL_CONFIDENCE_THRESHOLD=0.90`
+- `VISUAL_ELEMENT_RETRY_ATTEMPTS=5`
+- `VISUAL_ELEMENT_RETRY_DELAY_SECONDS=2`
 - `VISUAL_ACTION_WAIT_SECONDS=2`
 - `HIGHLIGHT_ELEMENTS=true`
 
@@ -225,8 +237,54 @@ Then I verify at least 1 visual elements are present using image template "src/t
 ```
 
 
+### 5. Wait Until an Element Becomes Visible (`waitUntilVisualElementIsVisible*`)
 
-### 5. Proximity & Spatial Relative Locators (`findRelativeByText` & `findRelativeByImage`)
+For dynamic screens where an element appears after a delay (animations, async loads), poll until the element is
+located on screen or a maximum wait budget elapses. A visual element is reported as *visible* when the OCR/image
+matcher locates it on the current screen capture - there is no separate visibility flag. These methods work across
+every engine (Selenium, Playwright-Java, Playwright-TS, Appium) because they poll the same engine-agnostic
+locators used elsewhere.
+
+Each locator variant has two overloads: one that defaults the maximum wait from configuration, and one that takes
+an explicit maximum wait in seconds. If the element does not appear within the budget, the test fails with a
+descriptive assertion.
+
+```java
+VisualOcrBL visual = new VisualOcrBL();
+
+// By OCR text - default wait budget (VISUAL_ELEMENT_RETRY_ATTEMPTS x VISUAL_ELEMENT_RETRY_DELAY_SECONDS)
+VisualElement banner = visual.waitUntilVisualElementIsVisibleByText("Order Confirmed");
+
+// By OCR text - explicit maximum wait of 15 seconds
+visual.waitUntilVisualElementIsVisibleByText("Order Confirmed", 15);
+
+// By image template (default / explicit timeout)
+visual.waitUntilVisualElementIsVisibleByImage("src/test/resources/images/spinner_done.png");
+visual.waitUntilVisualElementIsVisibleByImage("src/test/resources/images/spinner_done.png", 20);
+
+// Fallback: OCR text first, then image template (or the reverse)
+visual.waitUntilVisualElementIsVisibleByTextOrImage("Continue", "src/test/resources/images/continue.png", 10);
+visual.waitUntilVisualElementIsVisibleByImageOrText("src/test/resources/images/continue.png", "Continue", 10);
+```
+
+#### BDD Step Definitions for Wait Until Visible
+
+```gherkin
+# Default wait budget (from configuration)
+When I wait until visual element is visible using OCR text "Order Confirmed"
+When I wait until visual element is visible using image template "src/test/resources/images/spinner_done.png"
+When I wait until visual element is visible using fallback OCR text "Continue" or image template "src/test/resources/images/continue.png"
+When I wait until visual element is visible using fallback image template "src/test/resources/images/continue.png" or OCR text "Continue"
+
+# Explicit maximum wait in seconds
+When I wait until visual element is visible using OCR text "Order Confirmed" within 15 seconds
+When I wait until visual element is visible using image template "src/test/resources/images/spinner_done.png" within 20 seconds
+When I wait until visual element is visible using fallback OCR text "Continue" or image template "src/test/resources/images/continue.png" within 10 seconds
+When I wait until visual element is visible using fallback image template "src/test/resources/images/continue.png" or OCR text "Continue" within 10 seconds
+```
+
+
+### 6. Proximity & Spatial Relative Locators (`findRelativeByText` & `findRelativeByImage`)
 
 Locate targets relative to an anchor text/image on screen (`ABOVE`, `BELOW`, `LEFT_OF`, `RIGHT_OF`, `NEAR`):
 
@@ -239,7 +297,7 @@ submitBtn.click();
 VisualElement totalAmount = driver.findRelativeByText("Total", SpatialDirection.BELOW, "Subtotal");
 ```
 
-### 6. Dynamic Proxy Locators (`VisualBy`)
+### 7. Dynamic Proxy Locators (`VisualBy`)
 
 Use `VisualBy` locators seamlessly with standard `Driver.findElement` / `Driver.findElements` calls:
 
@@ -268,9 +326,23 @@ element.hover();                       // Mouse hover over center
 element.sendKeys("Search query");       // Focus & type text
 element.tap();                         // Mobile tap
 element.doubleTap();                   // Mobile double tap
+element.longPress();                   // Long-press (default 2s) / longPress(Duration)
 element.swipe(Direction.UP);           // W3C gesture swipe UP on element
 element.dragAndDropTo(targetElement); // Drag element center to target element
 ```
+
+Each visual element gesture is dispatched through the real input pipeline for the active engine. The dispatch
+order is Appium touch → browser native coordinate input (used by Playwright, so gestures also reach `<canvas>`
+content) → Selenium `Actions` → synthesised DOM events as a last resort. If a driver supports none of these for a
+given gesture, the action is logged as not performed rather than failing silently.
+
+### Before / After Screenshots on Visual Actions
+
+Every visual OCR action performed through the screen layer (click, double-click, hover, long-press, swipe, enter
+text, position/index/relative clicks, and the `tryClick*` variants) captures a **before** screenshot, performs the
+action, waits `VISUAL_ACTION_WAIT_SECONDS`, then captures an **after** screenshot. This makes the effect of each
+visual interaction traceable in the run artifacts. Inspection methods (`inspect*`) capture a single screenshot and
+perform no action.
 
 ---
 

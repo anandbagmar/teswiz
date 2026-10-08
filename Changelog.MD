@@ -1,3 +1,10 @@
+## Unreleased
+# Release Notes - teswiz (unreleased)
+## 🚀 Key Highlights & Enhancements
+### 👁️ Visual Subsystem — wait-until-visible and screen-layer consolidation
+* **New `waitUntilVisualElementIsVisible*` methods on `VisualOcrBL`.** Four locator variants - by OCR text, by image template, by fallback text-or-image, and by fallback image-or-text - each with a default-budget overload and an overload taking an explicit maximum wait in seconds. They poll the existing engine-agnostic finders until the element is located on screen (non-null = visible) or the budget elapses, then assert visibility. The default budget derives from `VISUAL_ELEMENT_RETRY_ATTEMPTS x VISUAL_ELEMENT_RETRY_DELAY_SECONDS`; the inter-poll sleep is `VISUAL_ELEMENT_RETRY_DELAY_SECONDS`. Paired Gherkin steps (default and `within {int} seconds`) are added for all four variants. Works for Selenium, `playwright-java`, `playwright-ts` and Appium with no new TypeScript worker primitive, because the polling lives in the business layer and drives the already-abstract find operations.
+* **The four `VisualOcrScreen` platform classes are consolidated behind a shared template.** `VisualOcrScreen` is now a pure abstract contract; a new `AbstractVisualOcrScreen` owns the single find → assert → highlight → screenshot(before) → act → wait → screenshot(after) choreography plus `parsePositionIndex`. The Android/iOS/web/playwright-java classes reduce to a constructor (Android/iOS additionally override an `afterTextEntry()` hook to dismiss the keyboard), removing roughly 1,400 lines of duplication. The contract stays abstract with a no-arg constructor so the dynamically generated `playwright-ts` bridge continues to work unchanged.
+
 ## 1.0.4305
 # Release Notes - teswiz v1.0.4305
 ## 🚀 Key Highlights & Enhancements
