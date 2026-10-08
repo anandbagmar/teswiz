@@ -338,50 +338,12 @@ public class Setup {
         registerEnvironmentIssueFilterIfEnabled();
         com.znsio.teswiz.analytics.TelemetryCollector.sendRunStartedEvent();
 
-        String rpAttributes = String.format(
-                "AutomationBranch:%s; ExecutedOn:%s; Installer:%s; OS:%s; ParallelCount:%d; " +
-                "Platform:%s; RunInCI:%s; Tags:%s; TargetEnvironment:%s; Username:%s; " +
-                "VisualEnabled:%s; BuildInitiationReason:%s; ",
-                configs.get(BRANCH_NAME), configs.get(EXECUTED_ON), configs.get(APP_PATH), OsUtils.getOsName(),
-                configsInteger.get(PARALLEL), currentPlatform.name(), configsBoolean.get(RUN_IN_CI),
-                configs.get(TAG_FOR_REPORTPORTAL), configs.get(TARGET_ENVIRONMENT), OsUtils.getUserName(),
-                configsBoolean.get(IS_VISUAL), configs.get(BUILD_INITIATION_REASON));
-
-        if (currentPlatform.equals(Platform.web) || currentPlatform.equals(Platform.electron)) {
-            rpAttributes += String.format("WebEngine:%s; ", configs.get(WEB_ENGINE));
-        }
-
         String providerName = getCloudNameFromCapabilities();
         if (null == providerName || providerName.isBlank() || NOT_SET.equalsIgnoreCase(providerName)) {
             providerName = "local";
         }
-        rpAttributes += String.format("Provider:%s; ", providerName);
 
-        if (!configs.get(APP_VERSION).equals(NOT_SET)) {
-            rpAttributes += String.format("AppVersion: %s; ", configs.get(APP_VERSION));
-        }
-
-        if (!configs.get(BUILD_ID).equals(NOT_SET)) {
-            rpAttributes += String.format("BuildId: %s; ", configs.get(BUILD_ID));
-        }
-
-        LOGGER.info("ReportPortal Test Execution Attributes: {}", rpAttributes);
-
-        // properties needed for atd
-        System.setProperty(CLOUD_USERNAME, configs.get(CLOUD_USERNAME));
-        System.setProperty(CLOUD_KEY, configs.get(CLOUD_KEY));
-        System.setProperty(CONFIG_FILE, configs.get(CONFIG_FILE));
-        System.setProperty(CAPS, configs.get(CAPS));
-        System.setProperty("Platform", currentPlatform.name());
-        System.setProperty("atd_" + currentPlatform.name() + "_app_local", configs.get(APP_PATH));
-        if (null != configs.get(PROXY_URL)) {
-            System.setProperty(PROXY_URL, configs.get(PROXY_URL));
-        }
-
-        // properties needed for ReportPortal.io
-        System.setProperty("rp.description", configs.get(APP_NAME) + " " + configs.get(RP_DESCRIPTION) + " on " + currentPlatform.name());
-        System.setProperty("rp.launch", configs.get(LAUNCH_NAME));
-        System.setProperty("rp.attributes", rpAttributes);
+        new ReportPortalEnvironmentPublisher(CONFIGURATION, RP_DESCRIPTION).publish(currentPlatform, providerName);
     }
 
     private static void printStringConfigsMap() {
