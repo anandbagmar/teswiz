@@ -833,8 +833,13 @@ public class Setup {
         configs.put(key, value);
     }
 
+    /**
+     * Returns the integer config value for the given key, or {@code 0} when the key is absent.
+     * Returning a safe default avoids the {@link NullPointerException} that unboxing a missing
+     * key would otherwise throw.
+     */
     public static int getIntegerValueFromConfigs(String key) {
-        return configsInteger.get(key);
+        return configsInteger.getOrDefault(key, 0);
     }
 
     public static boolean isTestNgExecutionMode() {
@@ -846,7 +851,7 @@ public class Setup {
     }
 
     public static String getIntegerValueAsStringFromConfigs(String key) {
-        return String.valueOf(configsInteger.get(key));
+        return String.valueOf(configsInteger.getOrDefault(key, 0));
     }
 
     public static void addIntegerValueToConfigs(String key, Integer value) {
@@ -865,7 +870,15 @@ public class Setup {
         return currentPlatform;
     }
 
+    /**
+     * Returns an unmodifiable view of the loaded capability file so callers cannot mutate the
+     * internal map. Nested capability maps remain mutable for provider setup. Returns an empty
+     * map when capabilities have not been loaded.
+     */
     public static Map<String, Map> getLoadedCapabilities() {
-        return loadedCapabilityFile;
+        if (null == loadedCapabilityFile) {
+            return Collections.emptyMap();
+        }
+        return Collections.unmodifiableMap(loadedCapabilityFile);
     }
 }

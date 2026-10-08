@@ -1269,7 +1269,12 @@ public class Visual {
             }
             if (attempt < maxAttempts) {
                 LOGGER.info("Attempt {} of {}: Text '{}' not found via OCR, retrying after {}ms...", attempt, maxAttempts, text, retryDelayMs);
-                try { Thread.sleep(retryDelayMs); } catch (InterruptedException ignored) {}
+                try {
+                    Thread.sleep(retryDelayMs);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
             }
         }
         throw new com.znsio.teswiz.exceptions.NoSuchVisualElementException(
@@ -1290,7 +1295,12 @@ public class Visual {
             }
             if (attempt < maxAttempts) {
                 LOGGER.info("Attempt {} of {}: Text '{}' not found via OCR in region {}, retrying after {}ms...", attempt, maxAttempts, text, regionText, retryDelayMs);
-                try { Thread.sleep(retryDelayMs); } catch (InterruptedException ignored) {}
+                try {
+                    Thread.sleep(retryDelayMs);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
             }
         }
         throw new com.znsio.teswiz.exceptions.NoSuchVisualElementException(
@@ -1325,7 +1335,12 @@ public class Visual {
             }
             if (attempt < maxAttempts) {
                 LOGGER.info("Attempt {} of {}: Image templates {} not matched in region {}, retrying after {}ms...", attempt, maxAttempts, imageTemplatePaths, regionText, retryDelayMs);
-                try { Thread.sleep(retryDelayMs); } catch (InterruptedException ignored) {}
+                try {
+                    Thread.sleep(retryDelayMs);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
             }
         }
         throw new com.znsio.teswiz.exceptions.NoSuchVisualElementException(
