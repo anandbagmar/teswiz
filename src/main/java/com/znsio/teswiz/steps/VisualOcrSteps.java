@@ -181,5 +181,45 @@ public class VisualOcrSteps {
     public void iVerifyVisualElementIsPresentUsingOcrTextInRegion(String elementName, String ocrText, int x, int y, int width, int height) {
         new VisualOcrBL().verifyVisualElementIsPresentInRegion(elementName, ocrText, x, y, width, height);
     }
+
+    @When("I wait until visual element is visible using OCR text {string}")
+    public void iWaitUntilVisualElementIsVisibleUsingOcrText(String ocrText) {
+        new VisualOcrBL().waitUntilVisualElementIsVisibleByText(ocrText);
+    }
+
+    @When("I wait until visual element is visible using OCR text {string} within {int} seconds")
+    public void iWaitUntilVisualElementIsVisibleUsingOcrTextWithinSeconds(String ocrText, int maxWaitSeconds) {
+        new VisualOcrBL().waitUntilVisualElementIsVisibleByText(ocrText, maxWaitSeconds);
+    }
+
+    @When("I wait until visual element is visible using image template {string}")
+    public void iWaitUntilVisualElementIsVisibleUsingImageTemplate(String imageTemplatePath) {
+        new VisualOcrBL().waitUntilVisualElementIsVisibleByImage(imageTemplatePath);
+    }
+
+    @When("I wait until visual element is visible using image template {string} within {int} seconds")
+    public void iWaitUntilVisualElementIsVisibleUsingImageTemplateWithinSeconds(String imageTemplatePath, int maxWaitSeconds) {
+        new VisualOcrBL().waitUntilVisualElementIsVisibleByImage(imageTemplatePath, maxWaitSeconds);
+    }
+
+    @When("I wait until visual element is visible using fallback OCR text {string} or image template {string}")
+    public void iWaitUntilVisualElementIsVisibleUsingFallbackOcrTextOrImageTemplate(String ocrText, String imageTemplatePath) {
+        new VisualOcrBL().waitUntilVisualElementIsVisibleByTextOrImage(ocrText, imageTemplatePath);
+    }
+
+    @When("I wait until visual element is visible using fallback OCR text {string} or image template {string} within {int} seconds")
+    public void iWaitUntilVisualElementIsVisibleUsingFallbackOcrTextOrImageTemplateWithinSeconds(String ocrText, String imageTemplatePath, int maxWaitSeconds) {
+        new VisualOcrBL().waitUntilVisualElementIsVisibleByTextOrImage(ocrText, imageTemplatePath, maxWaitSeconds);
+    }
+
+    @When("I wait until visual element is visible using fallback image template {string} or OCR text {string}")
+    public void iWaitUntilVisualElementIsVisibleUsingFallbackImageTemplateOrOcrText(String imageTemplatePath, String ocrText) {
+        new VisualOcrBL().waitUntilVisualElementIsVisibleByImageOrText(imageTemplatePath, ocrText);
+    }
+
+    @When("I wait until visual element is visible using fallback image template {string} or OCR text {string} within {int} seconds")
+    public void iWaitUntilVisualElementIsVisibleUsingFallbackImageTemplateOrOcrTextWithinSeconds(String imageTemplatePath, String ocrText, int maxWaitSeconds) {
+        new VisualOcrBL().waitUntilVisualElementIsVisibleByImageOrText(imageTemplatePath, ocrText, maxWaitSeconds);
+    }
 }
 

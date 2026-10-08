@@ -159,6 +159,56 @@ public class VisualOcrBL {
     }
 
     // ------------------------------------------------------------------------
+    // Wait until visible
+    //
+    // Polls the matching finder until the element appears (non-null) or the wait budget elapses. The locator
+    // engine returns a VisualElement only when it is matched on the current screen capture, so a non-null result
+    // is the visibility signal. Each variant has an overload that takes an explicit maximum wait in seconds and
+    // one that defaults the budget from configuration. Works for every engine (Selenium, Playwright-Java,
+    // Playwright-TS, Appium) because it drives the already engine-agnostic findVisualElementBy* methods.
+    // ------------------------------------------------------------------------
+
+    public VisualElement waitUntilVisualElementIsVisibleByText(String ocrText) {
+        return waitUntilVisualElementIsVisibleByText(ocrText, defaultMaxWaitSeconds());
+    }
+
+    public VisualElement waitUntilVisualElementIsVisibleByText(String ocrText, int maxWaitSeconds) {
+        LOGGER.info("Waiting up to {}s for visual element to be visible by OCR text '{}'", maxWaitSeconds, ocrText);
+        return pollUntilVisible(() -> visualOcrScreen().findVisualElementByText(ocrText), maxWaitSeconds,
+                "OCR text '" + ocrText + "'");
+    }
+
+    public VisualElement waitUntilVisualElementIsVisibleByImage(String imageTemplatePath) {
+        return waitUntilVisualElementIsVisibleByImage(imageTemplatePath, defaultMaxWaitSeconds());
+    }
+
+    public VisualElement waitUntilVisualElementIsVisibleByImage(String imageTemplatePath, int maxWaitSeconds) {
+        LOGGER.info("Waiting up to {}s for visual element to be visible by image template '{}'", maxWaitSeconds, imageTemplatePath);
+        return pollUntilVisible(() -> visualOcrScreen().findVisualElementByImage(List.of(imageTemplatePath)), maxWaitSeconds,
+                "image template '" + imageTemplatePath + "'");
+    }
+
+    public VisualElement waitUntilVisualElementIsVisibleByTextOrImage(String ocrText, String imageTemplatePath) {
+        return waitUntilVisualElementIsVisibleByTextOrImage(ocrText, imageTemplatePath, defaultMaxWaitSeconds());
+    }
+
+    public VisualElement waitUntilVisualElementIsVisibleByTextOrImage(String ocrText, String imageTemplatePath, int maxWaitSeconds) {
+        LOGGER.info("Waiting up to {}s for visual element to be visible by OCR text '{}' or image template '{}'", maxWaitSeconds, ocrText, imageTemplatePath);
+        return pollUntilVisible(() -> visualOcrScreen().findVisualElementByTextOrImage(ocrText, List.of(imageTemplatePath)), maxWaitSeconds,
+                "OCR text '" + ocrText + "' or image template '" + imageTemplatePath + "'");
+    }
+
+    public VisualElement waitUntilVisualElementIsVisibleByImageOrText(String imageTemplatePath, String ocrText) {
+        return waitUntilVisualElementIsVisibleByImageOrText(imageTemplatePath, ocrText, defaultMaxWaitSeconds());
+    }
+
+    public VisualElement waitUntilVisualElementIsVisibleByImageOrText(String imageTemplatePath, String ocrText, int maxWaitSeconds) {
+        LOGGER.info("Waiting up to {}s for visual element to be visible by image template '{}' or OCR text '{}'", maxWaitSeconds, imageTemplatePath, ocrText);
+        return pollUntilVisible(() -> visualOcrScreen().findVisualElementByImageOrText(List.of(imageTemplatePath), ocrText), maxWaitSeconds,
+                "image template '" + imageTemplatePath + "' or OCR text '" + ocrText + "'");
+    }
+
+    // ------------------------------------------------------------------------
     // Presence verification
     // ------------------------------------------------------------------------
 
@@ -529,6 +579,45 @@ public class VisualOcrBL {
 
     private List<VisualElement> findAllVisualElementsByImagePathsOrText(List<String> imageTemplatePaths, String ocrText) {
         return visualOcrScreen().findAllVisualElementsByImageOrText(imageTemplatePaths, ocrText);
+    }
+
+    /**
+     * The default maximum wait budget (in seconds) for waitUntilVisible* when no explicit value is given.
+     * Derived from the existing retry configuration (attempts x per-attempt delay) so wait-until-visible stays
+     * consistent with the rest of the visual retry behaviour and needs no separate config property.
+     *
+     * @return the default wait budget in seconds, at least one
+     */
+    private int defaultMaxWaitSeconds() {
+        int attempts = Math.max(1, Setup.getIntegerValueFromConfigs(Setup.VISUAL_ELEMENT_RETRY_ATTEMPTS));
+        int delaySeconds = Math.max(1, Setup.getIntegerValueFromConfigs(Setup.VISUAL_ELEMENT_RETRY_DELAY_SECONDS));
+        return attempts * delaySeconds;
+    }
+
+    /**
+     * Polls a single-element finder until it returns a visible (non-null) element or the wait budget elapses,
+     * asserting the element was found. A non-null result from the finder is the visibility signal: the locator
+     * engine returns an element only when it is matched on the current screen capture.
+     *
+     * @param finder          supplies a fresh find result on each poll
+     * @param maxWaitSeconds  the maximum time to wait, in seconds (at least one)
+     * @param matcherText     a human description of the locator, for logging and assertion messages
+     * @return the located visible element
+     */
+    private VisualElement pollUntilVisible(Supplier<VisualElement> finder, int maxWaitSeconds, String matcherText) {
+        int budgetSeconds = Math.max(1, maxWaitSeconds);
+        int delaySeconds = Math.max(1, Setup.getIntegerValueFromConfigs(Setup.VISUAL_ELEMENT_RETRY_DELAY_SECONDS));
+        long deadline = System.currentTimeMillis() + budgetSeconds * 1000L;
+        VisualElement element = finder.get();
+        while (element == null && System.currentTimeMillis() < deadline) {
+            sleepQuietly(delaySeconds * 1000);
+            element = finder.get();
+        }
+        LOGGER.info("Wait for visual element by {} completed: {}", matcherText, describe(element));
+        assertThat(element)
+                .as("Visual element matched by " + matcherText + " should become visible within " + budgetSeconds + "s")
+                .isNotNull();
+        return element;
     }
 
     private List<VisualElement> pollUntilAtLeastN(Supplier<List<VisualElement>> query, int minCount) {
