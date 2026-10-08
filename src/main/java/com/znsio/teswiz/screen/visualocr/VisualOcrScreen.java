@@ -8,6 +8,16 @@ import com.znsio.teswiz.entities.VisualRegion;
 import com.znsio.teswiz.runner.VisualElement;
 import com.znsio.teswiz.screen.ScreenRegistry;
 
+/**
+ * Visual OCR &amp; image-recognition screen contract (Feature -&gt; Step -&gt; BL -&gt; Screen pattern).
+ *
+ * <p>
+ * This type is deliberately an abstract contract with abstract operations and a no-arg constructor so it can be
+ * implemented two ways: by the convention-resolved platform classes (which extend
+ * {@link AbstractVisualOcrScreen} for the shared action choreography) and by the dynamically generated
+ * playwright-ts bridge (which subclasses this contract and routes the abstract methods to a TypeScript worker).
+ * Keep the operations abstract and this constructor accessible so both paths continue to work.
+ */
 public abstract class VisualOcrScreen {
 
     public static VisualOcrScreen get() {
@@ -54,11 +64,4 @@ public abstract class VisualOcrScreen {
     public abstract boolean tryClickVisualElementByTextOrImage(String elementName, String ocrText, List<String> imagePaths);
     public abstract boolean tryClickVisualElementByImageOrText(String elementName, List<String> imagePaths, String ocrText);
     public abstract boolean tryClickVisualElementRelativeByText(String elementName, String targetText, SpatialDirection direction, String anchorText);
-
-    protected void waitForVisualActionIfConfigured() {
-        int waitSeconds = com.znsio.teswiz.runner.Setup.getIntegerValueFromConfigs(com.znsio.teswiz.runner.Setup.VISUAL_ACTION_WAIT_SECONDS);
-        if (waitSeconds > 0) {
-            com.znsio.teswiz.tools.Wait.waitFor(waitSeconds);
-        }
-    }
 }
