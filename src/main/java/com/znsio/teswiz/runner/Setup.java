@@ -519,34 +519,11 @@ public class Setup {
             LOGGER.info("\tTags not specified");
             launchName += " - " + currentPlatform;
         } else {
-            if (providedTags.contains("multiuser-android-web")) {
-                currentPlatform = Platform.android;
+            PlatformTagResolver.Resolution resolution = PlatformTagResolver.resolve(providedTags);
+            if (null != resolution) {
+                currentPlatform = resolution.platform();
                 inferredTags = providedTags + AND_NOT_WIP;
-                launchName += " - Real User Simulation on Android & Web";
-            } else if (providedTags.contains("multiuser-android")) {
-                currentPlatform = Platform.android;
-                inferredTags = providedTags + AND_NOT_WIP;
-                launchName += " - Real User Simulation on multiple Androids";
-            } else if (providedTags.contains("multiuser-web")) {
-                currentPlatform = Platform.web;
-                inferredTags = providedTags + AND_NOT_WIP;
-                launchName += " - Real User Simulation on Web";
-            } else if (providedTags.contains("multiuser-electron")) {
-                currentPlatform = Platform.electron;
-                inferredTags = providedTags + AND_NOT_WIP;
-                launchName += " - Real User Simulation on Electron";
-            } else if (providedTags.contains("multiuser-windows-web")) {
-                currentPlatform = Platform.windows;
-                inferredTags = providedTags + AND_NOT_WIP;
-                launchName += " - Real User Simulation on Windows & Web";
-            } else if (providedTags.contains("multiuser-windows-android")) {
-                currentPlatform = Platform.windows;
-                inferredTags = providedTags + AND_NOT_WIP;
-                launchName += " - Real User Simulation on Windows & Android";
-            } else if (providedTags.contains("multiuser-iOS")) {
-                currentPlatform = Platform.iOS;
-                inferredTags = providedTags + AND_NOT_WIP;
-                launchName += " - Real User Simulation on IOS";
+                launchName += resolution.launchNameSuffix();
             } else {
                 launchName += " - " + currentPlatform;
             }
