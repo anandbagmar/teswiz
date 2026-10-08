@@ -216,7 +216,9 @@ public class VisualElement {
     }
 
     private void performSendKeys(CharSequence... keysToSend) {
-        click();
+        // Focus the element first via the click WORKER, not the public click(): the public click() runs its own
+        // highlight/clear bracket, which would nest inside sendKeys's bracket and clear the highlight twice.
+        performClick();
         String keys = String.join("", keysToSend);
         LOGGER.info("Sending keys '{}' to visual element '{}'", keys, label);
         if (!hasInnerDriver()) {
