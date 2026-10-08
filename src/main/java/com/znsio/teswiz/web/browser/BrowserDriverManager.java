@@ -5,17 +5,14 @@ import com.znsio.teswiz.entities.Platform;
 import com.znsio.teswiz.entities.TEST_CONTEXT;
 import com.znsio.teswiz.exceptions.InvalidTestDataException;
 import com.znsio.teswiz.runner.Driver;
-import com.znsio.teswiz.runner.Drivers;
 import com.znsio.teswiz.runner.Runner;
-import com.znsio.teswiz.session.SessionHandle;
 import com.znsio.teswiz.web.WebEngine;
 import com.znsio.teswiz.web.playwright.PlaywrightJavaDriverManager;
-import com.znsio.teswiz.web.playwright.PlaywrightWebDriver;
 import com.znsio.teswiz.web.playwright.PlaywrightWorkerManager;
 import com.znsio.teswiz.web.provider.playwright.PlaywrightCloudSessionMetadataResolver;
 import com.znsio.teswiz.web.selenium.SeleniumDriverManager;
 
-import java.util.LinkedHashMap;
+import java.util.EnumMap;
 import java.util.Map;
 
 public final class BrowserDriverManager {
@@ -44,78 +41,45 @@ public final class BrowserDriverManager {
             Platform forPlatform, TestExecutionContext context, PlaywrightWorkerManager playwrightWorkerManager,
             PlaywrightJavaDriverManager playwrightJavaDriverManager,
             PlaywrightCloudSessionMetadataResolver cloudSessionMetadataResolver) {
-        WebEngine webEngine = Runner.getWebEngine();
         String runningOn = Runner.isRunningInCI() ? "CI" : "local";
         context.addTestState(TEST_CONTEXT.WEB_BROWSER_ON, runningOn);
-        switch (webEngine) {
-            case SELENIUM:
-                return SeleniumDriverManager.createWebSessionForUser(userPersona, browserName, forPlatform, context);
-            case PLAYWRIGHT_JAVA:
-                return playwrightJavaDriverManager.createWebSessionForUser(userPersona, browserName, forPlatform,
-                        context);
-            case PLAYWRIGHT_TS:
-                return createPlaywrightWebSessionForUser(userPersona, browserName, forPlatform, context,
-                        playwrightWorkerManager, cloudSessionMetadataResolver);
-            default:
-                throw new InvalidTestDataException(
-                        String.format("Unexpected web engine: '%s'", webEngine.getConfigValue()));
-        }
+        return driverManagerFor(Runner.getWebEngine(), playwrightWorkerManager, playwrightJavaDriverManager,
+                cloudSessionMetadataResolver)
+                .createWebSessionForUser(userPersona, browserName, forPlatform, context);
     }
 
     public static void closeWebDriver(String userPersona, Driver driver) {
-        switch (Runner.getWebEngine()) {
-            case SELENIUM:
-                SeleniumDriverManager.closeWebDriver(userPersona, driver);
-                break;
-            case PLAYWRIGHT_JAVA:
-                PLAYWRIGHT_JAVA_DRIVER_MANAGER.closeWebDriver(userPersona, driver);
-                break;
-            case PLAYWRIGHT_TS:
-                closePlaywrightWebDriver(driver);
-                break;
-            default:
-                throw new InvalidTestDataException(
-                        String.format("Unexpected web engine: '%s'", Runner.getWebEngine().getConfigValue()));
+        driverManagerFor(Runner.getWebEngine(), PLAYWRIGHT_WORKER_MANAGER, PLAYWRIGHT_JAVA_DRIVER_MANAGER,
+                PLAYWRIGHT_CLOUD_SESSION_METADATA_RESOLVER)
+                .closeWebDriver(userPersona, driver);
+    }
+
+    /**
+     * Resolves the {@link WebEngineDriverManager} for the given engine via a registry built from the
+     * supplied collaborators, replacing the former per-engine {@code switch} statements. The
+     * collaborators are passed in (rather than always using the static singletons) so tests can
+     * inject stubbed Playwright managers.
+     */
+    private static WebEngineDriverManager driverManagerFor(WebEngine webEngine,
+            PlaywrightWorkerManager playwrightWorkerManager,
+            PlaywrightJavaDriverManager playwrightJavaDriverManager,
+            PlaywrightCloudSessionMetadataResolver cloudSessionMetadataResolver) {
+        Map<WebEngine, WebEngineDriverManager> registry = new EnumMap<>(WebEngine.class);
+        registry.put(WebEngine.SELENIUM, new SeleniumWebEngineDriverManager());
+        registry.put(WebEngine.PLAYWRIGHT_JAVA, playwrightJavaDriverManager);
+        registry.put(WebEngine.PLAYWRIGHT_TS,
+                new PlaywrightTsWebEngineDriverManager(playwrightWorkerManager, cloudSessionMetadataResolver));
+        WebEngineDriverManager driverManager = registry.get(webEngine);
+        if (null == driverManager) {
+            throw new InvalidTestDataException(
+                    String.format("Unexpected web engine: '%s'", webEngine.getConfigValue()));
         }
+        return driverManager;
     }
 
     public static Driver createElectronDriverForUser(String userPersona, String browserName,
             Platform forPlatform, TestExecutionContext context) {
         return SeleniumDriverManager.createElectronDriverForUser(userPersona, browserName, forPlatform, context);
-    }
-
-    private static void closePlaywrightWebDriver(Driver driver) {
-        if (null != driver.getInnerDriver()) {
-            driver.getInnerDriver().quit();
-        }
-    }
-
-    private static WebDriverSessionResult createPlaywrightWebSessionForUser(String userPersona, String browserName,
-            Platform forPlatform, TestExecutionContext context,
-            PlaywrightWorkerManager playwrightWorkerManager,
-            PlaywrightCloudSessionMetadataResolver cloudSessionMetadataResolver) {
-        PlaywrightWorkerManager.ManagedPlaywrightSession managedSession = playwrightWorkerManager
-                .createManagedSession(userPersona, browserName, forPlatform, context);
-        PlaywrightWebDriver playwrightWebDriver = managedSession.createWebDriver();
-        playwrightWebDriver.get(com.znsio.teswiz.web.selenium.WebBaseUrlResolver.resolve(
-                Drivers.getAppNamefor(userPersona)));
-        SessionHandle sessionHandle = enrichSessionHandle(managedSession.sessionHandle(),
-                cloudSessionMetadataResolver.resolve(playwrightWebDriver,
-                        managedSession.sessionHandle().metadata().get("provider")));
-        return new WebDriverSessionResult(playwrightWebDriver,
-                Runner.isRunningInHeadlessMode(),
-                managedSession.createCapabilities(),
-                sessionHandle);
-    }
-
-    private static SessionHandle enrichSessionHandle(SessionHandle sessionHandle, Map<String, String> additionalMetadata) {
-        if (additionalMetadata.isEmpty()) {
-            return sessionHandle;
-        }
-        Map<String, String> mergedMetadata = new LinkedHashMap<>(sessionHandle.metadata());
-        mergedMetadata.putAll(additionalMetadata);
-        return new SessionHandle(sessionHandle.userPersona(), sessionHandle.platform(), sessionHandle.engine(),
-                sessionHandle.sessionId(), sessionHandle.artifactPath(), mergedMetadata);
     }
 
     public static void shutdownPlaywrightWorker(TestExecutionContext context) {

@@ -29,13 +29,14 @@ import com.znsio.teswiz.runner.Drivers;
 import com.znsio.teswiz.session.SessionHandle;
 import com.znsio.teswiz.web.WebEngine;
 import com.znsio.teswiz.web.browser.WebDriverSessionResult;
+import com.znsio.teswiz.web.browser.WebEngineDriverManager;
 import com.znsio.teswiz.web.provider.playwright.PlaywrightCloudSessionMetadataResolver;
 import com.znsio.teswiz.web.provider.playwright.PlaywrightExecutionProviderConfig;
 import com.znsio.teswiz.web.provider.playwright.PlaywrightExecutionProviderConfigResolver;
 import com.znsio.teswiz.web.provider.playwright.PlaywrightRemoteConnectionResolver;
 import com.znsio.teswiz.web.selenium.WebBaseUrlResolver;
 
-public final class PlaywrightJavaDriverManager {
+public final class PlaywrightJavaDriverManager implements WebEngineDriverManager {
     private final BiFunction<String, TestExecutionContext, PlaywrightBrowserConfig> browserConfigLookup;
     private final Supplier<PlaywrightExecutionProviderConfig> providerConfigSupplier;
     private final PlaywrightJavaRuntimeFactory runtimeFactory;
@@ -57,6 +58,7 @@ public final class PlaywrightJavaDriverManager {
         this.cloudSessionMetadataResolver = cloudSessionMetadataResolver;
     }
 
+    @Override
     public WebDriverSessionResult createWebSessionForUser(String userPersona, String browserName, Platform forPlatform,
             TestExecutionContext context) {
         PlaywrightBrowserConfig browserConfig = browserConfigLookup.apply(browserName, context);
@@ -72,6 +74,7 @@ public final class PlaywrightJavaDriverManager {
                 createCapabilities(browserConfig, sessionHandle), sessionHandle);
     }
 
+    @Override
     public void closeWebDriver(String userPersona, Driver driver) {
         if (null != driver.getInnerDriver()) {
             driver.getInnerDriver().quit();
