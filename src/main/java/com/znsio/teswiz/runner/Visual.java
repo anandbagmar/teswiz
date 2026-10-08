@@ -119,9 +119,24 @@ public class Visual {
     private Driver driverFacade;
     private final com.znsio.teswiz.visual.OcrEngine ocrEngine = new com.znsio.teswiz.visual.TesseractOcrEngine();
     private final com.znsio.teswiz.visual.ImageMatcher imageMatcher = new com.znsio.teswiz.visual.OpenCvImageMatcher();
+    private VisualFinder visualFinder;
 
     public void setDriverFacade(Driver driverFacade) {
         this.driverFacade = driverFacade;
+        this.visualFinder = new VisualFinder(this.innerDriver, driverFacade, this.ocrEngine, this.imageMatcher);
+    }
+
+    /**
+     * Returns the {@link VisualFinder}, lazily creating one if {@link #setDriverFacade(Driver)} has
+     * not been called yet (e.g. when a {@link Visual} is constructed directly in a test). The
+     * facade may be {@code null} in that case, matching the pre-extraction behaviour where the
+     * {@code null} facade was passed straight to the OCR / image engines.
+     */
+    private VisualFinder visualFinder() {
+        if (this.visualFinder == null) {
+            this.visualFinder = new VisualFinder(this.innerDriver, this.driverFacade, this.ocrEngine, this.imageMatcher);
+        }
+        return this.visualFinder;
     }
 
     public Driver getDriverFacade() {
@@ -1248,306 +1263,93 @@ public class Visual {
                 proxySettings);
     }
 
-    private int getVisualElementRetryAttempts() {
-        int attempts = Setup.getIntegerValueFromConfigs(Setup.VISUAL_ELEMENT_RETRY_ATTEMPTS);
-        return Math.max(1, attempts);
-    }
-
-    private int getVisualElementRetryDelayMs() {
-        int delaySeconds = Setup.getIntegerValueFromConfigs(Setup.VISUAL_ELEMENT_RETRY_DELAY_SECONDS);
-        return Math.max(1, delaySeconds) * 1000;
-    }
+    // ------------------------------------------------------------------------
+    // Visual element find surface - delegated to VisualFinder (see VisualFinder).
+    // Visual retains these public methods for compatibility; Driver's find
+    // pass-throughs and direct callers continue to work unchanged.
+    // ------------------------------------------------------------------------
 
     public VisualElement findByText(String text) {
-        verifyOcrEnabled();
-        LOGGER.info("Locating visual element by text '{}'", text);
-        int maxAttempts = getVisualElementRetryAttempts();
-        int retryDelayMs = getVisualElementRetryDelayMs();
-        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-            byte[] screenshot = captureScreenshotBytes();
-            VisualElement match = this.ocrEngine.findTextMatch(screenshot, text, null, this.driverFacade);
-            if (match != null) {
-                return match;
-            }
-            if (attempt < maxAttempts) {
-                LOGGER.info("Attempt {} of {}: Text '{}' not found via OCR, retrying after {}ms...", attempt, maxAttempts, text, retryDelayMs);
-                try {
-                    Thread.sleep(retryDelayMs);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    break;
-                }
-            }
-        }
-        throw new com.znsio.teswiz.exceptions.NoSuchVisualElementException(
-                String.format("Visual element with text '%s' not found via OCR.", text));
+        return visualFinder().findByText(text);
     }
 
     public VisualElement findByText(String text, com.znsio.teswiz.entities.VisualRegion region) {
-        verifyOcrEnabled();
-        String regionText = null != region ? region.toString() : "[entire screen]";
-        LOGGER.info("Locating visual element by text '{}' within region {}", text, regionText);
-        int maxAttempts = getVisualElementRetryAttempts();
-        int retryDelayMs = getVisualElementRetryDelayMs();
-        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-            byte[] screenshot = captureScreenshotBytes();
-            VisualElement match = this.ocrEngine.findTextMatch(screenshot, text, region, this.driverFacade);
-            if (match != null) {
-                return match;
-            }
-            if (attempt < maxAttempts) {
-                LOGGER.info("Attempt {} of {}: Text '{}' not found via OCR in region {}, retrying after {}ms...", attempt, maxAttempts, text, regionText, retryDelayMs);
-                try {
-                    Thread.sleep(retryDelayMs);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    break;
-                }
-            }
-        }
-        throw new com.znsio.teswiz.exceptions.NoSuchVisualElementException(
-                String.format("Visual element with text '%s' not found via OCR in region %s.", text, regionText));
+        return visualFinder().findByText(text, region);
     }
 
     public VisualElement findByImage(List<String> imageTemplatePaths) {
-        return findByImage(imageTemplatePaths, Runner.getVisualConfidenceThreshold());
+        return visualFinder().findByImage(imageTemplatePaths);
     }
 
     public VisualElement findByImage(List<String> imageTemplatePaths, double confidenceThreshold) {
-        return findByImage(imageTemplatePaths, confidenceThreshold, null);
+        return visualFinder().findByImage(imageTemplatePaths, confidenceThreshold);
     }
 
     public VisualElement findByImage(List<String> imageTemplatePaths, com.znsio.teswiz.entities.VisualRegion region) {
-        return findByImage(imageTemplatePaths, Runner.getVisualConfidenceThreshold(), region);
+        return visualFinder().findByImage(imageTemplatePaths, region);
     }
 
     public VisualElement findByImage(List<String> imageTemplatePaths, double confidenceThreshold, com.znsio.teswiz.entities.VisualRegion region) {
-        verifyOcrEnabled();
-        String regionText = null != region ? region.toString() : "[entire screen]";
-        if (LOGGER.isInfoEnabled()) {
-            LOGGER.info(String.format("Locating visual element by candidate image templates %s with threshold %.2f within region %s", imageTemplatePaths, confidenceThreshold, regionText));
-        }
-        int maxAttempts = getVisualElementRetryAttempts();
-        int retryDelayMs = getVisualElementRetryDelayMs();
-        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-            byte[] screenshot = captureScreenshotBytes();
-            VisualElement match = this.imageMatcher.findTemplateMatch(screenshot, imageTemplatePaths, confidenceThreshold, region, this.driverFacade);
-            if (match != null) {
-                return match;
-            }
-            if (attempt < maxAttempts) {
-                LOGGER.info("Attempt {} of {}: Image templates {} not matched in region {}, retrying after {}ms...", attempt, maxAttempts, imageTemplatePaths, regionText, retryDelayMs);
-                try {
-                    Thread.sleep(retryDelayMs);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    break;
-                }
-            }
-        }
-        throw new com.znsio.teswiz.exceptions.NoSuchVisualElementException(
-                String.format("Visual element matching candidate image templates %s not found in region %s (confidence threshold: %.2f).", imageTemplatePaths, regionText, confidenceThreshold));
+        return visualFinder().findByImage(imageTemplatePaths, confidenceThreshold, region);
     }
 
     public VisualElement findByTextOrImage(String text, List<String> imageTemplatePaths) {
-        return findByTextOrImage(text, imageTemplatePaths, null);
+        return visualFinder().findByTextOrImage(text, imageTemplatePaths);
     }
 
     public VisualElement findByTextOrImage(String text, List<String> imageTemplatePaths, com.znsio.teswiz.entities.VisualRegion region) {
-        verifyOcrEnabled();
-        try {
-            return findByText(text, region);
-        } catch (com.znsio.teswiz.exceptions.NoSuchVisualElementException e) {
-            String regionText = null != region ? region.toString() : "[entire screen]";
-            LOGGER.info("Text '{}' not found via OCR in region {}. Falling back to candidate image templates {}", text, regionText, imageTemplatePaths);
-            return findByImage(imageTemplatePaths, region);
-        }
+        return visualFinder().findByTextOrImage(text, imageTemplatePaths, region);
     }
 
     public VisualElement findByImageOrText(List<String> imageTemplatePaths, String text) {
-        verifyOcrEnabled();
-        try {
-            return findByImage(imageTemplatePaths);
-        } catch (com.znsio.teswiz.exceptions.NoSuchVisualElementException e) {
-            LOGGER.info("Candidate images {} not matched. Falling back to OCR text '{}'", imageTemplatePaths, text);
-            return findByText(text);
-        }
+        return visualFinder().findByImageOrText(imageTemplatePaths, text);
     }
 
     public List<VisualElement> findAllByText(String text) {
-        return findAllByText(text, (com.znsio.teswiz.entities.VisualRegion) null);
+        return visualFinder().findAllByText(text);
     }
 
     public List<VisualElement> findAllByText(String text, com.znsio.teswiz.entities.VisualRegion region) {
-        verifyOcrEnabled();
-        String regionText = null != region ? region.toString() : "[entire screen]";
-        LOGGER.info("Locating all visual elements matching text '{}' within region {}", text, regionText);
-        byte[] screenshot = captureScreenshotBytes();
-        return this.ocrEngine.findAllTextMatches(screenshot, text, region, this.driverFacade);
+        return visualFinder().findAllByText(text, region);
     }
 
     public List<VisualElement> findAllByImage(List<String> imageTemplatePaths) {
-        return findAllByImage(imageTemplatePaths, Runner.getVisualConfidenceThreshold());
+        return visualFinder().findAllByImage(imageTemplatePaths);
     }
 
     public List<VisualElement> findAllByImage(List<String> imageTemplatePaths, double confidenceThreshold) {
-        return findAllByImage(imageTemplatePaths, confidenceThreshold, null);
+        return visualFinder().findAllByImage(imageTemplatePaths, confidenceThreshold);
     }
 
     public List<VisualElement> findAllByImage(List<String> imageTemplatePaths, com.znsio.teswiz.entities.VisualRegion region) {
-        return findAllByImage(imageTemplatePaths, Runner.getVisualConfidenceThreshold(), region);
+        return visualFinder().findAllByImage(imageTemplatePaths, region);
     }
 
     public List<VisualElement> findAllByImage(List<String> imageTemplatePaths, double confidenceThreshold, com.znsio.teswiz.entities.VisualRegion region) {
-        verifyOcrEnabled();
-        String regionText = null != region ? region.toString() : "[entire screen]";
-        if (LOGGER.isInfoEnabled()) {
-            LOGGER.info(String.format("Locating all visual elements matching image templates %s with threshold %.2f within region %s", imageTemplatePaths, confidenceThreshold, regionText));
-        }
-        byte[] screenshot = captureScreenshotBytes();
-        return this.imageMatcher.findAllTemplateMatches(screenshot, imageTemplatePaths, confidenceThreshold, region, this.driverFacade);
+        return visualFinder().findAllByImage(imageTemplatePaths, confidenceThreshold, region);
     }
 
     public List<VisualElement> findAllByTextOrImage(String text, List<String> imageTemplatePaths) {
-        verifyOcrEnabled();
-        List<VisualElement> textMatches = findAllByText(text);
-        if (!textMatches.isEmpty()) {
-            return textMatches;
-        }
-        return findAllByImage(imageTemplatePaths);
+        return visualFinder().findAllByTextOrImage(text, imageTemplatePaths);
     }
 
     public List<VisualElement> findAllByImageOrText(List<String> imageTemplatePaths, String text) {
-        verifyOcrEnabled();
-        List<VisualElement> imageMatches = findAllByImage(imageTemplatePaths);
-        if (!imageMatches.isEmpty()) {
-            return imageMatches;
-        }
-        return findAllByText(text);
+        return visualFinder().findAllByImageOrText(imageTemplatePaths, text);
     }
 
     public VisualElement findRelativeByText(String targetText, com.znsio.teswiz.entities.SpatialDirection direction, String anchorText) {
-        verifyOcrEnabled();
-        LOGGER.info("Locating visual element '{}' {} anchor text '{}'", targetText, direction.getDirection(), anchorText);
-        VisualElement anchor = findByText(anchorText);
-        List<VisualElement> candidates = findAllByText(targetText);
-
-        VisualElement bestCandidate = filterAndSelectClosestRelative(anchor, candidates, direction);
-        if (bestCandidate != null) {
-            return bestCandidate;
-        }
-        throw new com.znsio.teswiz.exceptions.NoSuchVisualElementException(
-                String.format("Visual element with text '%s' not found %s anchor '%s'", targetText, direction.getDirection(), anchorText));
+        return visualFinder().findRelativeByText(targetText, direction, anchorText);
     }
 
     public VisualElement findRelativeByText(String targetText, com.znsio.teswiz.entities.SpatialDirection direction, VisualElement anchor) {
-        verifyOcrEnabled();
-        LOGGER.info("Locating visual element '{}' {} anchor element", targetText, direction.getDirection());
-        List<VisualElement> candidates = findAllByText(targetText);
-
-        VisualElement bestCandidate = filterAndSelectClosestRelative(anchor, candidates, direction);
-        if (bestCandidate != null) {
-            return bestCandidate;
-        }
-        throw new com.znsio.teswiz.exceptions.NoSuchVisualElementException(
-                String.format("Visual element with text '%s' not found %s anchor element", targetText, direction.getDirection()));
+        return visualFinder().findRelativeByText(targetText, direction, anchor);
     }
 
     public VisualElement findRelativeByImage(List<String> targetImagePaths, com.znsio.teswiz.entities.SpatialDirection direction, String anchorText) {
-        verifyOcrEnabled();
-        LOGGER.info("Locating visual element matching images {} {} anchor text '{}'", targetImagePaths, direction.getDirection(), anchorText);
-        VisualElement anchor = findByText(anchorText);
-        List<VisualElement> candidates = findAllByImage(targetImagePaths);
-
-        VisualElement bestCandidate = filterAndSelectClosestRelative(anchor, candidates, direction);
-        if (bestCandidate != null) {
-            return bestCandidate;
-        }
-        throw new com.znsio.teswiz.exceptions.NoSuchVisualElementException(
-                String.format("Visual element matching images %s not found %s anchor '%s'", targetImagePaths, direction.getDirection(), anchorText));
+        return visualFinder().findRelativeByImage(targetImagePaths, direction, anchorText);
     }
 
     public VisualElement findRelativeByImage(List<String> targetImagePaths, com.znsio.teswiz.entities.SpatialDirection direction, VisualElement anchor) {
-        verifyOcrEnabled();
-        LOGGER.info("Locating visual element matching images {} {} anchor element", targetImagePaths, direction.getDirection());
-        List<VisualElement> candidates = findAllByImage(targetImagePaths);
-
-        VisualElement bestCandidate = filterAndSelectClosestRelative(anchor, candidates, direction);
-        if (bestCandidate != null) {
-            return bestCandidate;
-        }
-        throw new com.znsio.teswiz.exceptions.NoSuchVisualElementException(
-                String.format("Visual element matching images %s not found %s anchor element", targetImagePaths, direction.getDirection()));
-    }
-
-
-    private VisualElement filterAndSelectClosestRelative(VisualElement anchor, List<VisualElement> candidates, com.znsio.teswiz.entities.SpatialDirection direction) {
-        if (anchor == null || candidates == null || candidates.isEmpty()) {
-            return null;
-        }
-
-        int anchorCenterX = anchor.getCenter().getX();
-        int anchorCenterY = anchor.getCenter().getY();
-        VisualElement closest = null;
-        double minDistance = Double.MAX_VALUE;
-
-        for (VisualElement candidate : candidates) {
-            int candidateCenterX = candidate.getCenter().getX();
-            int candidateCenterY = candidate.getCenter().getY();
-
-            boolean matchesDirection = false;
-            switch (direction) {
-                case ABOVE:
-                    matchesDirection = candidateCenterY < anchorCenterY;
-                    break;
-                case BELOW:
-                    matchesDirection = candidateCenterY > anchorCenterY;
-                    break;
-                case LEFT_OF:
-                    matchesDirection = candidateCenterX < anchorCenterX;
-                    break;
-                case RIGHT_OF:
-                    matchesDirection = candidateCenterX > anchorCenterX;
-                    break;
-                case NEAR:
-                default:
-                    matchesDirection = true;
-                    break;
-            }
-
-            if (matchesDirection) {
-                double distance = Math.hypot(candidateCenterX - anchorCenterX, candidateCenterY - anchorCenterY);
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    closest = candidate;
-                }
-            }
-        }
-        return closest;
-    }
-
-
-    private byte[] captureScreenshotBytes() {
-        if (this.innerDriver instanceof TakesScreenshot) {
-            return ((TakesScreenshot) this.innerDriver).getScreenshotAs(OutputType.BYTES);
-        }
-        LOGGER.warn("Inner driver does not implement TakesScreenshot.");
-        return null;
-    }
-
-    private void verifyOcrEnabled() {
-        if (!Runner.isOcrEnabled()) {
-            throw new com.znsio.teswiz.exceptions.VisualSubsystemDisabledException(
-                "\n====================================================================================================\n" +
-                " [teswiz] Visual OCR & Image Recognition Subsystem is Disabled!\n" +
-                "----------------------------------------------------------------------------------------------------\n" +
-                " You invoked a visual locator method (e.g. driver.findByText() or driver.findByImage()), but \n" +
-                " IS_OCR_ENABLED=false in your execution configuration (teswiz_config.properties).\n\n" +
-                " To enable OCR & Image Recognition capability in your project:\n" +
-                " 1. Set 'IS_OCR_ENABLED=true' in your teswiz_config.properties file or system property.\n" +
-                " 2. Ensure native visual dependencies (opencv, tess4j) are downloaded via ./gradlew downloadDependencies.\n" +
-                "====================================================================================================\n"
-            );
-        }
+        return visualFinder().findRelativeByImage(targetImagePaths, direction, anchor);
     }
 }

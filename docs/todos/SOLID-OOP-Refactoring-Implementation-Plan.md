@@ -259,8 +259,8 @@ Phase 5  browser_config unify  — independent of 0–4; benefits from 3
 - [x] 0.1 Correctness nits
 - [x] 0.2 Provider resolver registries
 - [x] 0.3 VisualBy de-duplication
-- [ ] 1.1 OcrEngine / ImageMatcher abstractions
-- [ ] 1.2 Extract VisualFinder
+- [x] 1.1 OcrEngine / ImageMatcher abstractions
+- [x] 1.2 Extract VisualFinder
 - [ ] 2.1 DriverManager contract
 - [ ] 2.2 Driver create/close registry
 - [ ] 3.1 TeswizConfiguration holder
