@@ -268,9 +268,9 @@ Phase 5  browser_config unify  — independent of 0–4; benefits from 3
 - [~] 3.2 Split Setup — in progress (one collaborator per commit):
   - [x] PlatformTagResolver — multi-user tag -> (Platform, launch-name suffix) table replacing the if/else chain
   - [x] ReportPortalEnvironmentPublisher — rpAttributes formatting + ATD/ReportPortal System.setProperty block
+  - [x] CucumberArgsBuilder — reporting --plugin args (pretty/html/junit/json/message/timeline) for a log dir
   - [ ] ConfigLoader
   - [ ] ApplitoolsConfigFactory
-  - [ ] CucumberArgsBuilder
 - [ ] 4.1 Extract MobileGestures / ElementHighlighter / ElementFinder; drop Visual pass-throughs
 - [ ] 4.2 Visual behind VisualEngine strategy
 - [ ] 5.1 WindowSizingResolver

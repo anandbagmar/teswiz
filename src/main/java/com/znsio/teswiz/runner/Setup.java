@@ -522,20 +522,7 @@ public class Setup {
     }
 
     private static void addCucumberPlugsToArgs() {
-        CUKE_ARGS.add(PLUGIN);
-        CUKE_ARGS.add("pretty");
-        CUKE_ARGS.add(PLUGIN);
-        String logDir = configs.get(LOG_DIR);
-        CUKE_ARGS.add("html:" + logDir + File.separator + REPORTS_DIR + File.separator + "cucumber-html" + "-report.html");
-        CUKE_ARGS.add(PLUGIN);
-        CUKE_ARGS.add("junit:" + logDir + File.separator + REPORTS_DIR + File.separator + "cucumber" + "-junit-report.xml");
-        CUKE_ARGS.add(PLUGIN);
-        CUKE_ARGS.add("json:" + logDir + File.separator + REPORTS_DIR + File.separator + "cucumber-json" + "-report.json");
-        CUKE_ARGS.add(PLUGIN);
-        CUKE_ARGS.add("message:" + logDir + File.separator + REPORTS_DIR + File.separator + "results" + ".ndjson");
-        CUKE_ARGS.add(PLUGIN);
-        CUKE_ARGS.add("timeline:" + logDir + File.separator + REPORTS_DIR + File.separator + "timeline");
-        System.setProperty("cucumber.publish.quiet", "true");
+        CUKE_ARGS.addAll(CucumberArgsBuilder.buildReportingPluginArgs(configs.get(LOG_DIR)));
     }
 
     private static ArrayList<String> setupPlatformExecution() {
