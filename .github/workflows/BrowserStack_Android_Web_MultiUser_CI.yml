@@ -2,7 +2,7 @@ name: BrowserStack_Android_Web_MultiUser_CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, refactor/phase-4-god-class-decomp]
   pull_request:
     branches: [main]
 
