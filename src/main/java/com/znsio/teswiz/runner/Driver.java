@@ -4,10 +4,6 @@ import static com.znsio.teswiz.tools.Wait.waitFor;
 import static java.util.Collections.singletonList;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -507,6 +503,15 @@ public class Driver {
         return this.elementHighlighter;
     }
 
+    private ElementFinder elementFinder;
+
+    private ElementFinder elementFinder() {
+        if (this.elementFinder == null) {
+            this.elementFinder = new ElementFinder(elementHighlighter());
+        }
+        return this.elementFinder;
+    }
+
     public org.openqa.selenium.Rectangle getActiveHighlightBounds() {
         return elementHighlighter().getActiveHighlightBounds();
     }
@@ -577,50 +582,11 @@ public class Driver {
     }
 
     private WebElement decorateElement(WebElement element) {
-        if (element == null) {
-            return null;
-        }
-        if (Proxy.isProxyClass(element.getClass())
-                && Proxy.getInvocationHandler(element) instanceof ElementInvocationHandler) {
-            return element;
-        }
-        if (element.getClass().getName().contains("Playwright")) {
-            return element;
-        }
-        return (WebElement) Proxy.newProxyInstance(Driver.class.getClassLoader(),
-                new Class<?>[] { WebElement.class, WrapsElement.class }, new ElementInvocationHandler(element));
+        return elementFinder().decorate(element);
     }
 
     private List<WebElement> decorateElements(List<WebElement> elements) {
-        if (elements == null) {
-            return Collections.emptyList();
-        }
-        return elements.stream().map(this::decorateElement).collect(Collectors.toList());
-    }
-
-    private class ElementInvocationHandler implements InvocationHandler {
-        private final WebElement target;
-
-        ElementInvocationHandler(WebElement target) {
-            this.target = target;
-        }
-
-        @Override
-        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-            String methodName = method.getName();
-            if ("getWrappedElement".equals(methodName) && (args == null || args.length == 0)) {
-                return target;
-            }
-            if ("click".equals(methodName) || "sendKeys".equals(methodName) || "clear".equals(methodName)
-                    || "submit".equals(methodName)) {
-                highlightElement(target);
-            }
-            try {
-                return method.invoke(target, args);
-            } catch (InvocationTargetException e) {
-                throw e.getCause();
-            }
-        }
+        return elementFinder().decorate(elements);
     }
 
     public double getViewportScaleFactor(int screenshotImageWidth) {
