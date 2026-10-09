@@ -276,22 +276,25 @@ Phase 5  browser_config unify  — independent of 0–4; benefits from 3
   - [x] ApplitoolsConfigFactory (partial) — extracted ApplitoolsBatchInfoFactory (batch name + BatchInfo build). The remaining initialiseApplitoolsConfiguration machinery (mutable applitoolsConfiguration map + ~12 interdependent helpers, a public static entry point via Runner.getApplitoolsConfiguration) is deferred: a full lift is high-risk for low incremental value and better paired with the Visual engine split in Phase 4.2.
   - [ ] ConfigLoader — DEFERRED (deliberately). buildMapOfRequiredProperties is ~90 lines of `configs.put(KEY, getOverriddenX(KEY, getYFromProperties(KEY, default)))` bound to the `properties` field, the OverriddenVariable helpers, ~40 key constants, and the three maps. Relocating it verbatim is a high-risk, low-value lift against the most central init method every test depends on; it would still just mutate Setup's static maps. The injectable/typed-config value this step targets was already delivered by TeswizConfiguration (3.1), so this extraction is not worth its regression risk on its own.
 - [~] 4.1 Extract MobileGestures / ElementFinder / ElementWaiter; KEEP Visual pass-throughs (in progress):
-  - [ ] **Revert the `@Deprecated` on the 24 Driver Visual find pass-throughs** (decision changed: keep them as plain, supported, pre-existing public API — not deprecated). The in-repo caller repointing to `getVisual()` can stay (harmless), but the `@Deprecated`/`@deprecated` markers come off so consumers see no deprecation warning. Any future hard removal is a separate, pre-announced major-version decision.
-  - [ ] **Extract `ElementWaiter`** (bounded waits off `Driver`) + add additive, non-throwing `isElementVisible(By,secs)` / `isElementPresentWithin(By,secs)` / `waitTillTextIsPresent(By,text,secs)` — uniform across engines via `By`.
-  - [ ] **Capability parity (LSP):** make `waitForAlert` + `getShadowRoot` uniform on PW-Java (implement or single capability-unsupported signal) — remove the divergent per-engine throws.
-  - [x] Extract ElementHighlighter (web JS highlight cluster + activeHighlightBounds). Driver keeps thin delegating highlightElement/highlightVisualElement/clearHighlight/getActiveHighlightBounds; the highlighter holds the WebDriver + nativeMobile flag. Non-breaking.
-  - [ ] Extract MobileGestures (Appium gesture surface)
-  - [ ] Extract ElementFinder (By-based find + decorate proxy)
+  - [x] **Reverted the `@Deprecated` on the 24 Driver Visual find pass-throughs** (commit 45059d41). Methods kept as plain, supported public API; no deprecation markers remain (verified in Driver.java). In-repo callers still use getVisual() (harmless).
+  - [x] **Extract `ElementWaiter`** (commit 45059d41) — `ElementWaiter` in runner package; Driver delegates `isElementVisible(By,int)` / `isElementPresentWithin(By,int)` / `waitTillTextIsPresent(By,String,int)`, each returning false on timeout. Tests: `ElementWaiterTest`.
+  - [x] **Capability parity (LSP)** (commit 45059d41) — `WebCapability.SHADOW_DOM`/`ALERTS` added; PW-Java `getShadowRoot()` and `switchTo().alert()` now throw structured `WebEngineCapabilities` diagnostics (verified in PlaywrightJavaWebDriver.java).
+  - [x] Extract ElementHighlighter (commit 95f1bfe8) — web JS highlight cluster + activeHighlightBounds; Driver keeps thin delegating methods. Non-breaking.
+  - [x] **Universal highlighting across engines** (commit 36537f86, additive — beyond original plan) — transparent `HighlightingPage`/`HighlightingLocator`/`HighlightingFrameLocator` proxies + single `PlaywrightHighlighter`; closed two Selenium highlight bypasses. Tests: `PlaywrightHighlighterTest`, `HighlightingLocatorTest`.
+  - [ ] Extract MobileGestures (Appium gesture surface) — PENDING (still in Driver: swipe*/scroll*/pinch*/clipboard/pushFileToDevice/relaunchApp/…)
+  - [ ] Extract ElementFinder (By-based findElement/findElements + decorate proxy) — PENDING (still in Driver)
 - [ ] 4.2 Visual behind VisualEngine strategy — **DEFERRED** (reshapes consumed `Visual.checkWindow`; no near-term benefit)
-- [ ] 5.1 WindowSizingResolver — **DO NOW** (non-breaking sizing-consistency slice)
-- [ ] 5.4 Wire Playwright resolver to WindowSizingResolver — **DO NOW** (existing keys, no schema change)
-- [ ] 5.5 Wire SeleniumDriverManager to WindowSizingResolver — **DO NOW** (existing keys, replace the 1920x1080 literal)
+- [x] 5.1 WindowSizingResolver (commit 45059d41) — single source of default viewport (`TESWIZ_DRIVER_VIEWPORT_WIDTH/HEIGHT`, default 1280x960). Tests: `WindowSizingResolverTest`.
+- [x] 5.4 Wire Playwright resolver to WindowSizingResolver (commit 45059d41) — `PlaywrightBrowserConfigResolver` viewport default resolves from it.
+- [x] 5.5 Wire SeleniumDriverManager to WindowSizingResolver (commit 45059d41) — replaced the hard-coded headless `1920x1080` fallback with `WindowSizingResolver.defaultViewport()`.
 - [ ] 5.2 BrowserConfig model + normalizer — **DEFERRED** (part of the breaking schema slice)
 - [ ] 5.3 Rewrite BrowserConfigSchema — **DEFERRED** (contract change)
 - [ ] 5.6 Migration path + committed configs + template — **DEFERRED** (contract change)
-- [ ] 6.1 Harden `PlaywrightLocator.from(By)` — replace `by.toString()` prefix-matching with structured strategy dispatch (NEW)
-- [ ] 6.2 Unsupported-locator parity across engines (NEW)
-- [ ] 6.3 Document the `By` + `PlaywrightBy` locator contract in the screen-authoring guide (NEW)
+- [x] 6.1 Harden `PlaywrightLocator.from(By)` (commit 45059d41) — single prefix->strategy lookup table for standard `By`; `PlaywrightBy`-native locators translate from structured fields. Tests: `PlaywrightLocatorTest`. (Standard Selenium `By` still read via `toString()` by necessity — Selenium exposes no value getter.)
+  - [x] 6.2 Unsupported-locator parity — `from(By)` throws a uniform `UnsupportedOperationException` for unknown locators.
+  - [ ] 6.3 Document the `By` + `PlaywrightBy` locator contract in the screen-authoring guide — PENDING (class-level Javadoc added in `PlaywrightLocator`; separate authoring-guide doc not yet written)
+
+> Reconciliation note (scan on 2026-10-09): checkboxes above were updated to match the code after commits 45059d41 and 36537f86 landed several plan items (ElementWaiter, capability signals, WindowSizingResolver + wiring, PlaywrightLocator hardening, @Deprecated revert) plus an additive universal-highlighting feature. Version bumped to 1.0.44-SNAPSHOT.
 
 ## Out of scope (deliberately)
 
