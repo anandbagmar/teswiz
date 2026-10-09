@@ -292,7 +292,7 @@ Phase 5  browser_config unify  — independent of 0–4; benefits from 3
 - [ ] 5.6 Migration path + committed configs + template — **DEFERRED** (contract change)
 - [x] 6.1 Harden `PlaywrightLocator.from(By)` (commit 45059d41) — single prefix->strategy lookup table for standard `By`; `PlaywrightBy`-native locators translate from structured fields. Tests: `PlaywrightLocatorTest`. (Standard Selenium `By` still read via `toString()` by necessity — Selenium exposes no value getter.)
   - [x] 6.2 Unsupported-locator parity — `from(By)` throws a uniform `UnsupportedOperationException` for unknown locators.
-  - [ ] 6.3 Document the `By` + `PlaywrightBy` locator contract in the screen-authoring guide — PENDING (class-level Javadoc added in `PlaywrightLocator`; separate authoring-guide doc not yet written)
+  - [-] 6.3 Document the `By` + `PlaywrightBy` locator contract in the screen-authoring guide — SKIPPED (maintainer decision). Class-level Javadoc in `PlaywrightLocator` already documents the contract; the separate authoring-guide doc is not being written.
 
 > Reconciliation note (scan on 2026-10-09): checkboxes above were updated to match the code after commits 45059d41 and 36537f86 landed several plan items (ElementWaiter, capability signals, WindowSizingResolver + wiring, PlaywrightLocator hardening, @Deprecated revert) plus an additive universal-highlighting feature. Version bumped to 1.0.44-SNAPSHOT.
 
