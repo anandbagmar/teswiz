@@ -1,3 +1,25 @@
+## 1.0.44-SNAPSHOT (unreleased)
+# Release Notes - teswiz v1.0.44-SNAPSHOT
+_Previous release: v1.0.43_
+
+## 🚀 Key Highlights & Enhancements
+
+### 🧭 Cross-engine bounded element waits (`ElementWaiter`)
+* **New `ElementWaiter` in `com.znsio.teswiz.runner`**, surfaced through three delegating methods on the `Driver` facade: `isElementVisible(By, int)`, `isElementPresentWithin(By, int)` and `waitTillTextIsPresent(By, String, int)`. Each waits up to a bounded number of seconds and **returns `false` on timeout instead of throwing** — the missing "is it there within N seconds?" boolean that every existing `waitTill*` lacked (they all throw on timeout). Additive and non-breaking: no existing signature changed. `By` stays the uniform locator currency, so these work across Selenium and (via `PlaywrightBy`) the Playwright engines.
+
+### 🔌 Web-engine capability parity signalling
+* **`WebCapability` gained `SHADOW_DOM` and `ALERTS`.** On `playwright-java`, `getShadowRoot()` and `switchTo().alert()` now throw a structured `WebEngineCapabilities` diagnostic naming the capability and the Playwright-native alternative, instead of a bare/absent failure — same pattern already used for windows/positioning.
+
+### 📐 Consistent default window/viewport sizing (`WindowSizingResolver`)
+* **New `WindowSizingResolver` is the single source of truth for the default viewport.** Selenium's hard-coded `1920x1080` headless fallback and the Playwright context-options viewport default now both resolve from it (`TESWIZ_DRIVER_VIEWPORT_WIDTH`/`HEIGHT`, default `1280x960`), so a sizing override applies consistently across engines. No config schema change.
+
+### 🧱 Locator translation hardening (`PlaywrightLocator`)
+* **`PlaywrightLocator.from(By)` now dispatches standard Selenium `By` subtypes through a single prefix→strategy lookup table** rather than an eight-branch `if` chain, and documents the `By` / `PlaywrightBy` contract. `PlaywrightBy`-native locators continue to translate directly from their structured fields. Behaviour is unchanged; the mapping is now locked by `PlaywrightLocatorTest`.
+
+## 🧪 Tests
+* `ElementWaiterTest` (6), `WindowSizingResolverTest` (3), `PlaywrightLocatorTest` (7) added. Full `clean test` green (441 tests, 0 failures).
+
+---
 ## 1.0.43
 # Release Notes - teswiz v1.0.43
 

@@ -4,19 +4,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import org.openqa.selenium.NoSuchElementException;
 import java.util.stream.Collectors;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.Dimension;
-import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.Point;
 import org.openqa.selenium.Rectangle;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
+import com.microsoft.playwright.Locator;
 
 import com.microsoft.playwright.ElementHandle;
-import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.options.BoundingBox;
 
 final class PlaywrightJavaWebElement implements WebElement {
@@ -29,29 +29,27 @@ final class PlaywrightJavaWebElement implements WebElement {
     }
 
     private void highlight() {
-        if (com.znsio.teswiz.runner.Setup.getBooleanValueFromConfigs(com.znsio.teswiz.runner.Setup.HIGHLIGHT_ELEMENTS)) {
+        if (com.znsio.teswiz.runner.Setup
+                .getBooleanValueFromConfigs(com.znsio.teswiz.runner.Setup.HIGHLIGHT_ELEMENTS)) {
             try {
-                String color = com.znsio.teswiz.runner.Setup.getStringValueFromConfigs(com.znsio.teswiz.runner.Setup.HIGHLIGHT_COLOR, "#FF4500");
-                String borderWidth = com.znsio.teswiz.runner.Setup.getStringValueFromConfigs(com.znsio.teswiz.runner.Setup.HIGHLIGHT_BORDER_WIDTH, "3px");
-                locator.evaluate("el => {" +
-                    "let visualBox = document.getElementById('teswiz-visual-highlight');" +
-                    "if (visualBox) { visualBox.remove(); }" +
-                    "if (window.teswizLastHighlightedElement) {" +
-                    "  try {" +
-                    "    window.teswizLastHighlightedElement.style.outline = window.teswizLastOutline || '';" +
-                    "    window.teswizLastHighlightedElement.style.outlineOffset = window.teswizLastOutlineOffset || '';" +
-                    "    window.teswizLastHighlightedElement.style.boxShadow = window.teswizLastBoxShadow || '';" +
-                    "  } catch(e) {}" +
-                    "}" +
-                    "window.teswizLastHighlightedElement = el;" +
-                    "window.teswizLastOutline = el.style.outline;" +
-                    "window.teswizLastOutlineOffset = el.style.outlineOffset;" +
-                    "window.teswizLastBoxShadow = el.style.boxShadow;" +
-                    "el.style.outline = '" + borderWidth + " solid " + color + "';" +
-                    "el.style.outlineOffset = '-2px';" +
-                    "el.style.boxShadow = '0 0 10px " + color + "';" +
-                    "}");
-            } catch (Exception ignored) {}
+                String color = com.znsio.teswiz.runner.Setup
+                        .getStringValueFromConfigs(com.znsio.teswiz.runner.Setup.HIGHLIGHT_COLOR, "#FF4500");
+                String borderWidth = com.znsio.teswiz.runner.Setup
+                        .getStringValueFromConfigs(com.znsio.teswiz.runner.Setup.HIGHLIGHT_BORDER_WIDTH, "3px");
+                locator.evaluate("el => {" + "let visualBox = document.getElementById('teswiz-visual-highlight');"
+                        + "if (visualBox) { visualBox.remove(); }" + "if (window.teswizLastHighlightedElement) {"
+                        + "  try {"
+                        + "    window.teswizLastHighlightedElement.style.outline = window.teswizLastOutline || '';"
+                        + "    window.teswizLastHighlightedElement.style.outlineOffset = window.teswizLastOutlineOffset || '';"
+                        + "    window.teswizLastHighlightedElement.style.boxShadow = window.teswizLastBoxShadow || '';"
+                        + "  } catch(e) {}" + "}" + "window.teswizLastHighlightedElement = el;"
+                        + "window.teswizLastOutline = el.style.outline;"
+                        + "window.teswizLastOutlineOffset = el.style.outlineOffset;"
+                        + "window.teswizLastBoxShadow = el.style.boxShadow;" + "el.style.outline = '" + borderWidth
+                        + " solid " + color + "';" + "el.style.outlineOffset = '-2px';"
+                        + "el.style.boxShadow = '0 0 10px " + color + "';" + "}");
+            } catch (Exception ignored) {
+            }
         }
     }
 
@@ -69,9 +67,7 @@ final class PlaywrightJavaWebElement implements WebElement {
     @Override
     public void sendKeys(CharSequence... keysToSend) {
         highlight();
-        String value = java.util.Arrays.stream(keysToSend)
-                .map(String::valueOf)
-                .collect(Collectors.joining());
+        String value = java.util.Arrays.stream(keysToSend).map(String::valueOf).collect(Collectors.joining());
         if (isFileInput(value)) {
             locator.setInputFiles(Path.of(value));
             return;
@@ -122,8 +118,7 @@ final class PlaywrightJavaWebElement implements WebElement {
         int count = PlaywrightJavaWait.untilCountAtLeast(childLocator, implicitWaitTimeout, 0);
         return java.util.stream.IntStream.range(0, count)
                 .mapToObj(index -> new PlaywrightJavaWebElement(childLocator.nth(index), implicitWaitTimeout))
-                .map(WebElement.class::cast)
-                .toList();
+                .map(WebElement.class::cast).toList();
     }
 
     @Override
@@ -137,7 +132,9 @@ final class PlaywrightJavaWebElement implements WebElement {
 
     @Override
     public SearchContext getShadowRoot() {
-        throw new UnsupportedOperationException("Shadow DOM is not implemented for Playwright Java yet");
+        throw new UnsupportedOperationException(com.znsio.teswiz.web.WebEngineCapabilities.formatDiagnosticMessage(
+                com.znsio.teswiz.web.WebEngine.PLAYWRIGHT_JAVA, com.znsio.teswiz.web.WebCapability.SHADOW_DOM,
+                "getShadowRoot"));
     }
 
     @Override

@@ -159,18 +159,20 @@ Highest-value God-class win: isolates the OCR find surface and breaks the `Drive
 
 **Branch:** `refactor/phase-4-god-class-decomp` · **Risk:** high (widest blast radius) · **Prereq:** Phases 1, 2, 3 merged
 
-> **Public-API change in 4.1.** Dropping the 26 `Visual` find pass-throughs on `Driver` ripples into screen/BL classes. Own review + `Changelog.MD` entry required. Stage it and sweep callers in the same commit.
+> **No breaking change in 4.1 (revised).** The 26 `Visual` find pass-throughs on `Driver` are **pre-existing stable public API** — they are NOT removed by this phase. The earlier `@Deprecated` marking is being **reverted** (keep them as plain, supported pass-throughs); any hard removal is a separate, pre-announced major-version decision, not part of this refactor. Guiding rule: **no hard removals — deprecate only with explicit maintainer sign-off; default to keeping stable APIs so consumers adopt with zero forced edits.**
 
 ### Step 4.1 — Extract from `Driver` 🔴
 | | |
 |---|---|
-| **Files** | New `MobileGestures` (takes `AppiumDriver`): ~28 Appium gesture methods + math helpers + the platform switches `putAppInBackgroundFor` / `pushFileToDevice` / `relaunchApp` / clipboard. New `ElementHighlighter` (web JS): `clearHighlight` / `highlightElement` / `highlightVisualElement` + `activeHighlightBounds` + JS literals. New `ElementFinder` + the `decorateElement` proxy. Delete the 26 `Visual` find pass-throughs on `Driver`; sweep callers (screens/BL) to `getVisual()`/`VisualFinder` |
-| **Change** | `Driver` becomes a thin facade composing these collaborators; removes `(AppiumDriver)` casts and platform switches |
-| **Seam/test** | Full suite (broad recompilation across screen/BL); re-run PW-TS bridge tests |
-| **Accept** | `Driver.java` is a facade; no `instanceof`/cast ladders; mobile parity N/A (Appium-only gestures), highlight parity N/A (web-only, no-op on Appium) |
-| **Commit** | `Extract MobileGestures / ElementHighlighter / ElementFinder from Driver; drop Visual find pass-throughs` |
+| **Files** | New `MobileGestures` (takes `AppiumDriver`): ~28 Appium gesture methods + math helpers + the platform switches `putAppInBackgroundFor` / `pushFileToDevice` / `relaunchApp` / clipboard. New `ElementHighlighter` (web JS): `clearHighlight` / `highlightElement` / `highlightVisualElement` + `activeHighlightBounds` + JS literals. New `ElementFinder` + the `decorateElement` proxy. New **`ElementWaiter`** — owns the bounded synchronisation currently scattered on `Driver` (`waitTillElementIsVisible/Present/Invisible`, `waitForClickabilityOf`, `waitTillVisibilityOfAllElements`, `waitTillPresenceOfAllElements`, `waitForAlert`). **Keep** the 26 pre-existing `Visual` find pass-throughs on `Driver` (revert the `@Deprecated` added earlier — see progress tracker); do NOT delete |
+| **Change** | `Driver` becomes a thin facade composing these collaborators; removes `(AppiumDriver)` casts and platform switches. `Driver` keeps thin delegating wait methods. **Additive new capability (the one behaviour-add in this phase, flagged separately):** `ElementWaiter` introduces bounded, non-throwing `boolean isElementVisible(By, int seconds)`, `boolean isElementPresentWithin(By, int seconds)`, `boolean waitTillTextIsPresent(By, String, int seconds)` — closes the "no bounded non-throwing visibility/text probe on any engine" gap. All take `By` (uniform locator currency; Playwright locators via `PlaywrightBy`), so one implementation serves all engines |
+| **Change (capability parity, LSP fix)** | Make `waitForAlert` + `getShadowRoot` uniform across engines: today `waitForAlert` is implemented on Selenium/PW-TS but **throws** on PW-Java and is a no-op on Appium; `getShadowRoot` **throws** on PW-Java. Implement on PW-Java (Playwright supports dialogs + shadow DOM natively) **or** surface a single capability-unsupported signal (mirroring the existing `NativeCoordinateInput` pattern) — no divergent per-engine throws |
+| **Seam/test** | Full suite (broad recompilation across screen/BL); re-run PW-TS bridge tests. New `ElementWaiterTest` for the additive bounded booleans |
+| **Accept** | `Driver.java` is a facade; no `instanceof`/cast ladders; the 26 find pass-throughs remain, un-deprecated; mobile parity N/A (Appium-only gestures), highlight parity N/A (web-only, no-op on Appium) |
+| **Commit** | `Extract MobileGestures / ElementFinder / ElementWaiter from Driver (keep find pass-throughs)` + `Add bounded isElementVisible / isElementPresentWithin / waitTillTextIsPresent` + `Make waitForAlert / getShadowRoot uniform across engines` |
 
-### Step 4.2 — Decompose `Visual` behind a `VisualEngine` strategy 🔴
+### Step 4.2 — Decompose `Visual` behind a `VisualEngine` strategy 🔴 — **DEFERRED**
+> **Deferred (revisit on demand).** No benefit to current work and it reshapes the public `Visual` facade — `checkWindow(...)` is the one `Visual` method downstream screens call (e.g. casino web screens), and 4.2 is where the LSP `checkWindow` rework lives. All risk to a consumed API, no near-term payoff. Do only if `Visual` becomes actively painful to change.
 | | |
 |---|---|
 | **Files** | New `PdfVisual`, `WebVisual`, `AppVisual` (PW web folds into `WebVisual`) behind a `VisualEngine` interface; `Visual` becomes a facade composing the one engine for the session |
@@ -185,7 +187,9 @@ Highest-value God-class win: isolates the OCR find surface and breaks the `Drive
 
 **Branch:** `refactor/phase-5-browser-config-unify` · **Risk:** medium→high · **Prereq:** independent of 0–4; benefits from Phase 3
 
-> **Schema contract change** with a user-facing migration. Treat like Phase 4.1: own review, own release note. Target contract, sizing matrix, and dialect details are in the source plan's Phase 5 section — follow them exactly.
+> **Split into a non-breaking slice (do now) and a deferred breaking slice.**
+> - **DO NOW — Step 5.1 + the resolver wiring in 5.4/5.5, using the EXISTING config keys.** Introduce `WindowSizingResolver` and have Selenium, PW-Java and PW-TS all resolve viewport / maximize / headless sizing through it, so the same `browser_config.json` produces the *same* window on every engine. This is **additive and non-breaking**: no schema change, no key renames, no migration — it only unifies the internal resolution of keys that already exist (`maximize`, `arguments[--window-size]`, `headlessOptions`, `playwright.contextOptions.viewport`). This is the real, user-felt consistency win (today sizing is specified 2–3 times contradictorily and each engine reads a different subset).
+> - **DEFERRED — Steps 5.2, 5.3, 5.6 (schema model + rewrite + migration).** These rename keys, rewrite `BrowserConfigSchema.json`, and migrate committed configs — a **user-facing contract change**. Defer to their own release with their own review/announcement. Not needed for the consistency win above.
 
 ### Step 5.1 — `WindowSizingResolver` 🟢
 | | |
@@ -271,18 +275,23 @@ Phase 5  browser_config unify  — independent of 0–4; benefits from 3
   - [x] CucumberArgsBuilder — reporting --plugin args (pretty/html/junit/json/message/timeline) for a log dir
   - [x] ApplitoolsConfigFactory (partial) — extracted ApplitoolsBatchInfoFactory (batch name + BatchInfo build). The remaining initialiseApplitoolsConfiguration machinery (mutable applitoolsConfiguration map + ~12 interdependent helpers, a public static entry point via Runner.getApplitoolsConfiguration) is deferred: a full lift is high-risk for low incremental value and better paired with the Visual engine split in Phase 4.2.
   - [ ] ConfigLoader — DEFERRED (deliberately). buildMapOfRequiredProperties is ~90 lines of `configs.put(KEY, getOverriddenX(KEY, getYFromProperties(KEY, default)))` bound to the `properties` field, the OverriddenVariable helpers, ~40 key constants, and the three maps. Relocating it verbatim is a high-risk, low-value lift against the most central init method every test depends on; it would still just mutate Setup's static maps. The injectable/typed-config value this step targets was already delivered by TeswizConfiguration (3.1), so this extraction is not worth its regression risk on its own.
-- [~] 4.1 Extract MobileGestures / ElementHighlighter / ElementFinder; retire Visual pass-throughs (in progress):
-  - [x] Deprecate (not delete) the 24 Driver Visual find pass-throughs. Chose option A (non-breaking): `@Deprecated` + `@deprecated` Javadoc pointing to `getVisual().<same>()`; repointed all in-repo callers (AbstractVisualOcrScreen x12, two transportnsw screens x8, Driver's own findElement(VisualBy)/findElements(VisualBy) x6) to getVisual()/the Visual handle. Migration path = mechanical rename (identical signatures), no tooling needed. Hard removal deferred to a future major release (version TBD by maintainer).
+- [~] 4.1 Extract MobileGestures / ElementFinder / ElementWaiter; KEEP Visual pass-throughs (in progress):
+  - [ ] **Revert the `@Deprecated` on the 24 Driver Visual find pass-throughs** (decision changed: keep them as plain, supported, pre-existing public API — not deprecated). The in-repo caller repointing to `getVisual()` can stay (harmless), but the `@Deprecated`/`@deprecated` markers come off so consumers see no deprecation warning. Any future hard removal is a separate, pre-announced major-version decision.
+  - [ ] **Extract `ElementWaiter`** (bounded waits off `Driver`) + add additive, non-throwing `isElementVisible(By,secs)` / `isElementPresentWithin(By,secs)` / `waitTillTextIsPresent(By,text,secs)` — uniform across engines via `By`.
+  - [ ] **Capability parity (LSP):** make `waitForAlert` + `getShadowRoot` uniform on PW-Java (implement or single capability-unsupported signal) — remove the divergent per-engine throws.
   - [x] Extract ElementHighlighter (web JS highlight cluster + activeHighlightBounds). Driver keeps thin delegating highlightElement/highlightVisualElement/clearHighlight/getActiveHighlightBounds; the highlighter holds the WebDriver + nativeMobile flag. Non-breaking.
   - [ ] Extract MobileGestures (Appium gesture surface)
   - [ ] Extract ElementFinder (By-based find + decorate proxy)
-- [ ] 4.2 Visual behind VisualEngine strategy
-- [ ] 5.1 WindowSizingResolver
-- [ ] 5.2 BrowserConfig model + normalizer
-- [ ] 5.3 Rewrite BrowserConfigSchema
-- [ ] 5.4 Wire Playwright resolver
-- [ ] 5.5 Wire SeleniumDriverManager
-- [ ] 5.6 Migration path + committed configs + template
+- [ ] 4.2 Visual behind VisualEngine strategy — **DEFERRED** (reshapes consumed `Visual.checkWindow`; no near-term benefit)
+- [ ] 5.1 WindowSizingResolver — **DO NOW** (non-breaking sizing-consistency slice)
+- [ ] 5.4 Wire Playwright resolver to WindowSizingResolver — **DO NOW** (existing keys, no schema change)
+- [ ] 5.5 Wire SeleniumDriverManager to WindowSizingResolver — **DO NOW** (existing keys, replace the 1920x1080 literal)
+- [ ] 5.2 BrowserConfig model + normalizer — **DEFERRED** (part of the breaking schema slice)
+- [ ] 5.3 Rewrite BrowserConfigSchema — **DEFERRED** (contract change)
+- [ ] 5.6 Migration path + committed configs + template — **DEFERRED** (contract change)
+- [ ] 6.1 Harden `PlaywrightLocator.from(By)` — replace `by.toString()` prefix-matching with structured strategy dispatch (NEW)
+- [ ] 6.2 Unsupported-locator parity across engines (NEW)
+- [ ] 6.3 Document the `By` + `PlaywrightBy` locator contract in the screen-authoring guide (NEW)
 
 ## Out of scope (deliberately)
 

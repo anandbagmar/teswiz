@@ -1,8 +1,8 @@
 package com.znsio.teswiz.config.browser;
 
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -26,11 +26,9 @@ public final class PlaywrightBrowserConfigResolver {
 
         JSONObject browserConfigForBrowserType = browserConfig.getJSONObject(browserKey);
         JSONObject playwrightConfig = browserConfigForBrowserType.optJSONObject("playwright");
-        JSONObject playwrightLaunchOptions = null == playwrightConfig
-                ? new JSONObject()
+        JSONObject playwrightLaunchOptions = null == playwrightConfig ? new JSONObject()
                 : playwrightConfig.optJSONObject("launchOptions");
-        JSONObject playwrightContextOptions = null == playwrightConfig
-                ? new JSONObject()
+        JSONObject playwrightContextOptions = null == playwrightConfig ? new JSONObject()
                 : playwrightConfig.optJSONObject("contextOptions");
 
         JSONObject legacyHeadlessOptions = browserConfigForBrowserType.optJSONObject("headlessOptions");
@@ -65,13 +63,9 @@ public final class PlaywrightBrowserConfigResolver {
             if (isMaximized) {
                 contextOptions.put("viewport", null);
             } else {
-                int defaultWidth = com.znsio.teswiz.config.TeswizRuntimeConfiguration
-                        .getInt(com.znsio.teswiz.config.TeswizRuntimeConfiguration.DRIVER_VIEWPORT_WIDTH);
-                int defaultHeight = com.znsio.teswiz.config.TeswizRuntimeConfiguration
-                        .getInt(com.znsio.teswiz.config.TeswizRuntimeConfiguration.DRIVER_VIEWPORT_HEIGHT);
                 Map<String, Object> viewport = new LinkedHashMap<>();
-                viewport.put("width", defaultWidth);
-                viewport.put("height", defaultHeight);
+                viewport.put("width", WindowSizingResolver.defaultWidth());
+                viewport.put("height", WindowSizingResolver.defaultHeight());
                 contextOptions.put("viewport", viewport);
             }
         }

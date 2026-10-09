@@ -8,6 +8,10 @@ import static java.util.Collections.singletonList;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,20 +22,18 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import org.openqa.selenium.NoSuchElementException;
 import java.util.Set;
-
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.util.stream.Collectors;
+
+import org.openqa.selenium.interactions.Sequence;
+
+import org.apache.commons.lang3.NotImplementedException;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.Point;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -39,7 +41,6 @@ import org.openqa.selenium.WrapsElement;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.interactions.Pause;
 import org.openqa.selenium.interactions.PointerInput;
-import org.openqa.selenium.interactions.Sequence;
 import org.openqa.selenium.remote.RemoteWebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -47,15 +48,14 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import com.google.common.collect.ImmutableMap;
 import com.znsio.teswiz.context.SessionContext;
 import com.znsio.teswiz.context.TestExecutionContext;
-import com.znsio.teswiz.entities.Direction;
 import com.znsio.teswiz.entities.Platform;
 import com.znsio.teswiz.entities.TEST_CONTEXT;
 import com.znsio.teswiz.exceptions.FileNotUploadedException;
 import com.znsio.teswiz.exceptions.InvalidTestDataException;
 
+import com.znsio.teswiz.entities.Direction;
 import io.appium.java_client.AppiumBy;
 import io.appium.java_client.AppiumDriver;
-import io.appium.java_client.HidesKeyboard;
 import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.android.HasNotifications;
 import io.appium.java_client.android.StartsActivity;
@@ -76,7 +76,10 @@ public class Driver {
     private final boolean isRunningInHeadlessMode;
     private static final String TO = "' to '";
     private Visual visually;
-    public Driver(String testName, Platform forPlatform, String userPersona, String appName, AppiumDriver appiumDriver) {
+    private ElementWaiter elementWaiter;
+
+    public Driver(String testName, Platform forPlatform, String userPersona, String appName,
+            AppiumDriver appiumDriver) {
         this.driver = appiumDriver;
         this.type = APPIUM_DRIVER;
         this.userPersona = userPersona;
@@ -133,6 +136,55 @@ public class Driver {
 
     public WebElement findElementByAccessibilityId(String locator) {
         return decorateElement(driver.findElement(AppiumBy.accessibilityId(locator)));
+    }
+
+    /**
+     * Bounded, non-throwing element-visibility/presence/text waits. See {@link ElementWaiter}. Lazily created and
+     * cached; engine-agnostic (drives the underlying {@link WebDriver} via {@link By}).
+     *
+     * @return the per-driver {@link ElementWaiter}
+     */
+    public ElementWaiter elementWaiter() {
+        if (elementWaiter == null) {
+            elementWaiter = new ElementWaiter(driver);
+        }
+        return elementWaiter;
+    }
+
+    /**
+     * Bounded, non-throwing visibility check. Convenience delegate to {@link ElementWaiter#isElementVisible(By, int)}.
+     *
+     * @param locator               the element locator (any {@link By}, including {@code PlaywrightBy.*})
+     * @param numberOfSecondsToWait the bound, in seconds
+     * @return {@code true} if visible within the bound, else {@code false}
+     */
+    public boolean isElementVisible(By locator, int numberOfSecondsToWait) {
+        return elementWaiter().isElementVisible(locator, numberOfSecondsToWait);
+    }
+
+    /**
+     * Bounded, non-throwing presence check. Convenience delegate to
+     * {@link ElementWaiter#isElementPresentWithin(By, int)}.
+     *
+     * @param locator               the element locator (any {@link By})
+     * @param numberOfSecondsToWait the bound, in seconds
+     * @return {@code true} if present within the bound, else {@code false}
+     */
+    public boolean isElementPresentWithin(By locator, int numberOfSecondsToWait) {
+        return elementWaiter().isElementPresentWithin(locator, numberOfSecondsToWait);
+    }
+
+    /**
+     * Bounded, non-throwing text-presence check. Convenience delegate to
+     * {@link ElementWaiter#waitTillTextIsPresent(By, String, int)}.
+     *
+     * @param locator               the element locator (any {@link By})
+     * @param text                  the text expected to be present in the element
+     * @param numberOfSecondsToWait the bound, in seconds
+     * @return {@code true} if the text is present within the bound, else {@code false}
+     */
+    public boolean waitTillTextIsPresent(By locator, String text, int numberOfSecondsToWait) {
+        return elementWaiter().waitTillTextIsPresent(locator, text, numberOfSecondsToWait);
     }
 
     public void waitForAlert() {
@@ -249,7 +301,7 @@ public class Driver {
         int midWidth = screenSize.width / 2;
         if (LOGGER.isInfoEnabled()) {
             LOGGER.info(String.format("tapOnMiddleOfScreen: Screen dimensions: '%s'. Tapping on coordinates: %d:%d%n",
-                screenSize, midWidth, midHeight));
+                    screenSize, midWidth, midHeight));
         }
         PointerInput touch = new PointerInput(PointerInput.Kind.TOUCH, "touch");
         Sequence clickPosition = new Sequence(touch, 1);
@@ -322,7 +374,9 @@ public class Driver {
 
     public void swipeByPassingPercentageAttributes(int percentScreenHeight, int fromPercentScreenWidth,
             int toPercentScreenWidth) {
-        LOGGER.info("percent attributes passed to method are: percentScreenHeight: {}, fromPercentScreenWidth: {}, toPercentScreenWidth: {}", percentScreenHeight, fromPercentScreenWidth, toPercentScreenWidth);
+        LOGGER.info(
+                "percent attributes passed to method are: percentScreenHeight: {}, fromPercentScreenWidth: {}, toPercentScreenWidth: {}",
+                percentScreenHeight, fromPercentScreenWidth, toPercentScreenWidth);
         checkPercentagesAreValid(percentScreenHeight, fromPercentScreenWidth, toPercentScreenWidth);
         int height = getWindowHeight() * percentScreenHeight / 100;
         int fromWidth = getWindowWidth() * fromPercentScreenWidth / 100;
@@ -455,7 +509,7 @@ public class Driver {
     public void longPress(By elementId, long durationInSeconds) {
         WebElement elementToBeLongTapped = new WebDriverWait(driver,
                 Duration.ofSeconds(DriverDefaults.waitTimeoutSeconds()))
-                .until(ExpectedConditions.elementToBeClickable(elementId));
+                        .until(ExpectedConditions.elementToBeClickable(elementId));
         final Point location = elementToBeLongTapped.getLocation();
         final PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
         final Sequence sequence = new Sequence(finger, 1);
@@ -568,7 +622,8 @@ public class Driver {
 
     private ElementHighlighter elementHighlighter() {
         if (this.elementHighlighter == null) {
-            this.elementHighlighter = new ElementHighlighter(driver, APPIUM_DRIVER.equals(type) || driver instanceof AppiumDriver);
+            this.elementHighlighter = new ElementHighlighter(driver,
+                    APPIUM_DRIVER.equals(type) || driver instanceof AppiumDriver);
         }
         return this.elementHighlighter;
     }
@@ -646,17 +701,15 @@ public class Driver {
         if (element == null) {
             return null;
         }
-        if (Proxy.isProxyClass(element.getClass()) && Proxy.getInvocationHandler(element) instanceof ElementInvocationHandler) {
+        if (Proxy.isProxyClass(element.getClass())
+                && Proxy.getInvocationHandler(element) instanceof ElementInvocationHandler) {
             return element;
         }
         if (element.getClass().getName().contains("Playwright")) {
             return element;
         }
-        return (WebElement) Proxy.newProxyInstance(
-                Driver.class.getClassLoader(),
-                new Class<?>[]{WebElement.class, WrapsElement.class},
-                new ElementInvocationHandler(element)
-        );
+        return (WebElement) Proxy.newProxyInstance(Driver.class.getClassLoader(),
+                new Class<?>[] { WebElement.class, WrapsElement.class }, new ElementInvocationHandler(element));
     }
 
     private List<WebElement> decorateElements(List<WebElement> elements) {
@@ -679,7 +732,8 @@ public class Driver {
             if ("getWrappedElement".equals(methodName) && (args == null || args.length == 0)) {
                 return target;
             }
-            if ("click".equals(methodName) || "sendKeys".equals(methodName) || "clear".equals(methodName) || "submit".equals(methodName)) {
+            if ("click".equals(methodName) || "sendKeys".equals(methodName) || "clear".equals(methodName)
+                    || "submit".equals(methodName)) {
                 highlightElement(target);
             }
             try {
@@ -700,8 +754,9 @@ public class Driver {
                 if (viewportWidth > 0) {
                     double scale = (double) screenshotImageWidth / viewportWidth;
                     if (LOGGER.isInfoEnabled()) {
-                        LOGGER.info(String.format("Calculated mobile viewport scale factor: %.2f (screenshot width: %d px, window width: %d px)",
-                            scale, screenshotImageWidth, viewportWidth));
+                        LOGGER.info(String.format(
+                                "Calculated mobile viewport scale factor: %.2f (screenshot width: %d px, window width: %d px)",
+                                scale, screenshotImageWidth, viewportWidth));
                     }
                     return scale;
                 }
@@ -712,13 +767,15 @@ public class Driver {
         }
         if (driver instanceof JavascriptExecutor js) {
             try {
-                Object result = js.executeScript("return window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;");
+                Object result = js.executeScript(
+                        "return window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;");
                 if (result instanceof Number num && num.doubleValue() > 0) {
                     double viewportWidth = num.doubleValue();
                     double scale = (double) screenshotImageWidth / viewportWidth;
                     if (LOGGER.isInfoEnabled()) {
-                        LOGGER.info(String.format("Calculated viewport scale factor: %.2f (screenshot width: %d px, viewport width: %.0f px)",
-                            scale, screenshotImageWidth, viewportWidth));
+                        LOGGER.info(String.format(
+                                "Calculated viewport scale factor: %.2f (screenshot width: %d px, viewport width: %.0f px)",
+                                scale, screenshotImageWidth, viewportWidth));
                     }
                     return scale;
                 }
@@ -781,8 +838,8 @@ public class Driver {
             }
             scrollDownByScreenSize();
         }
-        throw new NoSuchElementException("scrollTillElementIntoView: element '" + elementId
-                + "' was not visible after " + maxScrollAttempts + " scroll attempts");
+        throw new NoSuchElementException("scrollTillElementIntoView: element '" + elementId + "' was not visible after "
+                + maxScrollAttempts + " scroll attempts");
     }
 
     public void scrollTillElementIntoView(WebElement element) {
@@ -834,10 +891,8 @@ public class Driver {
     }
 
     /**
-     * This method injects the media to browserstack to perform,
-     * image scanning eg: QRcode,barcode etc
-     * Throws NotImplementedException if platform is NOT android, and cloudName is
-     * NOT browserstack
+     * This method injects the media to browserstack to perform, image scanning eg: QRcode,barcode etc Throws
+     * NotImplementedException if platform is NOT android, and cloudName is NOT browserstack
      *
      * @param uploadFileURL is an absolute path where a media file is located
      */
@@ -853,14 +908,11 @@ public class Driver {
     }
 
     /**
-     * This method injects the already uploaded media in browserstack(media url) to
-     * browserstack real device,
-     * image scanning eg: QRcode,barcode etc
-     * Throws NotImplementedException if platform is NOT android, and cloudName is
-     * NOT browserstack
+     * This method injects the already uploaded media in browserstack(media url) to browserstack real device, image
+     * scanning eg: QRcode,barcode etc Throws NotImplementedException if platform is NOT android, and cloudName is NOT
+     * browserstack
      *
-     * @param browserStackMediaUrl is a media url generated after uploading a file
-     *                             to browserstack cloud using BS API
+     * @param browserStackMediaUrl is a media url generated after uploading a file to browserstack cloud using BS API
      */
     public void injectMediaUrlToBrowserstackDevice(String browserStackMediaUrl) {
         String cloudName = Runner.getCloudName();
@@ -988,9 +1040,8 @@ public class Driver {
                 .addAction(finger.createPointerMove(Duration.ZERO, PointerInput.Origin.viewport(), fingerStartXPoint,
                         fingerStartYPoint))
                 .addAction(finger.createPointerDown(PointerInput.MouseButton.LEFT.asArg()))
-                .addAction(new Pause(finger, Duration.ofMillis(10)))
-                .addAction(finger.createPointerMove(duration, PointerInput.Origin.viewport(), fingerEndXPoint,
-                        fingerEndYPoint))
+                .addAction(new Pause(finger, Duration.ofMillis(10))).addAction(finger.createPointerMove(duration,
+                        PointerInput.Origin.viewport(), fingerEndXPoint, fingerEndYPoint))
                 .addAction(finger.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
 
         return fingerPath;
@@ -1000,8 +1051,8 @@ public class Driver {
             Duration duration) {
 
         double angle = Math.PI / 2 - (2 * Math.PI / 360 * pinchAngle); // convert degree angle into radians
-        LOGGER.debug("Locus: %s, startRadius: %d, endRadius: %d, pinchAngle: %d, duration: %s"
-                .formatted(locus, startRadius, endRadius, pinchAngle, duration));
+        LOGGER.debug("Locus: %s, startRadius: %d, endRadius: %d, pinchAngle: %d, duration: %s".formatted(locus,
+                startRadius, endRadius, pinchAngle, duration));
 
         Sequence finger1Path = fingerAction("finger1", locus, startRadius, endRadius, angle, duration);
 
@@ -1127,9 +1178,8 @@ public class Driver {
         return switch (Runner.getPlatform()) {
             case android -> ((AndroidDriver) driver).getClipboardText();
             case iOS -> ((IOSDriver) driver).getClipboardText();
-            default ->
-                throw new NotImplementedException(
-                        "getClipboardText method is not implemented for " + Runner.getPlatform());
+            default -> throw new NotImplementedException(
+                    "getClipboardText method is not implemented for " + Runner.getPlatform());
         };
     }
 
@@ -1137,9 +1187,8 @@ public class Driver {
         switch (Runner.getPlatform()) {
             case android -> ((AndroidDriver) driver).setClipboardText(text);
             case iOS -> ((IOSDriver) driver).setClipboardText(text);
-            default ->
-                throw new NotImplementedException(
-                        "setClipboardText method is not implemented for " + Runner.getPlatform());
+            default -> throw new NotImplementedException(
+                    "setClipboardText method is not implemented for " + Runner.getPlatform());
         }
     }
 
@@ -1163,8 +1212,7 @@ public class Driver {
             if (driverForPlatform == Platform.android) {
                 throw e;
             }
-            LOGGER.warn("Best-effort web view context switch failed on {}: {}",
-                    driverForPlatform, e.getMessage());
+            LOGGER.warn("Best-effort web view context switch failed on {}: {}", driverForPlatform, e.getMessage());
             return false;
         }
     }
@@ -1176,18 +1224,17 @@ public class Driver {
             if (driverForPlatform == Platform.android) {
                 throw e;
             }
-            LOGGER.warn("Best-effort native context switch failed on {}: {}",
-                    driverForPlatform, e.getMessage());
+            LOGGER.warn("Best-effort native context switch failed on {}: {}", driverForPlatform, e.getMessage());
         }
     }
 
     public void clickAndWaitForElement(By elementToClick, By elementToWaitFor) {
-        clickAndWaitForElement(elementToClick, elementToWaitFor,
-                DriverDefaults.clickRetryAttempts(), DriverDefaults.waitTimeoutSeconds());
+        clickAndWaitForElement(elementToClick, elementToWaitFor, DriverDefaults.clickRetryAttempts(),
+                DriverDefaults.waitTimeoutSeconds());
     }
 
-    public void clickAndWaitForElement(By elementToClick, By elementToWaitFor,
-            int maxAttempts, int timeoutPerAttemptInSeconds) {
+    public void clickAndWaitForElement(By elementToClick, By elementToWaitFor, int maxAttempts,
+            int timeoutPerAttemptInSeconds) {
         RuntimeException lastFailure = null;
         for (int attempt = 0; attempt < maxAttempts; attempt++) {
             try {
@@ -1199,13 +1246,11 @@ public class Driver {
                 waitFor(DriverDefaults.clickRetryDelaySeconds());
             }
         }
-        throw new RuntimeException(
-                "Unable to click '" + elementToClick + "' and reach '" + elementToWaitFor + "'",
+        throw new RuntimeException("Unable to click '" + elementToClick + "' and reach '" + elementToWaitFor + "'",
                 lastFailure);
     }
 
-    public void clickWithFallbackAndWaitForDisappearance(By primary, By fallback,
-            By elementToDisappear,
+    public void clickWithFallbackAndWaitForDisappearance(By primary, By fallback, By elementToDisappear,
             int timeoutInSeconds) {
         waitTillElementIsPresent(elementToDisappear, timeoutInSeconds);
         try {
@@ -1223,157 +1268,106 @@ public class Driver {
         }
     }
 
-    // ------------------------------------------------------------------------
-    // DEPRECATED: Visual element find pass-throughs.
-    //
-    // These forward to the Visual subsystem and are a redundant second hop. Call
-    // getVisual().<sameMethod>(...) instead - the signatures are identical, so migration is a
-    // mechanical rename. All in-repo callers have been repointed to getVisual()/the Visual handle.
-    // Scheduled for removal in a future major release (see Changelog). Kept for one release so
-    // downstream consumers can migrate without a hard break.
-    // ------------------------------------------------------------------------
-
-    /** @deprecated use {@code getVisual().findByText(text)} */
-    @Deprecated
     public VisualElement findByText(String text) {
         return this.visually.findByText(text);
     }
 
-    /** @deprecated use {@code getVisual().findByImage(...)} */
-    @Deprecated
     public VisualElement findByImage(String... imageTemplatePaths) {
         return this.visually.findByImage(Arrays.asList(imageTemplatePaths));
     }
 
-    /** @deprecated use {@code getVisual().findByImage(imageTemplatePaths)} */
-    @Deprecated
     public VisualElement findByImage(List<String> imageTemplatePaths) {
         return this.visually.findByImage(imageTemplatePaths);
     }
 
-    /** @deprecated use {@code getVisual().findByImage(imageTemplatePaths, confidenceThreshold)} */
-    @Deprecated
     public VisualElement findByImage(List<String> imageTemplatePaths, double confidenceThreshold) {
         return this.visually.findByImage(imageTemplatePaths, confidenceThreshold);
     }
 
-    /** @deprecated use {@code getVisual().findByImage(imageTemplatePaths, confidenceThreshold, region)} */
-    @Deprecated
-    public VisualElement findByImage(List<String> imageTemplatePaths, double confidenceThreshold, com.znsio.teswiz.entities.VisualRegion region) {
+    public VisualElement findByImage(List<String> imageTemplatePaths, double confidenceThreshold,
+            com.znsio.teswiz.entities.VisualRegion region) {
         return this.visually.findByImage(imageTemplatePaths, confidenceThreshold, region);
     }
 
-    /** @deprecated use {@code getVisual().findByTextOrImage(...)} */
-    @Deprecated
     public VisualElement findByTextOrImage(String text, String... imageTemplatePaths) {
         return this.visually.findByTextOrImage(text, Arrays.asList(imageTemplatePaths));
     }
 
-    /** @deprecated use {@code getVisual().findByTextOrImage(text, imageTemplatePaths)} */
-    @Deprecated
     public VisualElement findByTextOrImage(String text, List<String> imageTemplatePaths) {
         return this.visually.findByTextOrImage(text, imageTemplatePaths);
     }
 
-    /** @deprecated use {@code getVisual().findByTextOrImage(text, imageTemplatePaths, region)} */
-    @Deprecated
-    public VisualElement findByTextOrImage(String text, List<String> imageTemplatePaths, com.znsio.teswiz.entities.VisualRegion region) {
+    public VisualElement findByTextOrImage(String text, List<String> imageTemplatePaths,
+            com.znsio.teswiz.entities.VisualRegion region) {
         return this.visually.findByTextOrImage(text, imageTemplatePaths, region);
     }
 
-    /** @deprecated use {@code getVisual().findByImageOrText(imageTemplatePaths, text)} */
-    @Deprecated
     public VisualElement findByImageOrText(List<String> imageTemplatePaths, String text) {
         return this.visually.findByImageOrText(imageTemplatePaths, text);
     }
 
-    /** @deprecated use {@code getVisual().findAllByText(text)} */
-    @Deprecated
     public List<VisualElement> findAllByText(String text) {
         return this.visually.findAllByText(text);
     }
 
-    /** @deprecated use {@code getVisual().findAllByImage(...)} */
-    @Deprecated
     public List<VisualElement> findAllByImage(String... imageTemplatePaths) {
         return this.visually.findAllByImage(Arrays.asList(imageTemplatePaths));
     }
 
-    /** @deprecated use {@code getVisual().findAllByImage(imageTemplatePaths)} */
-    @Deprecated
     public List<VisualElement> findAllByImage(List<String> imageTemplatePaths) {
         return this.visually.findAllByImage(imageTemplatePaths);
     }
 
-    /** @deprecated use {@code getVisual().findAllByImage(imageTemplatePaths, confidenceThreshold)} */
-    @Deprecated
     public List<VisualElement> findAllByImage(List<String> imageTemplatePaths, double confidenceThreshold) {
         return this.visually.findAllByImage(imageTemplatePaths, confidenceThreshold);
     }
 
-    /** @deprecated use {@code getVisual().findAllByTextOrImage(...)} */
-    @Deprecated
     public List<VisualElement> findAllByTextOrImage(String text, String... imageTemplatePaths) {
         return this.visually.findAllByTextOrImage(text, Arrays.asList(imageTemplatePaths));
     }
 
-    /** @deprecated use {@code getVisual().findAllByTextOrImage(text, imageTemplatePaths)} */
-    @Deprecated
     public List<VisualElement> findAllByTextOrImage(String text, List<String> imageTemplatePaths) {
         return this.visually.findAllByTextOrImage(text, imageTemplatePaths);
     }
 
-    /** @deprecated use {@code getVisual().findAllByImageOrText(imageTemplatePaths, text)} */
-    @Deprecated
     public List<VisualElement> findAllByImageOrText(List<String> imageTemplatePaths, String text) {
         return this.visually.findAllByImageOrText(imageTemplatePaths, text);
     }
 
-    /** @deprecated use {@code getVisual().findRelativeByText(targetText, direction, anchorText)} */
-    @Deprecated
-    public VisualElement findRelativeByText(String targetText, com.znsio.teswiz.entities.SpatialDirection direction, String anchorText) {
+    public VisualElement findRelativeByText(String targetText, com.znsio.teswiz.entities.SpatialDirection direction,
+            String anchorText) {
         return this.visually.findRelativeByText(targetText, direction, anchorText);
     }
 
-    /** @deprecated use {@code getVisual().findRelativeByText(targetText, direction, anchor)} */
-    @Deprecated
-    public VisualElement findRelativeByText(String targetText, com.znsio.teswiz.entities.SpatialDirection direction, VisualElement anchor) {
+    public VisualElement findRelativeByText(String targetText, com.znsio.teswiz.entities.SpatialDirection direction,
+            VisualElement anchor) {
         return this.visually.findRelativeByText(targetText, direction, anchor);
     }
 
-    /** @deprecated use {@code getVisual().findRelativeByImage(targetImagePaths, direction, anchorText)} */
-    @Deprecated
-    public VisualElement findRelativeByImage(List<String> targetImagePaths, com.znsio.teswiz.entities.SpatialDirection direction, String anchorText) {
+    public VisualElement findRelativeByImage(List<String> targetImagePaths,
+            com.znsio.teswiz.entities.SpatialDirection direction, String anchorText) {
         return this.visually.findRelativeByImage(targetImagePaths, direction, anchorText);
     }
 
-    /** @deprecated use {@code getVisual().findRelativeByImage(targetImagePaths, direction, anchor)} */
-    @Deprecated
-    public VisualElement findRelativeByImage(List<String> targetImagePaths, com.znsio.teswiz.entities.SpatialDirection direction, VisualElement anchor) {
+    public VisualElement findRelativeByImage(List<String> targetImagePaths,
+            com.znsio.teswiz.entities.SpatialDirection direction, VisualElement anchor) {
         return this.visually.findRelativeByImage(targetImagePaths, direction, anchor);
     }
 
-    /** @deprecated use {@code getVisual().findByText(text, region)} */
-    @Deprecated
     public VisualElement findByText(String text, com.znsio.teswiz.entities.VisualRegion region) {
         return this.visually.findByText(text, region);
     }
 
-    /** @deprecated use {@code getVisual().findByImage(imageTemplatePaths, region)} */
-    @Deprecated
     public VisualElement findByImage(List<String> imageTemplatePaths, com.znsio.teswiz.entities.VisualRegion region) {
         return this.visually.findByImage(imageTemplatePaths, region);
     }
 
-    /** @deprecated use {@code getVisual().findAllByText(text, region)} */
-    @Deprecated
     public List<VisualElement> findAllByText(String text, com.znsio.teswiz.entities.VisualRegion region) {
         return this.visually.findAllByText(text, region);
     }
 
-    /** @deprecated use {@code getVisual().findAllByImage(imageTemplatePaths, region)} */
-    @Deprecated
-    public List<VisualElement> findAllByImage(List<String> imageTemplatePaths, com.znsio.teswiz.entities.VisualRegion region) {
+    public List<VisualElement> findAllByImage(List<String> imageTemplatePaths,
+            com.znsio.teswiz.entities.VisualRegion region) {
         return this.visually.findAllByImage(imageTemplatePaths, region);
     }
 
@@ -1383,14 +1377,23 @@ public class Driver {
         }
         switch (visualBy.getType()) {
             case OCR_TEXT:
-                VisualElement ocrElement = visualBy.getRegion() != null ? this.visually.findByText(visualBy.getText(), visualBy.getRegion()) : this.visually.findByText(visualBy.getText());
+                VisualElement ocrElement = visualBy.getRegion() != null
+                        ? this.visually.findByText(visualBy.getText(), visualBy.getRegion())
+                        : this.visually.findByText(visualBy.getText());
                 return ocrElement != null ? ocrElement.toWebElement() : null;
             case IMAGE_TEMPLATE:
-                VisualElement imageElement = visualBy.getRegion() != null ? this.visually.findByImage(List.of(visualBy.getImagePath()), visualBy.getConfidenceThreshold(), visualBy.getRegion()) : this.visually.findByImage(List.of(visualBy.getImagePath()), visualBy.getConfidenceThreshold());
+                VisualElement imageElement = visualBy.getRegion() != null
+                        ? this.visually.findByImage(List.of(visualBy.getImagePath()), visualBy.getConfidenceThreshold(),
+                                visualBy.getRegion())
+                        : this.visually.findByImage(List.of(visualBy.getImagePath()),
+                                visualBy.getConfidenceThreshold());
                 return imageElement != null ? imageElement.toWebElement() : null;
             case FALLBACK_TEXT_IMAGE:
             default:
-                VisualElement fallbackElement = visualBy.getRegion() != null ? this.visually.findByTextOrImage(visualBy.getText(), List.of(visualBy.getImagePath()), visualBy.getRegion()) : this.visually.findByTextOrImage(visualBy.getText(), List.of(visualBy.getImagePath()));
+                VisualElement fallbackElement = visualBy.getRegion() != null
+                        ? this.visually.findByTextOrImage(visualBy.getText(), List.of(visualBy.getImagePath()),
+                                visualBy.getRegion())
+                        : this.visually.findByTextOrImage(visualBy.getText(), List.of(visualBy.getImagePath()));
                 return fallbackElement != null ? fallbackElement.toWebElement() : null;
         }
     }
@@ -1405,14 +1408,15 @@ public class Driver {
                 visualElements = this.visually.findAllByText(visualBy.getText());
                 break;
             case IMAGE_TEMPLATE:
-                visualElements = this.visually.findAllByImage(List.of(visualBy.getImagePath()), visualBy.getConfidenceThreshold());
+                visualElements = this.visually.findAllByImage(List.of(visualBy.getImagePath()),
+                        visualBy.getConfidenceThreshold());
                 break;
             case FALLBACK_TEXT_IMAGE:
             default:
-                visualElements = this.visually.findAllByTextOrImage(visualBy.getText(), List.of(visualBy.getImagePath()));
+                visualElements = this.visually.findAllByTextOrImage(visualBy.getText(),
+                        List.of(visualBy.getImagePath()));
                 break;
         }
         return visualElements.stream().map(VisualElement::toWebElement).collect(Collectors.toList());
     }
 }
-

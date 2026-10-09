@@ -7,22 +7,23 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.List;
+import org.openqa.selenium.NoSuchElementException;
 import java.util.Set;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
+import org.json.JSONObject;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Cookie;
 import org.openqa.selenium.Dimension;
-import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.Point;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.WindowType;
 import org.openqa.selenium.logging.LogEntries;
 import org.openqa.selenium.logging.LogType;
 import org.openqa.selenium.logging.Logs;
-import org.json.JSONObject;
 
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Page.NavigateOptions;
@@ -32,15 +33,14 @@ import com.znsio.teswiz.config.TeswizRuntimeConfiguration;
 import com.znsio.teswiz.runner.Driver;
 import com.znsio.teswiz.runner.Visual;
 import com.znsio.teswiz.visual.PlaywrightVisualDriver;
-import com.znsio.teswiz.visual.PlaywrightVisualSessionRequest;
 import com.znsio.teswiz.visual.PlaywrightVisualResults;
+import com.znsio.teswiz.visual.PlaywrightVisualSessionRequest;
 import com.znsio.teswiz.web.playwright.screen.PlaywrightJavaScreenContext;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+import org.openqa.selenium.WindowType;
 
 public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.selenium.JavascriptExecutor,
-        org.openqa.selenium.TakesScreenshot, PlaywrightVisualDriver,
-        com.znsio.teswiz.visual.NativeCoordinateInput {
+        org.openqa.selenium.TakesScreenshot, PlaywrightVisualDriver, com.znsio.teswiz.visual.NativeCoordinateInput {
     private static final Logger LOGGER = LogManager.getLogger(PlaywrightJavaWebDriver.class.getName());
     private static final String BROWSERSTACK_EXECUTOR_PREFIX = "browserstack_executor:";
     private static final String LAMBDATEST_ACTION_PREFIX = "lambdatest_action:";
@@ -51,8 +51,8 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
     private Duration implicitWaitTimeout = Duration.ZERO;
     private Duration pageLoadTimeout = Duration.ofSeconds(
             TeswizRuntimeConfiguration.getInt(TeswizRuntimeConfiguration.PLAYWRIGHT_PAGE_LOAD_TIMEOUT_SECONDS));
-    private Duration scriptTimeout = Duration.ofSeconds(
-            TeswizRuntimeConfiguration.getInt(TeswizRuntimeConfiguration.PLAYWRIGHT_SCRIPT_TIMEOUT_SECONDS));
+    private Duration scriptTimeout = Duration
+            .ofSeconds(TeswizRuntimeConfiguration.getInt(TeswizRuntimeConfiguration.PLAYWRIGHT_SCRIPT_TIMEOUT_SECONDS));
     private String pendingLambdaTestStatus;
     private PlaywrightJavaVisualSession visualSession;
     private PlaywrightSearchRoot currentSearchRoot;
@@ -90,8 +90,8 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
 
     @Override
     public void longPressAtViewportPoint(int x, int y, java.time.Duration duration) {
-        LOGGER.info("Long-pressing at viewport point ({}, {}) for {} ms using Playwright native mouse input",
-                x, y, duration.toMillis());
+        LOGGER.info("Long-pressing at viewport point ({}, {}) for {} ms using Playwright native mouse input", x, y,
+                duration.toMillis());
         session.page().mouse().move(x, y);
         session.page().mouse().down();
         session.page().waitForTimeout(duration.toMillis());
@@ -100,8 +100,8 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
 
     @Override
     public void dragFromViewportPoint(int startX, int startY, int endX, int endY) {
-        LOGGER.info("Dragging from viewport point ({}, {}) to ({}, {}) using Playwright native mouse input",
-                startX, startY, endX, endY);
+        LOGGER.info("Dragging from viewport point ({}, {}) to ({}, {}) using Playwright native mouse input", startX,
+                startY, endX, endY);
         session.page().mouse().move(startX, startY);
         session.page().mouse().down();
         session.page().mouse().move((startX + endX) / 2.0, (startY + endY) / 2.0);
@@ -112,13 +112,11 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
     @Override
     public void get(String url) {
         try {
-            session.page().navigate(url, new NavigateOptions()
-                    .setTimeout((double) pageLoadTimeout.toMillis())
+            session.page().navigate(url, new NavigateOptions().setTimeout((double) pageLoadTimeout.toMillis())
                     .setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
         } catch (com.microsoft.playwright.PlaywrightException e) {
             LOGGER.warn("DOMContentLoaded timeout for url: {}. Falling back to COMMIT navigation.", url, e);
-            session.page().navigate(url, new NavigateOptions()
-                    .setTimeout((double) pageLoadTimeout.toMillis())
+            session.page().navigate(url, new NavigateOptions().setTimeout((double) pageLoadTimeout.toMillis())
                     .setWaitUntil(WaitUntilState.COMMIT));
         }
     }
@@ -139,8 +137,7 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
         int count = PlaywrightJavaWait.untilCountAtLeast(locator, implicitWaitTimeout, 0);
         return java.util.stream.IntStream.range(0, count)
                 .mapToObj(index -> new PlaywrightJavaWebElement(locator.nth(index), implicitWaitTimeout))
-                .map(WebElement.class::cast)
-                .toList();
+                .map(WebElement.class::cast).toList();
     }
 
     @Override
@@ -198,7 +195,8 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
                 } else {
                     String selector = String.format("iframe[name='%s'], iframe#%s, frame[name='%s'], frame#%s",
                             nameOrId, nameOrId, nameOrId, nameOrId);
-                    currentSearchRoot = new PlaywrightSearchRoot.FrameLocatorSearchRoot(session.page().frameLocator(selector));
+                    currentSearchRoot = new PlaywrightSearchRoot.FrameLocatorSearchRoot(
+                            session.page().frameLocator(selector));
                 }
                 return PlaywrightJavaWebDriver.this;
             }
@@ -206,9 +204,11 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
             @Override
             public WebDriver frame(WebElement frameElement) {
                 if (frameElement instanceof PlaywrightJavaWebElement playwrightElement) {
-                    currentSearchRoot = new PlaywrightSearchRoot.FrameLocatorSearchRoot(playwrightElement.locator().contentFrame());
+                    currentSearchRoot = new PlaywrightSearchRoot.FrameLocatorSearchRoot(
+                            playwrightElement.locator().contentFrame());
                 } else {
-                    currentSearchRoot = new PlaywrightSearchRoot.FrameLocatorSearchRoot(session.page().frameLocator("iframe, frame"));
+                    currentSearchRoot = new PlaywrightSearchRoot.FrameLocatorSearchRoot(
+                            session.page().frameLocator("iframe, frame"));
                 }
                 return PlaywrightJavaWebDriver.this;
             }
@@ -249,7 +249,9 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
 
             @Override
             public org.openqa.selenium.Alert alert() {
-                throw new org.openqa.selenium.NoAlertPresentException("Alerts are not implemented for Playwright Java");
+                throw new org.openqa.selenium.NoAlertPresentException(com.znsio.teswiz.web.WebEngineCapabilities
+                        .formatDiagnosticMessage(com.znsio.teswiz.web.WebEngine.PLAYWRIGHT_JAVA,
+                                com.znsio.teswiz.web.WebCapability.ALERTS, "switchTo().alert()"));
             }
 
             @Override
@@ -313,8 +315,7 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
             @Override
             public void deleteCookieNamed(String name) {
                 List<com.microsoft.playwright.options.Cookie> remaining = session.browserContext().cookies().stream()
-                        .filter(c -> !c.name.equals(name))
-                        .toList();
+                        .filter(c -> !c.name.equals(name)).toList();
                 session.browserContext().clearCookies();
                 if (!remaining.isEmpty()) {
                     session.browserContext().addCookies(remaining);
@@ -334,22 +335,16 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
             @Override
             public Set<Cookie> getCookies() {
                 return session.browserContext().cookies().stream()
-                        .map(c -> new Cookie.Builder(c.name, c.value)
-                                .domain(c.domain)
-                                .path(c.path)
+                        .map(c -> new Cookie.Builder(c.name, c.value).domain(c.domain).path(c.path)
                                 .expiresOn(null != c.expires ? new Date((long) (c.expires * 1000)) : null)
-                                .isSecure(Boolean.TRUE.equals(c.secure))
-                                .isHttpOnly(Boolean.TRUE.equals(c.httpOnly))
+                                .isSecure(Boolean.TRUE.equals(c.secure)).isHttpOnly(Boolean.TRUE.equals(c.httpOnly))
                                 .build())
                         .collect(java.util.stream.Collectors.toSet());
             }
 
             @Override
             public Cookie getCookieNamed(String name) {
-                return getCookies().stream()
-                        .filter(c -> c.getName().equals(name))
-                        .findFirst()
-                        .orElse(null);
+                return getCookies().stream().filter(c -> c.getName().equals(name)).findFirst().orElse(null);
             }
 
             @Override
@@ -400,7 +395,8 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
 
                     @Override
                     public void setPosition(Point targetPosition) {
-                        throw unsupported(com.znsio.teswiz.web.WebCapability.WINDOW_POSITION, "manage().window().setPosition");
+                        throw unsupported(com.znsio.teswiz.web.WebCapability.WINDOW_POSITION,
+                                "manage().window().setPosition");
                     }
 
                     @Override
@@ -413,7 +409,8 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
                             Object widthObj = session.page().evaluate("() => window.innerWidth");
                             Object heightObj = session.page().evaluate("() => window.innerHeight");
                             if (null != widthObj && null != heightObj) {
-                                return new Dimension(Integer.parseInt(String.valueOf(widthObj)), Integer.parseInt(String.valueOf(heightObj)));
+                                return new Dimension(Integer.parseInt(String.valueOf(widthObj)),
+                                        Integer.parseInt(String.valueOf(heightObj)));
                             }
                         } catch (Exception ignored) {
                         }
@@ -431,7 +428,8 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
                             Object widthObj = session.page().evaluate("() => window.screen.availWidth");
                             Object heightObj = session.page().evaluate("() => window.screen.availHeight");
                             if (null != widthObj && null != heightObj) {
-                                session.page().setViewportSize(Integer.parseInt(String.valueOf(widthObj)), Integer.parseInt(String.valueOf(heightObj)));
+                                session.page().setViewportSize(Integer.parseInt(String.valueOf(widthObj)),
+                                        Integer.parseInt(String.valueOf(heightObj)));
                             }
                         } catch (Exception ignored) {
                         }
@@ -474,13 +472,13 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
 
     @Override
     public Object executeAsyncScript(String script, Object... args) {
-        String expression = "([script, args]) => new Promise((resolve) => {\n" +
-                "  const callback = (res) => resolve(res);\n" +
-                "  const executor = new Function('args', 'return (function() { ' + script + ' }).apply(null, args);');\n" +
-                "  executor.apply(null, [...args, callback]);\n" +
-                "})";
+        String expression = "([script, args]) => new Promise((resolve) => {\n"
+                + "  const callback = (res) => resolve(res);\n"
+                + "  const executor = new Function('args', 'return (function() { ' + script + ' }).apply(null, args);');\n"
+                + "  executor.apply(null, [...args, callback]);\n" + "})";
         try {
-            return currentSearchRoot.evaluate(expression, List.of(PlaywrightJavaScript.adapt(script), PlaywrightJavaScript.adaptArguments(args)));
+            return currentSearchRoot.evaluate(expression,
+                    List.of(PlaywrightJavaScript.adapt(script), PlaywrightJavaScript.adaptArguments(args)));
         } catch (RuntimeException exception) {
             throw new WebDriverException("Unable to execute Playwright Java async script: " + script, exception);
         }
@@ -488,8 +486,9 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
 
     @Override
     public <X> X getScreenshotAs(OutputType<X> target) {
-        return target.convertFromPngBytes(session.page().screenshot(
-                new com.microsoft.playwright.Page.ScreenshotOptions().setAnimations(com.microsoft.playwright.options.ScreenshotAnimations.DISABLED)));
+        return target
+                .convertFromPngBytes(session.page().screenshot(new com.microsoft.playwright.Page.ScreenshotOptions()
+                        .setAnimations(com.microsoft.playwright.options.ScreenshotAnimations.DISABLED)));
     }
 
     @Override
@@ -533,8 +532,7 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
     }
 
     private boolean isCloudControlScript(String script) {
-        return script.startsWith(BROWSERSTACK_EXECUTOR_PREFIX)
-                || script.startsWith(LAMBDATEST_ACTION_PREFIX)
+        return script.startsWith(BROWSERSTACK_EXECUTOR_PREFIX) || script.startsWith(LAMBDATEST_ACTION_PREFIX)
                 || script.startsWith(LEGACY_LAMBDATEST_NAME_PREFIX)
                 || script.startsWith(LEGACY_LAMBDATEST_STATUS_PREFIX)
                 || script.startsWith(LEGACY_LAMBDATEST_COMMENT_PREFIX);
@@ -545,19 +543,19 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
             return executeProviderAction(script);
         }
         if (script.startsWith(LEGACY_LAMBDATEST_NAME_PREFIX)) {
-            return executeProviderAction(buildLambdaTestNameCommand(script.substring(LEGACY_LAMBDATEST_NAME_PREFIX.length())));
+            return executeProviderAction(
+                    buildLambdaTestNameCommand(script.substring(LEGACY_LAMBDATEST_NAME_PREFIX.length())));
         }
         if (script.startsWith(LEGACY_LAMBDATEST_STATUS_PREFIX)) {
             pendingLambdaTestStatus = script.substring(LEGACY_LAMBDATEST_STATUS_PREFIX.length());
             return pendingLambdaTestStatus;
         }
         if (script.startsWith(LEGACY_LAMBDATEST_COMMENT_PREFIX)) {
-            String status = null == pendingLambdaTestStatus || pendingLambdaTestStatus.isBlank()
-                    ? "passed"
+            String status = null == pendingLambdaTestStatus || pendingLambdaTestStatus.isBlank() ? "passed"
                     : pendingLambdaTestStatus;
             pendingLambdaTestStatus = null;
-            return executeProviderAction(buildLambdaTestStatusCommand(status,
-                    script.substring(LEGACY_LAMBDATEST_COMMENT_PREFIX.length())));
+            return executeProviderAction(
+                    buildLambdaTestStatusCommand(status, script.substring(LEGACY_LAMBDATEST_COMMENT_PREFIX.length())));
         }
         return null;
     }
@@ -571,18 +569,14 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
     }
 
     private String buildLambdaTestNameCommand(String testName) {
-        JSONObject action = new JSONObject()
-                .put("action", "setTestName")
-                .put("arguments", new JSONObject().put("name", testName));
+        JSONObject action = new JSONObject().put("action", "setTestName").put("arguments",
+                new JSONObject().put("name", testName));
         return LAMBDATEST_ACTION_PREFIX + " " + action;
     }
 
     private String buildLambdaTestStatusCommand(String status, String remark) {
-        JSONObject action = new JSONObject()
-                .put("action", "setTestStatus")
-                .put("arguments", new JSONObject()
-                        .put("status", status)
-                        .put("remark", remark));
+        JSONObject action = new JSONObject().put("action", "setTestStatus").put("arguments",
+                new JSONObject().put("status", status).put("remark", remark));
         return LAMBDATEST_ACTION_PREFIX + " " + action;
     }
 
@@ -623,9 +617,10 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
     }
 
     private UnsupportedOperationException unsupported(com.znsio.teswiz.web.WebCapability capability, String operation) {
-        return new UnsupportedOperationException(com.znsio.teswiz.web.WebEngineCapabilities.formatDiagnosticMessage(
-                com.znsio.teswiz.web.WebEngine.PLAYWRIGHT_JAVA, capability, operation));
+        return new UnsupportedOperationException(com.znsio.teswiz.web.WebEngineCapabilities
+                .formatDiagnosticMessage(com.znsio.teswiz.web.WebEngine.PLAYWRIGHT_JAVA, capability, operation));
     }
+
     private UnsupportedOperationException unsupported(String operation) {
         return unsupported(com.znsio.teswiz.web.WebCapability.FRAMES, operation);
     }
