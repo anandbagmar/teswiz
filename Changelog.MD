@@ -16,6 +16,12 @@ _Previous release: v1.0.43_
 ### 🧱 Locator translation hardening (`PlaywrightLocator`)
 * **`PlaywrightLocator.from(By)` now dispatches standard Selenium `By` subtypes through a single prefix→strategy lookup table** rather than an eight-branch `if` chain, and documents the `By` / `PlaywrightBy` contract. `PlaywrightBy`-native locators continue to translate directly from their structured fields. Behaviour is unchanged; the mapping is now locked by `PlaywrightLocatorTest`.
 
+### 🖍️ Universal element highlighting (all engines)
+* **Element highlighting is now universal, not just for OCR/`WebElement` actions.** Previously a Screen driving the raw Playwright API (`page().locator(sel).click()`) got no highlight, because the highlight lived only inside teswiz's `WebElement` adapter. A new transparent `HighlightingPage`/`HighlightingLocator`/`HighlightingFrameLocator` (JDK dynamic proxies over Playwright's `Page`/`Locator`/`FrameLocator` interfaces) is installed at the single `Page`-creation point, so every action (`click`, `fill`, `press`, `check`, `selectOption`, …) highlights the element first — with **no change to the calling test and no `org.openqa.selenium` types**. Chained/`frameLocator` results are re-wrapped so highlighting survives locator chaining; unknown future Playwright methods forward verbatim.
+* **The Playwright highlight JS is extracted into one `PlaywrightHighlighter`** reused by both the `WebElement` adapter and the new proxies (was duplicated). Gated on `HIGHLIGHT_ELEMENTS`; never throws (a highlight must never block the action it precedes).
+* **Closed two Selenium highlight bypasses**: `Driver.allowPermission` and `Driver.uploadFileInBrowser` now resolve elements through the decorating `findElement(...)` facade, so their click/sendKeys highlight like every other Selenium action. pw-ts and Appium already highlighted via their `WebElement`/`VisualElement` paths.
+* Tests: `PlaywrightHighlighterTest`, `HighlightingLocatorTest`.
+
 ## 🧪 Tests
 * `ElementWaiterTest` (6), `WindowSizingResolverTest` (3), `PlaywrightLocatorTest` (7) added. Full `clean test` green (441 tests, 0 failures).
 

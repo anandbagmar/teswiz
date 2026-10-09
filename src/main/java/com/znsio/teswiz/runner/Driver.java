@@ -544,7 +544,7 @@ public class Driver {
     public void allowPermission(By element) {
         waitForClickabilityOf(element);
         if (Runner.getPlatform().equals(Platform.android)) {
-            driver.findElement(element).click();
+            findElement(element).click();
         }
     }
 
@@ -882,7 +882,7 @@ public class Driver {
     public void uploadFileInBrowser(String filePath, By locator) {
         try {
             LOGGER.info("Uploading file: " + filePath + " to the browser");
-            driver.findElement(locator).sendKeys(filePath);
+            findElement(locator).sendKeys(filePath);
         } catch (Exception e) {
             throw new FileNotUploadedException(
                     String.format("Error in uploading the file: '%s%s%s", filePath, TO, Runner.getPlatform().name()),

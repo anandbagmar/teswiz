@@ -4,7 +4,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
-import org.openqa.selenium.NoSuchElementException;
+import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 import org.openqa.selenium.By;
@@ -29,28 +29,7 @@ final class PlaywrightJavaWebElement implements WebElement {
     }
 
     private void highlight() {
-        if (com.znsio.teswiz.runner.Setup
-                .getBooleanValueFromConfigs(com.znsio.teswiz.runner.Setup.HIGHLIGHT_ELEMENTS)) {
-            try {
-                String color = com.znsio.teswiz.runner.Setup
-                        .getStringValueFromConfigs(com.znsio.teswiz.runner.Setup.HIGHLIGHT_COLOR, "#FF4500");
-                String borderWidth = com.znsio.teswiz.runner.Setup
-                        .getStringValueFromConfigs(com.znsio.teswiz.runner.Setup.HIGHLIGHT_BORDER_WIDTH, "3px");
-                locator.evaluate("el => {" + "let visualBox = document.getElementById('teswiz-visual-highlight');"
-                        + "if (visualBox) { visualBox.remove(); }" + "if (window.teswizLastHighlightedElement) {"
-                        + "  try {"
-                        + "    window.teswizLastHighlightedElement.style.outline = window.teswizLastOutline || '';"
-                        + "    window.teswizLastHighlightedElement.style.outlineOffset = window.teswizLastOutlineOffset || '';"
-                        + "    window.teswizLastHighlightedElement.style.boxShadow = window.teswizLastBoxShadow || '';"
-                        + "  } catch(e) {}" + "}" + "window.teswizLastHighlightedElement = el;"
-                        + "window.teswizLastOutline = el.style.outline;"
-                        + "window.teswizLastOutlineOffset = el.style.outlineOffset;"
-                        + "window.teswizLastBoxShadow = el.style.boxShadow;" + "el.style.outline = '" + borderWidth
-                        + " solid " + color + "';" + "el.style.outlineOffset = '-2px';"
-                        + "el.style.boxShadow = '0 0 10px " + color + "';" + "}");
-            } catch (Exception ignored) {
-            }
-        }
+        PlaywrightHighlighter.highlight(locator);
     }
 
     @Override

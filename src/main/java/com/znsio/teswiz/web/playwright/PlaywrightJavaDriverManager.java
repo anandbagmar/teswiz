@@ -1,8 +1,8 @@
 package com.znsio.teswiz.web.playwright;
 
 import java.nio.file.Path;
-import java.util.List;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -11,13 +11,13 @@ import java.util.function.Supplier;
 
 import org.openqa.selenium.Capabilities;
 import org.openqa.selenium.MutableCapabilities;
+import com.microsoft.playwright.options.Proxy;
 
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.Tracing;
-import com.microsoft.playwright.options.Proxy;
 import com.znsio.teswiz.config.browser.PlaywrightBrowserConfig;
 import com.znsio.teswiz.config.browser.PlaywrightBrowserConfigResolver;
 import com.znsio.teswiz.context.TestExecutionContext;
@@ -43,14 +43,13 @@ public final class PlaywrightJavaDriverManager implements WebEngineDriverManager
     private final PlaywrightCloudSessionMetadataResolver cloudSessionMetadataResolver;
 
     public PlaywrightJavaDriverManager() {
-        this(new PlaywrightBrowserConfigResolver()::resolve,
-                new PlaywrightExecutionProviderConfigResolver()::resolve,
-                new DefaultPlaywrightJavaRuntimeFactory(),
-                new PlaywrightCloudSessionMetadataResolver());
+        this(new PlaywrightBrowserConfigResolver()::resolve, new PlaywrightExecutionProviderConfigResolver()::resolve,
+                new DefaultPlaywrightJavaRuntimeFactory(), new PlaywrightCloudSessionMetadataResolver());
     }
 
     PlaywrightJavaDriverManager(BiFunction<String, TestExecutionContext, PlaywrightBrowserConfig> browserConfigLookup,
-            Supplier<PlaywrightExecutionProviderConfig> providerConfigSupplier, PlaywrightJavaRuntimeFactory runtimeFactory,
+            Supplier<PlaywrightExecutionProviderConfig> providerConfigSupplier,
+            PlaywrightJavaRuntimeFactory runtimeFactory,
             PlaywrightCloudSessionMetadataResolver cloudSessionMetadataResolver) {
         this.browserConfigLookup = browserConfigLookup;
         this.providerConfigSupplier = providerConfigSupplier;
@@ -130,17 +129,15 @@ public final class PlaywrightJavaDriverManager implements WebEngineDriverManager
         Path traceFile = artifactDirectory.resolve(userPersona + "-" + sessionId + "-trace.zip");
         Path harFile = artifactDirectory.resolve(userPersona + "-" + sessionId + "-network.har");
         Path consoleFile = artifactDirectory.resolve(userPersona + "-" + sessionId + "-console.log");
-        BrowserContext browserContext = runtime.browser().newContext(
-                DefaultPlaywrightJavaRuntimeFactory.buildContextOptions(browserConfig, harFile));
-        browserContext.tracing().start(new Tracing.StartOptions()
-                .setScreenshots(true)
-                .setSnapshots(true)
-                .setSources(true));
+        BrowserContext browserContext = runtime.browser()
+                .newContext(DefaultPlaywrightJavaRuntimeFactory.buildContextOptions(browserConfig, harFile));
+        browserContext.tracing()
+                .start(new Tracing.StartOptions().setScreenshots(true).setSnapshots(true).setSources(true));
         List<String> consoleMessages = new CopyOnWriteArrayList<>();
-        com.microsoft.playwright.Page page = browserContext.newPage();
+        com.microsoft.playwright.Page page = HighlightingPage.wrap(browserContext.newPage());
         page.onConsoleMessage(message -> consoleMessages.add("[%s] %s".formatted(message.type(), message.text())));
-        return new PlaywrightJavaSession(sessionId, userPersona, runtime, browserConfig, browserContext, page, traceFile,
-                harFile, consoleFile, consoleMessages);
+        return new PlaywrightJavaSession(sessionId, userPersona, runtime, browserConfig, browserContext, page,
+                traceFile, harFile, consoleFile, consoleMessages);
     }
 
     private static final class DefaultPlaywrightJavaRuntimeFactory implements PlaywrightJavaRuntimeFactory {
@@ -169,8 +166,7 @@ public final class PlaywrightJavaDriverManager implements WebEngineDriverManager
         }
 
         private static BrowserType.LaunchOptions buildLaunchOptions(PlaywrightBrowserConfig browserConfig) {
-            BrowserType.LaunchOptions options = new BrowserType.LaunchOptions()
-                    .setHeadless(browserConfig.headless())
+            BrowserType.LaunchOptions options = new BrowserType.LaunchOptions().setHeadless(browserConfig.headless())
                     .setArgs(browserConfig.launchArgs());
 
             if (null != browserConfig.channel() && !browserConfig.channel().isBlank()) {
@@ -188,7 +184,8 @@ public final class PlaywrightJavaDriverManager implements WebEngineDriverManager
             return options;
         }
 
-        private static Browser.NewContextOptions buildContextOptions(PlaywrightBrowserConfig browserConfig, Path harFile) {
+        private static Browser.NewContextOptions buildContextOptions(PlaywrightBrowserConfig browserConfig,
+                Path harFile) {
             Browser.NewContextOptions options = new Browser.NewContextOptions();
             Map<String, Object> contextOptions = browserConfig.contextOptions();
             if (contextOptions.containsKey("ignoreHTTPSErrors")) {
@@ -204,7 +201,8 @@ public final class PlaywrightJavaDriverManager implements WebEngineDriverManager
                     Object w = viewportMap.get("width");
                     Object h = viewportMap.get("height");
                     if (null != w && null != h) {
-                        options.setViewportSize(Integer.parseInt(String.valueOf(w)), Integer.parseInt(String.valueOf(h)));
+                        options.setViewportSize(Integer.parseInt(String.valueOf(w)),
+                                Integer.parseInt(String.valueOf(h)));
                     } else {
                         options.setViewportSize((com.microsoft.playwright.options.ViewportSize) null);
                     }
@@ -216,8 +214,8 @@ public final class PlaywrightJavaDriverManager implements WebEngineDriverManager
                     && !locale.isBlank()) {
                 options.setLocale(locale);
             }
-            if (contextOptions.containsKey("timezoneId") && contextOptions.get("timezoneId") instanceof String timezoneId
-                    && !timezoneId.isBlank()) {
+            if (contextOptions.containsKey("timezoneId")
+                    && contextOptions.get("timezoneId") instanceof String timezoneId && !timezoneId.isBlank()) {
                 options.setTimezoneId(timezoneId);
             }
             if (contextOptions.containsKey("userAgent") && contextOptions.get("userAgent") instanceof String userAgent
@@ -225,7 +223,8 @@ public final class PlaywrightJavaDriverManager implements WebEngineDriverManager
                 options.setUserAgent(userAgent);
             }
             if (contextOptions.containsKey("deviceScaleFactor") && null != contextOptions.get("deviceScaleFactor")) {
-                options.setDeviceScaleFactor(Double.parseDouble(String.valueOf(contextOptions.get("deviceScaleFactor"))));
+                options.setDeviceScaleFactor(
+                        Double.parseDouble(String.valueOf(contextOptions.get("deviceScaleFactor"))));
             }
             if (contextOptions.containsKey("extraHTTPHeaders")
                     && contextOptions.get("extraHTTPHeaders") instanceof Map<?, ?> rawHeaders) {
