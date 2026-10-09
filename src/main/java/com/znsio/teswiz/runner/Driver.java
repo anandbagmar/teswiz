@@ -564,113 +564,33 @@ public class Driver {
         waitFor(1);
     }
 
-    private org.openqa.selenium.Rectangle activeHighlightBounds;
+    private ElementHighlighter elementHighlighter;
+
+    private ElementHighlighter elementHighlighter() {
+        if (this.elementHighlighter == null) {
+            this.elementHighlighter = new ElementHighlighter(driver, APPIUM_DRIVER.equals(type) || driver instanceof AppiumDriver);
+        }
+        return this.elementHighlighter;
+    }
 
     public org.openqa.selenium.Rectangle getActiveHighlightBounds() {
-        return activeHighlightBounds;
+        return elementHighlighter().getActiveHighlightBounds();
     }
 
     public void clearHighlight() {
-        this.activeHighlightBounds = null;
-        if (!Setup.getBooleanValueFromConfigs(Setup.HIGHLIGHT_ELEMENTS)) {
-            return;
-        }
-        if (APPIUM_DRIVER.equals(type) || driver instanceof AppiumDriver) {
-            return;
-        }
-        if (driver instanceof JavascriptExecutor js) {
-            try {
-                js.executeScript(
-                    "let visualBox = document.getElementById('teswiz-visual-highlight');" +
-                    "if (visualBox) { visualBox.remove(); }" +
-                    "if (window.teswizLastHighlightedElement) {" +
-                    "  try {" +
-                    "    window.teswizLastHighlightedElement.style.outline = window.teswizLastOutline || '';" +
-                    "    window.teswizLastHighlightedElement.style.outlineOffset = window.teswizLastOutlineOffset || '';" +
-                    "    window.teswizLastHighlightedElement.style.boxShadow = window.teswizLastBoxShadow || '';" +
-                    "  } catch(e) {}" +
-                    "  delete window.teswizLastHighlightedElement;" +
-                    "  delete window.teswizLastOutline;" +
-                    "  delete window.teswizLastOutlineOffset;" +
-                    "  delete window.teswizLastBoxShadow;" +
-                    "}"
-                );
-            } catch (Exception ignored) {}
-        }
+        elementHighlighter().clearHighlight();
     }
 
     public void highlightElement(WebElement element) {
-        if (!Setup.getBooleanValueFromConfigs(Setup.HIGHLIGHT_ELEMENTS)) {
-            return;
-        }
-        clearHighlight();
-        if (APPIUM_DRIVER.equals(type) || driver instanceof AppiumDriver) {
-            LOGGER.debug("DOM-based element highlighting is not supported on native mobile app.");
-            return;
-        }
-        String color = Setup.getStringValueFromConfigs(Setup.HIGHLIGHT_COLOR, "#FF4500");
-        String borderWidth = Setup.getStringValueFromConfigs(Setup.HIGHLIGHT_BORDER_WIDTH, "3px");
-        if (driver instanceof JavascriptExecutor js) {
-            try {
-                js.executeScript(
-                    "window.teswizLastHighlightedElement = arguments[0];" +
-                    "window.teswizLastOutline = arguments[0].style.outline;" +
-                    "window.teswizLastOutlineOffset = arguments[0].style.outlineOffset;" +
-                    "window.teswizLastBoxShadow = arguments[0].style.boxShadow;" +
-                    "arguments[0].style.outline = '" + borderWidth + " solid " + color + "';" +
-                    "arguments[0].style.outlineOffset = '-2px';" +
-                    "arguments[0].style.boxShadow = '0 0 10px " + color + "';"
-                , element);
-                LOGGER.info("Highlighted WebElement visually with outline color: " + color);
-            } catch (Exception e) {
-                LOGGER.debug("Could not highlight web element: " + e.getMessage());
-            }
-        }
+        elementHighlighter().highlightElement(element);
     }
 
     public void highlightVisualElement(int x, int y, int width, int height) {
-        if (!Setup.getBooleanValueFromConfigs(Setup.HIGHLIGHT_ELEMENTS)) {
-            return;
-        }
-        clearHighlight();
-        this.activeHighlightBounds = new org.openqa.selenium.Rectangle(x, y, height, width);
-        if (APPIUM_DRIVER.equals(type) || driver instanceof AppiumDriver) {
-            LOGGER.info("Visual element screenshot image canvas highlighting active on native mobile app at bounds [x={}, y={}, w={}, h={}]", x, y, width, height);
-            return;
-        }
-        String color = Setup.getStringValueFromConfigs(Setup.HIGHLIGHT_COLOR, "#FF4500");
-        String borderWidth = Setup.getStringValueFromConfigs(Setup.HIGHLIGHT_BORDER_WIDTH, "3px");
-        if (driver instanceof JavascriptExecutor js) {
-            try {
-                js.executeScript(
-                    "let id = 'teswiz-visual-highlight';" +
-                    "let box = document.createElement('div');" +
-                    "box.id = id;" +
-                    "document.body.appendChild(box);" +
-                    "box.style.position = 'fixed';" +
-                    "box.style.left = '" + x + "px';" +
-                    "box.style.top = '" + y + "px';" +
-                    "box.style.width = '" + width + "px';" +
-                    "box.style.height = '" + height + "px';" +
-                    "box.style.border = '" + borderWidth + " solid " + color + "';" +
-                    "box.style.backgroundColor = 'rgba(255, 69, 0, 0.25)';" +
-                    "box.style.boxShadow = '0 0 10px " + color + "';" +
-                    "box.style.zIndex = '2147483647';" +
-                    "box.style.pointerEvents = 'none';" +
-                    "box.style.boxSizing = 'border-box';" +
-                    "box.style.transition = 'all 0.1s ease-in-out';"
-                );
-                LOGGER.info("Highlighted visual element at viewport bounds [x={}, y={}, w={}, h={}] with color {}", x, y, width, height, color);
-            } catch (Exception e) {
-                LOGGER.debug("Could not highlight visual element at (" + x + ", " + y + "): " + e.getMessage());
-            }
-        }
+        elementHighlighter().highlightVisualElement(x, y, width, height);
     }
 
     public void highlightVisualElement(VisualElement visualElement) {
-        if (visualElement != null) {
-            highlightVisualElement(visualElement.getX(), visualElement.getY(), visualElement.getWidth(), visualElement.getHeight());
-        }
+        elementHighlighter().highlightVisualElement(visualElement);
     }
 
     // ------------------------------------------------------------------------
