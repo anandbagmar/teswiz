@@ -216,7 +216,7 @@ dependencies {
     // https://docs.gradle.org/current/userguide/java_library_plugin.html#sec:api_vs_implementation
     api "com.applitools:eyes-images-java5:5.83.8"
     api "com.applitools:eyes-playwright-java5:5.86.8"
-    api ("com.applitools:eyes-appium-java5:5.79.49") {
+    api ("com.applitools:eyes-appium-java5:5.79.50") {
         exclude group: 'org.seleniumhq.selenium', module: 'selenium-java'
         exclude group: 'org.seleniumhq.selenium', module: 'selenium-api'
         exclude group: 'org.seleniumhq.selenium', module: 'selenium-support'
