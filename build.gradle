@@ -235,7 +235,7 @@ dependencies {
     api "io.rest-assured:rest-assured:6.0.1"
     api "org.assertj:assertj-core:3+"
     api "org.json:json:20260814"
-    api "org.seleniumhq.selenium:selenium-java:4.49.0"
+    api "org.seleniumhq.selenium:selenium-java:4.50.0"
 
     // implementation: used only internally, or only reachable through reflection/AspectJ
     // weaving (Cucumber's --plugin loader, AspectLogging's advice methods) rather than any
