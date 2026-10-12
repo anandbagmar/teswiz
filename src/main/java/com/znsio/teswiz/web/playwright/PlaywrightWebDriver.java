@@ -6,7 +6,6 @@ import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.IntStream;
 import java.util.stream.Collectors;
 
 import org.json.JSONArray;
@@ -15,7 +14,6 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.JavascriptException;
 import org.openqa.selenium.NoAlertPresentException;
-import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.Point;
 import org.openqa.selenium.UnhandledAlertException;
@@ -97,26 +95,22 @@ public final class PlaywrightWebDriver implements WebDriver, JavascriptExecutor,
         return workerClient.getTitle(session.sessionId());
     }
 
+    // Playwright TS is authored natively in its .screen.ts modules. The Selenium By locator bridge is
+    // Selenium/Appium-only; locating by By on this engine is unsupported.
     @Override
     public List<WebElement> findElements(By by) {
-        PlaywrightLocatorReference locatorReference = PlaywrightLocatorReference.root(by);
-        int count = workerClient.countElements(session.sessionId(), locatorReference, implicitWaitTimeout);
-        return IntStream.range(0, count)
-                .mapToObj(index -> new PlaywrightWebElement(workerClient, session,
-                        new PlaywrightLocatorReference(locatorReference.locator(), index, locatorReference.parent()),
-                        implicitWaitTimeout))
-                .map(WebElement.class::cast)
-                .toList();
+        throw byLocatorUnsupported("findElements(By)");
     }
 
     @Override
     public WebElement findElement(By by) {
-        PlaywrightLocatorReference locatorReference = PlaywrightLocatorReference.root(by);
-        int count = workerClient.countElements(session.sessionId(), locatorReference, implicitWaitTimeout);
-        if (count <= 0) {
-            throw new NoSuchElementException("Unable to locate element: " + by);
-        }
-        return new PlaywrightWebElement(workerClient, session, locatorReference, implicitWaitTimeout);
+        throw byLocatorUnsupported("findElement(By)");
+    }
+
+    private UnsupportedOperationException byLocatorUnsupported(String operation) {
+        return new UnsupportedOperationException(com.znsio.teswiz.web.WebEngineCapabilities.formatDiagnosticMessage(
+                com.znsio.teswiz.web.WebEngine.PLAYWRIGHT_TS,
+                com.znsio.teswiz.web.WebCapability.ELEMENT_LOCATION_BY_SELENIUM_LOCATOR, operation));
     }
 
     @Override
@@ -196,12 +190,9 @@ public final class PlaywrightWebDriver implements WebDriver, JavascriptExecutor,
 
             @Override
             public WebDriver frame(WebElement frameElement) {
-                if (!(frameElement instanceof PlaywrightWebElement playwrightElement)) {
-                    throw new UnsupportedOperationException(
-                            "switchTo().frame(WebElement) is only supported for Playwright-backed WebElement instances");
-                }
-                workerClient.switchToFrame(session.sessionId(), playwrightElement.locatorReference());
-                return PlaywrightWebDriver.this;
+                // Playwright TS is authored natively in .screen.ts; there is no Selenium-WebElement frame
+                // handle on this engine (the By locator bridge was removed in Phase 7).
+                throw byLocatorUnsupported("switchTo().frame(WebElement)");
             }
 
             @Override
@@ -494,11 +485,6 @@ public final class PlaywrightWebDriver implements WebDriver, JavascriptExecutor,
     private Object serializeScriptArgument(Object arg) {
         if (null == arg) {
             return JSONObject.NULL;
-        }
-        if (arg instanceof PlaywrightWebElement element) {
-            return new JSONObject()
-                    .put("type", "element")
-                    .put("locator", element.locatorReference().toJson());
         }
         if (arg instanceof String || arg instanceof Number || arg instanceof Boolean) {
             return arg;

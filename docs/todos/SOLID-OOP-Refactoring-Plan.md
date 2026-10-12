@@ -7,7 +7,7 @@ A sequenced, low-risk plan to pay down the SOLID/OOP debt found in the codebase 
 
 ## Judgement notes (read first)
 
-- **Phase 4, Step 4.1 includes a real public-API change** — dropping the 26 `Visual` find pass-throughs on `Driver`. That ripples into screen/BL classes. It's the right cleanup, but it's the one step that isn't purely internal, so it deserves its own review before merging.
+- **Phase 4, Step 4.1 is NOT a breaking change (revised).** The 26 `Visual` find pass-throughs on `Driver` are pre-existing stable public API and are **kept** — the earlier `@Deprecated` is reverted; no removal in this phase. Any hard removal is a separate, pre-announced major-version decision. **Guiding rule: no hard removals — deprecate only with explicit maintainer sign-off; default to keeping stable APIs so consumers adopt with zero forced edits.** 4.1 also newly extracts `ElementWaiter` and adds additive bounded waits + alert/shadow-root parity (see Phase 4).
 - **Phases 1–3 are safe to interleave or even stop after.** Each delivers value independently. Phases 0–3 get most of the SOLID benefit without the biggest risk, and leave the two God classes meaningfully smaller even if Phase 4 is deferred indefinitely.
 - **Phase 4 should come last.** It has the widest blast radius and is materially safer once the finder is extracted (Phase 1), config is injectable (Phase 3), and driver creation is polymorphic (Phase 2).
 
@@ -119,16 +119,20 @@ Widest blast radius — intentionally last, behind all the safety nets.
 
 ### Step 4.1 — Extract from `Driver` 🔴
 - `MobileGestures` (takes the `AppiumDriver`): all ~28 Appium gesture methods + private math helpers; removes the pervasive `(AppiumDriver)` casts and the platform switches (`putAppInBackgroundFor`, `pushFileToDevice`, `relaunchApp`, clipboard).
-- `ElementHighlighter` (web JS): `clearHighlight`/`highlightElement`/`highlightVisualElement` + `activeHighlightBounds` + the JS string literals.
+- `ElementHighlighter` (web JS): `clearHighlight`/`highlightElement`/`highlightVisualElement` + `activeHighlightBounds` + the JS string literals. *(Done.)*
 - `ElementFinder` + the `decorateElement` proxy.
-- Delete the 26 `Visual` find pass-throughs on `Driver` (callers use `getVisual()`/`VisualFinder`) — **this is a public-API change**; stage it and sweep callers (screens/BL) in the same commit.
+- **`ElementWaiter`** — the bounded synchronisation currently scattered on `Driver` (`waitTillElementIsVisible/Present/Invisible`, `waitForClickabilityOf`, `waitTillVisibilityOfAllElements`, `waitTillPresenceOfAllElements`, `waitForAlert`). `Driver` keeps thin delegating wait methods.
+- **Keep the 26 `Visual` find pass-throughs** on `Driver` (revert the earlier `@Deprecated`; do NOT delete) — pre-existing stable public API. No breaking change.
+- **Additive new capability (the one behaviour-add in this phase):** `ElementWaiter` adds bounded, non-throwing `isElementVisible(By, int seconds)`, `isElementPresentWithin(By, int seconds)`, `waitTillTextIsPresent(By, String, int seconds)` — closes the "no bounded non-throwing visibility/text probe on any engine" gap. All take `By` (the uniform locator currency; Playwright locators via `PlaywrightBy`), so one implementation serves every engine.
+- **Capability parity (LSP fix):** make `waitForAlert` + `getShadowRoot` uniform across engines — today `waitForAlert` throws on PW-Java / no-ops on Appium, and `getShadowRoot` throws on PW-Java. Implement on PW-Java or surface a single capability-unsupported signal (like `NativeCoordinateInput`); no divergent per-engine throws.
 - `Driver` becomes a thin facade composing these.
 
 **Parity note:** mobile gestures are Appium-only by nature — parity with web is **not** required for `MobileGestures`; highlighting is web-only (no-op on Appium) — also not required to be at parity.
 
 **Verify:** full suite; this touches many screen/BL classes, so expect broad recompilation.
 
-### Step 4.2 — Decompose `Visual` behind a `VisualEngine` strategy 🔴
+### Step 4.2 — Decompose `Visual` behind a `VisualEngine` strategy 🔴 — **DEFERRED**
+> **Deferred (revisit on demand).** Reshapes the public `Visual` facade — `checkWindow(...)` is the one `Visual` method downstream screens call (e.g. casino web screens), and this step is where the LSP `checkWindow` rework lives. All risk to a consumed API, no near-term benefit. Do only if `Visual` becomes actively painful to change.
 - Extract `PdfVisual`, `WebVisual`, `AppVisual` (the Playwright web path folds into `WebVisual`) behind a `VisualEngine` interface; `Visual` becomes a facade that composes the one engine relevant to the session.
 - This removes the "all three engines constructed every time" smell (156–180), the `handleTestResults` driverType switch (~1059), and the LSP problem where a PDF-constructed `Visual` NPEs on `checkWindow`.
 

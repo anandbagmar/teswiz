@@ -14,7 +14,6 @@ import com.znsio.teswiz.tools.LoggingContext;
 import com.znsio.teswiz.runner.CurrentStep;
 import io.cucumber.plugin.ConcurrentEventListener;
 import io.cucumber.plugin.event.*;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -149,7 +148,7 @@ public class CucumberScenarioListener implements ConcurrentEventListener {
             SessionContext.setReportPortalLaunchURL();
             com.znsio.teswiz.analytics.TelemetryCollector.sendRunCompletedEvent();
         } catch (Exception e) {
-            ExceptionUtils.getStackTrace(e);
+            LOGGER.warn("Error while finishing the test run", e);
         }
     }
 }

@@ -1,37 +1,30 @@
 package com.znsio.teswiz.runner;
 
 import static com.znsio.teswiz.tools.Wait.waitFor;
-import static java.time.Duration.ofMillis;
-import static java.time.Duration.ofSeconds;
-import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import org.openqa.selenium.NoSuchElementException;
 import java.util.Set;
-
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.util.stream.Collectors;
+
+import org.openqa.selenium.interactions.Sequence;
+
+import org.apache.commons.lang3.NotImplementedException;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.Point;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -39,27 +32,20 @@ import org.openqa.selenium.WrapsElement;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.interactions.Pause;
 import org.openqa.selenium.interactions.PointerInput;
-import org.openqa.selenium.interactions.Sequence;
 import org.openqa.selenium.remote.RemoteWebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
-import com.google.common.collect.ImmutableMap;
 import com.znsio.teswiz.context.SessionContext;
 import com.znsio.teswiz.context.TestExecutionContext;
-import com.znsio.teswiz.entities.Direction;
 import com.znsio.teswiz.entities.Platform;
 import com.znsio.teswiz.entities.TEST_CONTEXT;
 import com.znsio.teswiz.exceptions.FileNotUploadedException;
 import com.znsio.teswiz.exceptions.InvalidTestDataException;
 
+import com.znsio.teswiz.entities.Direction;
 import io.appium.java_client.AppiumBy;
 import io.appium.java_client.AppiumDriver;
-import io.appium.java_client.HidesKeyboard;
-import io.appium.java_client.android.AndroidDriver;
-import io.appium.java_client.android.HasNotifications;
-import io.appium.java_client.android.StartsActivity;
-import io.appium.java_client.ios.IOSDriver;
 import io.appium.java_client.remote.SupportsContextSwitching;
 
 public class Driver {
@@ -76,7 +62,10 @@ public class Driver {
     private final boolean isRunningInHeadlessMode;
     private static final String TO = "' to '";
     private Visual visually;
-    public Driver(String testName, Platform forPlatform, String userPersona, String appName, AppiumDriver appiumDriver) {
+    private ElementWaiter elementWaiter;
+
+    public Driver(String testName, Platform forPlatform, String userPersona, String appName,
+            AppiumDriver appiumDriver) {
         this.driver = appiumDriver;
         this.type = APPIUM_DRIVER;
         this.userPersona = userPersona;
@@ -135,6 +124,55 @@ public class Driver {
         return decorateElement(driver.findElement(AppiumBy.accessibilityId(locator)));
     }
 
+    /**
+     * Bounded, non-throwing element-visibility/presence/text waits. See {@link ElementWaiter}. Lazily created and
+     * cached; engine-agnostic (drives the underlying {@link WebDriver} via {@link By}).
+     *
+     * @return the per-driver {@link ElementWaiter}
+     */
+    public ElementWaiter elementWaiter() {
+        if (elementWaiter == null) {
+            elementWaiter = new ElementWaiter(driver);
+        }
+        return elementWaiter;
+    }
+
+    /**
+     * Bounded, non-throwing visibility check. Convenience delegate to {@link ElementWaiter#isElementVisible(By, int)}.
+     *
+     * @param locator               the element locator (any {@link By}; Selenium/Appium engines)
+     * @param numberOfSecondsToWait the bound, in seconds
+     * @return {@code true} if visible within the bound, else {@code false}
+     */
+    public boolean isElementVisible(By locator, int numberOfSecondsToWait) {
+        return elementWaiter().isElementVisible(locator, numberOfSecondsToWait);
+    }
+
+    /**
+     * Bounded, non-throwing presence check. Convenience delegate to
+     * {@link ElementWaiter#isElementPresentWithin(By, int)}.
+     *
+     * @param locator               the element locator (any {@link By})
+     * @param numberOfSecondsToWait the bound, in seconds
+     * @return {@code true} if present within the bound, else {@code false}
+     */
+    public boolean isElementPresentWithin(By locator, int numberOfSecondsToWait) {
+        return elementWaiter().isElementPresentWithin(locator, numberOfSecondsToWait);
+    }
+
+    /**
+     * Bounded, non-throwing text-presence check. Convenience delegate to
+     * {@link ElementWaiter#waitTillTextIsPresent(By, String, int)}.
+     *
+     * @param locator               the element locator (any {@link By})
+     * @param text                  the text expected to be present in the element
+     * @param numberOfSecondsToWait the bound, in seconds
+     * @return {@code true} if the text is present within the bound, else {@code false}
+     */
+    public boolean waitTillTextIsPresent(By locator, String text, int numberOfSecondsToWait) {
+        return elementWaiter().waitTillTextIsPresent(locator, text, numberOfSecondsToWait);
+    }
+
     public void waitForAlert() {
         waitForAlert(DriverDefaults.waitTimeoutSeconds());
     }
@@ -171,18 +209,7 @@ public class Driver {
     }
 
     public void scroll(Point fromPoint, Point toPoint) {
-        AppiumDriver appiumDriver = (AppiumDriver) this.driver;
-        PointerInput touch = new PointerInput(PointerInput.Kind.TOUCH, "touch");
-        Sequence scroller = new Sequence(touch, 1);
-        scroller.addAction(touch.createPointerMove(Duration.ofSeconds(0), PointerInput.Origin.viewport(),
-                fromPoint.getX(), fromPoint.getY()));
-        scroller.addAction(touch.createPointerDown(PointerInput.MouseButton.LEFT.asArg()));
-        scroller.addAction(touch.createPointerMove(Duration.ofSeconds(1), PointerInput.Origin.viewport(),
-                toPoint.getX(), toPoint.getY()));
-        scroller.addAction(touch.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
-        LOGGER.info("fromPoint width: %d, fromPoint height: %d".formatted(fromPoint.getX(), fromPoint.getY()));
-        LOGGER.info("toPoint width: %d, toPoint height: %d".formatted(toPoint.getX(), toPoint.getY()));
-        appiumDriver.perform(singletonList(scroller));
+        mobileGestures().scroll(fromPoint, toPoint);
     }
 
     public WebElement scrollToAnElementByText(String text) {
@@ -209,29 +236,11 @@ public class Driver {
     }
 
     public void scrollDownByScreenSize() {
-        AppiumDriver appiumDriver = (AppiumDriver) this.driver;
-        Dimension windowSize = appiumDriver.manage().window().getSize();
-        LOGGER.info(DIMENSION + windowSize.toString());
-        int width = windowSize.width / 2;
-        int fromHeight = (int) (windowSize.height * 0.8);
-        int toHeight = (int) (windowSize.height * 0.2);
-        LOGGER.info("width: %d, from height: %d, to height: %d".formatted(width, fromHeight, toHeight));
-        Point from = new Point(width, fromHeight);
-        Point to = new Point(width, toHeight);
-        scroll(from, to);
+        mobileGestures().scrollDownByScreenSize();
     }
 
     public void scrollVertically(int fromPercentScreenHeight, int toPercentScreenHeight, int percentScreenWidth) {
-        AppiumDriver appiumDriver = (AppiumDriver) this.driver;
-        Dimension windowSize = appiumDriver.manage().window().getSize();
-        LOGGER.info(DIMENSION + windowSize.toString());
-        int width = (windowSize.width * percentScreenWidth) / 100;
-        int fromHeight = windowSize.height * fromPercentScreenHeight / 100;
-        int toHeight = windowSize.height * toPercentScreenHeight / 100;
-        LOGGER.info("width: %d, from height: %d, to height: %d".formatted(width, fromHeight, toHeight));
-        Point from = new Point(width, fromHeight);
-        Point to = new Point(width, toHeight);
-        scroll(from, to);
+        mobileGestures().scrollVertically(fromPercentScreenHeight, toPercentScreenHeight, percentScreenWidth);
     }
 
     public void tapOnMiddleOfScreen() {
@@ -243,22 +252,7 @@ public class Driver {
     }
 
     private void tapOnMiddleOfScreenOnDevice() {
-        AppiumDriver appiumDriver = (AppiumDriver) this.driver;
-        Dimension screenSize = appiumDriver.manage().window().getSize();
-        int midHeight = screenSize.height / 2;
-        int midWidth = screenSize.width / 2;
-        if (LOGGER.isInfoEnabled()) {
-            LOGGER.info(String.format("tapOnMiddleOfScreen: Screen dimensions: '%s'. Tapping on coordinates: %d:%d%n",
-                screenSize, midWidth, midHeight));
-        }
-        PointerInput touch = new PointerInput(PointerInput.Kind.TOUCH, "touch");
-        Sequence clickPosition = new Sequence(touch, 1);
-        clickPosition
-                .addAction(touch.createPointerMove(Duration.ofMillis(0), PointerInput.Origin.viewport(), midWidth,
-                        midHeight))
-                .addAction(touch.createPointerDown(PointerInput.MouseButton.LEFT.asArg()))
-                .addAction(touch.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
-        appiumDriver.perform(Arrays.asList(clickPosition));
+        mobileGestures().tapOnMiddleOfScreenOnDevice();
         waitFor(1);
     }
 
@@ -282,71 +276,24 @@ public class Driver {
         waitFor(1);
     }
 
-    private int getWindowHeight() {
-        AppiumDriver appiumDriver = (AppiumDriver) this.driver;
-        Dimension windowSize = appiumDriver.manage().window().getSize();
-        LOGGER.info(DIMENSION + windowSize.toString());
-        return windowSize.height;
-    }
-
-    private int getWindowWidth() {
-        AppiumDriver appiumDriver = (AppiumDriver) this.driver;
-        return appiumDriver.manage().window().getSize().width;
-    }
-
-    private void checkPercentagesAreValid(int... percentages) {
-        boolean arePercentagesValid = Arrays.stream(percentages)
-                .allMatch(percentage -> percentage >= 0 && percentage <= 100);
-        if (!arePercentagesValid) {
-            throw new RuntimeException(
-                    String.format("Invalid percentage value - percentage value should be between 0 - 100. but are %s",
-                            Arrays.toString(percentages)));
-        }
-    }
-
     public void swipeRight() {
-        int height = getWindowHeight() / 2;
-        int fromWidth = (int) (getWindowWidth() * 0.2);
-        int toWidth = (int) (getWindowWidth() * 0.7);
-        LOGGER.info("height: {}, from width: {}, to width: {}", height, fromWidth, toWidth);
-        swipe(height, fromWidth, toWidth);
+        mobileGestures().swipeRight();
     }
 
     public void swipeLeft() {
-        int height = getWindowHeight() / 2;
-        int fromWidth = (int) (getWindowWidth() * 0.8);
-        int toWidth = (int) (getWindowWidth() * 0.3);
-        LOGGER.info("height: {}, from width: {}, to width: {}", height, fromWidth, toWidth);
-        swipe(height, fromWidth, toWidth);
+        mobileGestures().swipeLeft();
     }
 
     public void swipeByPassingPercentageAttributes(int percentScreenHeight, int fromPercentScreenWidth,
             int toPercentScreenWidth) {
-        LOGGER.info("percent attributes passed to method are: percentScreenHeight: {}, fromPercentScreenWidth: {}, toPercentScreenWidth: {}", percentScreenHeight, fromPercentScreenWidth, toPercentScreenWidth);
-        checkPercentagesAreValid(percentScreenHeight, fromPercentScreenWidth, toPercentScreenWidth);
-        int height = getWindowHeight() * percentScreenHeight / 100;
-        int fromWidth = getWindowWidth() * fromPercentScreenWidth / 100;
-        int toWidth = getWindowWidth() * toPercentScreenWidth / 100;
-        LOGGER.info("swipe gesture at height: {}, from width: {}, to width: {}", height, fromWidth, toWidth);
-        swipe(height, fromWidth, toWidth);
-    }
-
-    private void swipe(int height, int fromWidth, int toWidth) {
-        AppiumDriver appiumDriver = (AppiumDriver) this.driver;
-        PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
-        Sequence sequence = new Sequence(finger, 1);
-        sequence.addAction(finger.createPointerMove(ofMillis(0), PointerInput.Origin.viewport(), fromWidth, height));
-        sequence.addAction(finger.createPointerDown(PointerInput.MouseButton.MIDDLE.asArg()));
-        sequence.addAction(new Pause(finger, ofSeconds(1)));
-        sequence.addAction(finger.createPointerMove(ofSeconds(1), PointerInput.Origin.viewport(), toWidth, height));
-        sequence.addAction(finger.createPointerUp(PointerInput.MouseButton.MIDDLE.asArg()));
-        appiumDriver.perform(singletonList(sequence));
+        mobileGestures().swipeByPassingPercentageAttributes(percentScreenHeight, fromPercentScreenWidth,
+                toPercentScreenWidth);
     }
 
     public void openNotifications() {
         LOGGER.info("Fetching the NOTIFICATIONS on the device: ");
         waitFor(3);
-        ((HasNotifications) driver).openNotifications();
+        mobileGestures().openNotifications();
         waitFor(2);
     }
 
@@ -371,26 +318,15 @@ public class Driver {
     }
 
     public void putAppInBackgroundFor(int numberOfSeconds) {
-        switch (Runner.getPlatform()) {
-            case android:
-                ((AndroidDriver) driver).runAppInBackground(Duration.ofSeconds(numberOfSeconds));
-                break;
-            case iOS:
-                ((IOSDriver) driver).runAppInBackground(Duration.ofSeconds(numberOfSeconds));
-                break;
-            default:
-                throw new NotImplementedException(
-                        "putAppInBackgroundFor method is not implemented for " + Runner.getPlatform());
-        }
+        mobileGestures().putAppInBackgroundFor(numberOfSeconds);
     }
 
     public void bringAppInForeground() {
-        ((StartsActivity) driver).currentActivity();
+        mobileGestures().bringAppInForeground();
     }
 
     public void goToDeepLinkUrl(String url, String packageName) {
-        LOGGER.info("Hitting a Deep Link URL: " + url);
-        ((AppiumDriver) driver).executeScript("mobile:deepLink", ImmutableMap.of("url", url, "package", packageName));
+        mobileGestures().goToDeepLinkUrl(url, packageName);
     }
 
     public WebDriver getInnerDriver() {
@@ -455,7 +391,7 @@ public class Driver {
     public void longPress(By elementId, long durationInSeconds) {
         WebElement elementToBeLongTapped = new WebDriverWait(driver,
                 Duration.ofSeconds(DriverDefaults.waitTimeoutSeconds()))
-                .until(ExpectedConditions.elementToBeClickable(elementId));
+                        .until(ExpectedConditions.elementToBeClickable(elementId));
         final Point location = elementToBeLongTapped.getLocation();
         final PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
         final Sequence sequence = new Sequence(finger, 1);
@@ -468,29 +404,13 @@ public class Driver {
     }
 
     public void pushFileToDevice(String filePathToPush, String devicePath) {
-        LOGGER.info("Pushing the file: '" + filePathToPush + TO + Runner.getPlatform().name() + "' " + "device "
-                + "on path: '" + devicePath + "'");
-        try {
-            switch (Runner.getPlatform()) {
-                case android:
-                    ((AndroidDriver) driver).pushFile(devicePath, new File(filePathToPush));
-                    break;
-                case iOS:
-                    ((IOSDriver) driver).pushFile(devicePath, new File(filePathToPush));
-                    break;
-                default:
-                    throw new InvalidTestDataException("pushFile is supported only on Android/iOS platform");
-            }
-        } catch (IOException e) {
-            throw new FileNotUploadedException(String.format("Error in pushing the file: '%s%s%s' device on path: '%s'",
-                    filePathToPush, TO, Runner.getPlatform().name(), devicePath), e);
-        }
+        mobileGestures().pushFileToDevice(filePathToPush, devicePath);
     }
 
     public void allowPermission(By element) {
         waitForClickabilityOf(element);
         if (Runner.getPlatform().equals(Platform.android)) {
-            driver.findElement(element).click();
+            findElement(element).click();
         }
     }
 
@@ -564,113 +484,52 @@ public class Driver {
         waitFor(1);
     }
 
-    private org.openqa.selenium.Rectangle activeHighlightBounds;
+    private MobileGestures mobileGestures;
+
+    private MobileGestures mobileGestures() {
+        if (this.mobileGestures == null) {
+            this.mobileGestures = new MobileGestures((AppiumDriver) this.driver);
+        }
+        return this.mobileGestures;
+    }
+
+    private ElementHighlighter elementHighlighter;
+
+    private ElementHighlighter elementHighlighter() {
+        if (this.elementHighlighter == null) {
+            this.elementHighlighter = new ElementHighlighter(driver,
+                    APPIUM_DRIVER.equals(type) || driver instanceof AppiumDriver);
+        }
+        return this.elementHighlighter;
+    }
+
+    private ElementFinder elementFinder;
+
+    private ElementFinder elementFinder() {
+        if (this.elementFinder == null) {
+            this.elementFinder = new ElementFinder(elementHighlighter());
+        }
+        return this.elementFinder;
+    }
 
     public org.openqa.selenium.Rectangle getActiveHighlightBounds() {
-        return activeHighlightBounds;
+        return elementHighlighter().getActiveHighlightBounds();
     }
 
     public void clearHighlight() {
-        this.activeHighlightBounds = null;
-        if (!Setup.getBooleanValueFromConfigs(Setup.HIGHLIGHT_ELEMENTS)) {
-            return;
-        }
-        if (APPIUM_DRIVER.equals(type) || driver instanceof AppiumDriver) {
-            return;
-        }
-        if (driver instanceof JavascriptExecutor js) {
-            try {
-                js.executeScript(
-                    "let visualBox = document.getElementById('teswiz-visual-highlight');" +
-                    "if (visualBox) { visualBox.remove(); }" +
-                    "if (window.teswizLastHighlightedElement) {" +
-                    "  try {" +
-                    "    window.teswizLastHighlightedElement.style.outline = window.teswizLastOutline || '';" +
-                    "    window.teswizLastHighlightedElement.style.outlineOffset = window.teswizLastOutlineOffset || '';" +
-                    "    window.teswizLastHighlightedElement.style.boxShadow = window.teswizLastBoxShadow || '';" +
-                    "  } catch(e) {}" +
-                    "  delete window.teswizLastHighlightedElement;" +
-                    "  delete window.teswizLastOutline;" +
-                    "  delete window.teswizLastOutlineOffset;" +
-                    "  delete window.teswizLastBoxShadow;" +
-                    "}"
-                );
-            } catch (Exception ignored) {}
-        }
+        elementHighlighter().clearHighlight();
     }
 
     public void highlightElement(WebElement element) {
-        if (!Setup.getBooleanValueFromConfigs(Setup.HIGHLIGHT_ELEMENTS)) {
-            return;
-        }
-        clearHighlight();
-        if (APPIUM_DRIVER.equals(type) || driver instanceof AppiumDriver) {
-            LOGGER.debug("DOM-based element highlighting is not supported on native mobile app.");
-            return;
-        }
-        String color = Setup.getStringValueFromConfigs(Setup.HIGHLIGHT_COLOR, "#FF4500");
-        String borderWidth = Setup.getStringValueFromConfigs(Setup.HIGHLIGHT_BORDER_WIDTH, "3px");
-        if (driver instanceof JavascriptExecutor js) {
-            try {
-                js.executeScript(
-                    "window.teswizLastHighlightedElement = arguments[0];" +
-                    "window.teswizLastOutline = arguments[0].style.outline;" +
-                    "window.teswizLastOutlineOffset = arguments[0].style.outlineOffset;" +
-                    "window.teswizLastBoxShadow = arguments[0].style.boxShadow;" +
-                    "arguments[0].style.outline = '" + borderWidth + " solid " + color + "';" +
-                    "arguments[0].style.outlineOffset = '-2px';" +
-                    "arguments[0].style.boxShadow = '0 0 10px " + color + "';"
-                , element);
-                LOGGER.info("Highlighted WebElement visually with outline color: " + color);
-            } catch (Exception e) {
-                LOGGER.debug("Could not highlight web element: " + e.getMessage());
-            }
-        }
+        elementHighlighter().highlightElement(element);
     }
 
     public void highlightVisualElement(int x, int y, int width, int height) {
-        if (!Setup.getBooleanValueFromConfigs(Setup.HIGHLIGHT_ELEMENTS)) {
-            return;
-        }
-        clearHighlight();
-        this.activeHighlightBounds = new org.openqa.selenium.Rectangle(x, y, height, width);
-        if (APPIUM_DRIVER.equals(type) || driver instanceof AppiumDriver) {
-            LOGGER.info("Visual element screenshot image canvas highlighting active on native mobile app at bounds [x={}, y={}, w={}, h={}]", x, y, width, height);
-            return;
-        }
-        String color = Setup.getStringValueFromConfigs(Setup.HIGHLIGHT_COLOR, "#FF4500");
-        String borderWidth = Setup.getStringValueFromConfigs(Setup.HIGHLIGHT_BORDER_WIDTH, "3px");
-        if (driver instanceof JavascriptExecutor js) {
-            try {
-                js.executeScript(
-                    "let id = 'teswiz-visual-highlight';" +
-                    "let box = document.createElement('div');" +
-                    "box.id = id;" +
-                    "document.body.appendChild(box);" +
-                    "box.style.position = 'fixed';" +
-                    "box.style.left = '" + x + "px';" +
-                    "box.style.top = '" + y + "px';" +
-                    "box.style.width = '" + width + "px';" +
-                    "box.style.height = '" + height + "px';" +
-                    "box.style.border = '" + borderWidth + " solid " + color + "';" +
-                    "box.style.backgroundColor = 'rgba(255, 69, 0, 0.25)';" +
-                    "box.style.boxShadow = '0 0 10px " + color + "';" +
-                    "box.style.zIndex = '2147483647';" +
-                    "box.style.pointerEvents = 'none';" +
-                    "box.style.boxSizing = 'border-box';" +
-                    "box.style.transition = 'all 0.1s ease-in-out';"
-                );
-                LOGGER.info("Highlighted visual element at viewport bounds [x={}, y={}, w={}, h={}] with color {}", x, y, width, height, color);
-            } catch (Exception e) {
-                LOGGER.debug("Could not highlight visual element at (" + x + ", " + y + "): " + e.getMessage());
-            }
-        }
+        elementHighlighter().highlightVisualElement(x, y, width, height);
     }
 
     public void highlightVisualElement(VisualElement visualElement) {
-        if (visualElement != null) {
-            highlightVisualElement(visualElement.getX(), visualElement.getY(), visualElement.getWidth(), visualElement.getHeight());
-        }
+        elementHighlighter().highlightVisualElement(visualElement);
     }
 
     // ------------------------------------------------------------------------
@@ -723,51 +582,11 @@ public class Driver {
     }
 
     private WebElement decorateElement(WebElement element) {
-        if (element == null) {
-            return null;
-        }
-        if (Proxy.isProxyClass(element.getClass()) && Proxy.getInvocationHandler(element) instanceof ElementInvocationHandler) {
-            return element;
-        }
-        if (element.getClass().getName().contains("Playwright")) {
-            return element;
-        }
-        return (WebElement) Proxy.newProxyInstance(
-                Driver.class.getClassLoader(),
-                new Class<?>[]{WebElement.class, WrapsElement.class},
-                new ElementInvocationHandler(element)
-        );
+        return elementFinder().decorate(element);
     }
 
     private List<WebElement> decorateElements(List<WebElement> elements) {
-        if (elements == null) {
-            return Collections.emptyList();
-        }
-        return elements.stream().map(this::decorateElement).collect(Collectors.toList());
-    }
-
-    private class ElementInvocationHandler implements InvocationHandler {
-        private final WebElement target;
-
-        ElementInvocationHandler(WebElement target) {
-            this.target = target;
-        }
-
-        @Override
-        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-            String methodName = method.getName();
-            if ("getWrappedElement".equals(methodName) && (args == null || args.length == 0)) {
-                return target;
-            }
-            if ("click".equals(methodName) || "sendKeys".equals(methodName) || "clear".equals(methodName) || "submit".equals(methodName)) {
-                highlightElement(target);
-            }
-            try {
-                return method.invoke(target, args);
-            } catch (InvocationTargetException e) {
-                throw e.getCause();
-            }
-        }
+        return elementFinder().decorate(elements);
     }
 
     public double getViewportScaleFactor(int screenshotImageWidth) {
@@ -780,8 +599,9 @@ public class Driver {
                 if (viewportWidth > 0) {
                     double scale = (double) screenshotImageWidth / viewportWidth;
                     if (LOGGER.isInfoEnabled()) {
-                        LOGGER.info(String.format("Calculated mobile viewport scale factor: %.2f (screenshot width: %d px, window width: %d px)",
-                            scale, screenshotImageWidth, viewportWidth));
+                        LOGGER.info(String.format(
+                                "Calculated mobile viewport scale factor: %.2f (screenshot width: %d px, window width: %d px)",
+                                scale, screenshotImageWidth, viewportWidth));
                     }
                     return scale;
                 }
@@ -792,13 +612,15 @@ public class Driver {
         }
         if (driver instanceof JavascriptExecutor js) {
             try {
-                Object result = js.executeScript("return window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;");
+                Object result = js.executeScript(
+                        "return window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;");
                 if (result instanceof Number num && num.doubleValue() > 0) {
                     double viewportWidth = num.doubleValue();
                     double scale = (double) screenshotImageWidth / viewportWidth;
                     if (LOGGER.isInfoEnabled()) {
-                        LOGGER.info(String.format("Calculated viewport scale factor: %.2f (screenshot width: %d px, viewport width: %.0f px)",
-                            scale, screenshotImageWidth, viewportWidth));
+                        LOGGER.info(String.format(
+                                "Calculated viewport scale factor: %.2f (screenshot width: %d px, viewport width: %.0f px)",
+                                scale, screenshotImageWidth, viewportWidth));
                     }
                     return scale;
                 }
@@ -861,8 +683,8 @@ public class Driver {
             }
             scrollDownByScreenSize();
         }
-        throw new NoSuchElementException("scrollTillElementIntoView: element '" + elementId
-                + "' was not visible after " + maxScrollAttempts + " scroll attempts");
+        throw new NoSuchElementException("scrollTillElementIntoView: element '" + elementId + "' was not visible after "
+                + maxScrollAttempts + " scroll attempts");
     }
 
     public void scrollTillElementIntoView(WebElement element) {
@@ -905,7 +727,7 @@ public class Driver {
     public void uploadFileInBrowser(String filePath, By locator) {
         try {
             LOGGER.info("Uploading file: " + filePath + " to the browser");
-            driver.findElement(locator).sendKeys(filePath);
+            findElement(locator).sendKeys(filePath);
         } catch (Exception e) {
             throw new FileNotUploadedException(
                     String.format("Error in uploading the file: '%s%s%s", filePath, TO, Runner.getPlatform().name()),
@@ -914,10 +736,8 @@ public class Driver {
     }
 
     /**
-     * This method injects the media to browserstack to perform,
-     * image scanning eg: QRcode,barcode etc
-     * Throws NotImplementedException if platform is NOT android, and cloudName is
-     * NOT browserstack
+     * This method injects the media to browserstack to perform, image scanning eg: QRcode,barcode etc Throws
+     * NotImplementedException if platform is NOT android, and cloudName is NOT browserstack
      *
      * @param uploadFileURL is an absolute path where a media file is located
      */
@@ -933,14 +753,11 @@ public class Driver {
     }
 
     /**
-     * This method injects the already uploaded media in browserstack(media url) to
-     * browserstack real device,
-     * image scanning eg: QRcode,barcode etc
-     * Throws NotImplementedException if platform is NOT android, and cloudName is
-     * NOT browserstack
+     * This method injects the already uploaded media in browserstack(media url) to browserstack real device, image
+     * scanning eg: QRcode,barcode etc Throws NotImplementedException if platform is NOT android, and cloudName is NOT
+     * browserstack
      *
-     * @param browserStackMediaUrl is a media url generated after uploading a file
-     *                             to browserstack cloud using BS API
+     * @param browserStackMediaUrl is a media url generated after uploading a file to browserstack cloud using BS API
      */
     public void injectMediaUrlToBrowserstackDevice(String browserStackMediaUrl) {
         String cloudName = Runner.getCloudName();
@@ -999,40 +816,11 @@ public class Driver {
     }
 
     public void doubleTap(WebElement element) {
-        AppiumDriver appiumDriver = (AppiumDriver) this.driver;
-        int x = element.getLocation().getX();
-        int y = element.getLocation().getY();
-        PointerInput touch = new PointerInput(PointerInput.Kind.MOUSE, "touch");
-        Sequence clickPosition = new Sequence(touch, 1);
-        clickPosition.addAction(touch.createPointerMove(Duration.ofMillis(0), PointerInput.Origin.viewport(), x, y))
-                .addAction(touch.createPointerDown(PointerInput.MouseButton.LEFT.asArg()))
-                .addAction(touch.createPointerUp(PointerInput.MouseButton.LEFT.asArg()))
-                .addAction(new Pause(touch, ofMillis(10)))
-                .addAction(touch.createPointerDown(PointerInput.MouseButton.LEFT.asArg()))
-                .addAction(touch.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
-        appiumDriver.perform(Arrays.asList(clickPosition));
+        mobileGestures().doubleTap(element);
     }
 
     public void flick() {
-        AppiumDriver appiumDriver = (AppiumDriver) this.driver;
-        Dimension screenSize = driver.manage().window().getSize();
-
-        LOGGER.info("Implementing flick action on the basis of screen size and co-ordinates");
-        int startX = screenSize.width - 100;
-        int startY = screenSize.height / 2;
-        int endX = screenSize.width / 2;
-        int endY = screenSize.height / 2;
-
-        LOGGER.info("Start co-ordinates- X axis: " + startX + " & Y axis: " + startY + ", End co-ordinates- X axis: "
-                + endX + " & Y axis: " + endY);
-        PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
-        Sequence flick = new Sequence(finger, 0);
-        flick.addAction(finger.createPointerMove(Duration.ofMillis(0), PointerInput.Origin.viewport(), startX, startY));
-        flick.addAction(finger.createPointerDown(PointerInput.MouseButton.LEFT.asArg()));
-        flick.addAction(finger.createPointerMove(Duration.ofMillis(100), PointerInput.Origin.viewport(), endX, endY));
-        flick.addAction(finger.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
-
-        appiumDriver.perform(Arrays.asList(flick));
+        mobileGestures().flick();
     }
 
     public void horizontalSwipeWithGesture(WebElement element, Direction direction) {
@@ -1049,136 +837,20 @@ public class Driver {
         }
     }
 
-    private Sequence fingerAction(String fingerName, Point locus, int startRadius, int endRadius, double angle,
-            Duration duration) {
-
-        PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, fingerName);
-        Sequence fingerPath = new Sequence(finger, 0);
-
-        int fingerStartXPoint = (int) Math.floor(locus.x + startRadius * Math.cos(angle)); // converting from polar
-                                                                                           // coordinates to cartesian
-        int fingerStartYPoint = (int) Math.floor(locus.y - startRadius * Math.sin(angle));
-
-        int fingerEndXPoint = (int) Math.floor(locus.x + endRadius * Math.cos(angle));
-        int fingerEndYPoint = (int) Math.floor(locus.y - endRadius * Math.sin(angle));
-
-        LOGGER.debug("fingerStartXPoint: %d, fingerStartYPoint: %d \nfingerEndXPoint: %d, fingerEndYPoint: %d"
-                .formatted(fingerStartXPoint, fingerStartYPoint, fingerEndXPoint, fingerEndYPoint));
-        fingerPath
-                .addAction(finger.createPointerMove(Duration.ZERO, PointerInput.Origin.viewport(), fingerStartXPoint,
-                        fingerStartYPoint))
-                .addAction(finger.createPointerDown(PointerInput.MouseButton.LEFT.asArg()))
-                .addAction(new Pause(finger, Duration.ofMillis(10)))
-                .addAction(finger.createPointerMove(duration, PointerInput.Origin.viewport(), fingerEndXPoint,
-                        fingerEndYPoint))
-                .addAction(finger.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
-
-        return fingerPath;
-    }
-
-    private Collection<Sequence> pinchAndZoom(Point locus, int startRadius, int endRadius, int pinchAngle,
-            Duration duration) {
-
-        double angle = Math.PI / 2 - (2 * Math.PI / 360 * pinchAngle); // convert degree angle into radians
-        LOGGER.debug("Locus: %s, startRadius: %d, endRadius: %d, pinchAngle: %d, duration: %s"
-                .formatted(locus, startRadius, endRadius, pinchAngle, duration));
-
-        Sequence finger1Path = fingerAction("finger1", locus, startRadius, endRadius, angle, duration);
-
-        angle = angle + Math.PI;
-        Sequence finger2Path = fingerAction("finger2", locus, startRadius, endRadius, angle, duration);
-
-        return Arrays.asList(finger1Path, finger2Path);
-    }
-
-    private Collection<Sequence> pinchAndZoomIn(Point locus, int distance) {
-        int startRadius = 200, endRadius = 200 + distance, pinchAngle = 45, duration = 100;
-        return pinchAndZoom(locus, startRadius, endRadius, pinchAngle, Duration.ofMillis(duration));
-    }
-
-    private Collection<Sequence> pinchAndZoomOut(Point locus, int distance) {
-        int endRadius = 200, startRadius = 200 + distance, pinchAngle = 45, duration = 100;
-        return pinchAndZoom(locus, startRadius, endRadius, pinchAngle, Duration.ofMillis(duration));
-    }
-
     public void pinchAndZoomIn(WebElement element) {
-
-        AppiumDriver appiumDriver = (AppiumDriver) this.driver;
-        Dimension size = element.getSize();
-        int centerX = size.getWidth() / 2;
-        int centerY = size.getHeight() / 2;
-        LOGGER.debug("Web element dimensions are centerX: %d, centerY: %d".formatted(centerX, centerY));
-
-        Point locus = new Point(centerX, centerY);
-        appiumDriver.perform(pinchAndZoomIn(locus, 5));
+        mobileGestures().pinchAndZoomIn(element);
     }
 
     public void pinchAndZoomOut(WebElement element) {
-
-        AppiumDriver appiumDriver = (AppiumDriver) this.driver;
-        Dimension size = element.getSize();
-        int centerX = size.getWidth() / 2;
-        int centerY = size.getHeight() / 2;
-        LOGGER.debug("Web element dimensions are centerX: %d, centerY: %d".formatted(centerX, centerY));
-
-        Point locus = new Point(centerX, centerY);
-        appiumDriver.perform(pinchAndZoomOut(locus, 5));
+        mobileGestures().pinchAndZoomOut(element);
     }
 
-    public void multiTouchOnElements(WebElement firstElement, WebElement SecondElement) {
-        LOGGER.info("Determining x and y co-ordinates of WebElements to perform multi touch action");
-        Dimension screenSize = driver.manage().window().getSize();
-        int xCoordinate_firstElement = (screenSize.width - 40) / 2;
-        int yCoordinate_firstElement = firstElement.getLocation().y;
-
-        int xCoordinate_secondElement = (screenSize.width - 40) / 2;
-        int yCoordinate_secondElement = SecondElement.getLocation().y;
-        multiTouch(xCoordinate_firstElement, yCoordinate_firstElement, xCoordinate_secondElement,
-                yCoordinate_secondElement);
-    }
-
-    private void multiTouch(int x_element1, int y_element1, int x_element2, int y_element2) {
-        AppiumDriver appiumDriver = (AppiumDriver) this.driver;
-
-        PointerInput finger1 = new PointerInput(PointerInput.Kind.MOUSE, "finger1");
-        PointerInput finger2 = new PointerInput(PointerInput.Kind.MOUSE, "finger2");
-
-        LOGGER.info("Creating two action sequences to perform multi touch action with two fingers");
-        Sequence multiTouchAction = new Sequence(finger1, 1);
-        Sequence multiTouchAction2 = new Sequence(finger2, 1);
-
-        LOGGER.info(
-                "Performing tap action simultaneously on elements present at co-ordinates X1: %d Y1: %d and X2: %d Y2: %d"
-                        .formatted(x_element1, y_element1, x_element2, y_element2));
-        multiTouchAction
-                .addAction(finger1.createPointerMove(Duration.ofMillis(0), PointerInput.Origin.viewport(), x_element1,
-                        y_element1))
-                .addAction(finger1.createPointerDown(PointerInput.MouseButton.LEFT.asArg()))
-                .addAction(finger1.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
-
-        multiTouchAction2
-                .addAction(finger2.createPointerMove(Duration.ofMillis(1), PointerInput.Origin.viewport(), x_element2,
-                        y_element2))
-                .addAction(finger2.createPointerDown(PointerInput.MouseButton.LEFT.asArg()))
-                .addAction(finger2.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
-
-        appiumDriver.perform(asList(multiTouchAction, multiTouchAction2));
+    public void multiTouchOnElements(WebElement firstElement, WebElement secondElement) {
+        mobileGestures().multiTouchOnElements(firstElement, secondElement);
     }
 
     public void relaunchApp() {
-        String appPackageName = Runner.getAppPackageName();
-        switch (Runner.getPlatform()) {
-            case android:
-                ((AndroidDriver) driver).terminateApp(appPackageName);
-                ((AndroidDriver) driver).activateApp(appPackageName);
-                break;
-            case iOS:
-                ((IOSDriver) driver).terminateApp(appPackageName);
-                ((IOSDriver) driver).activateApp(appPackageName);
-                break;
-            default:
-                throw new NotImplementedException("relaunchApp method is not implemented for " + Runner.getPlatform());
-        }
+        mobileGestures().relaunchApp();
     }
 
     public boolean waitTillElementIsInvisible(By elementId) {
@@ -1204,23 +876,11 @@ public class Driver {
     }
 
     public String getClipboardText() {
-        return switch (Runner.getPlatform()) {
-            case android -> ((AndroidDriver) driver).getClipboardText();
-            case iOS -> ((IOSDriver) driver).getClipboardText();
-            default ->
-                throw new NotImplementedException(
-                        "getClipboardText method is not implemented for " + Runner.getPlatform());
-        };
+        return mobileGestures().getClipboardText();
     }
 
     public void setClipboardText(String text) {
-        switch (Runner.getPlatform()) {
-            case android -> ((AndroidDriver) driver).setClipboardText(text);
-            case iOS -> ((IOSDriver) driver).setClipboardText(text);
-            default ->
-                throw new NotImplementedException(
-                        "setClipboardText method is not implemented for " + Runner.getPlatform());
-        }
+        mobileGestures().setClipboardText(text);
     }
 
     public WebElement click(By elementId) {
@@ -1243,8 +903,7 @@ public class Driver {
             if (driverForPlatform == Platform.android) {
                 throw e;
             }
-            LOGGER.warn("Best-effort web view context switch failed on {}: {}",
-                    driverForPlatform, e.getMessage());
+            LOGGER.warn("Best-effort web view context switch failed on {}: {}", driverForPlatform, e.getMessage());
             return false;
         }
     }
@@ -1256,18 +915,17 @@ public class Driver {
             if (driverForPlatform == Platform.android) {
                 throw e;
             }
-            LOGGER.warn("Best-effort native context switch failed on {}: {}",
-                    driverForPlatform, e.getMessage());
+            LOGGER.warn("Best-effort native context switch failed on {}: {}", driverForPlatform, e.getMessage());
         }
     }
 
     public void clickAndWaitForElement(By elementToClick, By elementToWaitFor) {
-        clickAndWaitForElement(elementToClick, elementToWaitFor,
-                DriverDefaults.clickRetryAttempts(), DriverDefaults.waitTimeoutSeconds());
+        clickAndWaitForElement(elementToClick, elementToWaitFor, DriverDefaults.clickRetryAttempts(),
+                DriverDefaults.waitTimeoutSeconds());
     }
 
-    public void clickAndWaitForElement(By elementToClick, By elementToWaitFor,
-            int maxAttempts, int timeoutPerAttemptInSeconds) {
+    public void clickAndWaitForElement(By elementToClick, By elementToWaitFor, int maxAttempts,
+            int timeoutPerAttemptInSeconds) {
         RuntimeException lastFailure = null;
         for (int attempt = 0; attempt < maxAttempts; attempt++) {
             try {
@@ -1279,13 +937,11 @@ public class Driver {
                 waitFor(DriverDefaults.clickRetryDelaySeconds());
             }
         }
-        throw new RuntimeException(
-                "Unable to click '" + elementToClick + "' and reach '" + elementToWaitFor + "'",
+        throw new RuntimeException("Unable to click '" + elementToClick + "' and reach '" + elementToWaitFor + "'",
                 lastFailure);
     }
 
-    public void clickWithFallbackAndWaitForDisappearance(By primary, By fallback,
-            By elementToDisappear,
+    public void clickWithFallbackAndWaitForDisappearance(By primary, By fallback, By elementToDisappear,
             int timeoutInSeconds) {
         waitTillElementIsPresent(elementToDisappear, timeoutInSeconds);
         try {
@@ -1308,7 +964,7 @@ public class Driver {
     }
 
     public VisualElement findByImage(String... imageTemplatePaths) {
-        return findByImage(Arrays.asList(imageTemplatePaths));
+        return this.visually.findByImage(Arrays.asList(imageTemplatePaths));
     }
 
     public VisualElement findByImage(List<String> imageTemplatePaths) {
@@ -1319,19 +975,21 @@ public class Driver {
         return this.visually.findByImage(imageTemplatePaths, confidenceThreshold);
     }
 
-    public VisualElement findByImage(List<String> imageTemplatePaths, double confidenceThreshold, com.znsio.teswiz.entities.VisualRegion region) {
+    public VisualElement findByImage(List<String> imageTemplatePaths, double confidenceThreshold,
+            com.znsio.teswiz.entities.VisualRegion region) {
         return this.visually.findByImage(imageTemplatePaths, confidenceThreshold, region);
     }
 
     public VisualElement findByTextOrImage(String text, String... imageTemplatePaths) {
-        return findByTextOrImage(text, Arrays.asList(imageTemplatePaths));
+        return this.visually.findByTextOrImage(text, Arrays.asList(imageTemplatePaths));
     }
 
     public VisualElement findByTextOrImage(String text, List<String> imageTemplatePaths) {
         return this.visually.findByTextOrImage(text, imageTemplatePaths);
     }
 
-    public VisualElement findByTextOrImage(String text, List<String> imageTemplatePaths, com.znsio.teswiz.entities.VisualRegion region) {
+    public VisualElement findByTextOrImage(String text, List<String> imageTemplatePaths,
+            com.znsio.teswiz.entities.VisualRegion region) {
         return this.visually.findByTextOrImage(text, imageTemplatePaths, region);
     }
 
@@ -1344,7 +1002,7 @@ public class Driver {
     }
 
     public List<VisualElement> findAllByImage(String... imageTemplatePaths) {
-        return findAllByImage(Arrays.asList(imageTemplatePaths));
+        return this.visually.findAllByImage(Arrays.asList(imageTemplatePaths));
     }
 
     public List<VisualElement> findAllByImage(List<String> imageTemplatePaths) {
@@ -1356,7 +1014,7 @@ public class Driver {
     }
 
     public List<VisualElement> findAllByTextOrImage(String text, String... imageTemplatePaths) {
-        return findAllByTextOrImage(text, Arrays.asList(imageTemplatePaths));
+        return this.visually.findAllByTextOrImage(text, Arrays.asList(imageTemplatePaths));
     }
 
     public List<VisualElement> findAllByTextOrImage(String text, List<String> imageTemplatePaths) {
@@ -1367,19 +1025,23 @@ public class Driver {
         return this.visually.findAllByImageOrText(imageTemplatePaths, text);
     }
 
-    public VisualElement findRelativeByText(String targetText, com.znsio.teswiz.entities.SpatialDirection direction, String anchorText) {
+    public VisualElement findRelativeByText(String targetText, com.znsio.teswiz.entities.SpatialDirection direction,
+            String anchorText) {
         return this.visually.findRelativeByText(targetText, direction, anchorText);
     }
 
-    public VisualElement findRelativeByText(String targetText, com.znsio.teswiz.entities.SpatialDirection direction, VisualElement anchor) {
+    public VisualElement findRelativeByText(String targetText, com.znsio.teswiz.entities.SpatialDirection direction,
+            VisualElement anchor) {
         return this.visually.findRelativeByText(targetText, direction, anchor);
     }
 
-    public VisualElement findRelativeByImage(List<String> targetImagePaths, com.znsio.teswiz.entities.SpatialDirection direction, String anchorText) {
+    public VisualElement findRelativeByImage(List<String> targetImagePaths,
+            com.znsio.teswiz.entities.SpatialDirection direction, String anchorText) {
         return this.visually.findRelativeByImage(targetImagePaths, direction, anchorText);
     }
 
-    public VisualElement findRelativeByImage(List<String> targetImagePaths, com.znsio.teswiz.entities.SpatialDirection direction, VisualElement anchor) {
+    public VisualElement findRelativeByImage(List<String> targetImagePaths,
+            com.znsio.teswiz.entities.SpatialDirection direction, VisualElement anchor) {
         return this.visually.findRelativeByImage(targetImagePaths, direction, anchor);
     }
 
@@ -1395,7 +1057,8 @@ public class Driver {
         return this.visually.findAllByText(text, region);
     }
 
-    public List<VisualElement> findAllByImage(List<String> imageTemplatePaths, com.znsio.teswiz.entities.VisualRegion region) {
+    public List<VisualElement> findAllByImage(List<String> imageTemplatePaths,
+            com.znsio.teswiz.entities.VisualRegion region) {
         return this.visually.findAllByImage(imageTemplatePaths, region);
     }
 
@@ -1405,14 +1068,23 @@ public class Driver {
         }
         switch (visualBy.getType()) {
             case OCR_TEXT:
-                VisualElement ocrElement = visualBy.getRegion() != null ? findByText(visualBy.getText(), visualBy.getRegion()) : findByText(visualBy.getText());
+                VisualElement ocrElement = visualBy.getRegion() != null
+                        ? this.visually.findByText(visualBy.getText(), visualBy.getRegion())
+                        : this.visually.findByText(visualBy.getText());
                 return ocrElement != null ? ocrElement.toWebElement() : null;
             case IMAGE_TEMPLATE:
-                VisualElement imageElement = visualBy.getRegion() != null ? findByImage(List.of(visualBy.getImagePath()), visualBy.getConfidenceThreshold(), visualBy.getRegion()) : findByImage(List.of(visualBy.getImagePath()), visualBy.getConfidenceThreshold());
+                VisualElement imageElement = visualBy.getRegion() != null
+                        ? this.visually.findByImage(List.of(visualBy.getImagePath()), visualBy.getConfidenceThreshold(),
+                                visualBy.getRegion())
+                        : this.visually.findByImage(List.of(visualBy.getImagePath()),
+                                visualBy.getConfidenceThreshold());
                 return imageElement != null ? imageElement.toWebElement() : null;
             case FALLBACK_TEXT_IMAGE:
             default:
-                VisualElement fallbackElement = visualBy.getRegion() != null ? findByTextOrImage(visualBy.getText(), List.of(visualBy.getImagePath()), visualBy.getRegion()) : findByTextOrImage(visualBy.getText(), List.of(visualBy.getImagePath()));
+                VisualElement fallbackElement = visualBy.getRegion() != null
+                        ? this.visually.findByTextOrImage(visualBy.getText(), List.of(visualBy.getImagePath()),
+                                visualBy.getRegion())
+                        : this.visually.findByTextOrImage(visualBy.getText(), List.of(visualBy.getImagePath()));
                 return fallbackElement != null ? fallbackElement.toWebElement() : null;
         }
     }
@@ -1424,17 +1096,18 @@ public class Driver {
         List<VisualElement> visualElements;
         switch (visualBy.getType()) {
             case OCR_TEXT:
-                visualElements = findAllByText(visualBy.getText());
+                visualElements = this.visually.findAllByText(visualBy.getText());
                 break;
             case IMAGE_TEMPLATE:
-                visualElements = findAllByImage(List.of(visualBy.getImagePath()), visualBy.getConfidenceThreshold());
+                visualElements = this.visually.findAllByImage(List.of(visualBy.getImagePath()),
+                        visualBy.getConfidenceThreshold());
                 break;
             case FALLBACK_TEXT_IMAGE:
             default:
-                visualElements = findAllByTextOrImage(visualBy.getText(), List.of(visualBy.getImagePath()));
+                visualElements = this.visually.findAllByTextOrImage(visualBy.getText(),
+                        List.of(visualBy.getImagePath()));
                 break;
         }
         return visualElements.stream().map(VisualElement::toWebElement).collect(Collectors.toList());
     }
 }
-

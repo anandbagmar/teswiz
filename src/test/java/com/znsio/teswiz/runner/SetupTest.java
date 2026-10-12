@@ -279,4 +279,21 @@ class SetupTest {
                 .contains("WebEngine:" + webEngine + ";")
                 .contains("Provider:local;");
     }
+
+    @Test
+    void getIntegerValueFromConfigsReturnsZeroForMissingKey() {
+        assertThat(Setup.getIntegerValueFromConfigs("A_KEY_THAT_DOES_NOT_EXIST")).isZero();
+    }
+
+    @Test
+    void getIntegerValueFromConfigsReturnsStoredValue() {
+        Setup.addIntegerValueToConfigs("A_STORED_INTEGER_KEY", 7);
+
+        assertThat(Setup.getIntegerValueFromConfigs("A_STORED_INTEGER_KEY")).isEqualTo(7);
+    }
+
+    @Test
+    void getIntegerValueAsStringFromConfigsReturnsZeroStringForMissingKey() {
+        assertThat(Setup.getIntegerValueAsStringFromConfigs("ANOTHER_MISSING_KEY")).isEqualTo("0");
+    }
 }

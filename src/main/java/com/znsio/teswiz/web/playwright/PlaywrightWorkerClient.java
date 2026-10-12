@@ -177,12 +177,6 @@ public class PlaywrightWorkerClient implements AutoCloseable {
                 .put("index", index));
     }
 
-    public synchronized void switchToFrame(String sessionId, PlaywrightLocatorReference locatorReference) {
-        sendCommand("switchToFrameElement", new JSONObject()
-                .put("sessionId", sessionId)
-                .put("locator", locatorReference.toJson()));
-    }
-
     public synchronized void switchToDefaultContent(String sessionId) {
         sendCommand("switchToDefaultContent", new JSONObject().put("sessionId", sessionId));
     }
@@ -318,71 +312,6 @@ public class PlaywrightWorkerClient implements AutoCloseable {
             values.add(logs.getJSONObject(index));
         }
         return values;
-    }
-
-    public synchronized int countElements(String sessionId, PlaywrightLocatorReference locatorReference) {
-        return countElements(sessionId, locatorReference, Duration.ZERO);
-    }
-
-    public synchronized int countElements(String sessionId, PlaywrightLocatorReference locatorReference, Duration timeout) {
-        return sendCommand("countElements", new JSONObject().put("sessionId", sessionId)
-                .put("locator", locatorReference.toJson())
-                .put("timeoutMs", Math.max(0L, timeout.toMillis()))).payload().getInt("count");
-    }
-
-    public synchronized void click(String sessionId, PlaywrightLocatorReference locatorReference) {
-        sendElementCommand(sessionId, locatorReference, "click", null);
-    }
-
-    public synchronized void type(String sessionId, PlaywrightLocatorReference locatorReference, String value) {
-        sendElementCommand(sessionId, locatorReference, "type", value);
-    }
-
-    public synchronized void clear(String sessionId, PlaywrightLocatorReference locatorReference) {
-        sendElementCommand(sessionId, locatorReference, "clear", null);
-    }
-
-    public synchronized String getText(String sessionId, PlaywrightLocatorReference locatorReference) {
-        return sendElementCommand(sessionId, locatorReference, "getText", null).payload().optString("value");
-    }
-
-    public synchronized String getTagName(String sessionId, PlaywrightLocatorReference locatorReference) {
-        return sendElementCommand(sessionId, locatorReference, "getTagName", null).payload().optString("value");
-    }
-
-    public synchronized String getAttribute(String sessionId, PlaywrightLocatorReference locatorReference,
-            String attributeName) {
-        return sendElementCommand(sessionId, locatorReference, "getAttribute", attributeName)
-                .payload().optString("value", null);
-    }
-
-    public synchronized boolean isVisible(String sessionId, PlaywrightLocatorReference locatorReference) {
-        return sendElementCommand(sessionId, locatorReference, "isVisible", null).payload().getBoolean("value");
-    }
-
-    public synchronized boolean isEnabled(String sessionId, PlaywrightLocatorReference locatorReference) {
-        return sendElementCommand(sessionId, locatorReference, "isEnabled", null).payload().getBoolean("value");
-    }
-
-    public synchronized boolean isSelected(String sessionId, PlaywrightLocatorReference locatorReference) {
-        return sendElementCommand(sessionId, locatorReference, "isSelected", null).payload().getBoolean("value");
-    }
-
-    public synchronized String getCssValue(String sessionId, PlaywrightLocatorReference locatorReference,
-            String propertyName) {
-        return sendElementCommand(sessionId, locatorReference, "getCssValue", propertyName)
-                .payload().optString("value", "");
-    }
-
-    public synchronized org.openqa.selenium.Rectangle getElementRect(String sessionId,
-            PlaywrightLocatorReference locatorReference) {
-        JSONObject payload = sendElementCommand(sessionId, locatorReference, "getBoundingBox", null)
-                .payload().getJSONObject("value");
-        return new org.openqa.selenium.Rectangle(
-                payload.getInt("x"),
-                payload.getInt("y"),
-                payload.getInt("width"),
-                payload.getInt("height"));
     }
 
     public synchronized Object executeScript(String sessionId, String script) {
@@ -608,18 +537,6 @@ public class PlaywrightWorkerClient implements AutoCloseable {
             testResults.setAppUrls(sessionUrls);
         }
         return testResults;
-    }
-
-    private PlaywrightWorkerResponse sendElementCommand(String sessionId, PlaywrightLocatorReference locatorReference,
-            String action, String value) {
-        JSONObject payload = new JSONObject()
-                .put("sessionId", sessionId)
-                .put("locator", locatorReference.toJson())
-                .put("elementAction", action);
-        if (null != value) {
-            payload.put("value", value);
-        }
-        return sendCommand("elementAction", payload);
     }
 
     List<String> buildStartCommand() {

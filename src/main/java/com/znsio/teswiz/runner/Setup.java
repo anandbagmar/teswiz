@@ -16,7 +16,6 @@ import com.znsio.teswiz.tools.JsonFile;
 import com.znsio.teswiz.tools.JsonPrettyPrinter;
 import com.znsio.teswiz.tools.OsUtils;
 import com.znsio.teswiz.tools.SensitiveDataMasker;
-import com.znsio.teswiz.tools.StringUtils;
 import com.znsio.teswiz.tools.cmd.CommandLineExecutor;
 import com.znsio.teswiz.tools.cmd.CommandLineResponse;
 import io.restassured.RestAssured;
@@ -102,9 +101,10 @@ public class Setup {
     public static final String FRAMEWORK = "FRAMEWORK";
     public static final String FRAMEWORK_CUCUMBER = "cucumber";
     public static final String FRAMEWORK_TESTNG = "testng";
-    private static final Map<String, String> configs = new HashMap<>();
-    private static final Map<String, Boolean> configsBoolean = new HashMap<>();
-    private static final Map<String, Integer> configsInteger = new HashMap<>();
+    private static final TeswizConfiguration CONFIGURATION = new TeswizConfiguration();
+    private static final Map<String, String> configs = CONFIGURATION.strings();
+    private static final Map<String, Boolean> configsBoolean = CONFIGURATION.booleans();
+    private static final Map<String, Integer> configsInteger = CONFIGURATION.integers();
     private static final String RP_DESCRIPTION = "RP_DESCRIPTION";
     private static final String RP_DEFAULT_DESCRIPTION = "End-2-End scenarios";
     private static Map<String, Map> loadedCapabilityFile;
@@ -154,9 +154,7 @@ public class Setup {
 
     private static void reset() {
         properties = null;
-        configs.clear();
-        configsBoolean.clear();
-        configsInteger.clear();
+        CONFIGURATION.clear();
         applitoolsConfiguration.clear();
         SensitiveDataMasker.setShowSensitiveData(false);
         SensitiveDataMasker.resetSensitiveKeysToDefault();
@@ -339,50 +337,12 @@ public class Setup {
         registerEnvironmentIssueFilterIfEnabled();
         com.znsio.teswiz.analytics.TelemetryCollector.sendRunStartedEvent();
 
-        String rpAttributes = String.format(
-                "AutomationBranch:%s; ExecutedOn:%s; Installer:%s; OS:%s; ParallelCount:%d; " +
-                "Platform:%s; RunInCI:%s; Tags:%s; TargetEnvironment:%s; Username:%s; " +
-                "VisualEnabled:%s; BuildInitiationReason:%s; ",
-                configs.get(BRANCH_NAME), configs.get(EXECUTED_ON), configs.get(APP_PATH), OsUtils.getOsName(),
-                configsInteger.get(PARALLEL), currentPlatform.name(), configsBoolean.get(RUN_IN_CI),
-                configs.get(TAG_FOR_REPORTPORTAL), configs.get(TARGET_ENVIRONMENT), OsUtils.getUserName(),
-                configsBoolean.get(IS_VISUAL), configs.get(BUILD_INITIATION_REASON));
-
-        if (currentPlatform.equals(Platform.web) || currentPlatform.equals(Platform.electron)) {
-            rpAttributes += String.format("WebEngine:%s; ", configs.get(WEB_ENGINE));
-        }
-
         String providerName = getCloudNameFromCapabilities();
         if (null == providerName || providerName.isBlank() || NOT_SET.equalsIgnoreCase(providerName)) {
             providerName = "local";
         }
-        rpAttributes += String.format("Provider:%s; ", providerName);
 
-        if (!configs.get(APP_VERSION).equals(NOT_SET)) {
-            rpAttributes += String.format("AppVersion: %s; ", configs.get(APP_VERSION));
-        }
-
-        if (!configs.get(BUILD_ID).equals(NOT_SET)) {
-            rpAttributes += String.format("BuildId: %s; ", configs.get(BUILD_ID));
-        }
-
-        LOGGER.info("ReportPortal Test Execution Attributes: {}", rpAttributes);
-
-        // properties needed for atd
-        System.setProperty(CLOUD_USERNAME, configs.get(CLOUD_USERNAME));
-        System.setProperty(CLOUD_KEY, configs.get(CLOUD_KEY));
-        System.setProperty(CONFIG_FILE, configs.get(CONFIG_FILE));
-        System.setProperty(CAPS, configs.get(CAPS));
-        System.setProperty("Platform", currentPlatform.name());
-        System.setProperty("atd_" + currentPlatform.name() + "_app_local", configs.get(APP_PATH));
-        if (null != configs.get(PROXY_URL)) {
-            System.setProperty(PROXY_URL, configs.get(PROXY_URL));
-        }
-
-        // properties needed for ReportPortal.io
-        System.setProperty("rp.description", configs.get(APP_NAME) + " " + configs.get(RP_DESCRIPTION) + " on " + currentPlatform.name());
-        System.setProperty("rp.launch", configs.get(LAUNCH_NAME));
-        System.setProperty("rp.attributes", rpAttributes);
+        new ReportPortalEnvironmentPublisher(CONFIGURATION, RP_DESCRIPTION).publish(currentPlatform, providerName);
     }
 
     private static void printStringConfigsMap() {
@@ -520,34 +480,11 @@ public class Setup {
             LOGGER.info("\tTags not specified");
             launchName += " - " + currentPlatform;
         } else {
-            if (providedTags.contains("multiuser-android-web")) {
-                currentPlatform = Platform.android;
+            PlatformTagResolver.Resolution resolution = PlatformTagResolver.resolve(providedTags);
+            if (null != resolution) {
+                currentPlatform = resolution.platform();
                 inferredTags = providedTags + AND_NOT_WIP;
-                launchName += " - Real User Simulation on Android & Web";
-            } else if (providedTags.contains("multiuser-android")) {
-                currentPlatform = Platform.android;
-                inferredTags = providedTags + AND_NOT_WIP;
-                launchName += " - Real User Simulation on multiple Androids";
-            } else if (providedTags.contains("multiuser-web")) {
-                currentPlatform = Platform.web;
-                inferredTags = providedTags + AND_NOT_WIP;
-                launchName += " - Real User Simulation on Web";
-            } else if (providedTags.contains("multiuser-electron")) {
-                currentPlatform = Platform.electron;
-                inferredTags = providedTags + AND_NOT_WIP;
-                launchName += " - Real User Simulation on Electron";
-            } else if (providedTags.contains("multiuser-windows-web")) {
-                currentPlatform = Platform.windows;
-                inferredTags = providedTags + AND_NOT_WIP;
-                launchName += " - Real User Simulation on Windows & Web";
-            } else if (providedTags.contains("multiuser-windows-android")) {
-                currentPlatform = Platform.windows;
-                inferredTags = providedTags + AND_NOT_WIP;
-                launchName += " - Real User Simulation on Windows & Android";
-            } else if (providedTags.contains("multiuser-iOS")) {
-                currentPlatform = Platform.iOS;
-                inferredTags = providedTags + AND_NOT_WIP;
-                launchName += " - Real User Simulation on IOS";
+                launchName += resolution.launchNameSuffix();
             } else {
                 launchName += " - " + currentPlatform;
             }
@@ -584,20 +521,7 @@ public class Setup {
     }
 
     private static void addCucumberPlugsToArgs() {
-        CUKE_ARGS.add(PLUGIN);
-        CUKE_ARGS.add("pretty");
-        CUKE_ARGS.add(PLUGIN);
-        String logDir = configs.get(LOG_DIR);
-        CUKE_ARGS.add("html:" + logDir + File.separator + REPORTS_DIR + File.separator + "cucumber-html" + "-report.html");
-        CUKE_ARGS.add(PLUGIN);
-        CUKE_ARGS.add("junit:" + logDir + File.separator + REPORTS_DIR + File.separator + "cucumber" + "-junit-report.xml");
-        CUKE_ARGS.add(PLUGIN);
-        CUKE_ARGS.add("json:" + logDir + File.separator + REPORTS_DIR + File.separator + "cucumber-json" + "-report.json");
-        CUKE_ARGS.add(PLUGIN);
-        CUKE_ARGS.add("message:" + logDir + File.separator + REPORTS_DIR + File.separator + "results" + ".ndjson");
-        CUKE_ARGS.add(PLUGIN);
-        CUKE_ARGS.add("timeline:" + logDir + File.separator + REPORTS_DIR + File.separator + "timeline");
-        System.setProperty("cucumber.publish.quiet", "true");
+        CUKE_ARGS.addAll(CucumberArgsBuilder.buildReportingPluginArgs(configs.get(LOG_DIR)));
     }
 
     private static ArrayList<String> setupPlatformExecution() {
@@ -671,38 +595,8 @@ public class Setup {
 
     @NotNull
     private static BatchInfo setupApplitoolsBatchInfo() {
-        String batchName = buildApplitoolsBatchName();
         String batchNameSuffix = getOverriddenStringValue(APPLITOOLS_BATCH_NAME_SUFFIX, "");
-        if (!batchNameSuffix.isBlank()) {
-            if (!Character.isWhitespace(batchNameSuffix.charAt(0))) {
-                batchNameSuffix = " " + batchNameSuffix;
-            }
-            batchName += batchNameSuffix;
-        }
-
-        BatchInfo batchInfo = new BatchInfo(batchName);
-        batchInfo.addProperty(APP_NAME, configs.get(APP_NAME));
-        batchInfo.addProperty(BRANCH_NAME, configs.get(BRANCH_NAME));
-        batchInfo.addProperty(PLATFORM, currentPlatform.name());
-        if (Platform.web.equals(currentPlatform)) {
-            batchInfo.addProperty(WEB_ENGINE, configs.get(WEB_ENGINE));
-        }
-        batchInfo.addProperty(RUN_IN_CI, String.valueOf(configsBoolean.get(RUN_IN_CI)));
-        batchInfo.addProperty(TARGET_ENVIRONMENT, configs.get(TARGET_ENVIRONMENT));
-        batchInfo.addProperty(REPOSITORY_NAME, new File(System.getProperty("user.dir")).getName());
-        String batchId = StringUtils.normaliseScenarioName(configs.get(LOG_DIR));
-        System.setProperty("batchid", batchId);
-        batchInfo.setId(batchId);
-        batchInfo.setNotifyOnCompletion(true);
-        return batchInfo;
-    }
-
-    static String buildApplitoolsBatchName() {
-        String batchName = configs.get(LAUNCH_NAME) + "-" + configs.get(TARGET_ENVIRONMENT);
-        if (Platform.web.equals(currentPlatform)) {
-            batchName += "-" + currentPlatform.name() + "-" + configs.get(WEB_ENGINE);
-        }
-        return batchName;
+        return new ApplitoolsBatchInfoFactory(CONFIGURATION).build(currentPlatform, batchNameSuffix);
     }
 
     private static void updateApplitoolsProxyUrl() {
@@ -810,31 +704,36 @@ public class Setup {
     }
 
     public static String getFromConfigs(String key) {
-        return configs.get(key);
+        return CONFIGURATION.getString(key);
     }
 
     public static String getBooleanValueAsStringFromConfigs(String key) {
-        return String.valueOf(configsBoolean.get(key));
+        return CONFIGURATION.getBooleanAsString(key);
     }
 
     public static boolean getBooleanValueFromConfigs(String key) {
-        return Boolean.TRUE.equals(configsBoolean.get(key));
+        return CONFIGURATION.getBoolean(key);
     }
 
     public static void addBooleanValueToConfigs(String key, boolean value) {
-        configsBoolean.put(key, value);
+        CONFIGURATION.putBoolean(key, value);
     }
 
     public static String getStringValueFromConfigs(String key, String defaultValue) {
-        return configs.getOrDefault(key, defaultValue);
+        return CONFIGURATION.getStringOrDefault(key, defaultValue);
     }
 
     public static void addToConfigs(String key, String value) {
-        configs.put(key, value);
+        CONFIGURATION.putString(key, value);
     }
 
+    /**
+     * Returns the integer config value for the given key, or {@code 0} when the key is absent.
+     * Returning a safe default avoids the {@link NullPointerException} that unboxing a missing
+     * key would otherwise throw.
+     */
     public static int getIntegerValueFromConfigs(String key) {
-        return configsInteger.get(key);
+        return CONFIGURATION.getInteger(key);
     }
 
     public static boolean isTestNgExecutionMode() {
@@ -846,11 +745,11 @@ public class Setup {
     }
 
     public static String getIntegerValueAsStringFromConfigs(String key) {
-        return String.valueOf(configsInteger.get(key));
+        return CONFIGURATION.getIntegerAsString(key);
     }
 
     public static void addIntegerValueToConfigs(String key, Integer value) {
-        configsInteger.put(key, value);
+        CONFIGURATION.putInteger(key, value);
     }
 
     public static String getTestDataValueAsStringForEnvironmentFor(String key) {
@@ -865,7 +764,15 @@ public class Setup {
         return currentPlatform;
     }
 
+    /**
+     * Returns an unmodifiable view of the loaded capability file so callers cannot mutate the
+     * internal map. Nested capability maps remain mutable for provider setup. Returns an empty
+     * map when capabilities have not been loaded.
+     */
     public static Map<String, Map> getLoadedCapabilities() {
-        return loadedCapabilityFile;
+        if (null == loadedCapabilityFile) {
+            return Collections.emptyMap();
+        }
+        return Collections.unmodifiableMap(loadedCapabilityFile);
     }
 }

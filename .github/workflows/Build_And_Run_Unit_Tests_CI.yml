@@ -2,7 +2,7 @@ name: Build_And_Run_Unit_Tests
 
 on:
   push:
-    branches: [main]
+    branches: [main, refactor/phase-4-god-class-decomp]
   pull_request:
     branches: [main]
 

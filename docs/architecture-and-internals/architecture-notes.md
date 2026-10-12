@@ -412,10 +412,14 @@ Current examples:
 * `PlaywrightWorkerManager`
 * `PlaywrightWorkerResponse`
 * `PlaywrightWorkerSession`
-* `PlaywrightWebDriver`
-* `PlaywrightWebElement`
-* `PlaywrightLocator`
-* `PlaywrightLocatorReference`
+* `PlaywrightWebDriver` (pw-ts)
+* `PlaywrightJavaWebDriver` / `PlaywrightJavaWebElement` (pw-java native adapters)
+* `PlaywrightJavaWait` (native Playwright bounded waits)
+* `PlaywrightSearchRoot`
+
+Note: Playwright is authored natively (pw-java via `PlaywrightJavaScreenContext.page()`, pw-ts via
+`.screen.ts`). There is no Selenium `By` → Playwright translation layer; the former `PlaywrightBy` /
+`PlaywrightJavaBy` / `PlaywrightLocator` / `PlaywrightLocatorReference` bridge was removed in Phase 7.
 
 ### `com.znsio.teswiz.reporting`
 

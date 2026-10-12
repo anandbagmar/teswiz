@@ -52,7 +52,7 @@ public class TransportNswOcrScreenWeb extends TransportNswOcrScreen {
     @Override
     public VisualElement clickElementByImage(String elementName, String imagePath) {
         LOGGER.info("Finding and clicking '{}' using image template: {}", elementName, imagePath);
-        VisualElement visualElement = driver.findByImage(List.of(imagePath));
+        VisualElement visualElement = visually.findByImage(List.of(imagePath));
         visually.checkWindow(SCREEN_NAME, "Before clicking: " + elementName);
         if (visualElement != null) {
             visualElement.click();
@@ -64,7 +64,7 @@ public class TransportNswOcrScreenWeb extends TransportNswOcrScreen {
     @Override
     public VisualElement clickElementByOcrText(String elementName, String ocrText) {
         LOGGER.info("Finding and clicking '{}' using OCR text: {}", elementName, ocrText);
-        VisualElement stationElement = driver.findByText(ocrText);
+        VisualElement stationElement = visually.findByText(ocrText);
         visually.checkWindow(SCREEN_NAME, "Before clicking: " + elementName);
         if (stationElement != null) {
             stationElement.click();
@@ -76,7 +76,7 @@ public class TransportNswOcrScreenWeb extends TransportNswOcrScreen {
     @Override
     public VisualElement clickCalloutOptionByText(String text) {
         LOGGER.info("Finding and clicking callout option using OCR text: " + text);
-        VisualElement calloutOption = driver.findByText(text);
+        VisualElement calloutOption = visually.findByText(text);
         visually.checkWindow(SCREEN_NAME, "Callout popup option: " + text);
         if (calloutOption != null) {
             calloutOption.click();
@@ -88,7 +88,7 @@ public class TransportNswOcrScreenWeb extends TransportNswOcrScreen {
     @Override
     public VisualElement clickStationNameOnMapByText(String stationName) {
         LOGGER.info("Finding and clicking station name on map using OCR text: " + stationName);
-        VisualElement stationElement = driver.findByText(stationName);
+        VisualElement stationElement = visually.findByText(stationName);
         visually.checkWindow(SCREEN_NAME, "Station map view: " + stationName);
         if (stationElement != null) {
             stationElement.click();
