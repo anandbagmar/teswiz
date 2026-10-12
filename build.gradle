@@ -16,8 +16,8 @@ plugins {
     id "idea"
     id 'com.gradleup.shadow' version '9.6.1'
     id "maven-publish"
-    id "io.freefair.aspectj.post-compile-weaving" version "9.7.0"
-    id "io.github.ben-manes.versions" version "0.64.0"
+    id "io.freefair.aspectj.post-compile-weaving" version "9.8.0"
+    id "io.github.ben-manes.versions" version "0.65.0"
 }
 
 def teswizVersion = "1.0.44-SNAPSHOT"
@@ -214,9 +214,9 @@ dependencies {
     // api: types from these leak into teswiz's own public method signatures/fields/extends
     // clauses, so downstream consumers need them on their compile classpath too. See
     // https://docs.gradle.org/current/userguide/java_library_plugin.html#sec:api_vs_implementation
-    api "com.applitools:eyes-images-java5:5.83.8"
-    api "com.applitools:eyes-playwright-java5:5.86.8"
-    api ("com.applitools:eyes-appium-java5:5.79.49") {
+    api "com.applitools:eyes-images-java5:5.83.9"
+    api "com.applitools:eyes-playwright-java5:5.86.9"
+    api ("com.applitools:eyes-appium-java5:5.79.50") {
         exclude group: 'org.seleniumhq.selenium', module: 'selenium-java'
         exclude group: 'org.seleniumhq.selenium', module: 'selenium-api'
         exclude group: 'org.seleniumhq.selenium', module: 'selenium-support'
@@ -224,18 +224,18 @@ dependencies {
         exclude group: 'io.appium', module: 'java-client'
     }
     api "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.22.3"
-    api "com.fasterxml.jackson.core:jackson-databind:2.18.2"
-    api "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.18.2"
+    api "com.fasterxml.jackson.core:jackson-databind:2.22.3"
+    api "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.22.3"
     api "com.microsoft.playwright:playwright:1.63.0"
     api "io.appium:java-client:10.1.1"
-    api 'io.cucumber:cucumber-java:8.0.3'
-    api 'io.cucumber:cucumber-testng:8.0.3'
+    api 'io.cucumber:cucumber-java:8.0.4'
+    api 'io.cucumber:cucumber-testng:8.0.4'
     api "org.testng:testng:7.12.0"
     api "org.reflections:reflections:0.10.2"
     api "io.rest-assured:rest-assured:6.0.1"
     api "org.assertj:assertj-core:3+"
     api "org.json:json:20260814"
-    api "org.seleniumhq.selenium:selenium-java:4.49.0"
+    api "org.seleniumhq.selenium:selenium-java:4.50.0"
 
     // implementation: used only internally, or only reachable through reflection/AspectJ
     // weaving (Cucumber's --plugin loader, AspectLogging's advice methods) rather than any
