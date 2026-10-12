@@ -19,11 +19,10 @@ import org.openqa.selenium.support.ui.WebDriverWait;
  * slides in a moment after navigation) had no primitive to call. {@code ElementWaiter} fills that
  * gap.
  * <p>
- * It is engine-agnostic: it drives the single {@link WebDriver} that every teswiz engine
- * (Selenium, Playwright-Java, Playwright-TS, Appium) sits behind, using Selenium
- * {@link WebDriverWait}/{@link ExpectedConditions}, and takes {@link By} — the uniform locator
- * currency (Playwright locators are expressed as {@code By} via {@code PlaywrightBy}). One
- * implementation therefore serves all engines.
+ * It drives the single {@link WebDriver} behind each teswiz engine, using Selenium
+ * {@link WebDriverWait}/{@link ExpectedConditions}, and takes {@link By}. {@code By} is the locator
+ * currency for the Selenium and Appium engines; Playwright screens are authored natively (pw-java via
+ * {@code context.page()}, pw-ts via {@code .screen.ts}) and do not use these {@code By} waits.
  */
 public class ElementWaiter {
 
@@ -37,7 +36,7 @@ public class ElementWaiter {
      * Whether an element matching {@code locator} becomes visible within {@code numberOfSecondsToWait}.
      * Returns {@code false} on timeout instead of throwing — safe for optional/transient elements.
      *
-     * @param locator               the element locator (any {@link By}, including {@code PlaywrightBy.*})
+     * @param locator               the element locator (any {@link By}; Selenium/Appium engines)
      * @param numberOfSecondsToWait the bound, in seconds
      * @return {@code true} if visible within the bound, else {@code false}
      */

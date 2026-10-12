@@ -16,7 +16,11 @@ public enum WebCapability {
             "Use context.page().route(...) from PlaywrightJavaScreenContext"),
     SHADOW_DOM("getShadowRoot",
             "Use context.page().locator(...) with Playwright's piercing CSS (shadow DOM is traversed automatically)"),
-    ALERTS("switchTo().alert / waitForAlert", "Use context.page().onDialog(...) to handle native dialogs");
+    ALERTS("switchTo().alert / waitForAlert", "Use context.page().onDialog(...) to handle native dialogs"),
+    ELEMENT_LOCATION_BY_SELENIUM_LOCATOR("findElement(By) / findElements(By) and By-based waits",
+            "Author Playwright screens natively: pw-java via context.page().locator(...)/getByText(...) "
+                    + "from PlaywrightJavaScreenContext; pw-ts via its .screen.ts modules. "
+                    + "The Selenium By bridge is Selenium/Appium-only.");
 
     private final String description;
     private final String nativeAlternative;

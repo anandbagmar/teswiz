@@ -331,28 +331,6 @@ async function getScreenSize(page) {
   }));
 }
 
-async function countLocatorMatches(locator, timeoutMs = 0) {
-  if (!timeoutMs || timeoutMs <= 0) {
-    return locator.count();
-  }
-
-  const startedAt = Date.now();
-  while (Date.now() - startedAt <= timeoutMs) {
-    const count = await locator.count();
-    if (count > 0) {
-      return count;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 50));
-  }
-  return locator.count();
-}
-
-async function isFileInput(locator) {
-  return locator.evaluate((node) => {
-    return node instanceof HTMLInputElement && node.type === "file";
-  }).catch(() => false);
-}
-
 function registerPage(session, page, pageId = `page-${randomUUID()}`) {
   for (const [existingHandle, existingPage] of session.pages.entries()) {
     if (existingPage === page) {
@@ -397,15 +375,8 @@ function attachPageObservers(session, page) {
   });
 }
 
-function buildLocatorRaw(root, locatorReference) {
-  const parent = locatorReference.parent ? buildLocator(root, locatorReference.parent) : root;
-  return createLocator(parent, locatorReference);
-}
-
-function buildLocator(root, locatorReference) {
-  return buildLocatorRaw(root, locatorReference).nth(locatorReference.index || 0);
-}
-
+// Playwright screens are authored natively in their .screen.ts modules; the executeScript bridge no
+// longer accepts Selenium-WebElement arguments (the By locator protocol was removed in Phase 7).
 async function resolveScriptArg(root, arg) {
   if (arg === null || arg === undefined) {
     return null;
@@ -413,46 +384,7 @@ async function resolveScriptArg(root, arg) {
   if (typeof arg !== "object" || Array.isArray(arg)) {
     return arg;
   }
-  if (arg.type === "element") {
-    const handle = await buildLocator(root, arg.locator).elementHandle();
-    if (!handle) {
-      throw new Error("Unable to resolve element argument for executeScript");
-    }
-    return handle;
-  }
   return arg;
-}
-
-function createLocator(root, locatorReference) {
-  const { strategy, value } = locatorReference;
-  switch (strategy) {
-    case "id":
-      return root.locator(`#${value}`);
-    case "css":
-      return root.locator(value);
-    case "xpath":
-      return root.locator(`xpath=${value}`);
-    case "className":
-      return root.locator(`.${value}`);
-    case "name":
-      return root.locator(`[name="${value}"]`);
-    case "tagName":
-      return root.locator(value);
-    case "linkText":
-      return root.getByText(value, { exact: true });
-    case "partialLinkText":
-      return root.getByText(value, { exact: false });
-    case "text":
-      return root.getByText(value, { exact: true });
-    case "role": {
-      const [role, accessibleName] = value.split("|", 2);
-      return root.getByRole(role, { name: accessibleName });
-    }
-    case "testId":
-      return root.getByTestId(value);
-    default:
-      throw new Error(`Unsupported locator strategy: ${strategy}`);
-  }
 }
 
 function okResponse(requestId, action, payload = {}) {
@@ -738,18 +670,6 @@ rl.on("line", async (line) => {
         process.stdout.write(`${okResponse(requestId, action, { status: "ok" })}\n`);
         break;
       }
-      case "switchToFrameElement": {
-        const session = getSession(payload.sessionId);
-        const root = getCurrentRoot(session);
-        const frameElement = await buildLocator(root, payload.locator).elementHandle();
-        const frame = frameElement ? await frameElement.contentFrame() : null;
-        if (!frame) {
-          throw new Error("Unable to switch to the provided frame element");
-        }
-        session.currentFrame = frame;
-        process.stdout.write(`${okResponse(requestId, action, { status: "ok" })}\n`);
-        break;
-      }
       case "switchToDefaultContent": {
         const session = getSession(payload.sessionId);
         session.currentFrame = null;
@@ -919,77 +839,6 @@ rl.on("line", async (line) => {
       case "getConsoleLogs": {
         const session = getSession(payload.sessionId);
         process.stdout.write(`${okResponse(requestId, action, { entries: session.consoleEntries })}\n`);
-        break;
-      }
-      case "countElements": {
-        const session = getSession(payload.sessionId);
-        const locator = buildLocatorRaw(getCurrentRoot(session), payload.locator);
-        process.stdout.write(
-          `${okResponse(requestId, action, { count: await countLocatorMatches(locator, payload.timeoutMs || 0) })}\n`,
-        );
-        break;
-      }
-      case "elementAction": {
-        const session = getSession(payload.sessionId);
-        const locator = buildLocator(getCurrentRoot(session), payload.locator);
-        let value;
-        switch (payload.elementAction) {
-          case "click":
-            await locator.click({ noWaitAfter: true });
-            value = true;
-            break;
-          case "type":
-            if (await isFileInput(locator)) {
-              await locator.setInputFiles(payload.value);
-            } else {
-              await locator.click();
-              await locator.pressSequentially(payload.value);
-            }
-            value = true;
-            break;
-          case "clear":
-            await locator.clear();
-            value = true;
-            break;
-          case "getText":
-            value = await locator.textContent();
-            break;
-          case "getTagName":
-            value = await locator.evaluate((node) => node.tagName.toLowerCase());
-            break;
-          case "getAttribute":
-            value = payload.value === "value" && (await locator.evaluate((node) => "value" in node))
-              ? await locator.inputValue().catch(async () => locator.getAttribute(payload.value))
-              : await locator.getAttribute(payload.value);
-            break;
-          case "isVisible":
-            value = await locator.isVisible();
-            break;
-          case "isEnabled":
-            value = await locator.isEnabled();
-            break;
-          case "isSelected":
-            value = await locator.isChecked().catch(() => false);
-            break;
-          case "getCssValue":
-            value = await locator.evaluate((node, propertyName) => window.getComputedStyle(node).getPropertyValue(propertyName), payload.value);
-            break;
-          case "getBoundingBox": {
-            const box = await locator.boundingBox();
-            value = box
-              ? {
-                  x: Math.round(box.x),
-                  y: Math.round(box.y),
-                  width: Math.round(box.width),
-                  height: Math.round(box.height),
-                }
-              : { x: 0, y: 0, width: 0, height: 0 };
-            break;
-          }
-          default:
-            throw new Error(`Unsupported element action: ${payload.elementAction}`);
-        }
-        process.stdout.write(`${okResponse(requestId, action, { value })}\n`);
         break;
       }
       case "executeScript": {

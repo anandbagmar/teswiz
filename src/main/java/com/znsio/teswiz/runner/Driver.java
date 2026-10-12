@@ -140,7 +140,7 @@ public class Driver {
     /**
      * Bounded, non-throwing visibility check. Convenience delegate to {@link ElementWaiter#isElementVisible(By, int)}.
      *
-     * @param locator               the element locator (any {@link By}, including {@code PlaywrightBy.*})
+     * @param locator               the element locator (any {@link By}; Selenium/Appium engines)
      * @param numberOfSecondsToWait the bound, in seconds
      * @return {@code true} if visible within the bound, else {@code false}
      */

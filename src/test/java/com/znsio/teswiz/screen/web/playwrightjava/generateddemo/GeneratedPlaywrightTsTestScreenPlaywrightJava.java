@@ -1,41 +1,40 @@
 package com.znsio.teswiz.screen.web.playwrightjava.generateddemo;
 
-import com.znsio.teswiz.runner.Driver;
-import com.znsio.teswiz.runner.Visual;
-import com.znsio.teswiz.screen.generateddemo.GeneratedPlaywrightTsTestScreen;
-import org.openqa.selenium.By;
-import org.openqa.selenium.JavascriptExecutor;
-
 import java.util.List;
 
+import com.microsoft.playwright.Locator;
+import com.znsio.teswiz.screen.generateddemo.GeneratedPlaywrightTsTestScreen;
+import com.znsio.teswiz.web.playwright.screen.PlaywrightJavaScreenContext;
+
 public class GeneratedPlaywrightTsTestScreenPlaywrightJava extends GeneratedPlaywrightTsTestScreen {
-    private static final By INPUT = By.id("demo-input");
-    private static final By OUTPUT = By.id("demo-output");
+    private static final String INPUT = "#demo-input";
+    private static final String OUTPUT = "#demo-output";
 
-    private final Driver driver;
+    private final PlaywrightJavaScreenContext context;
 
-    public GeneratedPlaywrightTsTestScreenPlaywrightJava(Driver driver, Visual visually) {
-        this.driver = driver;
+    public GeneratedPlaywrightTsTestScreenPlaywrightJava(PlaywrightJavaScreenContext context) {
+        this.context = context;
     }
 
     @Override
     public GeneratedPlaywrightTsTestScreen open(String url) {
-        driver.getInnerDriver().get(url);
+        context.page().navigate(url);
         return this;
     }
 
     @Override
     public GeneratedPlaywrightTsTestScreen enterValue(String value) {
-        driver.findElement(INPUT).clear();
-        driver.findElement(INPUT).sendKeys(value);
-        ((JavascriptExecutor) driver.getInnerDriver()).executeScript("arguments[0].textContent = arguments[1]",
-                driver.findElement(OUTPUT), value);
+        Locator input = context.page().locator(INPUT);
+        input.clear();
+        input.fill(value);
+        context.page().locator(OUTPUT).evaluate("(element, nextValue) => element.textContent = nextValue", value);
         return this;
     }
 
     @Override
     public String readValue() {
-        return driver.findElement(OUTPUT).getText().trim();
+        String currentValue = context.page().locator(OUTPUT).textContent();
+        return null == currentValue ? "" : currentValue.trim();
     }
 
     @Override

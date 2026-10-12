@@ -4,7 +4,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 import org.openqa.selenium.By;
@@ -91,22 +90,22 @@ final class PlaywrightJavaWebElement implements WebElement {
         return null == text ? "" : text.trim();
     }
 
+    // Nested element location by Selenium By is unsupported on Playwright Java; author screens natively
+    // via context.page().locator(...) from PlaywrightJavaScreenContext (the By bridge was removed in Phase 7).
     @Override
     public List<WebElement> findElements(By by) {
-        Locator childLocator = locator.locator(PlaywrightJavaBy.toSelector(by));
-        int count = PlaywrightJavaWait.untilCountAtLeast(childLocator, implicitWaitTimeout, 0);
-        return java.util.stream.IntStream.range(0, count)
-                .mapToObj(index -> new PlaywrightJavaWebElement(childLocator.nth(index), implicitWaitTimeout))
-                .map(WebElement.class::cast).toList();
+        throw byLocatorUnsupported("findElements(By)");
     }
 
     @Override
     public WebElement findElement(By by) {
-        Locator childLocator = locator.locator(PlaywrightJavaBy.toSelector(by));
-        if (PlaywrightJavaWait.untilCountAtLeast(childLocator, implicitWaitTimeout, 1) <= 0) {
-            throw new NoSuchElementException("Unable to locate element: " + by);
-        }
-        return new PlaywrightJavaWebElement(childLocator.first(), implicitWaitTimeout);
+        throw byLocatorUnsupported("findElement(By)");
+    }
+
+    private UnsupportedOperationException byLocatorUnsupported(String operation) {
+        return new UnsupportedOperationException(com.znsio.teswiz.web.WebEngineCapabilities.formatDiagnosticMessage(
+                com.znsio.teswiz.web.WebEngine.PLAYWRIGHT_JAVA,
+                com.znsio.teswiz.web.WebCapability.ELEMENT_LOCATION_BY_SELENIUM_LOCATOR, operation));
     }
 
     @Override

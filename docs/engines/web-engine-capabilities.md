@@ -20,8 +20,22 @@ This guide outlines feature parity, capability discovery, and cross-engine suppo
 | **Network Interception** | ✅ | ✅ | ✅ | Route handling and request interception. |
 | **Applitools Visual AI** | ✅ | ✅ | ✅ | Classic Eyes and Ultrafast Grid (UFG) check window support. |
 | **Offline OCR / OpenCV** | ✅ | ✅ | ✅ | Dynamic text locator discovery and multi-scale template matching. |
+| **Element location by Selenium `By`** | ✅ | ❌ | ❌ | `findElement(By)`/`findElements(By)` and `By`-based waits. On Playwright this is unsupported by design — author screens natively (pw-java: `context.page().locator(...)`/`getByText(...)`; pw-ts: `.screen.ts` modules). `By` is the locator currency for Selenium/Appium only. |
 
 ---
+
+## 🧭 Locators: `By` is Selenium/Appium-only
+
+**teswiz** does not translate Selenium `By` locators for Playwright. Each engine is authored in its own
+native idiom:
+
+- **Selenium / Appium** — use `org.openqa.selenium.By` and the `Driver` `By`-based helpers/waits.
+- **Playwright Java** — use `context.page()` from `PlaywrightJavaScreenContext` (Playwright's `Locator` API:
+  `locator(...)`, `getByText(...)`, `getByRole(...)`, …).
+- **Playwright TS** — author the screen's `.screen.ts` module using Playwright's TypeScript API.
+
+Calling `findElement(By)`/`findElements(By)` (or a `By`-based wait) on a Playwright engine fails fast with the
+`ELEMENT_LOCATION_BY_SELENIUM_LOCATOR` capability error pointing at the native alternative.
 
 ## 🚨 Fail-Fast Strategy & Diagnostic Messages
 

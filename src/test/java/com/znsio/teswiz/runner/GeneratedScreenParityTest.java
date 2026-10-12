@@ -54,7 +54,7 @@ class GeneratedScreenParityTest {
     @Test
     void shouldExecuteGeneratedScreenContractThroughPlaywrightJavaImplementation(@TempDir Path tempDir)
             throws Exception {
-        assertGeneratedScreenContract(tempDir, WebEngine.PLAYWRIGHT_JAVA, new PlaywrightWebDriverFixture());
+        assertGeneratedScreenContract(tempDir, WebEngine.PLAYWRIGHT_JAVA, new PlaywrightJavaWebDriverFixture());
     }
 
     private void assertGeneratedScreenContract(Path tempDir, WebEngine webEngine, SharedWebDriverFixture nextFixture)

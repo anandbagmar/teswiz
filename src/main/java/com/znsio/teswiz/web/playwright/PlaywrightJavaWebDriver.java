@@ -7,7 +7,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.List;
-import org.openqa.selenium.NoSuchElementException;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -131,22 +130,18 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
         return session.page().title();
     }
 
+    // Playwright Java is authored natively via PlaywrightJavaScreenContext.page() (Playwright Locator API).
+    // The Selenium By locator bridge is Selenium/Appium-only; locating by By on this engine is unsupported.
     @Override
     public List<WebElement> findElements(By by) {
-        com.microsoft.playwright.Locator locator = currentSearchRoot.locator(PlaywrightJavaBy.toSelector(by));
-        int count = PlaywrightJavaWait.untilCountAtLeast(locator, implicitWaitTimeout, 0);
-        return java.util.stream.IntStream.range(0, count)
-                .mapToObj(index -> new PlaywrightJavaWebElement(locator.nth(index), implicitWaitTimeout))
-                .map(WebElement.class::cast).toList();
+        throw unsupported(com.znsio.teswiz.web.WebCapability.ELEMENT_LOCATION_BY_SELENIUM_LOCATOR,
+                "findElements(By)");
     }
 
     @Override
     public WebElement findElement(By by) {
-        com.microsoft.playwright.Locator locator = currentSearchRoot.locator(PlaywrightJavaBy.toSelector(by));
-        if (PlaywrightJavaWait.untilCountAtLeast(locator, implicitWaitTimeout, 1) <= 0) {
-            throw new NoSuchElementException("Unable to locate element: " + by);
-        }
-        return new PlaywrightJavaWebElement(locator.first(), implicitWaitTimeout);
+        throw unsupported(com.znsio.teswiz.web.WebCapability.ELEMENT_LOCATION_BY_SELENIUM_LOCATOR,
+                "findElement(By)");
     }
 
     @Override

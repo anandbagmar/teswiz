@@ -4,43 +4,40 @@ import java.util.List;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebElement;
 
-import com.znsio.teswiz.runner.Driver;
+import com.microsoft.playwright.Locator;
+import com.microsoft.playwright.Page;
 import com.znsio.teswiz.runner.Visual;
 import com.znsio.teswiz.runner.VisualElement;
 import com.znsio.teswiz.screen.transportnsw.TransportNswOcrScreen;
-
-import com.znsio.teswiz.web.playwright.PlaywrightBy;
+import com.znsio.teswiz.web.playwright.screen.PlaywrightJavaScreenContext;
 
 public class TransportNswOcrScreenPlaywrightJava extends TransportNswOcrScreen {
     private static final String SCREEN_NAME = TransportNswOcrScreenPlaywrightJava.class.getSimpleName();
     private static final Logger LOGGER = LogManager.getLogger(SCREEN_NAME);
 
-    private final Driver driver;
+    private final PlaywrightJavaScreenContext context;
     private final Visual visually;
 
-    public TransportNswOcrScreenPlaywrightJava(Driver driver, Visual visually) {
-        this.driver = driver;
-        this.visually = visually;
+    public TransportNswOcrScreenPlaywrightJava(PlaywrightJavaScreenContext context) {
+        this.context = context;
+        this.visually = context.visual();
         LOGGER.info("Initialized " + SCREEN_NAME + " for Playwright Java");
     }
 
     @Override
     public TransportNswOcrScreen navigateTo(String url) {
         LOGGER.info("Playwright Java - Navigating to Transport NSW Metro page: " + url);
-        driver.getInnerDriver().get(url);
+        context.page().navigate(url);
         return this;
     }
 
     @Override
     public TransportNswOcrScreen scrollToExploreRouteMap() {
         LOGGER.info("Playwright Java - Scrolling down to 'Explore the new route' interactive map section");
-        By exploreSectionLocator = PlaywrightBy.text("Explore the new route");
-        WebElement element = driver.findElement(exploreSectionLocator);
-        ((org.openqa.selenium.JavascriptExecutor) driver.getInnerDriver())
-                .executeScript("arguments[0].scrollIntoView({block: 'center', inline: 'nearest'});", element);
+        Locator exploreSection = context.page().getByText("Explore the new route",
+                new Page.GetByTextOptions().setExact(true));
+        exploreSection.first().scrollIntoViewIfNeeded();
         try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
         visually.checkWindow(SCREEN_NAME, "'Explore the new route' map section");
         return this;
@@ -89,7 +86,7 @@ public class TransportNswOcrScreenPlaywrightJava extends TransportNswOcrScreen {
     @Override
     public boolean isStationPageDisplayedFor(String stationName) {
         LOGGER.info("Playwright Java - Verifying station page display for: " + stationName);
-        By stationTextLocator = PlaywrightBy.text(stationName);
-        return driver.isElementPresent(stationTextLocator);
+        Locator stationText = context.page().getByText(stationName, new Page.GetByTextOptions().setExact(true));
+        return stationText.count() > 0;
     }
 }

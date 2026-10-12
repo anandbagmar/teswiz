@@ -4,17 +4,21 @@ _Previous release: v1.0.43_
 
 ## 🚀 Key Highlights & Enhancements
 
+### 🧭 Engine-native Playwright locators — Selenium `By` bridge removed from Playwright (Phase 7)
+* **Playwright is now authored natively, and the Playwright↔Selenium-`By` translation bridge is deleted.** pw-java screens use `context.page().locator(...)/getByText(...)` from `PlaywrightJavaScreenContext`; pw-ts screens use their `.screen.ts` modules. `By` is now the locator currency for **Selenium and Appium only**.
+* **Selenium and Appium are completely unchanged** — zero behaviour or public-API change (verified before any deletion: `ElementWaiter`, the `Driver` `By`-methods and `ElementFinder` call the Selenium `WebDriver` interface and are engine-neutral; the `By` coupling lived only in the `web.playwright` package).
+* **`findElement(By)` / `findElements(By)` and `By`-based waits now fail fast on the Playwright engines** with a structured `WebEngineCapabilities` diagnostic (new `WebCapability.ELEMENT_LOCATION_BY_SELENIUM_LOCATOR`) that points authors at native Playwright authoring, instead of silently translating.
+* **Removed** (Playwright-only, no external users): `PlaywrightBy`, `PlaywrightJavaBy`, `PlaywrightLocator`, `PlaywrightLocatorReference`, the pw-ts `PlaywrightWebElement` + `PlaywrightShadowRootSearchContext`, and the `worker.mjs` locator protocol (`createLocator`/`elementAction`/`countElements`). The native `screenAction` worker path is retained. `PlaywrightJavaWebElement` is retained as the native `Locator` adapter.
+* **New native bounded waits** on `PlaywrightJavaWait` (`untilVisible`/`untilPresent`/`untilHidden`) so Playwright loses no wait capability when the `By`-waits stop routing through it.
+
 ### 🧭 Cross-engine bounded element waits (`ElementWaiter`)
-* **New `ElementWaiter` in `com.znsio.teswiz.runner`**, surfaced through three delegating methods on the `Driver` facade: `isElementVisible(By, int)`, `isElementPresentWithin(By, int)` and `waitTillTextIsPresent(By, String, int)`. Each waits up to a bounded number of seconds and **returns `false` on timeout instead of throwing** — the missing "is it there within N seconds?" boolean that every existing `waitTill*` lacked (they all throw on timeout). Additive and non-breaking: no existing signature changed. `By` stays the uniform locator currency, so these work across Selenium and (via `PlaywrightBy`) the Playwright engines.
+* **New `ElementWaiter` in `com.znsio.teswiz.runner`**, surfaced through three delegating methods on the `Driver` facade: `isElementVisible(By, int)`, `isElementPresentWithin(By, int)` and `waitTillTextIsPresent(By, String, int)`. Each waits up to a bounded number of seconds and **returns `false` on timeout instead of throwing** — the missing "is it there within N seconds?" boolean that every existing `waitTill*` lacked (they all throw on timeout). Additive and non-breaking: no existing signature changed. On Selenium/Appium, `By` is the locator currency for these waits; Playwright screens use native waits (`PlaywrightJavaWait`).
 
 ### 🔌 Web-engine capability parity signalling
 * **`WebCapability` gained `SHADOW_DOM` and `ALERTS`.** On `playwright-java`, `getShadowRoot()` and `switchTo().alert()` now throw a structured `WebEngineCapabilities` diagnostic naming the capability and the Playwright-native alternative, instead of a bare/absent failure — same pattern already used for windows/positioning.
 
 ### 📐 Consistent default window/viewport sizing (`WindowSizingResolver`)
 * **New `WindowSizingResolver` is the single source of truth for the default viewport.** Selenium's hard-coded `1920x1080` headless fallback and the Playwright context-options viewport default now both resolve from it (`TESWIZ_DRIVER_VIEWPORT_WIDTH`/`HEIGHT`, default `1280x960`), so a sizing override applies consistently across engines. No config schema change.
-
-### 🧱 Locator translation hardening (`PlaywrightLocator`)
-* **`PlaywrightLocator.from(By)` now dispatches standard Selenium `By` subtypes through a single prefix→strategy lookup table** rather than an eight-branch `if` chain, and documents the `By` / `PlaywrightBy` contract. `PlaywrightBy`-native locators continue to translate directly from their structured fields. Behaviour is unchanged; the mapping is now locked by `PlaywrightLocatorTest`.
 
 ### 🖍️ Universal element highlighting (all engines)
 * **Element highlighting is now universal, not just for OCR/`WebElement` actions.** Previously a Screen driving the raw Playwright API (`page().locator(sel).click()`) got no highlight, because the highlight lived only inside teswiz's `WebElement` adapter. A new transparent `HighlightingPage`/`HighlightingLocator`/`HighlightingFrameLocator` (JDK dynamic proxies over Playwright's `Page`/`Locator`/`FrameLocator` interfaces) is installed at the single `Page`-creation point, so every action (`click`, `fill`, `press`, `check`, `selectOption`, …) highlights the element first — with **no change to the calling test and no `org.openqa.selenium` types**. Chained/`frameLocator` results are re-wrapped so highlighting survives locator chaining; unknown future Playwright methods forward verbatim.
@@ -23,7 +27,7 @@ _Previous release: v1.0.43_
 * Tests: `PlaywrightHighlighterTest`, `HighlightingLocatorTest`.
 
 ## 🧪 Tests
-* `ElementWaiterTest` (6), `WindowSizingResolverTest` (3), `PlaywrightLocatorTest` (7) added. Full `clean test` green (441 tests, 0 failures).
+* `ElementWaiterTest` (6), `WindowSizingResolverTest` (3), `PlaywrightJavaWaitTest` (6, native Playwright waits) added. `PlaywrightLocatorTest` removed with the `By` bridge; `PlaywrightWebDriverTest` reworked to assert the native pw-ts contract (surviving native driver ops + unsupported-signal guards for the removed `By` surface); `GeneratedScreenParityTest` pw-java leg now runs a real native Playwright Java driver (`PlaywrightJavaWebDriverFixture`). Full `clean test` green (634 tests, 0 failures, 15 skipped).
 
 ---
 ## 1.0.43

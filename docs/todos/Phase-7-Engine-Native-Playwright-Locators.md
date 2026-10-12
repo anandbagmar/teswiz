@@ -1,8 +1,10 @@
 # teswiz — Phase 7: engine-native Playwright locators (remove the By bridge)
 
-> Status: **Not started** — captured for pickup. Decisions below are locked with the maintainer.
-> Branch: continue on `refactor/phase-4-god-class-decomp` (already pushed to origin; GitHub Actions
-> is the regression gate). No separate branch.
+> Status: **Done** — all stages (7.1–7.6) implemented on `refactor/phase-4-god-class-decomp`.
+> Full `clean test` green (634 tests, 0 failures, 15 skipped) + `validateConfigurationTemplates` green.
+> GitHub Actions is the regression gate. No separate branch. See the "7.1 isolation finding" and the
+> per-stage notes below; one deviation from the original plan is recorded in 7.5 notes
+> (`PlaywrightJavaWebDriverFixture` added so the parity test's pw-java leg runs a real native driver).
 
 ## Context & relationship to the SOLID plan
 
@@ -106,3 +108,48 @@ un-decorated).
    yields `modules: []` / "Not found"). For remote/CI consumption, cut a **Git tag** (e.g. `1.0.44`)
    — a tag builds once on JitPack and is served reliably; then consumers use
    `com.github.anandbagmar:teswiz:1.0.44`.
+
+---
+
+## 7.1 — Se/Appium isolation finding (VERIFIED, gate PASSED)
+
+> Status: **Done.** Code-grounded verification completed against the branch tree. The gate passes:
+> removing the Playwright `By` bridge cannot change any Selenium or Appium behaviour or public API.
+
+### What was checked and the result
+
+- **`ElementWaiter`** (`src/main/java/com/znsio/teswiz/runner/ElementWaiter.java`) is pure Selenium
+  `WebDriverWait` / `ExpectedConditions` over the `WebDriver` **interface**. It never imports or
+  references any Playwright type. It drives whatever `WebDriver` it is handed. For Playwright it works
+  today only because the Playwright engine `WebDriver` implements `findElement(By)` via the bridge.
+  The coupling is **not** in `ElementWaiter`. Zero changes needed for Se/Appium. The class Javadoc
+  mentioning `PlaywrightBy` is documentation only.
+- **`Driver` `By`-methods** (`findElement(By)`, `findElements(By)`, `isElementPresent(By)`,
+  `waitForClickabilityOf`, `waitTill*`, `click(By)`) have **no `switch(engine)`**. They are uniform
+  calls on the `WebDriver` interface. Per-engine behaviour lives entirely inside the engine
+  `WebDriver` implementations. Playwright and Selenium share the identical `Driver` code path with a
+  different driver instance behind the interface — `Driver` cannot tell them apart.
+- **`ElementFinder`** (`src/main/java/com/znsio/teswiz/runner/ElementFinder.java`) returns Playwright
+  elements **undecorated** (`getClass().getName().contains("Playwright")` short-circuit) and never
+  imports `By`. Not in the keep-alive set.
+
+**Conclusion:** the `By`→Playwright coupling lives only in the `com.znsio.teswiz.web.playwright`
+package (the four bridge classes + the engine `WebDriver`/`WebElement` impls + the `worker.mjs`
+locator protocol). Every reference to the deletion targets is from a Playwright-package class, the
+one `TransportNswOcrScreenPlaywrightJava` test screen, `PlaywrightLocatorTest`, or docs. Se/Appium
+flow through the shared `Driver`/`ElementWaiter` with real Selenium/Appium drivers and are untouched.
+
+### Three refinements to the plan body (discovered during 7.1)
+
+1. **`findElement(By)` / `findElements(By)` on the Playwright drivers are reworked, not deleted.**
+   They are `@Override` of the Selenium `WebDriver` interface
+   (`PlaywrightJavaWebDriver`, `PlaywrightWebDriver`); deleting them breaks the interface contract.
+   **Decision (locked with maintainer): they throw a structured unsupported-capability signal**
+   (new `WebCapability.ELEMENT_LOCATION_BY_SELENIUM_LOCATOR`), mirroring the existing
+   `NativeCoordinateInput` / `unsupported(...)` pattern.
+2. **`PlaywrightJavaWebElement` cannot be deleted.** It is the native adapter over a Playwright
+   `Locator` and is used by `frame(WebElement)`, `activeElement()`, and
+   `PlaywrightJavaScript.adaptArgument`. It survives 7.5. Only the pw-ts `PlaywrightWebElement`
+   (+ `PlaywrightShadowRootSearchContext`) is removable, after the pw-ts `By`-find path is gone.
+3. **The `7-ts-B` commit is doc-only.** It added +108 lines to this plan doc and **no Java**. There
+   is no Java-side pw-ts handle to revert; Decision #2 is already satisfied by the current tree.
