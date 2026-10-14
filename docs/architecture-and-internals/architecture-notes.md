@@ -67,12 +67,7 @@ flowchart LR
     SC --> ROUTER[Runtime screen / engine router]
 
     ROUTER --> SH[SessionHandle + persona routing]
-    SH --> REP[Reporting / logs / artifacts]
-    SH --> VIS[Applitools Visual AI]
-    SH --> OCR["Tesseract OCR and OpenCV Engine"]
-    SH --> LLMV["LLM Vision Engine (optional)"]
     SH --> CLOUD["Cloud provider adapters"]
-    OCR -.->|OCR_THEN_LLM fallback| LLMV
 
     ROUTER --> WSEL[Web: SeleniumWebEngineAdapter]
     ROUTER --> WPJ[Web: PlaywrightJavaWebEngineAdapter]
@@ -80,6 +75,17 @@ flowchart LR
     ROUTER --> MAPP[Mobile: AppiumJavaEngineAdapter]
     ROUTER --> APIE[API: ApiService Engine Router]
     ROUTER --> DSK[Desktop / PDF: Electron / WinApp / PDF Engine]
+
+    %% Cross-cutting subsystems are invoked through the active Driver facade
+    %% (which the engine adapters back), not routed by SessionHandle.
+    WSEL --> DRV["Driver facade"]
+    WPJ --> DRV
+    WPTS --> DRV
+    MAPP --> DRV
+    DRV --> VIS["Applitools Visual AI"]
+    DRV --> OCR["OCR + OpenCV Engine (driver.vision OCR)"]
+    DRV --> LLMV["LLM Vision Engine (driver.vision LLM, optional)"]
+    OCR -.->|OCR_THEN_LLM fallback| LLMV
 
     WSEL --> WD[Selenium WebDriver]
     WPJ --> PWJ[Playwright Java runtime]
@@ -101,10 +107,7 @@ flowchart LR
     ELE --> APP_DESK[Desktop Application / PDF File]
 
     SH --> META[Engine name, provider, platform, persona, session id]
-    META --> REP
-    META --> VIS
-    META --> OCR
-    META --> CLOUD
+    META --> REP["Reporting / logs / artifacts"]
 ```
 
 Logging and diagnostic artifacts follow the execution context rather than the engine:
