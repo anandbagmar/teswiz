@@ -142,6 +142,7 @@ public class CucumberScenarioListener implements ConcurrentEventListener {
         LOGGER.info(String.format("Test run completed: total=%d, passed=%d, failed=%d, skipped=%d, durationMs=%d",
                 runningScenarioNumber.get(), passedCount.get(), failedCount.get(), skippedCount.get(), durationMillis));
         try {
+            com.znsio.teswiz.visual.LlmVisionUsageRegistry.logRunSummary();
             Visual.closeBatch();
             AppiumServerController.destroyAppiumNode();
             PlaywrightBrowserConfigMigrationReporter.emitSummaryIfPresent();

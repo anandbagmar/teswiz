@@ -106,8 +106,33 @@ public class RunTelemetry {
         runMetrics.put("status", failedScenarios == 0 ? "success" : "failed");
         props.put("run_metrics", runMetrics);
 
+        props.put("llm_vision", buildLlmVisionTelemetry());
+
         root.put("properties", props);
         return root;
+    }
+
+    /**
+     * Aggregate, privacy-safe LLM vision usage for the run. Numeric counters plus the generic
+     * provider enum ({@code openai}/{@code azure-openai}/...) and an enabled flag only - never the
+     * endpoint URL, model/deployment name, API key, descriptions, screenshots, or test names.
+     */
+    private static JSONObject buildLlmVisionTelemetry() {
+        JSONObject llm = new JSONObject();
+        boolean enabled = Runner.isLlmVisionFallbackEnabled();
+        llm.put("enabled", enabled);
+        if (enabled) {
+            llm.put("provider", Runner.getLlmVisionProvider());
+        }
+        com.znsio.teswiz.visual.LlmVisionUsageRegistry.RunTotals totals =
+                com.znsio.teswiz.visual.LlmVisionUsageRegistry.getRunTotals();
+        llm.put("tests_using_llm", totals.testsUsingLlm());
+        llm.put("total_calls", totals.totalCalls());
+        llm.put("prompt_tokens", totals.promptTokens());
+        llm.put("completion_tokens", totals.completionTokens());
+        llm.put("total_tokens", totals.totalTokens());
+        llm.put("total_duration_seconds", String.format("%.2f", totals.totalDurationSeconds()));
+        return llm;
     }
 
     private static String getDistinctId(TelemetryMode mode) {

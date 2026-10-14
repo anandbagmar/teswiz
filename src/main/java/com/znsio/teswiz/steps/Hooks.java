@@ -73,6 +73,7 @@ public class Hooks {
         if (null != isHooksInitialized) {
             LOGGER.info("Hooks: ThreadId : '%d' :: afterScenario: '%s'".formatted(threadId, testName));
             testExecutionContext.addTestState(TEST_CONTEXT.HOOKS_INITIALIZED, null);
+            com.znsio.teswiz.visual.LlmVisionUsageRegistry.summariseAndCommit(testExecutionContext);
             Drivers.attachLogsAndCloseAllDrivers(failed);
             closeTheAsyncCommandLineExecutor();
             SoftAssertions softly = Runner.getSoftAssertion(threadId);
