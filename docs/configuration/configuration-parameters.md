@@ -60,12 +60,21 @@ For the complete property list and all available defaults, use the
     ENVIRONMENT_CONFIG_FILE=./src/test/resources/environments.json -> Environment specific configuration file
     IS_FAILING_TEST_SUITE=false -> Do not run failing tests. Refer to [Hard Gate](hard-gate.md) for more information
     IS_VISUAL=false -> Should enable Applitools Visual Testing? If yes, set to true
-    IS_OCR_ENABLED=false -> Enable the embedded, offline Visual OCR & image-recognition subsystem (findByText/findByImage, waitUntilVisualElementIsVisible*, etc.). Default is false; see [OCR & Image Recognition](../subsystems/ocr-and-image-recognition.md).
+    IS_OCR_ENABLED=false -> Enable the embedded, offline Visual OCR & image-recognition subsystem, reached via driver.vision(VisionStrategy.OCR) (findByText/findByImage, waitUntilVisualElementIsVisible*, etc.). Default is false; see [OCR & Image Recognition](../subsystems/ocr-and-image-recognition.md).
     VISUAL_CONFIDENCE_THRESHOLD=0.85 -> Minimum match confidence (0.0 to 1.0) for a visual element to be considered a match (default: 0.85).
     VISUAL_ELEMENT_RETRY_ATTEMPTS=3 -> Number of attempts when polling for a visual element in count/at-least verifications and when deriving the default waitUntilVisualElementIsVisible* budget (default: 3).
     VISUAL_ELEMENT_RETRY_DELAY_SECONDS=1 -> Delay in seconds between visual-element polling attempts; also the inter-poll sleep for waitUntilVisualElementIsVisible* (default: 1).
     VISUAL_ACTION_WAIT_SECONDS=1 -> Configurable post-action settle delay in seconds applied after visual element clicks/inputs, and captured between the before/after screenshots of each visual action (default: 1).
     HIGHLIGHT_ELEMENTS=true -> Should interactive UI elements (Selenium, Playwright-Java, Playwright-TS, Appium, OCR/Visual) be highlighted with an orange-red box during test execution? Default is true. Previous highlights are automatically cleared before the next action.
+    LLM_VISION_FALLBACK_ENABLED=false -> Master switch for the optional LLM vision locator (driver.vision(VisionStrategy.LLM) and the LLM tier of VisionStrategy.OCR_THEN_LLM). Default is false (disabled). When true, teswiz validates the LLM vision config at startup and fails fast on misconfiguration. See [OCR & Image Recognition](../subsystems/ocr-and-image-recognition.md).
+    LLM_VISION_PROVIDER=openai -> Vision LLM provider when LLM_VISION_FALLBACK_ENABLED=true. Supported: openai | azure-openai | anthropic | gemini | vertex-gemini | custom.
+    LLM_VISION_MODEL= -> Model id to use (optional; defaults per provider, e.g. gpt-4o for openai).
+    LLM_VISION_ENDPOINT=<llm-vision-endpoint> -> Mandatory when enabled: the vision chat-completions endpoint URL.
+    LLM_VISION_API_KEY_ENV=LLM_VISION_API_KEY -> Name of the ENVIRONMENT VARIABLE that holds the API key (never the key value itself). Not required for vertex-gemini, which uses Google Application Default Credentials.
+    LLM_VISION_API_VERSION=2024-06-01 -> Azure OpenAI api-version (only used by provider azure-openai).
+    LLM_VISION_MAX_RETRIES=1 -> Network-level retries per LLM vision call (default: 1).
+    LLM_VISION_TIMEOUT_SECONDS=30 -> Per-call network timeout in seconds (default: 30).
+    LLM_VISION_LOG_API_TRAFFIC=true -> Write a masked per-call request/response file into the scenario's separate llm-vision-traffic/ report folder (default: true). Secrets (API key, endpoint credentials) are redacted. The LLM HTTP calls reuse the configured API_ENGINE.
     FAIL_TEST_ON_VISUAL_DIFFERENCE=true -> 
         If visual testing is enabled, and this is set to true, then the test will fail if there are any visual differences found
         If this is set to false, then a message will be logged about the visual differences, and the test will not fail for this reason 

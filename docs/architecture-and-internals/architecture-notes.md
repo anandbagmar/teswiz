@@ -69,8 +69,10 @@ flowchart LR
     ROUTER --> SH[SessionHandle + persona routing]
     SH --> REP[Reporting / logs / artifacts]
     SH --> VIS[Applitools Visual AI]
-    SH --> OCR[Tesseract OCR & OpenCV Engine]
-    SH --> CLOUD[Cloud provider adapters]
+    SH --> OCR["Tesseract OCR and OpenCV Engine"]
+    SH --> LLMV["LLM Vision Engine (optional)"]
+    SH --> CLOUD["Cloud provider adapters"]
+    OCR -.->|OCR_THEN_LLM fallback| LLMV
 
     ROUTER --> WSEL[Web: SeleniumWebEngineAdapter]
     ROUTER --> WPJ[Web: PlaywrightJavaWebEngineAdapter]
@@ -135,6 +137,7 @@ sequenceDiagram
     participant API as "API Engine (RestAssured / PW-Java / PW-TS)"
     participant Vis as Applitools Visual AI
     participant Ocr as Tesseract OCR / OpenCV Engine
+    participant Llm as "LLM Vision Engine"
 
     Feature->>BL: Invoke scenario step / test action
     BL->>Router: Resolve persona + platform + engine
@@ -159,9 +162,14 @@ sequenceDiagram
         BL->>Vis: checkWindow() / checkRegion()
         Vis->>Vis: Capture baseline & compare via Eyes / Ultrafast Grid
     else OCR / Image Element Lookup
-        BL->>Ocr: findVisualElementByText() / findByImage()
-        Ocr->>Ocr: Screenshot capture -> Tesseract OCR / OpenCV pyramid match
-        Ocr-->>BL: Bounding box coordinates & highlight overlay
+        BL->>Ocr: vision OCR findByText or findByImage
+        Ocr->>Ocr: Screenshot capture then OCR or template match
+        alt match found via OCR
+            Ocr-->>BL: Bounding box coordinates and highlight overlay
+        else OCR miss then OCR_THEN_LLM or LLM strategy
+            Ocr->>Llm: Fall back to LLM vision with description or reference images
+            Llm-->>BL: Bounding box coordinates plus token usage
+        end
     end
 ```
 
