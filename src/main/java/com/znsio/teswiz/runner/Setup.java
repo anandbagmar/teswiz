@@ -59,6 +59,15 @@ public class Setup {
     public static final String VISUAL_ACTION_WAIT_SECONDS = "VISUAL_ACTION_WAIT_SECONDS";
     public static final String IS_OCR_ENABLED = "IS_OCR_ENABLED";
     public static final String VISUAL_CONFIDENCE_THRESHOLD = "VISUAL_CONFIDENCE_THRESHOLD";
+    public static final String LLM_VISION_FALLBACK_ENABLED = "LLM_VISION_FALLBACK_ENABLED";
+    public static final String LLM_VISION_PROVIDER = "LLM_VISION_PROVIDER";
+    public static final String LLM_VISION_MODEL = "LLM_VISION_MODEL";
+    public static final String LLM_VISION_ENDPOINT = "LLM_VISION_ENDPOINT";
+    public static final String LLM_VISION_API_KEY_ENV = "LLM_VISION_API_KEY_ENV";
+    public static final String LLM_VISION_API_VERSION = "LLM_VISION_API_VERSION";
+    public static final String LLM_VISION_MAX_RETRIES = "LLM_VISION_MAX_RETRIES";
+    public static final String LLM_VISION_TIMEOUT_SECONDS = "LLM_VISION_TIMEOUT_SECONDS";
+    public static final String LLM_VISION_LOG_API_TRAFFIC = "LLM_VISION_LOG_API_TRAFFIC";
     public static final String BROWSER = "BROWSER";
     public static final String WEB_ENGINE = "WEB_ENGINE";
     public static final String CONFIG_FILE = "CONFIG_FILE";
@@ -220,6 +229,7 @@ public class Setup {
         SensitiveDataMasker.configureSensitiveKeys(
                 parseCsv(configs.get(MASK_ADDITIONAL_KEYS)),
                 parseCsv(configs.get(MASK_KEYS_OVERRIDE)));
+        com.znsio.teswiz.visual.LlmVisionConfigValidator.validateIfEnabled();
     }
 
     @NotNull
@@ -449,6 +459,33 @@ public class Setup {
         configsInteger.put(VISUAL_ACTION_WAIT_SECONDS, getOverriddenIntValue(
                 VISUAL_ACTION_WAIT_SECONDS,
                 Integer.parseInt(getStringValueFromPropertiesIfAvailable(VISUAL_ACTION_WAIT_SECONDS, "1"))));
+        configsBoolean.put(LLM_VISION_FALLBACK_ENABLED, getOverriddenBooleanValue(
+                LLM_VISION_FALLBACK_ENABLED,
+                getBooleanValueFromPropertiesIfAvailable(LLM_VISION_FALLBACK_ENABLED, false)));
+        configs.put(LLM_VISION_PROVIDER, getOverriddenStringValue(
+                LLM_VISION_PROVIDER,
+                getStringValueFromPropertiesIfAvailable(LLM_VISION_PROVIDER, "openai")));
+        configs.put(LLM_VISION_MODEL, getOverriddenStringValue(
+                LLM_VISION_MODEL,
+                getStringValueFromPropertiesIfAvailable(LLM_VISION_MODEL, "")));
+        configs.put(LLM_VISION_ENDPOINT, getOverriddenStringValue(
+                LLM_VISION_ENDPOINT,
+                getStringValueFromPropertiesIfAvailable(LLM_VISION_ENDPOINT, "")));
+        configs.put(LLM_VISION_API_KEY_ENV, getOverriddenStringValue(
+                LLM_VISION_API_KEY_ENV,
+                getStringValueFromPropertiesIfAvailable(LLM_VISION_API_KEY_ENV, "LLM_VISION_API_KEY")));
+        configs.put(LLM_VISION_API_VERSION, getOverriddenStringValue(
+                LLM_VISION_API_VERSION,
+                getStringValueFromPropertiesIfAvailable(LLM_VISION_API_VERSION, "2024-06-01")));
+        configsInteger.put(LLM_VISION_MAX_RETRIES, getOverriddenIntValue(
+                LLM_VISION_MAX_RETRIES,
+                Integer.parseInt(getStringValueFromPropertiesIfAvailable(LLM_VISION_MAX_RETRIES, "1"))));
+        configsInteger.put(LLM_VISION_TIMEOUT_SECONDS, getOverriddenIntValue(
+                LLM_VISION_TIMEOUT_SECONDS,
+                Integer.parseInt(getStringValueFromPropertiesIfAvailable(LLM_VISION_TIMEOUT_SECONDS, "30"))));
+        configsBoolean.put(LLM_VISION_LOG_API_TRAFFIC, getOverriddenBooleanValue(
+                LLM_VISION_LOG_API_TRAFFIC,
+                getBooleanValueFromPropertiesIfAvailable(LLM_VISION_LOG_API_TRAFFIC, true)));
     }
 
     public static String getHostMachineName() {

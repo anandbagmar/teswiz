@@ -226,6 +226,48 @@ public class Runner {
         }
     }
 
+    public static boolean isLlmVisionFallbackEnabled() {
+        return Setup.getBooleanValueFromConfigs(Setup.LLM_VISION_FALLBACK_ENABLED);
+    }
+
+    public static String getLlmVisionProvider() {
+        String provider = Setup.getFromConfigs(Setup.LLM_VISION_PROVIDER);
+        return (provider == null || provider.isBlank()) ? "openai" : provider.trim();
+    }
+
+    public static String getLlmVisionModel() {
+        String model = Setup.getFromConfigs(Setup.LLM_VISION_MODEL);
+        return model == null ? "" : model.trim();
+    }
+
+    public static String getLlmVisionEndpoint() {
+        String endpoint = Setup.getFromConfigs(Setup.LLM_VISION_ENDPOINT);
+        return endpoint == null ? "" : endpoint.trim();
+    }
+
+    public static String getLlmVisionApiKeyEnvName() {
+        String envName = Setup.getFromConfigs(Setup.LLM_VISION_API_KEY_ENV);
+        return (envName == null || envName.isBlank()) ? "LLM_VISION_API_KEY" : envName.trim();
+    }
+
+    public static String getLlmVisionApiVersion() {
+        String apiVersion = Setup.getFromConfigs(Setup.LLM_VISION_API_VERSION);
+        return (apiVersion == null || apiVersion.isBlank()) ? "2024-06-01" : apiVersion.trim();
+    }
+
+    public static int getLlmVisionMaxRetries() {
+        return Math.max(1, Setup.getIntegerValueFromConfigs(Setup.LLM_VISION_MAX_RETRIES));
+    }
+
+    public static int getLlmVisionTimeoutSeconds() {
+        int timeout = Setup.getIntegerValueFromConfigs(Setup.LLM_VISION_TIMEOUT_SECONDS);
+        return timeout > 0 ? timeout : 30;
+    }
+
+    public static boolean isLlmVisionApiTrafficLoggingEnabled() {
+        return Setup.getBooleanValueFromConfigs(Setup.LLM_VISION_LOG_API_TRAFFIC);
+    }
+
     public static boolean isRunningInHeadlessMode() {
         return Setup.getBooleanValueFromConfigs(Setup.HEADLESS);
     }
