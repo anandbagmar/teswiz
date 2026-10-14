@@ -13,6 +13,7 @@ import com.znsio.teswiz.entities.VisualRegion;
 import com.znsio.teswiz.exceptions.NoSuchVisualElementException;
 import com.znsio.teswiz.exceptions.VisualSubsystemDisabledException;
 import com.znsio.teswiz.visual.ImageMatcher;
+import com.znsio.teswiz.visual.LlmVisionEngine;
 import com.znsio.teswiz.visual.OcrEngine;
 
 /**
@@ -31,12 +32,19 @@ public class VisualFinder {
     private final Driver driverFacade;
     private final OcrEngine ocrEngine;
     private final ImageMatcher imageMatcher;
+    private final LlmVisionEngine llmVisionEngine;
 
     public VisualFinder(WebDriver innerDriver, Driver driverFacade, OcrEngine ocrEngine, ImageMatcher imageMatcher) {
+        this(innerDriver, driverFacade, ocrEngine, imageMatcher, null);
+    }
+
+    public VisualFinder(WebDriver innerDriver, Driver driverFacade, OcrEngine ocrEngine, ImageMatcher imageMatcher,
+                        LlmVisionEngine llmVisionEngine) {
         this.innerDriver = innerDriver;
         this.driverFacade = driverFacade;
         this.ocrEngine = ocrEngine;
         this.imageMatcher = imageMatcher;
+        this.llmVisionEngine = llmVisionEngine;
     }
 
     private int getVisualElementRetryAttempts() {
@@ -153,6 +161,85 @@ public class VisualFinder {
         } catch (NoSuchVisualElementException e) {
             LOGGER.info("Candidate images {} not matched. Falling back to OCR text '{}'", imageTemplatePaths, text);
             return findByText(text);
+        }
+    }
+
+    public VisualElement findByDescription(String description) {
+        return findByDescription(description, (VisualRegion) null);
+    }
+
+    public VisualElement findByDescription(String description, VisualRegion region) {
+        return findByDescription(description, null, region);
+    }
+
+    public VisualElement findByDescription(String description, List<String> referenceImagePaths) {
+        return findByDescription(description, referenceImagePaths, null);
+    }
+
+    /**
+     * Locates an element via the LLM vision fallback using any combination the caller supplies: a
+     * description (OCR-style text), one or more reference images, or both. At least one of
+     * {@code description} / {@code referenceImagePaths} must be non-empty.
+     */
+    public VisualElement findByDescription(String description, List<String> referenceImagePaths, VisualRegion region) {
+        verifyLlmVisionEnabled();
+        boolean hasDescription = description != null && !description.isBlank();
+        boolean hasReferences = referenceImagePaths != null && !referenceImagePaths.isEmpty();
+        if (!hasDescription && !hasReferences) {
+            throw new NoSuchVisualElementException(
+                    "LLM vision locate requires a description and/or at least one reference image, but neither was provided.");
+        }
+
+        String regionText = null != region ? region.toString() : "[entire screen]";
+        LOGGER.info("Locating visual element via LLM (description='{}', referenceImages={}) within region {}",
+                description, referenceImagePaths, regionText);
+        int maxAttempts = getVisualElementRetryAttempts();
+        int retryDelayMs = getVisualElementRetryDelayMs();
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            byte[] screenshot = captureScreenshotBytes();
+            VisualElement match = this.llmVisionEngine.findByDescription(screenshot, description, referenceImagePaths, region, this.driverFacade);
+            if (match != null) {
+                return match;
+            }
+            if (attempt < maxAttempts) {
+                LOGGER.info("Attempt {} of {}: element (description='{}', referenceImages={}) not located via LLM in region {}, retrying after {}ms...",
+                        attempt, maxAttempts, description, referenceImagePaths, regionText, retryDelayMs);
+                if (!sleepBetweenRetries(retryDelayMs)) {
+                    break;
+                }
+            }
+        }
+        throw new NoSuchVisualElementException(
+                String.format("Visual element (description='%s', referenceImages=%s) not located via LLM vision in region %s.",
+                        description, referenceImagePaths, regionText));
+    }
+
+    public VisualElement findByTextOrImageOrDescription(String text, List<String> imageTemplatePaths, String description) {
+        return findByTextOrImageOrDescription(text, imageTemplatePaths, description, null);
+    }
+
+    /**
+     * OCR text -&gt; image templates -&gt; LLM fallback. When OCR and image matching both miss, the LLM
+     * tier receives everything the caller provided: the OCR {@code text} is used as the description
+     * (an explicit {@code description} overrides it when supplied) and the same {@code
+     * imageTemplatePaths} are passed as reference images - so one image, many images, text, or any
+     * combination all flow through to the model.
+     */
+    public VisualElement findByTextOrImageOrDescription(String text, List<String> imageTemplatePaths, String description, VisualRegion region) {
+        verifyOcrEnabled();
+        try {
+            return findByText(text, region);
+        } catch (NoSuchVisualElementException textMiss) {
+            String regionText = null != region ? region.toString() : "[entire screen]";
+            LOGGER.info("Text '{}' not found via OCR in region {}. Falling back to candidate image templates {}", text, regionText, imageTemplatePaths);
+            try {
+                return findByImage(imageTemplatePaths, region);
+            } catch (NoSuchVisualElementException imageMiss) {
+                String effectiveDescription = (description != null && !description.isBlank()) ? description : text;
+                LOGGER.info("Candidate images {} not matched in region {}. Falling back to LLM (description='{}', referenceImages={})",
+                        imageTemplatePaths, regionText, effectiveDescription, imageTemplatePaths);
+                return findByDescription(effectiveDescription, imageTemplatePaths, region);
+            }
         }
     }
 
@@ -309,13 +396,29 @@ public class VisualFinder {
         }
     }
 
+    private void verifyLlmVisionEnabled() {
+        if (this.llmVisionEngine == null || !Runner.isLlmVisionFallbackEnabled()) {
+            throw new VisualSubsystemDisabledException(
+                "\n====================================================================================================\n" +
+                " [teswiz] LLM Vision Fallback is Disabled!\n" +
+                "----------------------------------------------------------------------------------------------------\n" +
+                " You invoked an LLM-based visual locator (e.g. driver.vision(VisionStrategy.LLM).findByText(...)), but\n" +
+                " LLM_VISION_FALLBACK_ENABLED=false in your execution configuration (teswiz_config.properties).\n\n" +
+                " To enable the LLM vision fallback:\n" +
+                " 1. Set 'LLM_VISION_FALLBACK_ENABLED=true'.\n" +
+                " 2. Set 'LLM_VISION_ENDPOINT' and the API key env var named by 'LLM_VISION_API_KEY_ENV'.\n" +
+                "====================================================================================================\n"
+            );
+        }
+    }
+
     private void verifyOcrEnabled() {
         if (!Runner.isOcrEnabled()) {
             throw new VisualSubsystemDisabledException(
                 "\n====================================================================================================\n" +
                 " [teswiz] Visual OCR & Image Recognition Subsystem is Disabled!\n" +
                 "----------------------------------------------------------------------------------------------------\n" +
-                " You invoked a visual locator method (e.g. driver.findByText() or driver.findByImage()), but \n" +
+                " You invoked a visual locator method (e.g. driver.vision(VisionStrategy.OCR).findByText(...)), but \n" +
                 " IS_OCR_ENABLED=false in your execution configuration (teswiz_config.properties).\n\n" +
                 " To enable OCR & Image Recognition capability in your project:\n" +
                 " 1. Set 'IS_OCR_ENABLED=true' in your teswiz_config.properties file or system property.\n" +

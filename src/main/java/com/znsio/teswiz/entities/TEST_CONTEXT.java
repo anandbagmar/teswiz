@@ -36,5 +36,6 @@ public class TEST_CONTEXT {
     public static final String APPLITOOLS_FIGMA_APP_NAME = "applitoolsFigmaAppName";
     public static final String APPLITOOLS_FIGMA_TEST_NAME = "applitoolsFigmaTestName";
     public static final String APPLITOOLS_FIGMA_BASELINE_ENV_NAME = "applitoolsFigmaBaselineEnvName";
+    public static final String LLM_VISION_USAGE = "llmVisionUsage";
     public static final String I = "I";
 }

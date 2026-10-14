@@ -959,132 +959,39 @@ public class Driver {
         }
     }
 
-    public VisualElement findByText(String text) {
-        return this.visually.findByText(text);
-    }
-
-    public VisualElement findByImage(String... imageTemplatePaths) {
-        return this.visually.findByImage(Arrays.asList(imageTemplatePaths));
-    }
-
-    public VisualElement findByImage(List<String> imageTemplatePaths) {
-        return this.visually.findByImage(imageTemplatePaths);
-    }
-
-    public VisualElement findByImage(List<String> imageTemplatePaths, double confidenceThreshold) {
-        return this.visually.findByImage(imageTemplatePaths, confidenceThreshold);
-    }
-
-    public VisualElement findByImage(List<String> imageTemplatePaths, double confidenceThreshold,
-            com.znsio.teswiz.entities.VisualRegion region) {
-        return this.visually.findByImage(imageTemplatePaths, confidenceThreshold, region);
-    }
-
-    public VisualElement findByTextOrImage(String text, String... imageTemplatePaths) {
-        return this.visually.findByTextOrImage(text, Arrays.asList(imageTemplatePaths));
-    }
-
-    public VisualElement findByTextOrImage(String text, List<String> imageTemplatePaths) {
-        return this.visually.findByTextOrImage(text, imageTemplatePaths);
-    }
-
-    public VisualElement findByTextOrImage(String text, List<String> imageTemplatePaths,
-            com.znsio.teswiz.entities.VisualRegion region) {
-        return this.visually.findByTextOrImage(text, imageTemplatePaths, region);
-    }
-
-    public VisualElement findByImageOrText(List<String> imageTemplatePaths, String text) {
-        return this.visually.findByImageOrText(imageTemplatePaths, text);
-    }
-
-    public List<VisualElement> findAllByText(String text) {
-        return this.visually.findAllByText(text);
-    }
-
-    public List<VisualElement> findAllByImage(String... imageTemplatePaths) {
-        return this.visually.findAllByImage(Arrays.asList(imageTemplatePaths));
-    }
-
-    public List<VisualElement> findAllByImage(List<String> imageTemplatePaths) {
-        return this.visually.findAllByImage(imageTemplatePaths);
-    }
-
-    public List<VisualElement> findAllByImage(List<String> imageTemplatePaths, double confidenceThreshold) {
-        return this.visually.findAllByImage(imageTemplatePaths, confidenceThreshold);
-    }
-
-    public List<VisualElement> findAllByTextOrImage(String text, String... imageTemplatePaths) {
-        return this.visually.findAllByTextOrImage(text, Arrays.asList(imageTemplatePaths));
-    }
-
-    public List<VisualElement> findAllByTextOrImage(String text, List<String> imageTemplatePaths) {
-        return this.visually.findAllByTextOrImage(text, imageTemplatePaths);
-    }
-
-    public List<VisualElement> findAllByImageOrText(List<String> imageTemplatePaths, String text) {
-        return this.visually.findAllByImageOrText(imageTemplatePaths, text);
-    }
-
-    public VisualElement findRelativeByText(String targetText, com.znsio.teswiz.entities.SpatialDirection direction,
-            String anchorText) {
-        return this.visually.findRelativeByText(targetText, direction, anchorText);
-    }
-
-    public VisualElement findRelativeByText(String targetText, com.znsio.teswiz.entities.SpatialDirection direction,
-            VisualElement anchor) {
-        return this.visually.findRelativeByText(targetText, direction, anchor);
-    }
-
-    public VisualElement findRelativeByImage(List<String> targetImagePaths,
-            com.znsio.teswiz.entities.SpatialDirection direction, String anchorText) {
-        return this.visually.findRelativeByImage(targetImagePaths, direction, anchorText);
-    }
-
-    public VisualElement findRelativeByImage(List<String> targetImagePaths,
-            com.znsio.teswiz.entities.SpatialDirection direction, VisualElement anchor) {
-        return this.visually.findRelativeByImage(targetImagePaths, direction, anchor);
-    }
-
-    public VisualElement findByText(String text, com.znsio.teswiz.entities.VisualRegion region) {
-        return this.visually.findByText(text, region);
-    }
-
-    public VisualElement findByImage(List<String> imageTemplatePaths, com.znsio.teswiz.entities.VisualRegion region) {
-        return this.visually.findByImage(imageTemplatePaths, region);
-    }
-
-    public List<VisualElement> findAllByText(String text, com.znsio.teswiz.entities.VisualRegion region) {
-        return this.visually.findAllByText(text, region);
-    }
-
-    public List<VisualElement> findAllByImage(List<String> imageTemplatePaths,
-            com.znsio.teswiz.entities.VisualRegion region) {
-        return this.visually.findAllByImage(imageTemplatePaths, region);
+    /**
+     * Entry point to the strategy-scoped visual locator surface. Delegates to the owning
+     * {@link Visual} so OCR / LLM / OCR-then-LLM finds all route through the single backing
+     * {@link VisualFinder}.
+     */
+    public VisionFinder vision(com.znsio.teswiz.entities.VisionStrategy strategy) {
+        return this.visually.vision(strategy);
     }
 
     public WebElement findElement(VisualBy visualBy) {
         if (visualBy == null) {
             return null;
         }
+        VisualFinder visualFinder = this.visually.getVisionDelegate();
         switch (visualBy.getType()) {
             case OCR_TEXT:
                 VisualElement ocrElement = visualBy.getRegion() != null
-                        ? this.visually.findByText(visualBy.getText(), visualBy.getRegion())
-                        : this.visually.findByText(visualBy.getText());
+                        ? visualFinder.findByText(visualBy.getText(), visualBy.getRegion())
+                        : visualFinder.findByText(visualBy.getText());
                 return ocrElement != null ? ocrElement.toWebElement() : null;
             case IMAGE_TEMPLATE:
                 VisualElement imageElement = visualBy.getRegion() != null
-                        ? this.visually.findByImage(List.of(visualBy.getImagePath()), visualBy.getConfidenceThreshold(),
+                        ? visualFinder.findByImage(List.of(visualBy.getImagePath()), visualBy.getConfidenceThreshold(),
                                 visualBy.getRegion())
-                        : this.visually.findByImage(List.of(visualBy.getImagePath()),
+                        : visualFinder.findByImage(List.of(visualBy.getImagePath()),
                                 visualBy.getConfidenceThreshold());
                 return imageElement != null ? imageElement.toWebElement() : null;
             case FALLBACK_TEXT_IMAGE:
             default:
                 VisualElement fallbackElement = visualBy.getRegion() != null
-                        ? this.visually.findByTextOrImage(visualBy.getText(), List.of(visualBy.getImagePath()),
+                        ? visualFinder.findByTextOrImage(visualBy.getText(), List.of(visualBy.getImagePath()),
                                 visualBy.getRegion())
-                        : this.visually.findByTextOrImage(visualBy.getText(), List.of(visualBy.getImagePath()));
+                        : visualFinder.findByTextOrImage(visualBy.getText(), List.of(visualBy.getImagePath()));
                 return fallbackElement != null ? fallbackElement.toWebElement() : null;
         }
     }
@@ -1093,18 +1000,19 @@ public class Driver {
         if (visualBy == null) {
             return Collections.emptyList();
         }
+        VisualFinder visualFinder = this.visually.getVisionDelegate();
         List<VisualElement> visualElements;
         switch (visualBy.getType()) {
             case OCR_TEXT:
-                visualElements = this.visually.findAllByText(visualBy.getText());
+                visualElements = visualFinder.findAllByText(visualBy.getText());
                 break;
             case IMAGE_TEMPLATE:
-                visualElements = this.visually.findAllByImage(List.of(visualBy.getImagePath()),
+                visualElements = visualFinder.findAllByImage(List.of(visualBy.getImagePath()),
                         visualBy.getConfidenceThreshold());
                 break;
             case FALLBACK_TEXT_IMAGE:
             default:
-                visualElements = this.visually.findAllByTextOrImage(visualBy.getText(),
+                visualElements = visualFinder.findAllByTextOrImage(visualBy.getText(),
                         List.of(visualBy.getImagePath()));
                 break;
         }

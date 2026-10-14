@@ -7,6 +7,7 @@ import org.apache.logging.log4j.Logger;
 
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
+import com.znsio.teswiz.entities.VisionStrategy;
 import com.znsio.teswiz.runner.Visual;
 import com.znsio.teswiz.runner.VisualElement;
 import com.znsio.teswiz.screen.transportnsw.TransportNswOcrScreen;
@@ -46,7 +47,7 @@ public class TransportNswOcrScreenPlaywrightJava extends TransportNswOcrScreen {
     @Override
     public VisualElement clickElementByImage(String elementName, String imagePath) {
         LOGGER.info("Playwright Java - Finding and clicking '{}' using image template: {}", elementName, imagePath);
-        VisualElement visualElement = visually.findByImage(List.of(imagePath));
+        VisualElement visualElement = visually.vision(VisionStrategy.OCR).findByImage(List.of(imagePath));
         visually.checkWindow(SCREEN_NAME, "Before clicking: " + elementName);
         visualElement.click();
         visually.checkWindow(SCREEN_NAME, "After clicking: " + elementName);
@@ -56,7 +57,7 @@ public class TransportNswOcrScreenPlaywrightJava extends TransportNswOcrScreen {
     @Override
     public VisualElement clickElementByOcrText(String elementName, String ocrText) {
         LOGGER.info("Playwright Java - Finding and clicking '{}' using OCR text: {}", elementName, ocrText);
-        VisualElement stationElement = visually.findByText(ocrText);
+        VisualElement stationElement = visually.vision(VisionStrategy.OCR).findByText(ocrText);
         visually.checkWindow(SCREEN_NAME, "Before clicking: " + elementName);
         stationElement.click();
         visually.checkWindow(SCREEN_NAME, "After clicking: " + elementName);
@@ -66,7 +67,7 @@ public class TransportNswOcrScreenPlaywrightJava extends TransportNswOcrScreen {
     @Override
     public VisualElement clickCalloutOptionByText(String text) {
         LOGGER.info("Playwright Java - Finding and clicking callout option using OCR text: " + text);
-        VisualElement calloutOption = visually.findByText(text);
+        VisualElement calloutOption = visually.vision(VisionStrategy.OCR).findByText(text);
         visually.checkWindow(SCREEN_NAME, "Callout popup option: " + text);
         calloutOption.click();
         visually.checkWindow(SCREEN_NAME, "Clicked callout option: " + text);
@@ -76,7 +77,7 @@ public class TransportNswOcrScreenPlaywrightJava extends TransportNswOcrScreen {
     @Override
     public VisualElement clickStationNameOnMapByText(String stationName) {
         LOGGER.info("Playwright Java - Finding and clicking station name on map using OCR text: " + stationName);
-        VisualElement stationElement = visually.findByText(stationName);
+        VisualElement stationElement = visually.vision(VisionStrategy.OCR).findByText(stationName);
         visually.checkWindow(SCREEN_NAME, "Station map view: " + stationName);
         stationElement.click();
         visually.checkWindow(SCREEN_NAME, "Clicked station name on map: " + stationName);
