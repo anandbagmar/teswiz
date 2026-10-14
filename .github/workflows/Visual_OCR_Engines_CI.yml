@@ -2,7 +2,7 @@ name: Visual_OCR_Engines_CI
 
 on:
   push:
-    branches: [main, refactor/phase-4-god-class-decomp]
+    branches: [main, refactor/phase-4-god-class-decomp, feature/llm-vision-fallback]
   pull_request:
     branches: [main]
   workflow_dispatch:
