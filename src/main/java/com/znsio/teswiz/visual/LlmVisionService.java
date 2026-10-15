@@ -319,7 +319,9 @@ public class LlmVisionService implements LlmVisionEngine {
         return location;
     }
 
-    private JSONObject extractJsonObject(String content) {
+    // Package-private + static for unit testing: parses the first {...} JSON object out of raw LLM
+    // content (which may include surrounding prose or markdown fences). Returns null when absent/invalid.
+    static JSONObject extractJsonObject(String content) {
         String trimmed = content.trim();
         int start = trimmed.indexOf('{');
         int end = trimmed.lastIndexOf('}');
