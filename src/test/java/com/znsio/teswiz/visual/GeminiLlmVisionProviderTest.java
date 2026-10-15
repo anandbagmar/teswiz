@@ -42,6 +42,17 @@ class GeminiLlmVisionProviderTest {
     }
 
     @Test
+    void healthCheckProbe_listsModelsCollectionWithKeyInQueryNotHeader() {
+        LlmVisionHealthCheckProbe probe = provider.buildHealthCheckProbe(
+                "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
+                "gemini-key").orElseThrow();
+
+        assertThat(probe.url()).isEqualTo(
+                "https://generativelanguage.googleapis.com/v1beta/models?key=gemini-key");
+        assertThat(probe.headers()).doesNotContainKey("Authorization");
+    }
+
+    @Test
     void buildRequestBody_placesSystemInstructionAndTemperatureZero() {
         JSONObject body = new JSONObject(
                 provider.buildRequestBody("system-prompt", "find it", SCREENSHOT, List.of(), "gemini-1.5-flash"));

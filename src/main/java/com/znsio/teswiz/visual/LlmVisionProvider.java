@@ -2,6 +2,7 @@ package com.znsio.teswiz.visual;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Seam isolating the four provider-specific concerns of an LLM vision call: endpoint rewriting,
@@ -35,4 +36,23 @@ public interface LlmVisionProvider {
      * Parses the raw response body into a provider-agnostic {@link ParsedLlmResponse}.
      */
     ParsedLlmResponse parseResponse(String responseBody);
+
+    /**
+     * Returns a non-billable, authorization-only startup probe (typically a {@code GET /models}
+     * listing) that {@link LlmVisionConfigValidator} runs to fail fast against an unreachable
+     * endpoint or an invalid API key. Returns {@link Optional#empty()} when the provider has no
+     * non-billable probe (its only endpoints are billable inference calls), in which case the
+     * validator performs structural validation only.
+     *
+     * <p>The default is {@link Optional#empty()} (structural-only); providers with a safe probe
+     * override this.
+     *
+     * @param configuredEndpoint the configured {@code LLM_VISION_ENDPOINT}
+     * @param apiKeyOrToken      the resolved API key or OAuth token (may be {@code null} for a
+     *                           credential-less local provider such as Ollama)
+     */
+    default Optional<LlmVisionHealthCheckProbe> buildHealthCheckProbe(String configuredEndpoint,
+                                                                      String apiKeyOrToken) {
+        return Optional.empty();
+    }
 }

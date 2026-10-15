@@ -59,9 +59,15 @@ APPLITOOLS_CONFIGURATION=./configs/applitools_config.json
 # the configured API_ENGINE. Requires IS_OCR_ENABLED=true. When enabled, endpoint + API key are
 # validated at startup (including a lightweight auth health-check) so misconfiguration fails fast.
 #LLM_VISION_FALLBACK_ENABLED=false
+# Provider: openai | azure-openai | anthropic | gemini | vertex-gemini | groq | xai | openrouter |
+# ollama | bedrock | custom (any OpenAI-compatible chat-completions endpoint).
 #LLM_VISION_PROVIDER=openai
+# Model id. Optional for openai/azure-openai/anthropic/gemini/vertex-gemini (defaults apply);
+# MANDATORY for groq, xai, openrouter, ollama, and bedrock (startup fails fast if blank).
 #LLM_VISION_MODEL=
 #LLM_VISION_ENDPOINT=<llm-vision-chat-completions-endpoint>
+# ENV VAR name holding the API key (never the key itself). Not required for vertex-gemini (Google
+# Application Default Credentials) or ollama (local server). bedrock uses a Bedrock API key here.
 #LLM_VISION_API_KEY_ENV=LLM_VISION_API_KEY
 # Azure OpenAI only: the api-version appended to the endpoint. Default 2024-06-01.
 #LLM_VISION_API_VERSION=2024-06-01

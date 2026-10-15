@@ -4,6 +4,7 @@ import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -23,6 +24,38 @@ public class OpenAiLlmVisionProvider implements LlmVisionProvider {
     @Override
     public String resolveEndpoint(String configuredEndpoint, String model) {
         return configuredEndpoint;
+    }
+
+    /**
+     * OpenAI-compatible endpoints expose a non-billable sibling {@code /models} listing next to
+     * {@code /chat/completions}; deriving and probing it with the {@code Bearer} credential lets a
+     * run fail fast on a bad endpoint or key before any inference is billed.
+     */
+    @Override
+    public Optional<LlmVisionHealthCheckProbe> buildHealthCheckProbe(String configuredEndpoint,
+                                                                     String apiKeyOrToken) {
+        return Optional.of(new LlmVisionHealthCheckProbe(
+                deriveModelsUrl(configuredEndpoint), buildHeaders(apiKeyOrToken)));
+    }
+
+    /**
+     * Derives the sibling {@code /models} listing URL from a configured chat-completions endpoint.
+     * Shared by every OpenAI-compatible provider whose models listing lives one path segment up
+     * from {@code /chat/completions} (or {@code /completions}).
+     */
+    protected String deriveModelsUrl(String configuredEndpoint) {
+        String normalized = configuredEndpoint.endsWith("/")
+                ? configuredEndpoint.substring(0, configuredEndpoint.length() - 1)
+                : configuredEndpoint;
+        int chatIndex = normalized.indexOf("/chat/completions");
+        if (chatIndex > 0) {
+            return normalized.substring(0, chatIndex) + "/models";
+        }
+        int completionsIndex = normalized.indexOf("/completions");
+        if (completionsIndex > 0) {
+            return normalized.substring(0, completionsIndex) + "/models";
+        }
+        return normalized + "/models";
     }
 
     @Override

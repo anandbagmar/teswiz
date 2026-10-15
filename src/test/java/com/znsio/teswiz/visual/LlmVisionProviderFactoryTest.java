@@ -41,6 +41,31 @@ class LlmVisionProviderFactoryTest {
     }
 
     @Test
+    void create_mapsGroqToGroqProvider() {
+        assertThat(create("groq")).isInstanceOf(GroqLlmVisionProvider.class);
+    }
+
+    @Test
+    void create_mapsXaiToXaiProvider() {
+        assertThat(create("xai")).isInstanceOf(XaiLlmVisionProvider.class);
+    }
+
+    @Test
+    void create_mapsOpenRouterToOpenRouterProvider() {
+        assertThat(create("openrouter")).isInstanceOf(OpenRouterLlmVisionProvider.class);
+    }
+
+    @Test
+    void create_mapsOllamaToOllamaProvider() {
+        assertThat(create("ollama")).isInstanceOf(OllamaLlmVisionProvider.class);
+    }
+
+    @Test
+    void create_mapsBedrockToBedrockProvider() {
+        assertThat(create("bedrock")).isInstanceOf(BedrockLlmVisionProvider.class);
+    }
+
+    @Test
     void create_isCaseInsensitive() {
         assertThat(create("OpenAI")).isInstanceOf(OpenAiLlmVisionProvider.class);
     }

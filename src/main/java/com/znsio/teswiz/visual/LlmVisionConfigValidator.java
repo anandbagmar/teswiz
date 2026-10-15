@@ -1,8 +1,7 @@
 package com.znsio.teswiz.visual;
 
 import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
@@ -30,10 +29,16 @@ import com.znsio.teswiz.services.ApiService;
 public final class LlmVisionConfigValidator {
 
     private static final Logger LOGGER = LogManager.getLogger(LlmVisionConfigValidator.class.getName());
-    private static final Set<String> SUPPORTED_PROVIDERS =
-            Set.of("openai", "azure-openai", "anthropic", "gemini", "vertex-gemini", "custom");
-    private static final Set<String> PING_HEALTH_CHECK_PROVIDERS = Set.of("openai", "azure-openai", "custom");
-    private static final String VERTEX_GEMINI_PROVIDER = "vertex-gemini";
+    private static final Set<String> SUPPORTED_PROVIDERS = Set.of(
+            "openai", "azure-openai", "anthropic", "gemini", "vertex-gemini", "custom",
+            "groq", "xai", "openrouter", "ollama", "bedrock");
+    // Providers whose credential is NOT an API-key env var: Vertex uses GCP Application Default
+    // Credentials; Ollama is a local server that needs no key.
+    private static final Set<String> NO_API_KEY_ENV_PROVIDERS = Set.of("vertex-gemini", "ollama");
+    // Providers for which LLM_VISION_MODEL is mandatory (no safe hardcoded default - model ids churn
+    // or are endpoint-specific), so a blank model fails fast at startup.
+    private static final Set<String> MODEL_REQUIRED_PROVIDERS =
+            Set.of("groq", "xai", "openrouter", "ollama", "bedrock");
     private static final int HTTP_UNAUTHORIZED = 401;
     private static final int HTTP_FORBIDDEN = 403;
 
@@ -47,11 +52,7 @@ public final class LlmVisionConfigValidator {
         LOGGER.info("LLM vision fallback is enabled; validating configuration...");
         String provider = Runner.getLlmVisionProvider().toLowerCase();
         validateStructuralConfig(provider);
-        if (PING_HEALTH_CHECK_PROVIDERS.contains(provider)) {
-            performHealthCheck();
-        } else {
-            LOGGER.info("Skipping /models health-check for provider '{}' (structural validation only).", provider);
-        }
+        performHealthCheck(provider);
         LOGGER.info("LLM vision fallback configuration validated successfully.");
     }
 
@@ -68,8 +69,12 @@ public final class LlmVisionConfigValidator {
             fail("LLM_VISION_ENDPOINT '" + endpoint + "' is not a well-formed http(s) URL.");
         }
 
-        // Vertex AI authenticates with GCP Application Default Credentials, not an API key env var.
-        if (VERTEX_GEMINI_PROVIDER.equals(provider)) {
+        if (MODEL_REQUIRED_PROVIDERS.contains(provider) && Runner.getLlmVisionModel().isBlank()) {
+            fail("LLM_VISION_MODEL is mandatory for LLM_VISION_PROVIDER '" + provider
+                 + "' (no default model is assumed), but it is blank. Set it to a vision-capable model id.");
+        }
+
+        if (NO_API_KEY_ENV_PROVIDERS.contains(provider)) {
             return;
         }
 
@@ -81,19 +86,37 @@ public final class LlmVisionConfigValidator {
         }
     }
 
-    private static void performHealthCheck() {
-        String endpoint = Runner.getLlmVisionEndpoint();
-        String modelsUrl = deriveModelsUrl(endpoint);
-        String apiKey = resolveApiKey(Runner.getLlmVisionApiKeyEnvName());
+    /**
+     * Runs the provider's non-billable authorization probe, if it exposes one. Providers whose only
+     * endpoints are billable inference calls (Anthropic, Bedrock) return no probe and are validated
+     * structurally only.
+     */
+    private static void performHealthCheck(String provider) {
+        LlmVisionProvider visionProvider = LlmVisionProviderFactory.create(
+                provider, Runner.getLlmVisionApiVersion(),
+                resolveApiKey(Runner.getLlmVisionApiKeyEnvName()), new GoogleAdcAccessTokenProvider());
 
-        Map<String, String> headers = new HashMap<>();
-        headers.put("Authorization", "Bearer " + apiKey);
+        Optional<LlmVisionHealthCheckProbe> maybeProbe;
+        try {
+            maybeProbe = visionProvider.buildHealthCheckProbe(
+                    Runner.getLlmVisionEndpoint(), resolveApiKey(Runner.getLlmVisionApiKeyEnvName()));
+        } catch (RuntimeException e) {
+            fail("LLM vision health-check could not obtain credentials for provider '" + provider
+                 + "': " + e.getMessage() + ". Verify the provider's credentials are available.");
+            return;
+        }
 
+        if (maybeProbe.isEmpty()) {
+            LOGGER.info("Provider '{}' has no non-billable health-check probe; structural validation only.", provider);
+            return;
+        }
+
+        LlmVisionHealthCheckProbe probe = maybeProbe.get();
         TeswizApiResponse response;
         try {
-            response = ApiService.get(modelsUrl, null, headers);
+            response = ApiService.get(probe.url(), null, probe.headers());
         } catch (RuntimeException e) {
-            fail("LLM vision health-check could not reach '" + modelsUrl + "': " + e.getMessage()
+            fail("LLM vision health-check could not reach '" + probe.url() + "': " + e.getMessage()
                  + ". Verify LLM_VISION_ENDPOINT and network access.");
             return;
         }
@@ -104,25 +127,10 @@ public final class LlmVisionConfigValidator {
                  + " (invalid or unauthorized API key). Verify the key referenced by LLM_VISION_API_KEY_ENV.");
         }
         if (status < 200 || status >= 300) {
-            fail("LLM vision health-check against '" + modelsUrl + "' returned HTTP " + status
+            fail("LLM vision health-check against '" + probe.url() + "' returned HTTP " + status
                  + ". Verify LLM_VISION_ENDPOINT and that the key is authorized.");
         }
-        LOGGER.info("LLM vision health-check passed (HTTP {} from {}).", status, modelsUrl);
-    }
-
-    private static String deriveModelsUrl(String endpoint) {
-        // chat completions endpoints typically live under .../v1/chat/completions; the sibling
-        // .../v1/models endpoint is the cheapest authorization probe.
-        String normalized = endpoint.endsWith("/") ? endpoint.substring(0, endpoint.length() - 1) : endpoint;
-        int chatIndex = normalized.indexOf("/chat/completions");
-        if (chatIndex > 0) {
-            return normalized.substring(0, chatIndex) + "/models";
-        }
-        int completionsIndex = normalized.indexOf("/completions");
-        if (completionsIndex > 0) {
-            return normalized.substring(0, completionsIndex) + "/models";
-        }
-        return normalized + "/models";
+        LOGGER.info("LLM vision health-check passed (HTTP {} from {}).", status, probe.url());
     }
 
     private static boolean isWellFormedUrl(String value) {

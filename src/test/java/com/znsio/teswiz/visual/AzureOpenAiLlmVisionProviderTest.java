@@ -48,6 +48,16 @@ class AzureOpenAiLlmVisionProviderTest {
     }
 
     @Test
+    void healthCheckProbe_derivesModelsListingWithApiVersionAndApiKeyHeader() {
+        LlmVisionHealthCheckProbe probe = provider.buildHealthCheckProbe(
+                "https://my.openai.azure.com/openai/deployments/gpt4o/chat/completions", "azure-secret").orElseThrow();
+
+        assertThat(probe.url()).isEqualTo("https://my.openai.azure.com/openai/deployments/gpt4o/models?api-version=2024-06-01");
+        assertThat(probe.headers()).containsEntry("api-key", "azure-secret");
+        assertThat(probe.headers()).doesNotContainKey("Authorization");
+    }
+
+    @Test
     void buildRequestBody_matchesOpenAiWireFormat() {
         JSONObject body = new JSONObject(
                 provider.buildRequestBody("system-prompt", "find it", SCREENSHOT, List.of(), "gpt-4o"));

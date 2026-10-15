@@ -252,7 +252,7 @@ src/test/resources/visualTemplates/
 | **Phase 3** | Core OCR / Image Engines | `OcrEngine` (Tess4J 5 / Tesseract) text detector and `ImageMatcher` (OpenCV Multi-Scale Image Pyramid) template matcher. | ✅ **COMPLETED** |
 | **Phase 4** | Action Dispatcher Wiring | Element bounding boxes `(x, y, width, height)` wired to Selenium W3C Actions, Playwright Mouse/Touch API, and Appium Touch Gesture API. | ✅ **COMPLETED** |
 | **Phase 5** | LLM Vision Locator | `VisionStrategy.LLM` and `VisionStrategy.OCR_THEN_LLM`: `LlmVisionEngine` over the configured `API_ENGINE`, providers (openai / azure-openai / anthropic / gemini / vertex-gemini / custom), fail-fast startup validation, per-call token-usage logging, per-test/per-run summaries, aggregate telemetry, and a separate `llm-vision-traffic/` log folder with secret redaction. **Code implemented; live-endpoint runtime verification pending.** | 🚀 **IMPLEMENTED (live-endpoint verification pending)** |
-| **Phase 6** | Additional providers | AWS Bedrock vision provider. | ⏳ **NOT IMPLEMENTED** |
+| **Phase 6** | Additional providers | AWS Bedrock Runtime (`Converse` API, Bedrock API key as Bearer), Groq, xAI (Grok vision), OpenRouter, and Ollama (local). Per-provider non-billable auth health-check moved into the `LlmVisionProvider` seam; `anthropic` and `bedrock` are structural-only (no non-billable probe). `LLM_VISION_MODEL` is mandatory (fail-fast) for the OpenAI-compatible additions and Bedrock. **Code implemented; live-endpoint runtime verification pending.** | 🚀 **IMPLEMENTED (live-endpoint verification pending)** |
 
 ---
 

@@ -2,6 +2,7 @@ package com.znsio.teswiz.visual;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Google Vertex AI Gemini provider. The request body and response parsing are inherited from
@@ -38,5 +39,20 @@ public class VertexGeminiLlmVisionProvider extends GeminiLlmVisionProvider {
      */
     public String resolveAccessToken() {
         return accessTokenProvider.getAccessToken();
+    }
+
+    /**
+     * Vertex authenticates with a GCP OAuth2 bearer token (not a {@code ?key=} query), so the probe
+     * mints a token from the configured {@link GcpAccessTokenProvider} - failing fast if Application
+     * Default Credentials are unavailable - and lists the sibling {@code /models} collection with a
+     * {@code Bearer} header. The ignored {@code apiKeyOrToken} argument reflects that Vertex sources
+     * its credential from ADC rather than an API-key env var.
+     */
+    @Override
+    public Optional<LlmVisionHealthCheckProbe> buildHealthCheckProbe(String configuredEndpoint,
+                                                                     String apiKeyOrToken) {
+        String token = resolveAccessToken();
+        return Optional.of(new LlmVisionHealthCheckProbe(
+                deriveModelsBaseUrl(configuredEndpoint), buildHeaders(token)));
     }
 }

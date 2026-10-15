@@ -179,8 +179,8 @@ HIGHLIGHT_ELEMENTS=true
 ### LLM Vision Configuration (optional)
 
 The LLM vision locator (`VisionStrategy.LLM` and the LLM tier of `OCR_THEN_LLM`) is opt-in and disabled by
-default. When enabled, teswiz validates the configuration at startup (structural checks plus, for
-OpenAI-compatible providers, a lightweight `/models` authorization health-check) and fails fast on
+default. When enabled, teswiz validates the configuration at startup (structural checks plus, for providers that
+expose a non-billable `/models`-style listing, a lightweight authorization health-check) and fails fast on
 misconfiguration. The API key is read from an **environment variable** (never stored in a properties file), so it
 works cleanly in CI.
 
@@ -188,10 +188,12 @@ works cleanly in CI.
 # Master switch for the LLM vision locator (default false)
 #LLM_VISION_FALLBACK_ENABLED=false
 
-# Provider: openai | azure-openai | anthropic | gemini | vertex-gemini | custom
+# Provider: openai | azure-openai | anthropic | gemini | vertex-gemini | groq | xai | openrouter |
+#           ollama | bedrock | custom
 #LLM_VISION_PROVIDER=openai
 
-# Model id (optional; defaults per provider, e.g. gpt-4o for openai)
+# Model id. Optional for openai/azure-openai/anthropic/gemini/vertex-gemini (defaults apply, e.g.
+# gpt-4o for openai); MANDATORY for groq, xai, openrouter, ollama, and bedrock (fails fast if blank).
 #LLM_VISION_MODEL=
 
 # Mandatory when enabled: the vision chat-completions endpoint
@@ -458,9 +460,13 @@ logging) are documented in the [LLM Vision Configuration](#llm-vision-configurat
 section does not duplicate the full table.
 
 Supported providers (`LLM_VISION_PROVIDER`): **`openai`**, **`azure-openai`**, **`anthropic`**, **`gemini`**,
-**`vertex-gemini`**, and **`custom`** (any OpenAI-compatible chat-completions endpoint). The API key is read from
-an environment variable named by `LLM_VISION_API_KEY_ENV` (never stored in a properties file); `vertex-gemini`
-uses Google Application Default Credentials instead.
+**`vertex-gemini`**, **`groq`**, **`xai`** (Grok vision), **`openrouter`**, **`ollama`**, **`bedrock`** (AWS
+Bedrock Runtime `Converse` API, authenticated with a Bedrock API key as a Bearer token), and **`custom`** (any
+OpenAI-compatible chat-completions endpoint). `groq`, `xai`, `openrouter`, and `ollama` speak the
+OpenAI-compatible wire format. The API key is read from an environment variable named by `LLM_VISION_API_KEY_ENV`
+(never stored in a properties file); `vertex-gemini` uses Google Application Default Credentials and `ollama`
+(local server) needs no key. `LLM_VISION_MODEL` is mandatory for `groq`, `xai`, `openrouter`, `ollama`, and
+`bedrock` - no default model is assumed, so a blank model fails fast at startup.
 
 The LLM HTTP calls reuse the configured **`API_ENGINE`**, so they share teswiz's existing HTTP stack, retry, and
 masking behavior rather than introducing a separate client.
@@ -486,9 +492,13 @@ test's own `api-traffic/` folder so LLM calls are not confused with application 
 ### Fail-fast startup validation
 
 When `LLM_VISION_FALLBACK_ENABLED=true`, teswiz validates the LLM vision configuration **at startup** and fails
-fast on misconfiguration (for example, a blank or malformed `LLM_VISION_ENDPOINT`, or a missing API-key
-environment variable). For OpenAI-compatible providers it additionally performs a lightweight `/models`
-authorization health-check so a broken endpoint or key is reported before any test runs rather than mid-suite.
+fast on misconfiguration (for example, a blank or malformed `LLM_VISION_ENDPOINT`, a missing API-key environment
+variable, or a blank `LLM_VISION_MODEL` for a provider that requires one). Each provider also exposes an optional
+**non-billable** authorization probe that the validator runs when available: a `/models`-style listing for
+`openai`, `azure-openai`, `gemini`, `vertex-gemini`, `groq`, `xai`, `openrouter`, `ollama`, and `custom`, so a
+broken endpoint or key is reported before any test runs rather than mid-suite. `anthropic` and `bedrock` have no
+non-billable listing endpoint, so they are validated **structurally only** (no health-check call is made, by
+design, to avoid incurring billable inference at startup).
 
 ### Harvesting LLM matches into your image library
 

@@ -24,6 +24,11 @@ class AnthropicLlmVisionProviderTest {
     }
 
     @Test
+    void healthCheckProbe_isStructuralOnlyBecauseNoNonBillableEndpointExists() {
+        assertThat(provider.buildHealthCheckProbe("https://api.anthropic.com/v1/messages", "k")).isEmpty();
+    }
+
+    @Test
     void buildHeaders_usesXApiKeyAndAnthropicVersion() {
         Map<String, String> headers = provider.buildHeaders("anthropic-secret");
 

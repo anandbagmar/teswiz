@@ -57,6 +57,19 @@ class VertexGeminiLlmVisionProviderTest {
     }
 
     @Test
+    void healthCheckProbe_listsModelsCollectionWithBearerTokenAndNoKeyQuery() {
+        LlmVisionHealthCheckProbe probe = provider.buildHealthCheckProbe(
+                "https://us-central1-aiplatform.googleapis.com/v1/projects/p/locations/us-central1/"
+                        + "publishers/google/models/gemini-1.5-flash:generateContent", "ignored").orElseThrow();
+
+        assertThat(probe.url()).isEqualTo(
+                "https://us-central1-aiplatform.googleapis.com/v1/projects/p/locations/us-central1/"
+                        + "publishers/google/models");
+        assertThat(probe.url()).doesNotContain("key=");
+        assertThat(probe.headers()).containsEntry("Authorization", "Bearer test-token");
+    }
+
+    @Test
     void parseResponse_concatenatesCandidatePartsAndMapsUsageMetadata() {
         String responseBody = new JSONObject()
                 .put("candidates", new JSONArray().put(new JSONObject()

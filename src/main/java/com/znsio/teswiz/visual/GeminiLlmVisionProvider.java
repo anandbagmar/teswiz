@@ -4,6 +4,7 @@ import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -83,6 +84,34 @@ public class GeminiLlmVisionProvider implements LlmVisionProvider {
                 .put("contents", contents)
                 .put("generationConfig", new JSONObject().put("temperature", 0))
                 .toString();
+    }
+
+    /**
+     * Gemini AI Studio exposes a non-billable {@code GET /v1beta/models?key=<API_KEY>} listing; the
+     * key travels in the query string (not a header), matching how inference calls authenticate.
+     */
+    @Override
+    public Optional<LlmVisionHealthCheckProbe> buildHealthCheckProbe(String configuredEndpoint,
+                                                                     String apiKeyOrToken) {
+        String base = deriveModelsBaseUrl(configuredEndpoint);
+        String separator = base.contains("?") ? "&" : "?";
+        return Optional.of(new LlmVisionHealthCheckProbe(
+                base + separator + "key=" + apiKeyOrToken, buildHeaders(apiKeyOrToken)));
+    }
+
+    /**
+     * Reduces a configured {@code .../v1beta/models/<model>:generateContent} endpoint to the sibling
+     * {@code .../v1beta/models} collection URL (dropping any query string and the model path
+     * segment). A configured endpoint already pointing at {@code .../models} is returned unchanged.
+     */
+    protected String deriveModelsBaseUrl(String configuredEndpoint) {
+        int queryIndex = configuredEndpoint.indexOf('?');
+        String path = queryIndex < 0 ? configuredEndpoint : configuredEndpoint.substring(0, queryIndex);
+        int modelsIndex = path.indexOf("/models");
+        if (modelsIndex >= 0) {
+            return path.substring(0, modelsIndex) + "/models";
+        }
+        return path;
     }
 
     @Override

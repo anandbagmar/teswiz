@@ -2,6 +2,7 @@ package com.znsio.teswiz.visual;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Azure OpenAI provider. The request body and response parsing are identical to OpenAI; only the
@@ -20,11 +21,7 @@ public class AzureOpenAiLlmVisionProvider extends OpenAiLlmVisionProvider {
 
     @Override
     public String resolveEndpoint(String configuredEndpoint, String model) {
-        if (configuredEndpoint.contains(API_VERSION_PARAM + "=")) {
-            return configuredEndpoint;
-        }
-        String separator = configuredEndpoint.contains("?") ? "&" : "?";
-        return configuredEndpoint + separator + API_VERSION_PARAM + "=" + apiVersion;
+        return appendApiVersion(configuredEndpoint);
     }
 
     @Override
@@ -33,5 +30,25 @@ public class AzureOpenAiLlmVisionProvider extends OpenAiLlmVisionProvider {
         headers.put("api-key", apiKeyOrToken);
         headers.put("content-type", "application/json");
         return headers;
+    }
+
+    /**
+     * The Azure models listing also requires the {@code api-version} query parameter and the
+     * {@code api-key} header, so the derived {@code /models} URL is decorated the same way as the
+     * chat-completions endpoint.
+     */
+    @Override
+    public Optional<LlmVisionHealthCheckProbe> buildHealthCheckProbe(String configuredEndpoint,
+                                                                     String apiKeyOrToken) {
+        String modelsUrl = appendApiVersion(deriveModelsUrl(configuredEndpoint));
+        return Optional.of(new LlmVisionHealthCheckProbe(modelsUrl, buildHeaders(apiKeyOrToken)));
+    }
+
+    private String appendApiVersion(String url) {
+        if (url.contains(API_VERSION_PARAM + "=")) {
+            return url;
+        }
+        String separator = url.contains("?") ? "&" : "?";
+        return url + separator + API_VERSION_PARAM + "=" + apiVersion;
     }
 }

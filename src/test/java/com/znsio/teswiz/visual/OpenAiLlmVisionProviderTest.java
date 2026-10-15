@@ -24,6 +24,15 @@ class OpenAiLlmVisionProviderTest {
     }
 
     @Test
+    void healthCheckProbe_derivesModelsListingSiblingOfChatCompletions() {
+        LlmVisionHealthCheckProbe probe = provider.buildHealthCheckProbe(
+                "https://api.openai.com/v1/chat/completions", "sk-secret").orElseThrow();
+
+        assertThat(probe.url()).isEqualTo("https://api.openai.com/v1/models");
+        assertThat(probe.headers()).containsEntry("Authorization", "Bearer sk-secret");
+    }
+
+    @Test
     void buildHeaders_usesBearerAuthorizationAndJsonContentType() {
         Map<String, String> headers = provider.buildHeaders("sk-secret");
 
