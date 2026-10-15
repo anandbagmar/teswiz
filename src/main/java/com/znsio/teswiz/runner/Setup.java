@@ -68,6 +68,7 @@ public class Setup {
     public static final String LLM_VISION_MAX_RETRIES = "LLM_VISION_MAX_RETRIES";
     public static final String LLM_VISION_TIMEOUT_SECONDS = "LLM_VISION_TIMEOUT_SECONDS";
     public static final String LLM_VISION_LOG_API_TRAFFIC = "LLM_VISION_LOG_API_TRAFFIC";
+    public static final String LLM_VISION_SAVE_CAPTURES = "LLM_VISION_SAVE_CAPTURES";
     public static final String BROWSER = "BROWSER";
     public static final String WEB_ENGINE = "WEB_ENGINE";
     public static final String CONFIG_FILE = "CONFIG_FILE";
@@ -486,6 +487,9 @@ public class Setup {
         configsBoolean.put(LLM_VISION_LOG_API_TRAFFIC, getOverriddenBooleanValue(
                 LLM_VISION_LOG_API_TRAFFIC,
                 getBooleanValueFromPropertiesIfAvailable(LLM_VISION_LOG_API_TRAFFIC, true)));
+        configsBoolean.put(LLM_VISION_SAVE_CAPTURES, getOverriddenBooleanValue(
+                LLM_VISION_SAVE_CAPTURES,
+                getBooleanValueFromPropertiesIfAvailable(LLM_VISION_SAVE_CAPTURES, true)));
     }
 
     public static String getHostMachineName() {

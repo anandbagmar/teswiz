@@ -75,6 +75,7 @@ For the complete property list and all available defaults, use the
     LLM_VISION_MAX_RETRIES=1 -> Network-level retries per LLM vision call (default: 1).
     LLM_VISION_TIMEOUT_SECONDS=30 -> Per-call network timeout in seconds (default: 30).
     LLM_VISION_LOG_API_TRAFFIC=true -> Write a masked per-call request/response file into the scenario's separate llm-vision-traffic/ report folder (default: true). Secrets (API key, endpoint credentials) are redacted. The LLM HTTP calls reuse the configured API_ENGINE.
+    LLM_VISION_SAVE_CAPTURES=true -> When an LLM locate succeeds, crop the located element from the screenshot and save it as a reusable OpenCV template PNG under the scenario's separate llm-vision-captures/ folder (default: true). A console log and the run summary report each saved file plus a suggested image-template file name. These are suggestions for manual review and promotion into your own image library; captures are never auto-reused. Once promoted, locate via driver.vision(VisionStrategy.OCR_THEN_LLM).findByImage(...) to skip the LLM on future runs.
     FAIL_TEST_ON_VISUAL_DIFFERENCE=true -> 
         If visual testing is enabled, and this is set to true, then the test will fail if there are any visual differences found
         If this is set to false, then a message will be logged about the visual differences, and the test will not fail for this reason 

@@ -118,7 +118,71 @@ public class LlmVisionService implements LlmVisionEngine {
             return null;
         }
 
-        return buildVisualElement(location, searchImage.getWidth(), searchImage.getHeight(), offsetX, offsetY, effectiveDescription, driverFacade);
+        VisualElement element = buildVisualElement(location, searchImage.getWidth(), searchImage.getHeight(), offsetX, offsetY, effectiveDescription, driverFacade);
+        if (element != null) {
+            saveCaptureIfEnabled(searchImage, location, effectiveDescription);
+        }
+        return element;
+    }
+
+    /**
+     * When {@code LLM_VISION_SAVE_CAPTURES=true}, crops the located region from the (region-adjusted)
+     * screenshot at the raw pixel box and saves it as a reusable OpenCV template under the scenario's
+     * {@code llm-vision-captures} folder, logging the saved path plus a suggested library name/path.
+     * This is a harvest-and-report step for manual promotion; it never auto-reuses captures.
+     */
+    private void saveCaptureIfEnabled(BufferedImage searchImage, LlmLocation location, String description) {
+        if (!Runner.isLlmVisionSaveCapturesEnabled()) {
+            return;
+        }
+        try {
+            int index = nextCaptureIndex();
+            LlmVisionCaptureWriter.CaptureResult result = new LlmVisionCaptureWriter().saveCapture(
+                    searchImage, location.x, location.y, location.width, location.height, description, index);
+            recordCapture(description, result.savedPath(), result.suggestedFileName());
+            LOGGER.info(System.lineSeparator()
+                    + "LLM vision capture: desc='{}'" + System.lineSeparator()
+                    + "  saved to          : {}" + System.lineSeparator()
+                    + "  suggested name    : {}  (suggestion only - rename as you prefer)" + System.lineSeparator()
+                    + "  suggested location: <your-image-template-dir>/{}" + System.lineSeparator()
+                    + "                      (e.g. src/test/resources/images/{})" + System.lineSeparator()
+                    + "  to reuse & skip the LLM next time: review this crop, copy it into your image" + System.lineSeparator()
+                    + "  template directory, then locate via" + System.lineSeparator()
+                    + "  driver.vision(VisionStrategy.OCR_THEN_LLM).findByImage(List.of(\"<your-image-template-dir>/{}\"))",
+                    description, result.savedPath(), result.suggestedFileName(),
+                    result.suggestedFileName(), result.suggestedFileName(), result.suggestedFileName());
+        } catch (RuntimeException e) {
+            LOGGER.warn("Failed to save LLM vision capture for '{}': {}", description, e.getMessage());
+        }
+    }
+
+    private int nextCaptureIndex() {
+        try {
+            TestExecutionContext context = SessionContext.getTestExecutionContext(Thread.currentThread().getId());
+            if (context == null) {
+                return 1;
+            }
+            Object existing = context.getTestState(TEST_CONTEXT.LLM_VISION_USAGE);
+            LlmVisionUsage usage = (existing instanceof LlmVisionUsage) ? (LlmVisionUsage) existing : null;
+            return usage != null ? usage.getCaptureCount() + 1 : 1;
+        } catch (RuntimeException e) {
+            return 1;
+        }
+    }
+
+    private void recordCapture(String description, String savedPath, String suggestedName) {
+        try {
+            TestExecutionContext context = SessionContext.getTestExecutionContext(Thread.currentThread().getId());
+            if (context == null) {
+                return;
+            }
+            Object existing = context.getTestState(TEST_CONTEXT.LLM_VISION_USAGE);
+            LlmVisionUsage usage = (existing instanceof LlmVisionUsage) ? (LlmVisionUsage) existing : new LlmVisionUsage();
+            usage.recordCapture(description, savedPath, suggestedName);
+            context.addTestState(TEST_CONTEXT.LLM_VISION_USAGE, usage);
+        } catch (RuntimeException e) {
+            LOGGER.debug("Could not record LLM vision capture: {}", e.getMessage());
+        }
     }
 
     private List<byte[]> loadReferenceImages(List<String> referenceImagePaths) {

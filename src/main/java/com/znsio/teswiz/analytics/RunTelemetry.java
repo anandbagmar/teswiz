@@ -132,6 +132,7 @@ public class RunTelemetry {
         llm.put("completion_tokens", totals.completionTokens());
         llm.put("total_tokens", totals.totalTokens());
         llm.put("total_duration_seconds", String.format("%.2f", totals.totalDurationSeconds()));
+        llm.put("captures_saved", totals.totalCaptures());
         return llm;
     }
 

@@ -55,15 +55,24 @@ public final class LlmVisionUsageRegistry {
             return;
         }
         String testKey = buildTestKey(testExecutionContext);
-        LOGGER.info(String.format("%n----- LLM Vision Usage (test: %s) -----%n"
+        StringBuilder perTest = new StringBuilder();
+        perTest.append(String.format("%n----- LLM Vision Usage (test: %s) -----%n"
                         + " Calls          : %d%n"
                         + " Prompt tokens  : %d%n"
                         + " Completion     : %d%n"
                         + " Total tokens   : %d%n"
-                        + " Duration (sec) : %.2f%n"
-                        + "---------------------------------------",
+                        + " Duration (sec) : %.2f%n",
                 testKey, usage.getCalls(), usage.getPromptTokens(), usage.getCompletionTokens(),
                 usage.getTotalTokens(), usage.getTotalDurationSeconds()));
+        if (usage.getCaptureCount() > 0) {
+            perTest.append(String.format(" Captures saved : %d (suggestions for your image library)%n", usage.getCaptureCount()));
+            for (LlmVisionUsage.Capture c : usage.getCaptures()) {
+                perTest.append(String.format("   - %s -> %s (suggested name: %s)%n",
+                        c.description(), c.savedPath(), c.suggestedFileName()));
+            }
+        }
+        perTest.append("---------------------------------------");
+        LOGGER.info(perTest.toString());
         commit(testKey, usage);
     }
 
@@ -94,8 +103,9 @@ public final class LlmVisionUsageRegistry {
         RunTotals totals = getRunTotals();
         for (Map.Entry<String, LlmVisionUsage> entry : sortedByCommitOrder()) {
             LlmVisionUsage usage = entry.getValue();
-            summary.append(String.format("   %-50s %d call(s), %d tokens, %.2f sec%n",
-                    truncate(entry.getKey(), 50), usage.getCalls(), usage.getTotalTokens(), usage.getTotalDurationSeconds()));
+            summary.append(String.format("   %-50s %d call(s), %d tokens, %.2f sec, %d capture(s)%n",
+                    truncate(entry.getKey(), 50), usage.getCalls(), usage.getTotalTokens(),
+                    usage.getTotalDurationSeconds(), usage.getCaptureCount()));
         }
 
         summary.append(" ------------------------------------------------------------------").append(System.lineSeparator())
@@ -105,15 +115,37 @@ public final class LlmVisionUsageRegistry {
                 .append(String.format(" Completion tokens            : %d%n", totals.completionTokens()))
                 .append(String.format(" Total tokens                 : %d%n", totals.totalTokens()))
                 .append(String.format(" Total duration (sec)         : %.2f%n", totals.totalDurationSeconds()))
-                .append("====================================================================");
+                .append(String.format(" Captures saved               : %d%n", totals.totalCaptures()));
+
+        appendCapturesSection(summary);
+        summary.append("====================================================================");
         LOGGER.info(summary.toString());
+    }
+
+    /**
+     * Appends the harvested-captures listing (suggestions for manual promotion into the user's
+     * image-template library). Silent when no captures were saved this run.
+     */
+    private static void appendCapturesSection(StringBuilder summary) {
+        if (getRunTotals().totalCaptures() == 0) {
+            return;
+        }
+        summary.append(System.lineSeparator())
+                .append(" New LLM vision captures (review, then copy into your image library to skip the LLM next time):")
+                .append(System.lineSeparator());
+        for (Map.Entry<String, LlmVisionUsage> entry : sortedByCommitOrder()) {
+            for (LlmVisionUsage.Capture c : entry.getValue().getCaptures()) {
+                summary.append(String.format("   - %s%n       saved: %s%n       suggested name: %s%n",
+                        c.description(), c.savedPath(), c.suggestedFileName()));
+            }
+        }
     }
 
     /**
      * Immutable, privacy-safe aggregate of LLM vision usage across the run, for telemetry.
      */
     public record RunTotals(int testsUsingLlm, long totalCalls, long promptTokens, long completionTokens,
-                            long totalTokens, long totalDurationMs) {
+                            long totalTokens, long totalDurationMs, long totalCaptures) {
         public double totalDurationSeconds() {
             return totalDurationMs / 1000.0;
         }
@@ -128,14 +160,16 @@ public final class LlmVisionUsageRegistry {
         long totalCompletion = 0;
         long totalTokens = 0;
         long totalDurationMs = 0;
+        long totalCaptures = 0;
         for (LlmVisionUsage usage : USAGE_BY_TEST.values()) {
             totalCalls += usage.getCalls();
             totalPrompt += usage.getPromptTokens();
             totalCompletion += usage.getCompletionTokens();
             totalTokens += usage.getTotalTokens();
             totalDurationMs += usage.getTotalDurationMs();
+            totalCaptures += usage.getCaptureCount();
         }
-        return new RunTotals(USAGE_BY_TEST.size(), totalCalls, totalPrompt, totalCompletion, totalTokens, totalDurationMs);
+        return new RunTotals(USAGE_BY_TEST.size(), totalCalls, totalPrompt, totalCompletion, totalTokens, totalDurationMs, totalCaptures);
     }
 
     private static Iterable<Map.Entry<String, LlmVisionUsage>> sortedByCommitOrder() {

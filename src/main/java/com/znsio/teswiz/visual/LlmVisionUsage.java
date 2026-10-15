@@ -15,6 +15,14 @@ public class LlmVisionUsage {
     private long completionTokens;
     private long totalTokens;
     private long totalDurationMs;
+    private final java.util.List<Capture> captures = new java.util.ArrayList<>();
+
+    /**
+     * A harvested LLM vision capture: the located element cropped to disk, plus the suggested
+     * image-template file name for manual promotion into the user's library.
+     */
+    public record Capture(String description, String savedPath, String suggestedFileName) {
+    }
 
     /**
      * Records a single LLM vision request's token usage and wall-clock duration. Missing counts
@@ -52,8 +60,23 @@ public class LlmVisionUsage {
         return totalDurationMs / 1000.0;
     }
 
+    /**
+     * Records a harvested capture (a located element saved as a reusable template crop).
+     */
+    public void recordCapture(String description, String savedPath, String suggestedFileName) {
+        this.captures.add(new Capture(description, savedPath, suggestedFileName));
+    }
+
+    public int getCaptureCount() {
+        return captures.size();
+    }
+
+    public java.util.List<Capture> getCaptures() {
+        return java.util.Collections.unmodifiableList(captures);
+    }
+
     public boolean hasActivity() {
-        return calls > 0;
+        return calls > 0 || !captures.isEmpty();
     }
 
     /**
@@ -66,6 +89,7 @@ public class LlmVisionUsage {
         copy.completionTokens = this.completionTokens;
         copy.totalTokens = this.totalTokens;
         copy.totalDurationMs = this.totalDurationMs;
+        copy.captures.addAll(this.captures);
         return copy;
     }
 

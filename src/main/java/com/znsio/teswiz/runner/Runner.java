@@ -268,6 +268,10 @@ public class Runner {
         return Setup.getBooleanValueFromConfigs(Setup.LLM_VISION_LOG_API_TRAFFIC);
     }
 
+    public static boolean isLlmVisionSaveCapturesEnabled() {
+        return Setup.getBooleanValueFromConfigs(Setup.LLM_VISION_SAVE_CAPTURES);
+    }
+
     public static boolean isRunningInHeadlessMode() {
         return Setup.getBooleanValueFromConfigs(Setup.HEADLESS);
     }

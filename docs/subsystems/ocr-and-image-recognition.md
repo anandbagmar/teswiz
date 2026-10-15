@@ -490,6 +490,35 @@ fast on misconfiguration (for example, a blank or malformed `LLM_VISION_ENDPOINT
 environment variable). For OpenAI-compatible providers it additionally performs a lightweight `/models`
 authorization health-check so a broken endpoint or key is reported before any test runs rather than mid-suite.
 
+### Harvesting LLM matches into your image library
+
+LLM calls cost money and add latency, so you do not want to call the LLM every run for the same element. When
+`LLM_VISION_SAVE_CAPTURES=true` (default), every successful LLM locate **crops the located element from the
+screenshot and saves it as a reusable OpenCV template PNG** under a dedicated `llm-vision-captures/` sub-folder of
+the current scenario's report directory. The crop is taken from the raw screenshot at the raw pixel bounding box,
+so it is directly usable as an image template.
+
+Each capture is reported in two places:
+
+- **Console** - an explicit message naming the saved file plus a *suggested* image-template file name and location
+  (a placeholder path such as `<your-image-template-dir>/submit-button.png`, with `src/test/resources/images/...`
+  shown only as an example). The name is a suggestion, not a rule - rename and place it wherever your project
+  keeps templates.
+- **Run summary** - a "New LLM vision captures" section listing every saved file and its suggested name, plus a
+  per-test and total count.
+
+The intended lifecycle is **human-in-the-loop**, not automatic caching:
+
+1. Run with `VisionStrategy.LLM` (or `OCR_THEN_LLM`). The LLM locates the element and a crop is harvested.
+2. Review the saved crop. If it cleanly bounds the element, copy it into your own image-template directory under a
+   name you choose.
+3. Switch that locator to `driver.vision(VisionStrategy.OCR_THEN_LLM).findByImage(List.of("<your-dir>/your-name.png"))`.
+   Now OpenCV matches the promoted template locally on future runs and the LLM is only called if the local match
+   fails.
+
+teswiz never auto-reuses a capture: a slightly-off crop promoted blindly would cause silent flakiness, so
+promotion is always your explicit, reviewed step. Set `LLM_VISION_SAVE_CAPTURES=false` to skip saving crops.
+
 ---
 
 ## VisualElement & Web Actions with Auto-Highlighting
