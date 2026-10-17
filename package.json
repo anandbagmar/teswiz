@@ -75,6 +75,6 @@
   "license": "ISC",
   "devDependencies": {
     "@applitools/eyes-playwright": "^1.49.3",
-    "playwright": "1.63.0"
+    "playwright": "1.64.1"
   }
 }
