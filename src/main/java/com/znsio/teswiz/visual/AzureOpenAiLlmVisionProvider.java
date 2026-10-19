@@ -21,7 +21,23 @@ public class AzureOpenAiLlmVisionProvider extends OpenAiLlmVisionProvider {
 
     @Override
     public String resolveEndpoint(String configuredEndpoint, String model) {
-        return appendApiVersion(configuredEndpoint);
+        return appendApiVersion(resolveDeploymentPath(configuredEndpoint, model));
+    }
+
+    /**
+     * Azure chat-completions live at {@code <base>/openai/deployments/<deployment>/chat/completions}.
+     * If the configured endpoint already contains a deployment path it is used as-is (its deployment
+     * name may legitimately differ from the model id); otherwise the full path is derived from the
+     * base resource URL and {@code LLM_VISION_MODEL} (used as the deployment name).
+     */
+    private String resolveDeploymentPath(String configuredEndpoint, String model) {
+        if (configuredEndpoint.contains("/openai/deployments/")) {
+            return configuredEndpoint;
+        }
+        String base = configuredEndpoint.endsWith("/")
+                ? configuredEndpoint.substring(0, configuredEndpoint.length() - 1)
+                : configuredEndpoint;
+        return base + "/openai/deployments/" + model + "/chat/completions";
     }
 
     @Override
@@ -42,6 +58,22 @@ public class AzureOpenAiLlmVisionProvider extends OpenAiLlmVisionProvider {
                                                                      String apiKeyOrToken) {
         String modelsUrl = appendApiVersion(deriveModelsUrl(configuredEndpoint));
         return Optional.of(new LlmVisionHealthCheckProbe(modelsUrl, buildHeaders(apiKeyOrToken)));
+    }
+
+    @Override
+    protected String deriveModelsUrl(String configuredEndpoint) {
+        // Azure model listing is at the resource root (/openai/models), not under
+        // /openai/deployments/<deployment>/ where chat/completions lives; the OpenAI base
+        // derivation would yield .../deployments/<deployment>/models which Azure 404s.
+        int i = configuredEndpoint.indexOf("/openai/");
+        if (i > 0) {
+            return configuredEndpoint.substring(0, i) + "/openai/models";
+        }
+        // Bare base resource URL (no /openai/ segment): the models listing is <base>/openai/models.
+        String base = configuredEndpoint.endsWith("/")
+                ? configuredEndpoint.substring(0, configuredEndpoint.length() - 1)
+                : configuredEndpoint;
+        return base + "/openai/models";
     }
 
     private String appendApiVersion(String url) {

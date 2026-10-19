@@ -48,11 +48,36 @@ class AzureOpenAiLlmVisionProviderTest {
     }
 
     @Test
+    void resolveEndpoint_derivesDeploymentPathFromBaseUrlAndModel() {
+        String base = "https://my.openai.azure.com/";
+
+        assertThat(provider.resolveEndpoint(base, "gpt-5.4"))
+                .isEqualTo("https://my.openai.azure.com/openai/deployments/gpt-5.4/chat/completions?api-version=2024-06-01");
+    }
+
+    @Test
+    void resolveEndpoint_derivesDeploymentPathFromBaseUrlWithoutTrailingSlash() {
+        String base = "https://my.openai.azure.com";
+
+        assertThat(provider.resolveEndpoint(base, "gpt-5.4"))
+                .isEqualTo("https://my.openai.azure.com/openai/deployments/gpt-5.4/chat/completions?api-version=2024-06-01");
+    }
+
+    @Test
+    void resolveEndpoint_leavesExplicitDeploymentPathUntouchedEvenWhenModelDiffers() {
+        // A full deployment path must win over derivation (deployment name may differ from model id).
+        String fullPath = "https://my.openai.azure.com/openai/deployments/my-custom-deployment/chat/completions";
+
+        assertThat(provider.resolveEndpoint(fullPath, "gpt-5.4"))
+                .isEqualTo(fullPath + "?api-version=2024-06-01");
+    }
+
+    @Test
     void healthCheckProbe_derivesModelsListingWithApiVersionAndApiKeyHeader() {
         LlmVisionHealthCheckProbe probe = provider.buildHealthCheckProbe(
                 "https://my.openai.azure.com/openai/deployments/gpt4o/chat/completions", "azure-secret").orElseThrow();
 
-        assertThat(probe.url()).isEqualTo("https://my.openai.azure.com/openai/deployments/gpt4o/models?api-version=2024-06-01");
+        assertThat(probe.url()).isEqualTo("https://my.openai.azure.com/openai/models?api-version=2024-06-01");
         assertThat(probe.headers()).containsEntry("api-key", "azure-secret");
         assertThat(probe.headers()).doesNotContainKey("Authorization");
     }
@@ -85,6 +110,24 @@ class AzureOpenAiLlmVisionProviderTest {
         assertThat(parsed.promptTokens()).isEqualTo(5);
         assertThat(parsed.completionTokens()).isEqualTo(6);
         assertThat(parsed.totalTokens()).isEqualTo(11);
+    }
+
+    @Test
+    void healthCheckProbe_derivesResourceRootModelsListingFromBareBaseUrl() {
+        LlmVisionHealthCheckProbe probe = provider.buildHealthCheckProbe(
+                "https://my.openai.azure.com/", "azure-secret").orElseThrow();
+        assertThat(probe.url())
+                .isEqualTo("https://my.openai.azure.com/openai/models?api-version=2024-06-01")
+                .doesNotContain("/deployments/");
+    }
+
+    @Test
+    void healthCheckProbe_derivesResourceRootModelsListingNotDeploymentScoped() {
+        LlmVisionHealthCheckProbe probe = provider.buildHealthCheckProbe(
+                "https://my.openai.azure.com/openai/deployments/gpt4o/chat/completions", "azure-secret").orElseThrow();
+        assertThat(probe.url())
+                .isEqualTo("https://my.openai.azure.com/openai/models?api-version=2024-06-01")
+                .doesNotContain("/deployments/");
     }
 
     private int countImageParts(JSONObject body) {
