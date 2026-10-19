@@ -41,4 +41,14 @@ public class TransportNswOcrSteps {
     public void iVerifyTheStationDeparturesPageForIsDisplayed(String stationName) {
         new TransportNswOcrBL(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform()).verifyStationDetailsDisplayed(stationName);
     }
+
+    @When("I visually click {string} using OCR-then-LLM with description {string}")
+    public void iVisuallyClickUsingOcrThenLlm(String elementName, String description) {
+        new TransportNswOcrBL(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform()).clickElementUsingOcrThenLlm(elementName, description);
+    }
+
+    @When("I visually click {string} using LLM with description {string}")
+    public void iVisuallyClickUsingLlm(String elementName, String description) {
+        new TransportNswOcrBL(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform()).clickElementUsingLlm(elementName, description);
+    }
 }

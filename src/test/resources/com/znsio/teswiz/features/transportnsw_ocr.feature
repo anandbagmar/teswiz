@@ -55,3 +55,21 @@ Feature: Visual OCR and Image Recognition map navigation on Transport NSW Metro 
     Given I navigate to the Transport NSW Metro page at "https://transportnsw.info/travel-info/ways-to-get-around/metro"
     When I scroll to the "Explore the new route" interactive map section
     Then I verify visual element "Explore the new route section heading" is present using OCR text "Explore" within region 0 0 1920 1080
+
+  # LLM vision scenarios. Tagged @llm so NO GitHub Actions job selects them (CI runs only
+  # @proximity / @region). Run locally with a configured LLM endpoint + key, e.g.:
+  #   CONFIG=./configs/transportnsw_ocr_config.properties TAG="@transportnsw and @llm" ./gradlew run
+  # Requires LLM_VISION_FALLBACK_ENABLED=true and the provider endpoint/key in the config/env.
+  @web @llm @ocrThenLlm
+  Scenario: Navigate the Metro map using the OCR-then-LLM fallback strategy
+    Given I navigate to the Transport NSW Metro page at "https://transportnsw.info/travel-info/ways-to-get-around/metro"
+    When I scroll to the "Explore the new route" interactive map section
+    And I visually click "a station dot on the Metro map" using OCR-then-LLM with description "a solid green circular station dot on the metro map"
+    And I visually click "Departures from here" using OCR-then-LLM with description "the 'Departures from here' option in the station callout popup"
+
+  @web @llm @llmOnly
+  Scenario: Navigate the Metro map using the LLM vision locator only
+    Given I navigate to the Transport NSW Metro page at "https://transportnsw.info/travel-info/ways-to-get-around/metro"
+    When I scroll to the "Explore the new route" interactive map section
+    And I visually click "a station dot on the Metro map" using LLM with description "a solid green circular station dot on the metro map"
+    And I visually click "Departures from here" using LLM with description "the 'Departures from here' option in the station callout popup"

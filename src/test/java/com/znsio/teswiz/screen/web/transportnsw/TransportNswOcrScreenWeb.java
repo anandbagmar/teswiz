@@ -75,6 +75,30 @@ public class TransportNswOcrScreenWeb extends TransportNswOcrScreen {
     }
 
     @Override
+    public VisualElement clickElementByOcrThenLlm(String elementName, String description) {
+        LOGGER.info("Finding and clicking '{}' using OCR_THEN_LLM with description: {}", elementName, description);
+        VisualElement element = visually.vision(VisionStrategy.OCR_THEN_LLM).findByText(description);
+        visually.checkWindow(SCREEN_NAME, "Before clicking (OCR_THEN_LLM): " + elementName);
+        if (element != null) {
+            element.click();
+        }
+        visually.checkWindow(SCREEN_NAME, "After clicking (OCR_THEN_LLM): " + elementName);
+        return element;
+    }
+
+    @Override
+    public VisualElement clickElementByLlm(String elementName, String description) {
+        LOGGER.info("Finding and clicking '{}' using LLM with description: {}", elementName, description);
+        VisualElement element = visually.vision(VisionStrategy.LLM).findByText(description);
+        visually.checkWindow(SCREEN_NAME, "Before clicking (LLM): " + elementName);
+        if (element != null) {
+            element.click();
+        }
+        visually.checkWindow(SCREEN_NAME, "After clicking (LLM): " + elementName);
+        return element;
+    }
+
+    @Override
     public VisualElement clickCalloutOptionByText(String text) {
         LOGGER.info("Finding and clicking callout option using OCR text: " + text);
         VisualElement calloutOption = visually.vision(VisionStrategy.OCR).findByText(text);

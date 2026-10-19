@@ -52,6 +52,20 @@ public class TransportNswOcrBL {
         return this;
     }
 
+    public TransportNswOcrBL clickElementUsingOcrThenLlm(String elementName, String description) {
+        LOGGER.info("Visually clicking element '{}' using OCR_THEN_LLM with description: {}", elementName, description);
+        VisualElement visualElement = TransportNswOcrScreen.get().clickElementByOcrThenLlm(elementName, description);
+        assertThat(visualElement).as("Visual element '" + elementName + "' should be found (OCR_THEN_LLM) and clicked").isNotNull();
+        return this;
+    }
+
+    public TransportNswOcrBL clickElementUsingLlm(String elementName, String description) {
+        LOGGER.info("Visually clicking element '{}' using LLM with description: {}", elementName, description);
+        VisualElement visualElement = TransportNswOcrScreen.get().clickElementByLlm(elementName, description);
+        assertThat(visualElement).as("Visual element '" + elementName + "' should be located by the LLM and clicked").isNotNull();
+        return this;
+    }
+
     public TransportNswOcrBL verifyStationDetailsDisplayed(String stationName) {
         LOGGER.info("Verifying station details page for: " + stationName);
         boolean isDisplayed = TransportNswOcrScreen.get().isStationPageDisplayedFor(stationName);
