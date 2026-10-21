@@ -206,6 +206,11 @@ works cleanly in CI.
 # Azure OpenAI api-version (only used by azure-openai)
 #LLM_VISION_API_VERSION=2024-06-01
 
+# Optional startup health-check override. Blank = teswiz auto-derives the provider's non-billable
+# models-listing URL; an explicit http(s) URL is probed verbatim (reusing the provider's auth
+# headers); 'none' (or 'off'/'false') skips the live probe and does structural checks only.
+#LLM_VISION_HEALTH_CHECK_URL=
+
 # Network-level retries per LLM call (default 1)
 #LLM_VISION_MAX_RETRIES=1
 
@@ -499,6 +504,13 @@ variable, or a blank `LLM_VISION_MODEL` for a provider that requires one). Each 
 broken endpoint or key is reported before any test runs rather than mid-suite. `anthropic` and `bedrock` have no
 non-billable listing endpoint, so they are validated **structurally only** (no health-check call is made, by
 design, to avoid incurring billable inference at startup).
+
+The derived probe URL is a best-effort guess at each provider's models-listing path. When teswiz cannot derive
+the correct path for your provider or endpoint (the symptom is a startup failure with an HTTP 404 against a
+`/models`-style URL even though your key and endpoint are valid), set **`LLM_VISION_HEALTH_CHECK_URL`** to the
+exact non-billable listing URL and teswiz probes that verbatim (reusing the provider's auth headers). Set it to
+**`none`** (or `off`/`false`) to skip the live probe entirely and fall back to structural validation only. Leave
+it blank to keep the auto-derived default.
 
 ### Harvesting LLM matches into your image library
 

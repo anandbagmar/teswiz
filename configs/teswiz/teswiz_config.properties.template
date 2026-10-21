@@ -71,6 +71,13 @@ APPLITOOLS_CONFIGURATION=./configs/applitools_config.json
 #LLM_VISION_API_KEY_ENV=LLM_VISION_API_KEY
 # Azure OpenAI only: the api-version appended to the endpoint. Default 2024-06-01.
 #LLM_VISION_API_VERSION=2024-06-01
+# Optional override for the startup health-check target. Accepted values:
+#   <blank>  (default) teswiz auto-derives the provider's non-billable models-listing URL
+#   <http(s) URL>       probe this exact URL verbatim (provider auth headers are reused)
+#   none | off | false  skip the live probe entirely (structural validation only)
+# Use an explicit URL or 'none' when teswiz cannot reliably derive the models-listing path for your
+# provider/endpoint (symptom: startup fails with HTTP 404 against a /models URL despite a valid key).
+#LLM_VISION_HEALTH_CHECK_URL=
 #LLM_VISION_MAX_RETRIES=1
 #LLM_VISION_TIMEOUT_SECONDS=30
 #LLM_VISION_LOG_API_TRAFFIC=true
