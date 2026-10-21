@@ -22,6 +22,7 @@
   - [5. Wait Until an Element Becomes Visible (`waitUntilVisualElementIsVisible*`)](#5-wait-until-an-element-becomes-visible-waituntilvisualelementisvisible)
   - [6. Proximity & Spatial Relative Locators (`findRelativeByText` & `findRelativeByImage`)](#6-proximity--spatial-relative-locators-findrelativebytext--findrelativebyimage)
   - [7. Dynamic Proxy Locators (`VisualBy`)](#7-dynamic-proxy-locators-visualby)
+  - [8. Reading values (`readText` / `readNumber`)](#8-reading-values-readtext--readnumber)
 - [🤖 LLM Vision Locator (`VisionStrategy.LLM`)](#-llm-vision-locator-visionstrategyllm)
 - [VisualElement & Web Actions with Auto-Highlighting](#visualelement--web-actions-with-auto-highlighting)
 - [Exception Handling](#exception-handling)
@@ -413,6 +414,109 @@ loginBtn.click();
 WebElement logo = driver.findElement(VisualBy.image("src/test/resources/images/logo.png", 0.90));
 ```
 
+### 8. Reading values (`readText` / `readNumber`)
+
+The `findBy*` methods **locate** an element matching a value you already know ("find where 'SPIN' is"). The
+read methods do the opposite - they **read the unknown value** in a screen region ("what number is in the
+balance box?") and return it. They are reached through the same strategy-scoped entry point as the finders.
+
+#### The region parameter
+
+Every read takes a `VisualRegion` - the rectangle to read. Obtain one either explicitly from coordinates or by
+deriving it from an anchor you already located:
+
+```java
+import com.znsio.teswiz.entities.VisualRegion;
+
+// Explicit pixel rectangle (x, y, width, height) in logical viewport coordinates
+VisualRegion balanceBox = VisualRegion.inRegion(1180, 60, 160, 40);
+
+// Derived from an anchor element/region you located first (e.g. via findByText)
+VisualElement anchor = driver.vision(VisionStrategy.OCR).findByText("Balance");
+VisualRegion nextToAnchor = VisualRegion.from(anchor);   // same bounds as the anchor
+```
+
+#### `readText` / `readValue`
+
+```java
+import com.znsio.teswiz.entities.VisionStrategy;
+import com.znsio.teswiz.entities.VisualRegion;
+
+VisualRegion region = VisualRegion.inRegion(1180, 60, 160, 40);
+
+// OCR read (deterministic, offline) - returns whatever text is recognised ("" when nothing is read)
+String balanceText = driver.vision(VisionStrategy.OCR).readText(region);
+
+// LLM / OCR_THEN_LLM arms need a description of WHAT to read - use readValue(region, description)
+String jackpot = driver.vision(VisionStrategy.OCR_THEN_LLM)
+    .readValue(region, "the jackpot amount in the top-right panel");
+```
+
+Under pure `VisionStrategy.OCR` the description is ignored, so `readText(region)` is the natural call; under
+`LLM` and `OCR_THEN_LLM` the LLM arm needs the description, so prefer `readValue(region, description)`.
+
+#### `OcrReadHint` - tuning the hard cases
+
+Small fonts, single values, and digits-only fields read more reliably with a hint. `OcrReadHint` carries three
+knobs - a page-segmentation mode (how the region is laid out), an upscale factor (the crop is magnified before
+OCR, default ~3x), and an optional character whitelist (restrict recognition to a known alphabet). Create one via
+a static factory and optionally tweak it with the fluent `with*` copies:
+
+```java
+import com.znsio.teswiz.visual.OcrReadHint;
+
+// Defaults: single text block, ~3x upscale, no whitelist
+String label = driver.vision(VisionStrategy.OCR).readText(region, OcrReadHint.defaults());
+
+// digits(): single line + numeric whitelist "0123456789.,"  - best for amounts/counters
+String amount = driver.vision(VisionStrategy.OCR).readText(region, OcrReadHint.digits());
+
+// Tune further: single-line layout, 4x upscale, letters-only whitelist
+OcrReadHint custom = OcrReadHint.singleLine()
+    .withUpscaleFactor(4.0)
+    .withCharacterWhitelist("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+String code = driver.vision(VisionStrategy.OCR).readText(region, custom);
+```
+
+#### `readNumber`
+
+`readNumber` reads a numeric value and returns an `Optional<BigDecimal>` - `Optional.empty()` when the region is
+blank or the read is not numeric (it never throws). It uses a numeric-friendly hint and is locale-tolerant of the
+common `1,234.56` grouping, stripping currency symbols/whitespace and thousands separators before parsing:
+
+```java
+import java.math.BigDecimal;
+import java.util.Optional;
+
+Optional<BigDecimal> balance = driver.vision(VisionStrategy.OCR).readNumber(region);
+balance.ifPresent(value -> LOGGER.info("Balance is {}", value));
+
+// LLM / OCR_THEN_LLM: pass a description for the LLM arm
+Optional<BigDecimal> win = driver.vision(VisionStrategy.OCR_THEN_LLM)
+    .readNumber(region, "the win amount");
+```
+
+#### Strategy behaviour
+
+The read methods route on the strategy exactly like the finders:
+
+| Strategy | `readText` / `readValue` | `readNumber` |
+|---|---|---|
+| `OCR` | OCR read (deterministic default); description ignored | OCR read, then numeric-parse |
+| `LLM` | LLM reads the value for the description | LLM reads, then numeric-parse |
+| `OCR_THEN_LLM` | OCR read first; fall back to the LLM read **only when the OCR result is blank** | OCR number first; fall back to the LLM read+parse **only when the OCR result is empty/unparseable** |
+
+#### BDD step definitions
+
+```gherkin
+# OCR read of a region (deterministic default)
+When I read the text in region 1180 60 160 40 using OCR
+When I read the number in region 1180 60 160 40 using OCR
+
+# Strategy-routed read with a description for the LLM/OCR_THEN_LLM arms
+When I read "the jackpot amount" in region 1180 60 160 40 using "OCR_THEN_LLM"
+```
+
 ---
 
 ## 🤖 LLM Vision Locator (`VisionStrategy.LLM`)
@@ -601,8 +705,8 @@ If an OCR/image locator (`driver.vision(VisionStrategy.OCR)...`) is invoked when
 `VisualSubsystemDisabledException` is thrown:
 
 ```
-com.znsio.teswiz.exceptions.VisualSubsystemDisabledException: 
-[teswiz] Visual OCR & Image Recognition Subsystem is Disabled! 
+com.znsio.teswiz.exceptions.VisualSubsystemDisabledException:
+[teswiz] Visual OCR & Image Recognition Subsystem is Disabled!
 To enable visual text/image locators (driver.vision(VisionStrategy.OCR)...), set 'IS_OCR_ENABLED=true' in your execution config.properties file or system properties.
 ```
 
@@ -615,7 +719,7 @@ To enable visual text/image locators (driver.vision(VisionStrategy.OCR)...), set
 If an element cannot be matched visually above `VISUAL_CONFIDENCE_THRESHOLD`:
 
 ```
-com.znsio.teswiz.exceptions.NoSuchVisualElementException: 
+com.znsio.teswiz.exceptions.NoSuchVisualElementException:
 [teswiz] Unable to locate visual element by text/image template matching on screen. Target: 'Login', Threshold: 0.85
 ```
 

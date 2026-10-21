@@ -11,11 +11,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.imageio.ImageIO;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 
 import com.znsio.teswiz.api.TeswizApiResponse;
@@ -29,20 +29,20 @@ import com.znsio.teswiz.runner.VisualElement;
 import com.znsio.teswiz.services.ApiService;
 
 /**
- * Default {@link LlmVisionEngine}: a last-resort element locator that asks a vision-capable LLM
- * (OpenAI-compatible chat completions wire format) for the on-screen bounding box of an element
- * described in natural language and/or shown in one or more reference/example images.
+ * Default {@link LlmVisionEngine}: a last-resort element locator that asks a vision-capable LLM (OpenAI-compatible chat
+ * completions wire format) for the on-screen bounding box of an element described in natural language and/or shown in
+ * one or more reference/example images.
  *
- * <p>HTTP calls reuse the framework's configured {@code API_ENGINE} via {@link ApiService}, so no
- * new HTTP client is introduced. The call is retried up to {@code LLM_VISION_MAX_RETRIES} times on
- * transient failures; the per-call network deadline ({@code LLM_VISION_TIMEOUT_SECONDS}) is applied
- * via the Playwright engine's timeout property for the duration of the call. Returned pixel
- * coordinates are bounds-checked and scaled to logical viewport coordinates (matching
- * {@link OcrService} / {@link ImageRecognitionService}). Token usage is logged per request,
- * accumulated per test, and summarised per run.
+ * <p>
+ * HTTP calls reuse the framework's configured {@code API_ENGINE} via {@link ApiService}, so no new HTTP client is
+ * introduced. The call is retried up to {@code LLM_VISION_MAX_RETRIES} times on transient failures; the per-call
+ * network deadline ({@code LLM_VISION_TIMEOUT_SECONDS}) is applied via the Playwright engine's timeout property for the
+ * duration of the call. Returned pixel coordinates are bounds-checked and scaled to logical viewport coordinates
+ * (matching {@link OcrService} / {@link ImageRecognitionService}). Token usage is logged per request, accumulated per
+ * test, and summarised per run.
  *
- * <p>This class holds no secrets in logs: the {@code Authorization} header is redacted before any
- * traffic file is written.
+ * <p>
+ * This class holds no secrets in logs: the {@code Authorization} header is redacted before any traffic file is written.
  */
 public class LlmVisionService implements LlmVisionEngine {
 
@@ -51,8 +51,7 @@ public class LlmVisionService implements LlmVisionEngine {
     private static final String REDACTED = "***REDACTED***";
     private static final String TIMEOUT_PROPERTY = "TESWIZ_API_TIMEOUT_SECONDS";
 
-    private static final String SYSTEM_PROMPT =
-            "You are a precise UI element locator. The FIRST image is the SCREENSHOT to search. Any "
+    private static final String SYSTEM_PROMPT = "You are a precise UI element locator. The FIRST image is the SCREENSHOT to search. Any "
             + "additional images are REFERENCE EXAMPLES showing what the target element looks like - "
             + "they are hints only and are NOT part of the screenshot. Find the element in the "
             + "SCREENSHOT (guided by the description and/or the reference examples) and return ONLY a "
@@ -62,9 +61,14 @@ public class LlmVisionService implements LlmVisionEngine {
             + "\"y\": int, \"width\": int, \"height\": int}. If you cannot confidently find the element, "
             + "return {\"found\": false}. Do not include any explanation, markdown, or extra keys.";
 
+    private static final String READ_SYSTEM_PROMPT = "You are a precise UI value reader. The image is a SCREENSHOT. Read and return ONLY the exact text or "
+            + "value shown for the target the user describes - transcribe it verbatim as it appears on screen. "
+            + "Return just the value as plain text, with no label, no quotes, no explanation, and no markdown. If "
+            + "the target is not visible or you cannot read it, return an empty string.";
+
     /**
-     * Returns {@code true} when the fallback is enabled and the minimum configuration (endpoint +
-     * API key env var present) is satisfied, mirroring {@code OcrService.isTess4jAvailable()}.
+     * Returns {@code true} when the fallback is enabled and the minimum configuration (endpoint + API key env var
+     * present) is satisfied, mirroring {@code OcrService.isTess4jAvailable()}.
      */
     public static boolean isAvailable() {
         if (!Runner.isLlmVisionFallbackEnabled()) {
@@ -74,13 +78,14 @@ public class LlmVisionService implements LlmVisionEngine {
     }
 
     @Override
-    public VisualElement findByDescription(byte[] screenshotBytes, String description, VisualRegion region, Driver driverFacade) {
+    public VisualElement findByDescription(byte[] screenshotBytes, String description, VisualRegion region,
+            Driver driverFacade) {
         return findByDescription(screenshotBytes, description, null, region, driverFacade);
     }
 
     @Override
     public VisualElement findByDescription(byte[] screenshotBytes, String description, List<String> referenceImagePaths,
-                                           VisualRegion region, Driver driverFacade) {
+            VisualRegion region, Driver driverFacade) {
         boolean hasDescription = description != null && !description.isBlank();
         boolean hasReferences = referenceImagePaths != null && !referenceImagePaths.isEmpty();
         if (!isAvailable() || screenshotBytes == null || (!hasDescription && !hasReferences)) {
@@ -118,18 +123,127 @@ public class LlmVisionService implements LlmVisionEngine {
             return null;
         }
 
-        VisualElement element = buildVisualElement(location, searchImage.getWidth(), searchImage.getHeight(), offsetX, offsetY, effectiveDescription, driverFacade);
+        VisualElement element = buildVisualElement(location, searchImage.getWidth(), searchImage.getHeight(), offsetX,
+                offsetY, effectiveDescription, driverFacade);
         if (element != null) {
             saveCaptureIfEnabled(searchImage, location, effectiveDescription);
         }
         return element;
     }
 
+    @Override
+    public String readTextByDescription(byte[] screenshotBytes, String description, VisualRegion region,
+            Driver driverFacade) {
+        boolean hasDescription = description != null && !description.isBlank();
+        if (!isAvailable() || screenshotBytes == null || !hasDescription) {
+            return "";
+        }
+
+        BufferedImage image = parseScreenshot(screenshotBytes);
+        if (image == null) {
+            return "";
+        }
+
+        BufferedImage searchImage = cropToRegion(image, region);
+        byte[] searchImageBytes = encodePng(searchImage);
+        if (searchImageBytes == null) {
+            return "";
+        }
+
+        String value = requestTextWithRetries(searchImageBytes, description);
+        LOGGER.info("LLM vision read for '{}' within region {} returned: '{}'", description,
+                region != null ? region : "[entire screen]", value);
+        return value;
+    }
+
     /**
-     * When {@code LLM_VISION_SAVE_CAPTURES=true}, crops the located region from the (region-adjusted)
-     * screenshot at the raw pixel box and saves it as a reusable OpenCV template under the scenario's
-     * {@code llm-vision-captures} folder, logging the saved path plus a suggested library name/path.
-     * This is a harvest-and-report step for manual promotion; it never auto-reuses captures.
+     * Crops the screenshot to {@code region} (bounds-checked); returns the whole image when {@code region} is
+     * {@code null} or degenerate.
+     */
+    private BufferedImage cropToRegion(BufferedImage image, VisualRegion region) {
+        if (region == null) {
+            return image;
+        }
+        int offsetX = Math.max(0, Math.min(region.getX(), image.getWidth() - 1));
+        int offsetY = Math.max(0, Math.min(region.getY(), image.getHeight() - 1));
+        int w = Math.min(region.getWidth(), image.getWidth() - offsetX);
+        int h = Math.min(region.getHeight(), image.getHeight() - offsetY);
+        return (w > 0 && h > 0) ? image.getSubimage(offsetX, offsetY, w, h) : image;
+    }
+
+    /**
+     * Asks the vision model to READ the value of the described target, retrying transient failures up to
+     * {@code LLM_VISION_MAX_RETRIES}. Surfaces the model's trimmed textual content; returns an empty string when every
+     * attempt fails or the model returns nothing.
+     */
+    private String requestTextWithRetries(byte[] screenshotBytes, String description) {
+        int maxRetries = Runner.getLlmVisionMaxRetries();
+        Exception lastError = null;
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                return requestText(screenshotBytes, description, attempt, maxRetries);
+            } catch (RuntimeException e) {
+                lastError = e;
+                LOGGER.warn("LLM vision read attempt {}/{} failed: {}", attempt, maxRetries, e.getMessage());
+            }
+        }
+        if (lastError != null) {
+            LOGGER.error("LLM vision read failed after {} attempt(s): {}", maxRetries, lastError.getMessage());
+        }
+        return "";
+    }
+
+    private String requestText(byte[] screenshotBytes, String description, int attempt, int maxRetries) {
+        LlmVisionProvider provider = resolveProvider();
+        String model = resolveModel();
+        String apiKeyOrToken = resolveApiKeyOrToken(provider);
+
+        String endpoint = provider.resolveEndpoint(Runner.getLlmVisionEndpoint(), model);
+        String userText = "Read and return the text/value of this target in the SCREENSHOT: " + description;
+        String requestBody = provider.buildRequestBody(READ_SYSTEM_PROMPT, userText, screenshotBytes,
+                Collections.emptyList(), model);
+        Map<String, String> headers = provider.buildHeaders(apiKeyOrToken);
+
+        long startedAt = System.currentTimeMillis();
+        TeswizApiResponse response = postWithTimeout(endpoint, requestBody, headers);
+        long durationMs = System.currentTimeMillis() - startedAt;
+
+        int status = response.getStatusCode();
+        String responseBody = response.getResponseBody();
+
+        recordTrafficIfEnabled(endpoint, requestBody, headers, status, response.getHeaders(), responseBody, attempt,
+                maxRetries);
+
+        if (status < 200 || status >= 300) {
+            throw new IllegalStateException("LLM vision endpoint returned HTTP " + status);
+        }
+
+        ParsedLlmResponse parsed = provider.parseResponse(responseBody);
+        String value = (parsed == null || parsed.content() == null) ? "" : parsed.content().trim();
+        recordAndLogReadUsage(parsed, description, status, durationMs, value);
+        return value;
+    }
+
+    private void recordAndLogReadUsage(ParsedLlmResponse parsed, String description, int status, long durationMs,
+            String value) {
+        long promptTokens = parsed == null ? 0 : parsed.promptTokens();
+        long completionTokens = parsed == null ? 0 : parsed.completionTokens();
+        long totalTokens = parsed == null ? 0 : parsed.totalTokens();
+
+        accumulateUsage(promptTokens, completionTokens, totalTokens, durationMs);
+
+        String model = Runner.getLlmVisionModel();
+        LOGGER.info(
+                "LLM vision read request: desc='{}', model={}, status={}, tokens[prompt={}, completion={}, total={}], durationMs={}, read='{}'",
+                description, model.isBlank() ? DEFAULT_OPENAI_MODEL : model, status, promptTokens, completionTokens,
+                totalTokens, durationMs, value);
+    }
+
+    /**
+     * When {@code LLM_VISION_SAVE_CAPTURES=true}, crops the located region from the (region-adjusted) screenshot at the
+     * raw pixel box and saves it as a reusable OpenCV template under the scenario's {@code llm-vision-captures} folder,
+     * logging the saved path plus a suggested library name/path. This is a harvest-and-report step for manual
+     * promotion; it never auto-reuses captures.
      */
     private void saveCaptureIfEnabled(BufferedImage searchImage, LlmLocation location, String description) {
         if (!Runner.isLlmVisionSaveCapturesEnabled()) {
@@ -137,20 +251,19 @@ public class LlmVisionService implements LlmVisionEngine {
         }
         try {
             int index = nextCaptureIndex();
-            LlmVisionCaptureWriter.CaptureResult result = new LlmVisionCaptureWriter().saveCapture(
-                    searchImage, location.x, location.y, location.width, location.height, description, index);
+            LlmVisionCaptureWriter.CaptureResult result = new LlmVisionCaptureWriter().saveCapture(searchImage,
+                    location.x, location.y, location.width, location.height, description, index);
             recordCapture(description, result.savedPath(), result.suggestedFileName());
-            LOGGER.info(System.lineSeparator()
-                    + "LLM vision capture: desc='{}'" + System.lineSeparator()
+            LOGGER.info(System.lineSeparator() + "LLM vision capture: desc='{}'" + System.lineSeparator()
                     + "  saved to          : {}" + System.lineSeparator()
                     + "  suggested name    : {}  (suggestion only - rename as you prefer)" + System.lineSeparator()
                     + "  suggested location: <your-image-template-dir>/{}" + System.lineSeparator()
                     + "                      (e.g. src/test/resources/images/{})" + System.lineSeparator()
-                    + "  to reuse & skip the LLM next time: review this crop, copy it into your image" + System.lineSeparator()
-                    + "  template directory, then locate via" + System.lineSeparator()
+                    + "  to reuse & skip the LLM next time: review this crop, copy it into your image"
+                    + System.lineSeparator() + "  template directory, then locate via" + System.lineSeparator()
                     + "  driver.vision(VisionStrategy.OCR_THEN_LLM).findByImage(List.of(\"<your-image-template-dir>/{}\"))",
-                    description, result.savedPath(), result.suggestedFileName(),
-                    result.suggestedFileName(), result.suggestedFileName(), result.suggestedFileName());
+                    description, result.savedPath(), result.suggestedFileName(), result.suggestedFileName(),
+                    result.suggestedFileName(), result.suggestedFileName());
         } catch (RuntimeException e) {
             LOGGER.warn("Failed to save LLM vision capture for '{}': {}", description, e.getMessage());
         }
@@ -177,7 +290,8 @@ public class LlmVisionService implements LlmVisionEngine {
                 return;
             }
             Object existing = context.getTestState(TEST_CONTEXT.LLM_VISION_USAGE);
-            LlmVisionUsage usage = (existing instanceof LlmVisionUsage) ? (LlmVisionUsage) existing : new LlmVisionUsage();
+            LlmVisionUsage usage = (existing instanceof LlmVisionUsage) ? (LlmVisionUsage) existing
+                    : new LlmVisionUsage();
             usage.recordCapture(description, savedPath, suggestedName);
             context.addTestState(TEST_CONTEXT.LLM_VISION_USAGE, usage);
         } catch (RuntimeException e) {
@@ -210,7 +324,8 @@ public class LlmVisionService implements LlmVisionEngine {
 
     // --- Request / retry ---------------------------------------------------
 
-    private LlmLocation requestLocationWithRetries(byte[] screenshotBytes, List<byte[]> referenceImages, String description) {
+    private LlmLocation requestLocationWithRetries(byte[] screenshotBytes, List<byte[]> referenceImages,
+            String description) {
         int maxRetries = Runner.getLlmVisionMaxRetries();
         Exception lastError = null;
         for (int attempt = 1; attempt <= maxRetries; attempt++) {
@@ -228,14 +343,15 @@ public class LlmVisionService implements LlmVisionEngine {
     }
 
     private LlmLocation requestLocation(byte[] screenshotBytes, List<byte[]> referenceImages, String description,
-                                        int attempt, int maxRetries) {
+            int attempt, int maxRetries) {
         LlmVisionProvider provider = resolveProvider();
         String model = resolveModel();
         String apiKeyOrToken = resolveApiKeyOrToken(provider);
 
         String endpoint = provider.resolveEndpoint(Runner.getLlmVisionEndpoint(), model);
         String userText = "Locate this element and return its bounding box in the SCREENSHOT: " + description;
-        String requestBody = provider.buildRequestBody(SYSTEM_PROMPT, userText, screenshotBytes, referenceImages, model);
+        String requestBody = provider.buildRequestBody(SYSTEM_PROMPT, userText, screenshotBytes, referenceImages,
+                model);
         Map<String, String> headers = provider.buildHeaders(apiKeyOrToken);
 
         long startedAt = System.currentTimeMillis();
@@ -245,7 +361,8 @@ public class LlmVisionService implements LlmVisionEngine {
         int status = response.getStatusCode();
         String responseBody = response.getResponseBody();
 
-        recordTrafficIfEnabled(endpoint, requestBody, headers, status, response.getHeaders(), responseBody, attempt, maxRetries);
+        recordTrafficIfEnabled(endpoint, requestBody, headers, status, response.getHeaders(), responseBody, attempt,
+                maxRetries);
 
         if (status < 200 || status >= 300) {
             throw new IllegalStateException("LLM vision endpoint returned HTTP " + status);
@@ -258,11 +375,8 @@ public class LlmVisionService implements LlmVisionEngine {
     }
 
     private LlmVisionProvider resolveProvider() {
-        return LlmVisionProviderFactory.create(
-                Runner.getLlmVisionProvider(),
-                Runner.getLlmVisionApiVersion(),
-                resolveApiKey(),
-                new GoogleAdcAccessTokenProvider());
+        return LlmVisionProviderFactory.create(Runner.getLlmVisionProvider(), Runner.getLlmVisionApiVersion(),
+                resolveApiKey(), new GoogleAdcAccessTokenProvider());
     }
 
     private String resolveModel() {
@@ -271,8 +385,8 @@ public class LlmVisionService implements LlmVisionEngine {
     }
 
     /**
-     * Resolves the credential handed to the provider's headers: Vertex AI uses a short-lived GCP
-     * OAuth token, every other provider uses the API key from the configured env var.
+     * Resolves the credential handed to the provider's headers: Vertex AI uses a short-lived GCP OAuth token, every
+     * other provider uses the API key from the configured env var.
      */
     private String resolveApiKeyOrToken(LlmVisionProvider provider) {
         if (provider instanceof VertexGeminiLlmVisionProvider vertexProvider) {
@@ -338,8 +452,8 @@ public class LlmVisionService implements LlmVisionEngine {
 
     // --- Result building ---------------------------------------------------
 
-    private VisualElement buildVisualElement(LlmLocation location, int imageWidth, int imageHeight,
-                                             int offsetX, int offsetY, String description, Driver driverFacade) {
+    private VisualElement buildVisualElement(LlmLocation location, int imageWidth, int imageHeight, int offsetX,
+            int offsetY, String description, Driver driverFacade) {
         if (!isWithinBounds(location, imageWidth, imageHeight)) {
             LOGGER.warn("LLM vision returned out-of-bounds box [x={}, y={}, w={}, h={}] for image {}x{}; ignoring.",
                     location.x, location.y, location.width, location.height, imageWidth, imageHeight);
@@ -352,7 +466,8 @@ public class LlmVisionService implements LlmVisionEngine {
         int logicalW = (int) Math.round(location.width / scaleFactor);
         int logicalH = (int) Math.round(location.height / scaleFactor);
 
-        VisualElement element = new VisualElement(logicalX, logicalY, logicalW, logicalH, "LLM: " + description, driverFacade);
+        VisualElement element = new VisualElement(logicalX, logicalY, logicalW, logicalH, "LLM: " + description,
+                driverFacade);
         LOGGER.info("LLM vision located '{}' at viewport bounds [x={}, y={}, w={}, h={}] (scaleFactor: {})",
                 description, logicalX, logicalY, logicalW, logicalH, scaleFactor);
         return element;
@@ -368,7 +483,7 @@ public class LlmVisionService implements LlmVisionEngine {
     // --- Usage + traffic logging -------------------------------------------
 
     private void recordAndLogUsage(ParsedLlmResponse parsed, String description, int referenceImageCount, int status,
-                                   long durationMs, LlmLocation location) {
+            long durationMs, LlmLocation location) {
         long promptTokens = parsed == null ? 0 : parsed.promptTokens();
         long completionTokens = parsed == null ? 0 : parsed.completionTokens();
         long totalTokens = parsed == null ? 0 : parsed.totalTokens();
@@ -377,9 +492,10 @@ public class LlmVisionService implements LlmVisionEngine {
 
         String result = (location != null && location.found) ? "FOUND" : "NOT_FOUND";
         String model = Runner.getLlmVisionModel();
-        LOGGER.info("LLM vision request: desc='{}', referenceImages={}, model={}, status={}, tokens[prompt={}, completion={}, total={}], durationMs={}, result={}",
-                description, referenceImageCount, model.isBlank() ? DEFAULT_OPENAI_MODEL : model, status,
-                promptTokens, completionTokens, totalTokens, durationMs, result);
+        LOGGER.info(
+                "LLM vision request: desc='{}', referenceImages={}, model={}, status={}, tokens[prompt={}, completion={}, total={}], durationMs={}, result={}",
+                description, referenceImageCount, model.isBlank() ? DEFAULT_OPENAI_MODEL : model, status, promptTokens,
+                completionTokens, totalTokens, durationMs, result);
     }
 
     private void accumulateUsage(long promptTokens, long completionTokens, long totalTokens, long durationMs) {
@@ -389,7 +505,8 @@ public class LlmVisionService implements LlmVisionEngine {
                 return;
             }
             Object existing = context.getTestState(TEST_CONTEXT.LLM_VISION_USAGE);
-            LlmVisionUsage usage = (existing instanceof LlmVisionUsage) ? (LlmVisionUsage) existing : new LlmVisionUsage();
+            LlmVisionUsage usage = (existing instanceof LlmVisionUsage) ? (LlmVisionUsage) existing
+                    : new LlmVisionUsage();
             usage.record(promptTokens, completionTokens, totalTokens, durationMs);
             context.addTestState(TEST_CONTEXT.LLM_VISION_USAGE, usage);
         } catch (RuntimeException e) {
@@ -397,9 +514,8 @@ public class LlmVisionService implements LlmVisionEngine {
         }
     }
 
-    private void recordTrafficIfEnabled(String endpoint, String requestBody, Map<String, String> headers,
-                                        int status, Map<String, String> responseHeaders, String responseBody,
-                                        int attempt, int maxRetries) {
+    private void recordTrafficIfEnabled(String endpoint, String requestBody, Map<String, String> headers, int status,
+            Map<String, String> responseHeaders, String responseBody, int attempt, int maxRetries) {
         if (!Runner.isLlmVisionApiTrafficLoggingEnabled()) {
             return;
         }
@@ -408,9 +524,9 @@ public class LlmVisionService implements LlmVisionEngine {
             String elidedBody = redactUrlApiKeys(elideImageData(requestBody));
             String redactedEndpoint = redactUrlApiKeys(endpoint);
             String attemptLabel = maxRetries > 1 ? String.format(" [Attempt %d/%d]", attempt, maxRetries) : "";
-            String relativePath = new LlmVisionTrafficRecorder().record(
-                    "POST", redactedEndpoint + attemptLabel, maskedHeaders, elidedBody,
-                    status, responseHeaders == null ? "{}" : responseHeaders.toString(), responseBody);
+            String relativePath = new LlmVisionTrafficRecorder().record("POST", redactedEndpoint + attemptLabel,
+                    maskedHeaders, elidedBody, status, responseHeaders == null ? "{}" : responseHeaders.toString(),
+                    responseBody);
             LOGGER.info("LLM vision call POST {} -> {} | detail: {}", redactedEndpoint, status, relativePath);
         } catch (RuntimeException e) {
             LOGGER.warn("Failed to record llm-vision-traffic for {}: {}", endpoint, e.getMessage());
@@ -424,14 +540,13 @@ public class LlmVisionService implements LlmVisionEngine {
     }
 
     private boolean isSensitiveHeader(String key) {
-        return key.equalsIgnoreCase("Authorization")
-                || key.equalsIgnoreCase("api-key")
+        return key.equalsIgnoreCase("Authorization") || key.equalsIgnoreCase("api-key")
                 || key.equalsIgnoreCase("x-api-key");
     }
 
     /**
-     * Redacts a {@code key=<value>} API key carried in a URL query string (e.g. Gemini AI Studio),
-     * so recorded endpoints and bodies never leak the key.
+     * Redacts a {@code key=<value>} API key carried in a URL query string (e.g. Gemini AI Studio), so recorded
+     * endpoints and bodies never leak the key.
      */
     private String redactUrlApiKeys(String value) {
         if (value == null) {
@@ -444,13 +559,13 @@ public class LlmVisionService implements LlmVisionEngine {
         // Each base64 image blob (screenshot + any reference images) is huge and noisy; replace each
         // with a short placeholder carrying its decoded byte size, so the record stays readable while
         // still showing how many images were sent.
-        java.util.regex.Matcher matcher = java.util.regex.Pattern
-                .compile("data:image/png;base64,([A-Za-z0-9+/=]+)").matcher(requestBody);
+        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("data:image/png;base64,([A-Za-z0-9+/=]+)")
+                .matcher(requestBody);
         StringBuilder result = new StringBuilder();
         while (matcher.find()) {
             int approxBytes = (int) (matcher.group(1).length() * 0.75);
-            matcher.appendReplacement(result,
-                    java.util.regex.Matcher.quoteReplacement("data:image/png;base64,<~" + approxBytes + " bytes elided>"));
+            matcher.appendReplacement(result, java.util.regex.Matcher
+                    .quoteReplacement("data:image/png;base64,<~" + approxBytes + " bytes elided>"));
         }
         matcher.appendTail(result);
         return result.toString();

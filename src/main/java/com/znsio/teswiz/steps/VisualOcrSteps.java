@@ -1,6 +1,7 @@
 package com.znsio.teswiz.steps;
 
 import com.znsio.teswiz.businessLayer.visualocr.VisualOcrBL;
+import com.znsio.teswiz.entities.VisionStrategy;
 
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -54,13 +55,31 @@ public class VisualOcrSteps {
     }
 
     @When("I visually click {string} using fallback OCR text {string} or image template {string}")
-    public void iVisuallyClickUsingFallbackOcrTextOrImageTemplate(String elementName, String ocrText, String imageTemplatePath) {
+    public void iVisuallyClickUsingFallbackOcrTextOrImageTemplate(String elementName, String ocrText,
+            String imageTemplatePath) {
         new VisualOcrBL().visuallyClickUsingFallbackOcrTextOrImageTemplate(elementName, ocrText, imageTemplatePath);
     }
 
     @When("I visually click {string} using fallback image template {string} or OCR text {string}")
-    public void iVisuallyClickUsingFallbackImageTemplateOrOcrText(String elementName, String imageTemplatePath, String ocrText) {
+    public void iVisuallyClickUsingFallbackImageTemplateOrOcrText(String elementName, String imageTemplatePath,
+            String ocrText) {
         new VisualOcrBL().visuallyClickUsingFallbackImageTemplateOrOcrText(elementName, imageTemplatePath, ocrText);
+    }
+
+    @When("I read the text in region {int} {int} {int} {int} using OCR")
+    public void iReadTheTextInRegionUsingOcr(int x, int y, int width, int height) {
+        new VisualOcrBL().readTextInRegion(VisionStrategy.OCR, x, y, width, height, null);
+    }
+
+    @When("I read the number in region {int} {int} {int} {int} using OCR")
+    public void iReadTheNumberInRegionUsingOcr(int x, int y, int width, int height) {
+        new VisualOcrBL().readNumberInRegion(VisionStrategy.OCR, x, y, width, height, null);
+    }
+
+    @When("I read {string} in region {int} {int} {int} {int} using {string}")
+    public void iReadValueInRegionUsingStrategy(String description, int x, int y, int width, int height,
+            String strategy) {
+        new VisualOcrBL().readTextInRegion(VisionStrategy.valueOf(strategy), x, y, width, height, description);
     }
 
     @Given("Visual OCR capability is explicitly disabled")
@@ -79,12 +98,14 @@ public class VisualOcrSteps {
     }
 
     @Then("attempting to find visual element by text {string} or image {string} should throw VisualSubsystemDisabledException")
-    public void attemptingToFindVisualElementByTextOrImageShouldThrowVisualSubsystemDisabledException(String text, String imagePath) {
+    public void attemptingToFindVisualElementByTextOrImageShouldThrowVisualSubsystemDisabledException(String text,
+            String imagePath) {
         new VisualOcrBL().verifyOcrDisabledThrowsExceptionForTextOrImage(text, imagePath);
     }
 
     @Then("attempting to find visual element by image {string} or text {string} should throw VisualSubsystemDisabledException")
-    public void attemptingToFindVisualElementByImageOrTextShouldThrowVisualSubsystemDisabledException(String imagePath, String text) {
+    public void attemptingToFindVisualElementByImageOrTextShouldThrowVisualSubsystemDisabledException(String imagePath,
+            String text) {
         new VisualOcrBL().verifyOcrDisabledThrowsExceptionForImageOrText(imagePath, text);
     }
 
@@ -129,27 +150,32 @@ public class VisualOcrSteps {
     }
 
     @When("I visually find all instances of {string} using fallback OCR text {string} or image template {string}")
-    public void iVisuallyFindAllInstancesUsingFallbackOcrTextOrImageTemplate(String elementName, String ocrText, String imageTemplatePath) {
-        new VisualOcrBL().visuallyFindAllInstancesUsingFallbackOcrTextOrImageTemplate(elementName, ocrText, imageTemplatePath);
+    public void iVisuallyFindAllInstancesUsingFallbackOcrTextOrImageTemplate(String elementName, String ocrText,
+            String imageTemplatePath) {
+        new VisualOcrBL().visuallyFindAllInstancesUsingFallbackOcrTextOrImageTemplate(elementName, ocrText,
+                imageTemplatePath);
     }
 
     @When("I visually find all instances of {string} using fallback image template {string} or OCR text {string}")
-    public void iVisuallyFindAllInstancesUsingFallbackImageTemplateOrOcrText(String elementName, String imageTemplatePath, String ocrText) {
-        new VisualOcrBL().visuallyFindAllInstancesUsingFallbackImageTemplateOrOcrText(elementName, imageTemplatePath, ocrText);
+    public void iVisuallyFindAllInstancesUsingFallbackImageTemplateOrOcrText(String elementName,
+            String imageTemplatePath, String ocrText) {
+        new VisualOcrBL().visuallyFindAllInstancesUsingFallbackImageTemplateOrOcrText(elementName, imageTemplatePath,
+                ocrText);
     }
 
     @When("I visually inspect all instances of {string} using fallback OCR text {string} or image template {string}")
-    public void iVisuallyInspectAllInstancesUsingFallbackOcrTextOrImageTemplate(String elementName, String ocrText, String imageTemplatePath) {
-        new VisualOcrBL().visuallyFindAllInstancesUsingFallbackOcrTextOrImageTemplate(elementName, ocrText, imageTemplatePath);
+    public void iVisuallyInspectAllInstancesUsingFallbackOcrTextOrImageTemplate(String elementName, String ocrText,
+            String imageTemplatePath) {
+        new VisualOcrBL().visuallyFindAllInstancesUsingFallbackOcrTextOrImageTemplate(elementName, ocrText,
+                imageTemplatePath);
     }
 
     @When("I visually inspect all instances of {string} using fallback image template {string} or OCR text {string}")
-    public void iVisuallyInspectAllInstancesUsingFallbackImageTemplateOrOcrText(String elementName, String imageTemplatePath, String ocrText) {
-        new VisualOcrBL().visuallyFindAllInstancesUsingFallbackImageTemplateOrOcrText(elementName, imageTemplatePath, ocrText);
+    public void iVisuallyInspectAllInstancesUsingFallbackImageTemplateOrOcrText(String elementName,
+            String imageTemplatePath, String ocrText) {
+        new VisualOcrBL().visuallyFindAllInstancesUsingFallbackImageTemplateOrOcrText(elementName, imageTemplatePath,
+                ocrText);
     }
-
-
-
 
     @When("I visually click element at index {int} matching OCR text {string}")
     public void iVisuallyClickElementAtIndexMatchingOcrText(int index, String ocrText) {
@@ -163,22 +189,26 @@ public class VisualOcrSteps {
 
     @When("I visually click the {string} element matching image template {string}")
     public void iVisuallyClickThePositionElementMatchingImageTemplate(String positionText, String imageTemplatePath) {
-        new VisualOcrBL().visuallyClickElementByPositionUsingImageTemplate(imageTemplatePath, positionText, imageTemplatePath);
+        new VisualOcrBL().visuallyClickElementByPositionUsingImageTemplate(imageTemplatePath, positionText,
+                imageTemplatePath);
     }
 
     @When("I visually click {string} using OCR text {string} {string} {string}")
-    public void iVisuallyClickUsingOcrTextRelative(String elementName, String targetText, String directionText, String anchorText) {
+    public void iVisuallyClickUsingOcrTextRelative(String elementName, String targetText, String directionText,
+            String anchorText) {
         new VisualOcrBL().visuallyClickUsingOcrTextRelative(elementName, targetText, directionText, anchorText);
     }
 
-
     @Then("I verify visual element {string} is present using OCR text {string} {string} {string}")
-    public void iVerifyVisualElementIsPresentUsingOcrTextRelative(String elementName, String targetText, String directionText, String anchorText) {
-        new VisualOcrBL().verifyVisualElementIsPresentRelativeByText(elementName, targetText, directionText, anchorText);
+    public void iVerifyVisualElementIsPresentUsingOcrTextRelative(String elementName, String targetText,
+            String directionText, String anchorText) {
+        new VisualOcrBL().verifyVisualElementIsPresentRelativeByText(elementName, targetText, directionText,
+                anchorText);
     }
 
     @Then("I verify visual element {string} is present using OCR text {string} within region {int} {int} {int} {int}")
-    public void iVerifyVisualElementIsPresentUsingOcrTextInRegion(String elementName, String ocrText, int x, int y, int width, int height) {
+    public void iVerifyVisualElementIsPresentUsingOcrTextInRegion(String elementName, String ocrText, int x, int y,
+            int width, int height) {
         new VisualOcrBL().verifyVisualElementIsPresentInRegion(elementName, ocrText, x, y, width, height);
     }
 
@@ -198,28 +228,32 @@ public class VisualOcrSteps {
     }
 
     @When("I wait until visual element is visible using image template {string} within {int} seconds")
-    public void iWaitUntilVisualElementIsVisibleUsingImageTemplateWithinSeconds(String imageTemplatePath, int maxWaitSeconds) {
+    public void iWaitUntilVisualElementIsVisibleUsingImageTemplateWithinSeconds(String imageTemplatePath,
+            int maxWaitSeconds) {
         new VisualOcrBL().waitUntilVisualElementIsVisibleByImage(imageTemplatePath, maxWaitSeconds);
     }
 
     @When("I wait until visual element is visible using fallback OCR text {string} or image template {string}")
-    public void iWaitUntilVisualElementIsVisibleUsingFallbackOcrTextOrImageTemplate(String ocrText, String imageTemplatePath) {
+    public void iWaitUntilVisualElementIsVisibleUsingFallbackOcrTextOrImageTemplate(String ocrText,
+            String imageTemplatePath) {
         new VisualOcrBL().waitUntilVisualElementIsVisibleByTextOrImage(ocrText, imageTemplatePath);
     }
 
     @When("I wait until visual element is visible using fallback OCR text {string} or image template {string} within {int} seconds")
-    public void iWaitUntilVisualElementIsVisibleUsingFallbackOcrTextOrImageTemplateWithinSeconds(String ocrText, String imageTemplatePath, int maxWaitSeconds) {
+    public void iWaitUntilVisualElementIsVisibleUsingFallbackOcrTextOrImageTemplateWithinSeconds(String ocrText,
+            String imageTemplatePath, int maxWaitSeconds) {
         new VisualOcrBL().waitUntilVisualElementIsVisibleByTextOrImage(ocrText, imageTemplatePath, maxWaitSeconds);
     }
 
     @When("I wait until visual element is visible using fallback image template {string} or OCR text {string}")
-    public void iWaitUntilVisualElementIsVisibleUsingFallbackImageTemplateOrOcrText(String imageTemplatePath, String ocrText) {
+    public void iWaitUntilVisualElementIsVisibleUsingFallbackImageTemplateOrOcrText(String imageTemplatePath,
+            String ocrText) {
         new VisualOcrBL().waitUntilVisualElementIsVisibleByImageOrText(imageTemplatePath, ocrText);
     }
 
     @When("I wait until visual element is visible using fallback image template {string} or OCR text {string} within {int} seconds")
-    public void iWaitUntilVisualElementIsVisibleUsingFallbackImageTemplateOrOcrTextWithinSeconds(String imageTemplatePath, String ocrText, int maxWaitSeconds) {
+    public void iWaitUntilVisualElementIsVisibleUsingFallbackImageTemplateOrOcrTextWithinSeconds(
+            String imageTemplatePath, String ocrText, int maxWaitSeconds) {
         new VisualOcrBL().waitUntilVisualElementIsVisibleByImageOrText(imageTemplatePath, ocrText, maxWaitSeconds);
     }
 }
-
