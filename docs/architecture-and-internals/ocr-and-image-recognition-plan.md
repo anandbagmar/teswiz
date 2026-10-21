@@ -166,6 +166,11 @@ public VisualElement findByImageOrText(List<String> imagePaths, String text);
 > are supported only under `VisionStrategy.OCR` (relative finds also work under `OCR_THEN_LLM`); invoking them
 > under `VisionStrategy.LLM` throws `UnsupportedOperationException`.
 
+The same finder also exposes **read-value** methods - `readText` / `readValue` / `readNumber` - which return the
+text/number present in a region rather than locating a known value. They route per strategy the same way the
+`findBy*` methods do; see the [Reading values](../subsystems/ocr-and-image-recognition.md#8-reading-values-readtext--readnumber)
+section of the subsystem guide for the full API and `OcrReadHint` tuning.
+
 ### C. Screen Implementation Usage (`*Screen*.java`)
 
 ```java
@@ -254,6 +259,8 @@ src/test/resources/visualTemplates/
 | **Phase 5** | LLM Vision Locator | `VisionStrategy.LLM` and `VisionStrategy.OCR_THEN_LLM`: `LlmVisionEngine` over the configured `API_ENGINE`, providers (openai / azure-openai / anthropic / gemini / vertex-gemini / custom), fail-fast startup validation, per-call token-usage logging, per-test/per-run summaries, aggregate telemetry, and a separate `llm-vision-traffic/` log folder with secret redaction. **Code implemented; live-endpoint runtime verification pending.** | 🚀 **IMPLEMENTED (live-endpoint verification pending)** |
 | **Phase 6** | Additional providers | AWS Bedrock Runtime (`Converse` API, Bedrock API key as Bearer), Groq, xAI (Grok vision), OpenRouter, and Ollama (local). Per-provider non-billable auth health-check moved into the `LlmVisionProvider` seam; `anthropic` and `bedrock` are structural-only (no non-billable probe). `LLM_VISION_MODEL` is mandatory (fail-fast) for the OpenAI-compatible additions and Bedrock. **Code implemented; live-endpoint runtime verification pending.** | 🚀 **IMPLEMENTED (live-endpoint verification pending)** |
 | **Phase 7** | Capture harvesting | `LLM_VISION_SAVE_CAPTURES` (default `true`): on a successful LLM locate, crop the located element from the raw screenshot and save it as a reusable OpenCV template PNG under a separate `llm-vision-captures/` report folder. Console log + per-test/run summaries report each saved file plus a suggested image-template name for **manual** promotion into the user's image library (never auto-reused), enabling a later switch to `VisionStrategy.OCR_THEN_LLM` to avoid the LLM on future runs. | ✅ **COMPLETED** |
+| **Phase 8** | Configurable health-check | `LLM_VISION_HEALTH_CHECK_URL`: optional override for the startup health-check target. Blank (default) auto-derives each provider's non-billable `/models`-style listing; an explicit http(s) URL is probed verbatim (reusing the provider's auth headers); `none`/`off`/`false` skips the live probe (structural validation only). Lets a run proceed when teswiz cannot reliably derive the models-listing path for a provider/endpoint. | ✅ **COMPLETED** |
+| **Phase 9** | Read values from a region | `readText` / `readValue` / `readNumber` on the `driver.vision(strategy)` finder: read the text/number present in a region (vs. locating a known value), routed per strategy (OCR deterministic; LLM by description; `OCR_THEN_LLM` falls back when OCR is blank/unparseable). `OcrReadHint` (page-segmentation, upscale, character whitelist) tunes OCR reads; `readNumber` returns `Optional<BigDecimal>`, tolerant of currency symbols and `1,234.56` grouping. | ✅ **COMPLETED** |
 
 ---
 

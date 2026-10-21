@@ -78,7 +78,7 @@ flowchart TD
 | Subsystem | Description | Quick Link |
 | :--- | :--- | :--- |
 | 👁️ **Applitools Visual AI** | Applitools Eyes and Ultrafast Grid (UFG) configuration for Web and Mobile | [Setup Guide](subsystems/visual-ai-applitools.md) |
-| 🔍 **Tesseract OCR & OpenCV** | Embedded 100% offline text recognition & multi-scale template matching | [OCR Guide](subsystems/ocr-and-image-recognition.md) |
+| 🔍 **Tesseract OCR & OpenCV (+ optional LLM vision)** | Embedded 100% offline text recognition & multi-scale template matching, read-from-region (`readText`/`readNumber`), plus an optional opt-in LLM vision locator | [OCR Guide](subsystems/ocr-and-image-recognition.md) |
 | 📊 **ReportPortal Integration** | Real-time test result dashboard publishing and launch metadata | [ReportPortal Setup](subsystems/reportportal-integration.md) |
 | 📝 **AspectJ Logging** | Automated framework and test method execution tracing | [Logging Guide](subsystems/aspectj-logging.md) |
 | 🔒 **BrowserStack Local** | Configuring secure tunnel connections for cloud grid testing | [Local Testing Setup](subsystems/browserstack-local.md) |
