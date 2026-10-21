@@ -29,6 +29,20 @@
   3. **Business Layer (BL)** (`src/test/java/com/znsio/teswiz/businessLayer/*/*BL.java`): Orchestrates business flow and assertions using abstract screen class `ScreenClass.get()`.
   4. **Screen Contract & Platform Concrete Classes** (`src/test/java/com/znsio/teswiz/screen/*/*Screen.java` and `src/test/java/com/znsio/teswiz/screen/<platform>/*/*Screen<Platform>.java`): Defines screen interaction contracts and platform-specific element interactions.
 
+## Testing Strategy (TDD)
+
+- **Always use TDD for new implementation.** Write a failing test first, then write the minimum
+  implementation to make it pass, then refactor. This applies to every new class, method, or
+  behavior added to the framework.
+- **Never modify or delete existing tests** to make a change pass. Existing tests are the
+  specification of current behavior.
+- If an existing test fails after a change, **do not edit the test**. Stop and report the root
+  cause analysis (RCA) of the failure to the user, and let the user decide how to proceed.
+- **Always run the unit tests** after any implementation change and confirm they pass before
+  reporting completion. If any fail, report the RCA rather than silencing or altering the test.
+- New tests must themselves follow the code-quality rules below (small, well-named, single
+  responsibility).
+
 ## Code Quality & Method Decomposition
 
 - Write clean, maintainable, self-documenting code with low cyclomatic complexity.

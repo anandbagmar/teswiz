@@ -33,7 +33,7 @@
   - [A. Single Master Enablement Property Syntax](#a-single-master-enablement-property-syntax)
   - [B. On-Demand Dynamic Dependency Resolution via Gradle (`downloadDependency`)](#b-on-demand-dynamic-dependency-resolution-via-gradle-downloaddependency)
 - [13. Decoupled Compilation Architecture: Preventing Java Compile Errors](#13-decoupled-compilation-architecture-preventing-java-compile-errors)
-  - [Q: If visual dependencies are downloaded on-demand, will methods like `driver.findByImage(...)` cause Java compilation errors?](#q-if-visual-dependencies-are-downloaded-on-demand-will-methods-like-driverfindbyimage-cause-java-compilation-errors)
+  - [Q: If visual dependencies are downloaded on-demand, will methods like `driver.vision(VisionStrategy.OCR).findByImage(...)` cause Java compilation errors?](#q-if-visual-dependencies-are-downloaded-on-demand-will-methods-like-drivervisionvisionstrategyocrfindbyimage-cause-java-compilation-errors)
 - [14. Summary of Capabilities & Final Architecture Matrix](#14-summary-of-capabilities--final-architecture-matrix)
 
 ---
@@ -53,7 +53,7 @@ This document defines the production specification for **OCR (Optical Character 
 - **Target Surfaces**:
   - **Web Browsers & Mobile-Web Browsers**: HTML5 `<canvas>`, `<svg>` (e.g. Google Maps, charts, complex diagrams).
   - **Native Apps (Android & iOS)**: Custom canvas views, static 2D game controls (e.g. "SPIN" button text or icon), non-DOM UI elements.
-- **Fast, Deterministic, & Reliable**: Sub-50ms visual element location using cached multi-scale template matching and local OCR.
+- **Fast, Deterministic, & Reliable**: Aspirational/target latency of sub-50ms for local visual element location using cached multi-scale template matching and local OCR. This is a design target, not a measured benchmark.
 
 ---
 
@@ -87,24 +87,26 @@ This document defines the production specification for **OCR (Optical Character 
 
 ```mermaid
 flowchart TD
-    BL[Business Layer / Step] --> SC[Screen Contract Implementation]
-    SC --> DRIVER[teswiz Driver Facade]
-    DRIVER --> VENGINE[Visual & OCR Subsystem]
-    
-    VENGINE --> STRATEGY{Resolver Strategy}
-    STRATEGY -->|Find Text| OCR_SERVICE[OcrService: Tess4J / PaddleOCR ONNX]
-    STRATEGY -->|Find Image/Icon| IMG_SERVICE[ImageRecognitionService: OpenCV Multi-Scale]
-    
-    OCR_SERVICE --> BOUNDS[Bounding Box: Center X, Y, Width, Height]
+    BL["Business Layer / Step"] --> SC["Screen Contract Implementation"]
+    SC --> DRIVER["teswiz Driver Facade"]
+    DRIVER --> VISION["driver.vision then VisionFinder"]
+    VISION --> VENGINE["Visual and OCR Subsystem"]
+    VENGINE --> STRATEGY{"VisionStrategy OCR / LLM / OCR_THEN_LLM"}
+    STRATEGY -->|OCR Find Text| OCR_SERVICE["OcrEngine Tess4J Tesseract 5"]
+    STRATEGY -->|OCR Find Image| IMG_SERVICE["ImageMatcher OpenCV Multi-Scale"]
+    STRATEGY -->|LLM or OCR_THEN_LLM fallback| LLM_SERVICE["LlmVisionEngine vision LLM via API_ENGINE"]
+
+    OCR_SERVICE --> BOUNDS["Bounding Box center x y width height"]
     IMG_SERVICE --> BOUNDS
-    
-    BOUNDS --> VE[VisualElement Wrapper]
-    VE --> ACTION_DISPATCHER{Engine Action Dispatcher}
-    
-    ACTION_DISPATCHER -->|Selenium| W3C_SE[W3C Actions API]
-    ACTION_DISPATCHER -->|Playwright Java| PWJ_ACT[Playwright Mouse / Touch API]
-    ACTION_DISPATCHER -->|Playwright TS| PWTS_ACT[Worker Bridge IPC]
-    ACTION_DISPATCHER -->|Appium| APP_ACT[W3C Touch / Gesture API]
+    LLM_SERVICE --> BOUNDS
+
+    BOUNDS --> VE["VisualElement Wrapper"]
+    VE --> ACTION_DISPATCHER{"Engine Action Dispatcher"}
+
+    ACTION_DISPATCHER -->|Selenium| W3C_SE["W3C Actions API"]
+    ACTION_DISPATCHER -->|Playwright Java| PWJ_ACT["Playwright Mouse / Touch API"]
+    ACTION_DISPATCHER -->|Playwright TS| PWTS_ACT["Worker Bridge IPC"]
+    ACTION_DISPATCHER -->|Appium| APP_ACT["W3C Touch / Gesture API"]
 ```
 
 ---
@@ -112,68 +114,98 @@ flowchart TD
 ## 4. Class Placement & Method Signatures
 
 ### A. Architectural Placement
-- **Public Facade**: All visual locator methods (`findByText`, `findByImage`, `findByTextOrImage`, `findByImageOrText`) are added to **`Driver.java`**.
-  - `Driver.java` is the primary interface used by Screen classes (`*Screen*.java`).
+- **Public Facade**: Visual locators are reached through a single, strategy-scoped entry point:
+  **`driver.vision(VisionStrategy)`** on `Driver.java`, which returns a `VisionFinder` bound to the chosen
+  `VisionStrategy` (`OCR`, `LLM`, `OCR_THEN_LLM`, defined in `com.znsio.teswiz.entities`). There are no flat
+  `driver.findByText(...)` / `driver.findByImage(...)` methods; every locator call goes through
+  `driver.vision(strategy).<method>(...)`.
+  - `Driver.vision(strategy)` is the primary surface used by Screen classes (`*Screen*.java`).
 - **Internal Delegation**:
-  - `Driver` delegates visual locate calls to `Visual.java` / `VisualDriver`.
-  - `VisualDriver` queries `OcrService` (Tess4J / PaddleOCR ONNX) or `ImageRecognitionService` (OpenCV) depending on the method invoked.
+  - `driver.vision(strategy)` returns a `VisionFinder`; each finder method routes, according to the strategy, to
+    the shared `VisualFinder` logic.
+  - `VisualFinder` queries the `OcrEngine` (Tess4J / Tesseract 5), the `ImageMatcher` (OpenCV), or the
+    `LlmVisionEngine` (vision LLM via the configured `API_ENGINE`) depending on the strategy and method invoked.
   - The resolved element coordinates `(x, y, width, height)` are returned as a `VisualElement` wrapper.
 
 ```
 Driver.java (Facade)
-  └── Visual.java (Visual Subsystem Manager)
-        ├── OcrService (Tess4J / PaddleOCR ONNX)
-        └── ImageRecognitionService (OpenCV Pyramid Engine)
-              └── returns VisualElement (Platform-agnostic W3C/Playwright Action Dispatcher)
+  └── driver.vision(VisionStrategy) -> VisionFinder (bound to a strategy)
+        └── VisualFinder (shared locate logic)
+              ├── OcrEngine (Tess4J / Tesseract 5)
+              ├── ImageMatcher (OpenCV Pyramid Engine)
+              └── LlmVisionEngine (vision LLM via configured API_ENGINE)
+                    └── returns VisualElement (Platform-agnostic W3C/Playwright Action Dispatcher)
 ```
 
-### B. Method Signature Design: Varargs + Overloads
-To provide maximum cleanliness and flexibility for screen writers, `Driver.java` provides **overloaded methods with varargs support**. Callers never need to explicitly instantiate `List.of(...)` unless they already possess a `List<String>`.
+### B. Method Signature Design: Strategy-Scoped Finders
+
+Locator methods live on the `VisionFinder` returned by `driver.vision(strategy)`. The same method names are
+exposed regardless of strategy - the chosen strategy decides which engine runs. For `VisionStrategy.LLM`, the
+`text` argument is a natural-language description and image paths are reference/example images. Image inputs are
+passed as `List<String>`.
 
 ```java
-// --- SINGLE IMAGE CONVENIENCE / VARARGS ---
-public VisualElement findByImage(String... imageTemplatePaths);
-public VisualElement findByImage(double confidenceThreshold, String... imageTemplatePaths);
+// Obtain a strategy-scoped finder:
+VisionFinder vision = driver.vision(VisionStrategy.OCR); // or LLM / OCR_THEN_LLM
 
-// --- LIST OF IMAGES OVERLOADS ---
-public VisualElement findByImage(List<String> imageTemplatePaths);
-public VisualElement findByImage(List<String> imageTemplatePaths, double confidenceThreshold);
+// --- TEXT ---
+public VisualElement findByText(String text);
+
+// --- IMAGE (List<String> of candidate template / reference paths) ---
+public VisualElement findByImage(List<String> imagePaths);
+public VisualElement findByImage(List<String> imagePaths, double confidenceThreshold);
 
 // --- HYBRID TEXT + IMAGE SEARCH (Text First) ---
-public VisualElement findByTextOrImage(String text, String... imageTemplatePaths);
-public VisualElement findByTextOrImage(String text, List<String> imageTemplatePaths);
-public VisualElement findByTextOrImage(String text, List<String> imageTemplatePaths, double confidenceThreshold);
+public VisualElement findByTextOrImage(String text, List<String> imagePaths);
 
-// --- HYBRID IMAGE + TEXT SEARCH (Image First) ---
-public VisualElement findByImageOrText(List<String> imageTemplatePaths, String text);
-public VisualElement findByImageOrText(String[] imageTemplatePaths, String text);
+// --- HYBRID IMAGE + TEXT SEARCH (Image First; OCR strategy only) ---
+public VisualElement findByImageOrText(List<String> imagePaths, String text);
 ```
+
+> `findByImageOrText`, the `findAll*OrText` multi-match variants, and the relative/spatial finders run on OCR and
+> are supported only under `VisionStrategy.OCR` (relative finds also work under `OCR_THEN_LLM`); invoking them
+> under `VisionStrategy.LLM` throws `UnsupportedOperationException`.
+
+The same finder also exposes **read-value** methods - `readText` / `readValue` / `readNumber` - which return the
+text/number present in a region rather than locating a known value. They route per strategy the same way the
+`findBy*` methods do; see the [Reading values](../subsystems/ocr-and-image-recognition.md#8-reading-values-readtext--readnumber)
+section of the subsystem guide for the full API and `OcrReadHint` tuning.
 
 ### C. Screen Implementation Usage (`*Screen*.java`)
 
 ```java
+import com.znsio.teswiz.entities.VisionStrategy;
+
 // 1. Locate element by text using OCR
-VisualElement spinTextButton = driver.findByText("SPIN");
+VisualElement spinTextButton = driver.vision(VisionStrategy.OCR).findByText("SPIN");
 
 // 2. Locate element by a SINGLE visual template icon
-VisualElement spinIconButton = driver.findByImage("visualTemplates/spin_icon.png");
+VisualElement spinIconButton = driver.vision(VisionStrategy.OCR)
+    .findByImage(List.of("visualTemplates/spin_icon.png"));
 
-// 3. Locate element using VARARGS (multiple candidate templates)
-VisualElement spinButton = driver.findByImage(
+// 3. Locate element using multiple candidate templates
+VisualElement spinButton = driver.vision(VisionStrategy.OCR).findByImage(List.of(
     "visualTemplates/spin_gold.png",
     "visualTemplates/spin_neon.png",
     "visualTemplates/spin_circular.png"
-);
+));
 
-// 4. Locate element using a List<String>
+// 4. Locate element using a pre-built List<String>
 List<String> candidateTemplates = List.of("templates/v1.png", "templates/v2.png");
-VisualElement spinButtonFromList = driver.findByImage(candidateTemplates);
+VisualElement spinButtonFromList = driver.vision(VisionStrategy.OCR).findByImage(candidateTemplates);
 
 // 5. Search by text FIRST (OCR); fall back to candidate image templates if text is not found
-VisualElement spinAny = driver.findByTextOrImage("SPIN", "visualTemplates/spin_icon_v1.png", "visualTemplates/spin_icon_v2.png");
+VisualElement spinAny = driver.vision(VisionStrategy.OCR)
+    .findByTextOrImage("SPIN", List.of("visualTemplates/spin_icon_v1.png", "visualTemplates/spin_icon_v2.png"));
 
 // 6. Search by image templates FIRST; fall back to OCR text search if no template matches
-VisualElement spinAnyImageFirst = driver.findByImageOrText(candidateTemplates, "SPIN");
+VisualElement spinAnyImageFirst = driver.vision(VisionStrategy.OCR).findByImageOrText(candidateTemplates, "SPIN");
+
+// 7. Locate via an LLM from a natural-language description (opt-in; LLM_VISION_FALLBACK_ENABLED=true)
+VisualElement spinViaLlm = driver.vision(VisionStrategy.LLM).findByText("the circular SPIN button");
+
+// 8. Try OCR/image first, fall back to the LLM only if OCR misses
+VisualElement spinOcrThenLlm = driver.vision(VisionStrategy.OCR_THEN_LLM).findByText("SPIN");
 ```
 
 ---
@@ -212,7 +244,7 @@ src/test/resources/visualTemplates/
 > **Scope & Provider Architecture**:
 > - **Applitools Exclusion**: Applitools is excluded from the OCR & Image Recognition locator subsystem because Applitools visual text extraction is supported only on `playwright-ts`. `teswiz` requires 100% uniform OCR and image recognition parity across **all 4 execution engines** (`WEB_ENGINE=selenium`, `WEB_ENGINE=playwright-java`, `WEB_ENGINE=playwright-ts`, and `PLATFORM=android`/`PLATFORM=iOS` via Appium).
 > - **Applitools Role**: Applitools Eyes remains dedicated exclusively to visual regression testing (`visually.checkWindow(...)`).
-> - **OCR Subsystem**: The OCR & Image Recognition subsystem is **100% self-contained, embedded, offline, free, and open-source (Apache 2.0)** using Tess4J (Tesseract 5), PaddleOCR (PP-OCR v4 via ONNX Runtime), and OpenCV Multi-Scale Image Pyramid matching.
+> - **OCR Subsystem**: The shipping OCR & Image Recognition subsystem is **100% self-contained, embedded, offline, free, and open-source (Apache 2.0)** using Tess4J (Tesseract 5) for text and OpenCV Multi-Scale Image Pyramid matching for images. `onnxruntime` is declared as an optional `compileOnly` dependency reserved for a future neural-OCR engine (e.g. PaddleOCR PP-OCR v4); no PaddleOCR engine is wired into the active OCR path today. The optional LLM vision locator (`VisionStrategy.LLM`) is **not** offline - it calls an external vision LLM endpoint and is disabled by default.
 
 ---
 
@@ -220,11 +252,15 @@ src/test/resources/visualTemplates/
 
 | Phase | Milestone | Deliverables | Status |
 | :--- | :--- | :--- | :---: |
-| **Phase 1** | Configuration Contracts | Added `IS_OCR_ENABLED` & `VISUAL_CONFIDENCE_THRESHOLD` to canonical `teswiz_config.properties.template` and all 50+ example configs; verified template consistency (`./gradlew validateConfigurationTemplates`). | ✅ **COMPLETED** |
-| **Phase 2** | Facade API & Exceptions | Implemented `Driver.findByText()`, `findByImage()`, `findByTextOrImage()`, `findByImageOrText()`, `VisualElement` interaction wrapper, `VisualSubsystemDisabledException`, and `NoSuchVisualElementException`. | ✅ **COMPLETED** |
-| **Phase 3** | Core Engine Services | Implement `OcrService.java` (Tess4J 5 / PaddleOCR ONNX text region detector) and `ImageRecognitionService.java` (OpenCV Multi-Scale Image Pyramid template matcher). | 🚀 **IN PROGRESS** |
-| **Phase 4** | Action Dispatcher Wiring | Wire real element bounding boxes `(x, y, width, height)` to Selenium W3C Actions, Playwright Mouse API, and Appium Touch Gesture API. | ⏳ **PLANNED** |
-| **Phase 5** | Verification & README | Add BDD test scenarios for Google Maps canvas & game controls; publish `docs/features/OCR-and-Image-Recognition-README.md`. | ⏳ **PLANNED** |
+| **Phase 1** | Configuration Contracts | Added `IS_OCR_ENABLED` & `VISUAL_CONFIDENCE_THRESHOLD` to canonical `teswiz_config.properties.template` and all example configs; verified template consistency (`./gradlew validateConfigurationTemplates`). | ✅ **COMPLETED** |
+| **Phase 2** | Strategy-Scoped Facade & Exceptions | Implemented the `driver.vision(VisionStrategy)` entry point and `VisionFinder` (`findByText`, `findByImage`, `findByTextOrImage`, `findByImageOrText`, `findAll*`, `findRelative*`), the `VisualElement` interaction wrapper, `VisualSubsystemDisabledException`, and `NoSuchVisualElementException`. | ✅ **COMPLETED** |
+| **Phase 3** | Core OCR / Image Engines | `OcrEngine` (Tess4J 5 / Tesseract) text detector and `ImageMatcher` (OpenCV Multi-Scale Image Pyramid) template matcher. | ✅ **COMPLETED** |
+| **Phase 4** | Action Dispatcher Wiring | Element bounding boxes `(x, y, width, height)` wired to Selenium W3C Actions, Playwright Mouse/Touch API, and Appium Touch Gesture API. | ✅ **COMPLETED** |
+| **Phase 5** | LLM Vision Locator | `VisionStrategy.LLM` and `VisionStrategy.OCR_THEN_LLM`: `LlmVisionEngine` over the configured `API_ENGINE`, providers (openai / azure-openai / anthropic / gemini / vertex-gemini / custom), fail-fast startup validation, per-call token-usage logging, per-test/per-run summaries, aggregate telemetry, and a separate `llm-vision-traffic/` log folder with secret redaction. **Code implemented; live-endpoint runtime verification pending.** | 🚀 **IMPLEMENTED (live-endpoint verification pending)** |
+| **Phase 6** | Additional providers | AWS Bedrock Runtime (`Converse` API, Bedrock API key as Bearer), Groq, xAI (Grok vision), OpenRouter, and Ollama (local). Per-provider non-billable auth health-check moved into the `LlmVisionProvider` seam; `anthropic` and `bedrock` are structural-only (no non-billable probe). `LLM_VISION_MODEL` is mandatory (fail-fast) for the OpenAI-compatible additions and Bedrock. **Code implemented; live-endpoint runtime verification pending.** | 🚀 **IMPLEMENTED (live-endpoint verification pending)** |
+| **Phase 7** | Capture harvesting | `LLM_VISION_SAVE_CAPTURES` (default `true`): on a successful LLM locate, crop the located element from the raw screenshot and save it as a reusable OpenCV template PNG under a separate `llm-vision-captures/` report folder. Console log + per-test/run summaries report each saved file plus a suggested image-template name for **manual** promotion into the user's image library (never auto-reused), enabling a later switch to `VisionStrategy.OCR_THEN_LLM` to avoid the LLM on future runs. | ✅ **COMPLETED** |
+| **Phase 8** | Configurable health-check | `LLM_VISION_HEALTH_CHECK_URL`: optional override for the startup health-check target. Blank (default) auto-derives each provider's non-billable `/models`-style listing; an explicit http(s) URL is probed verbatim (reusing the provider's auth headers); `none`/`off`/`false` skips the live probe (structural validation only). Lets a run proceed when teswiz cannot reliably derive the models-listing path for a provider/endpoint. | ✅ **COMPLETED** |
+| **Phase 9** | Read values from a region | `readText` / `readValue` / `readNumber` on the `driver.vision(strategy)` finder: read the text/number present in a region (vs. locating a known value), routed per strategy (OCR deterministic; LLM by description; `OCR_THEN_LLM` falls back when OCR is blank/unparseable). `OcrReadHint` (page-segmentation, upscale, character whitelist) tunes OCR reads; `readNumber` returns `Optional<BigDecimal>`, tolerant of currency symbols and `1,234.56` grouping. | ✅ **COMPLETED** |
 
 ---
 
@@ -371,26 +407,28 @@ if (isOcrEnabled) {
 
 ## 🏗️ 13. Decoupled Compilation Architecture: Preventing Java Compile Errors
 
-### Q: If visual dependencies are downloaded on-demand, will methods like `driver.findByImage(...)` cause Java compilation errors?
+### Q: If visual dependencies are downloaded on-demand, will methods like `driver.vision(VisionStrategy.OCR).findByImage(...)` cause Java compilation errors?
 
 > **NO.** `teswiz` uses a **decoupled facade architecture** that compiles cleanly regardless of whether optional visual dependencies are present at test compile time.
 
 #### How `teswiz` Eliminates Compilation Errors:
 1. **Framework-Level Class Signatures**:
-   - `Driver.java` method signatures use only standard Java types (`String`, `List<String>`, `double`) and standard framework return types (`VisualElement`):
+   - `Driver.vision(VisionStrategy)` and the `VisionFinder` methods use only standard Java types (`String`, `List<String>`, `double`), the `VisionStrategy` enum, and standard framework return types (`VisualElement`):
      ```java
-     public VisualElement findByImage(String... imageTemplatePaths);
+     public VisionFinder vision(VisionStrategy strategy);
+     // on VisionFinder:
+     public VisualElement findByImage(List<String> imagePaths);
      public VisualElement findByText(String text);
-     public VisualElement findByTextOrImage(String text, String... imageTemplatePaths);
+     public VisualElement findByTextOrImage(String text, List<String> imagePaths);
      ```
    - No third-party native types (`org.opencv.core.Mat`, `net.sourceforge.tess4j.Tesseract`, etc.) are exposed in public method signatures.
 
 2. **`teswiz` Framework Build-Time Compilation (`compileOnly`)**:
    - During `teswiz`'s framework build (`./gradlew build`), `teswiz` compiles against `compileOnly` scope declarations for OpenCV and Tess4J.
-   - This ensures `teswiz`'s published `.jar` artifact contains pre-compiled bytecode for `findByImage` and `findByText`.
+   - This ensures `teswiz`'s published `.jar` artifact contains pre-compiled bytecode for `vision(...)`, `findByImage`, and `findByText`.
 
 3. **Runtime Reflection / Safe Classloader Verification**:
-   - When a test calls `driver.findByImage(...)`, `VisualDriver` verifies native class presence via ClassLoader before invocation:
+   - When a test calls `driver.vision(VisionStrategy.OCR).findByImage(...)`, the subsystem verifies native class presence via ClassLoader before invocation:
      ```java
      if (!VisualSubsystem.isOcrEnabled()) {
          throw new VisualSubsystemDisabledException(
@@ -405,9 +443,10 @@ if (isOcrEnabled) {
 
 | Feature / Locator Method | Underlying Engine | Platforms Supported | Execution Mode | Enablement Property | Open Source & License |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `driver.findByText("Text")` | Tess4J / PaddleOCR ONNX | Selenium, Playwright Java, Playwright TS, Appium | Headed & Headless | `IS_OCR_ENABLED=true` | Apache 2.0 ($0 Free) |
-| `driver.findByImage("path.png")` | OpenCV Multi-Scale Gaussian Pyramid | Selenium, Playwright Java, Playwright TS, Appium | Headed & Headless | `IS_OCR_ENABLED=true` | BSD 3-Clause ($0 Free) |
-| `driver.findByImage(List<String>)` | OpenCV Multi-Scale Gaussian Pyramid | Selenium, Playwright Java, Playwright TS, Appium | Headed & Headless | `IS_OCR_ENABLED=true` | BSD 3-Clause ($0 Free) |
-| `driver.findByTextOrImage(...)` | Tess4J / PaddleOCR -> OpenCV Fallback | Selenium, Playwright Java, Playwright TS, Appium | Headed & Headless | `IS_OCR_ENABLED=true` | Apache 2.0 / BSD ($0 Free) |
-| `driver.findByImageOrText(...)` | OpenCV Pyramid -> Tess4J / PaddleOCR Fallback | Selenium, Playwright Java, Playwright TS, Appium | Headed & Headless | `IS_OCR_ENABLED=true` | BSD / Apache 2.0 ($0 Free) |
+| `driver.vision(VisionStrategy.OCR).findByText("Text")` | Tess4J (Tesseract 5) | Selenium, Playwright Java, Playwright TS, Appium | Headed & Headless | `IS_OCR_ENABLED=true` | Apache 2.0 ($0 Free) |
+| `driver.vision(VisionStrategy.OCR).findByImage(List<String>)` | OpenCV Multi-Scale Gaussian Pyramid | Selenium, Playwright Java, Playwright TS, Appium | Headed & Headless | `IS_OCR_ENABLED=true` | BSD 3-Clause ($0 Free) |
+| `driver.vision(VisionStrategy.OCR).findByTextOrImage(...)` | Tess4J -> OpenCV Fallback | Selenium, Playwright Java, Playwright TS, Appium | Headed & Headless | `IS_OCR_ENABLED=true` | Apache 2.0 / BSD ($0 Free) |
+| `driver.vision(VisionStrategy.OCR).findByImageOrText(...)` | OpenCV Pyramid -> Tess4J Fallback | Selenium, Playwright Java, Playwright TS, Appium | Headed & Headless | `IS_OCR_ENABLED=true` | BSD / Apache 2.0 ($0 Free) |
+| `driver.vision(VisionStrategy.LLM).findByText("description")` / `.findByImage(List<String>)` | LLM Vision Engine (via configured `API_ENGINE`) | Selenium, Playwright Java, Playwright TS, Appium | Headed & Headless | `LLM_VISION_FALLBACK_ENABLED=true` | External LLM provider (not offline; live-endpoint verification pending) |
+| `driver.vision(VisionStrategy.OCR_THEN_LLM).findByText(...)` | Tess4J / OpenCV, then LLM fallback | Selenium, Playwright Java, Playwright TS, Appium | Headed & Headless | `IS_OCR_ENABLED=true` + `LLM_VISION_FALLBACK_ENABLED=true` | Apache 2.0 / BSD + external LLM |
 

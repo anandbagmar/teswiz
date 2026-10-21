@@ -75,6 +75,7 @@ public class TeswizTestNgListener implements ITestListener {
     void logExecutionSummary() {
         long durationMillis = java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAtNanos);
         LOGGER.info("Test run completed: total={}, passed={}, failed={}, skipped={}, durationMs={}", startedCount.get(), passedCount.get(), failedCount.get(), skippedCount.get(), durationMillis);
+        com.znsio.teswiz.visual.LlmVisionUsageRegistry.logRunSummary();
         com.znsio.teswiz.analytics.TelemetryCollector.sendRunCompletedEvent();
     }
 

@@ -67,10 +67,7 @@ flowchart LR
     SC --> ROUTER[Runtime screen / engine router]
 
     ROUTER --> SH[SessionHandle + persona routing]
-    SH --> REP[Reporting / logs / artifacts]
-    SH --> VIS[Applitools Visual AI]
-    SH --> OCR[Tesseract OCR & OpenCV Engine]
-    SH --> CLOUD[Cloud provider adapters]
+    SH --> CLOUD["Cloud provider adapters"]
 
     ROUTER --> WSEL[Web: SeleniumWebEngineAdapter]
     ROUTER --> WPJ[Web: PlaywrightJavaWebEngineAdapter]
@@ -78,6 +75,17 @@ flowchart LR
     ROUTER --> MAPP[Mobile: AppiumJavaEngineAdapter]
     ROUTER --> APIE[API: ApiService Engine Router]
     ROUTER --> DSK[Desktop / PDF: Electron / WinApp / PDF Engine]
+
+    %% Cross-cutting subsystems are invoked through the active Driver facade
+    %% (which the engine adapters back), not routed by SessionHandle.
+    WSEL --> DRV["Driver facade"]
+    WPJ --> DRV
+    WPTS --> DRV
+    MAPP --> DRV
+    DRV --> VIS["Applitools Visual AI"]
+    DRV --> OCR["OCR + OpenCV Engine (driver.vision OCR)"]
+    DRV --> LLMV["LLM Vision Engine (driver.vision LLM, optional)"]
+    OCR -.->|OCR_THEN_LLM fallback| LLMV
 
     WSEL --> WD[Selenium WebDriver]
     WPJ --> PWJ[Playwright Java runtime]
@@ -99,10 +107,7 @@ flowchart LR
     ELE --> APP_DESK[Desktop Application / PDF File]
 
     SH --> META[Engine name, provider, platform, persona, session id]
-    META --> REP
-    META --> VIS
-    META --> OCR
-    META --> CLOUD
+    META --> REP["Reporting / logs / artifacts"]
 ```
 
 Logging and diagnostic artifacts follow the execution context rather than the engine:
@@ -135,6 +140,7 @@ sequenceDiagram
     participant API as "API Engine (RestAssured / PW-Java / PW-TS)"
     participant Vis as Applitools Visual AI
     participant Ocr as Tesseract OCR / OpenCV Engine
+    participant Llm as "LLM Vision Engine"
 
     Feature->>BL: Invoke scenario step / test action
     BL->>Router: Resolve persona + platform + engine
@@ -159,9 +165,14 @@ sequenceDiagram
         BL->>Vis: checkWindow() / checkRegion()
         Vis->>Vis: Capture baseline & compare via Eyes / Ultrafast Grid
     else OCR / Image Element Lookup
-        BL->>Ocr: findVisualElementByText() / findByImage()
-        Ocr->>Ocr: Screenshot capture -> Tesseract OCR / OpenCV pyramid match
-        Ocr-->>BL: Bounding box coordinates & highlight overlay
+        BL->>Ocr: vision OCR findByText or findByImage
+        Ocr->>Ocr: Screenshot capture then OCR or template match
+        alt match found via OCR
+            Ocr-->>BL: Bounding box coordinates and highlight overlay
+        else OCR miss then OCR_THEN_LLM or LLM strategy
+            Ocr->>Llm: Fall back to LLM vision with description or reference images
+            Llm-->>BL: Bounding box coordinates plus token usage
+        end
     end
 ```
 

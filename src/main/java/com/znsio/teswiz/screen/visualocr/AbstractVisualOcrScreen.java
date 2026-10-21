@@ -9,6 +9,7 @@ import org.apache.logging.log4j.Logger;
 
 import com.znsio.teswiz.entities.Direction;
 import com.znsio.teswiz.entities.SpatialDirection;
+import com.znsio.teswiz.entities.VisionStrategy;
 import com.znsio.teswiz.entities.VisualRegion;
 import com.znsio.teswiz.runner.Driver;
 import com.znsio.teswiz.runner.Setup;
@@ -57,73 +58,73 @@ public abstract class AbstractVisualOcrScreen extends VisualOcrScreen {
     @Override
     public final VisualElement findVisualElementByText(String text) {
         LOGGER.info("Finding visual element by text: {}", text);
-        return driver.getVisual().findByText(text);
+        return driver.vision(VisionStrategy.OCR).findByText(text);
     }
 
     @Override
     public final VisualElement findVisualElementByImage(List<String> imagePaths) {
         LOGGER.info("Finding visual element by image: {}", imagePaths);
-        return driver.getVisual().findByImage(imagePaths);
+        return driver.vision(VisionStrategy.OCR).findByImage(imagePaths);
     }
 
     @Override
     public final VisualElement findVisualElementByTextOrImage(String text, List<String> imagePaths) {
         LOGGER.info("Finding visual element by text or image: {} / {}", text, imagePaths);
-        return driver.getVisual().findByTextOrImage(text, imagePaths);
+        return driver.vision(VisionStrategy.OCR).findByTextOrImage(text, imagePaths);
     }
 
     @Override
     public final VisualElement findVisualElementByImageOrText(List<String> imagePaths, String text) {
         LOGGER.info("Finding visual element by image or text: {} / {}", imagePaths, text);
-        return driver.getVisual().findByImageOrText(imagePaths, text);
+        return driver.vision(VisionStrategy.OCR).findByImageOrText(imagePaths, text);
     }
 
     @Override
     public final List<VisualElement> findAllVisualElementsByText(String text) {
         LOGGER.info("Finding all visual elements by text: {}", text);
-        return driver.getVisual().findAllByText(text);
+        return driver.vision(VisionStrategy.OCR).findAllByText(text);
     }
 
     @Override
     public final List<VisualElement> findAllVisualElementsByImage(List<String> imagePaths) {
         LOGGER.info("Finding all visual elements by image: {}", imagePaths);
-        return driver.getVisual().findAllByImage(imagePaths);
+        return driver.vision(VisionStrategy.OCR).findAllByImage(imagePaths);
     }
 
     @Override
     public final List<VisualElement> findAllVisualElementsByTextOrImage(String text, List<String> imagePaths) {
         LOGGER.info("Finding all visual elements by text or image: {} / {}", text, imagePaths);
-        return driver.getVisual().findAllByTextOrImage(text, imagePaths);
+        return driver.vision(VisionStrategy.OCR).findAllByTextOrImage(text, imagePaths);
     }
 
     @Override
     public final List<VisualElement> findAllVisualElementsByImageOrText(List<String> imagePaths, String text) {
         LOGGER.info("Finding all visual elements by image or text: {} / {}", imagePaths, text);
-        return driver.getVisual().findAllByImageOrText(imagePaths, text);
+        return driver.vision(VisionStrategy.OCR).findAllByImageOrText(imagePaths, text);
     }
 
     @Override
     public final VisualElement findVisualElementRelativeByText(String targetText, SpatialDirection direction, String anchorText) {
         LOGGER.info("Finding visual element '{}' {} anchor text '{}'", targetText, direction.getDirection(), anchorText);
-        return driver.getVisual().findRelativeByText(targetText, direction, anchorText);
+        return driver.vision(VisionStrategy.OCR).findRelativeByText(targetText, direction, anchorText);
     }
 
     @Override
     public final VisualElement findVisualElementRelativeByImage(List<String> imagePaths, SpatialDirection direction, String anchorText) {
         LOGGER.info("Finding visual element matching image {} {} anchor text '{}'", imagePaths, direction.getDirection(), anchorText);
-        return driver.getVisual().findRelativeByImage(imagePaths, direction, anchorText);
+        return driver.vision(VisionStrategy.OCR).findRelativeByImage(imagePaths, direction, anchorText);
     }
 
     @Override
     public final VisualElement findVisualElementByTextInRegion(String text, VisualRegion region) {
         LOGGER.info("Finding visual element '{}' in region {}", text, region);
-        return driver.getVisual().findByText(text, region);
+        return driver.vision(VisionStrategy.OCR).findByText(text, region);
     }
 
     @Override
     public final VisualElement findVisualElementByImageInRegion(List<String> imagePaths, VisualRegion region) {
         LOGGER.info("Finding visual element matching image {} in region {}", imagePaths, region);
-        return driver.getVisual().findByImage(imagePaths, region);
+        return driver.vision(VisionStrategy.OCR).findByImage(imagePaths, region);
     }
 
     // ------------------------------------------------------------------------

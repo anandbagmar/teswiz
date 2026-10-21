@@ -1,5 +1,8 @@
 package com.znsio.teswiz.runner;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,15 +17,11 @@ import com.znsio.teswiz.exceptions.VisualSubsystemDisabledException;
 import com.znsio.teswiz.visual.ImageMatcher;
 import com.znsio.teswiz.visual.OcrEngine;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 /**
- * Unit tests for {@link VisualFinder} using fake {@link OcrEngine} / {@link ImageMatcher}
- * implementations. No native OCR/OpenCV dependency is exercised - the fakes return scripted
- * results so the finder's orchestration (retry, fallback, relative selection, OCR gate) can be
- * asserted in isolation. The screenshot source and driver facade are passed as {@code null}; the
- * fakes ignore both, exactly as the finder forwards them unchanged.
+ * Unit tests for {@link VisualFinder} using fake {@link OcrEngine} / {@link ImageMatcher} implementations. No native
+ * OCR/OpenCV dependency is exercised - the fakes return scripted results so the finder's orchestration (retry,
+ * fallback, relative selection, OCR gate) can be asserted in isolation. The screenshot source and driver facade are
+ * passed as {@code null}; the fakes ignore both, exactly as the finder forwards them unchanged.
  */
 class VisualFinderTest {
 
@@ -59,8 +58,7 @@ class VisualFinderTest {
         Setup.addIntegerValueToConfigs(Setup.VISUAL_ELEMENT_RETRY_ATTEMPTS, 3);
         ocrEngine.textMatch = null;
 
-        assertThatThrownBy(() -> finder.findByText("Missing"))
-                .isInstanceOf(NoSuchVisualElementException.class)
+        assertThatThrownBy(() -> finder.findByText("Missing")).isInstanceOf(NoSuchVisualElementException.class)
                 .hasMessageContaining("Missing");
         assertThat(ocrEngine.textMatchCalls).isEqualTo(3);
     }
@@ -133,8 +131,7 @@ class VisualFinderTest {
     void verifyOcrEnabledGateThrowsWhenDisabled() {
         Setup.addBooleanValueToConfigs(Setup.IS_OCR_ENABLED, false);
 
-        assertThatThrownBy(() -> finder.findByText("Login"))
-                .isInstanceOf(VisualSubsystemDisabledException.class)
+        assertThatThrownBy(() -> finder.findByText("Login")).isInstanceOf(VisualSubsystemDisabledException.class)
                 .hasMessageContaining("[teswiz] Visual OCR & Image Recognition Subsystem is Disabled!");
     }
 
@@ -148,14 +145,28 @@ class VisualFinderTest {
         private int textMatchCalls;
 
         @Override
-        public VisualElement findTextMatch(byte[] screenshotBytes, String searchText, VisualRegion region, Driver driverFacade) {
+        public VisualElement findTextMatch(byte[] screenshotBytes, String searchText, VisualRegion region,
+                Driver driverFacade) {
             textMatchCalls++;
             return textMatch;
         }
 
         @Override
-        public List<VisualElement> findAllTextMatches(byte[] screenshotBytes, String searchText, VisualRegion region, Driver driverFacade) {
+        public List<VisualElement> findAllTextMatches(byte[] screenshotBytes, String searchText, VisualRegion region,
+                Driver driverFacade) {
             return allTextMatches;
+        }
+
+        @Override
+        public String readText(byte[] screenshotBytes, VisualRegion region, Driver driverFacade,
+                com.znsio.teswiz.visual.OcrReadHint hint) {
+            return "";
+        }
+
+        @Override
+        public java.util.Optional<java.math.BigDecimal> readNumber(byte[] screenshotBytes, VisualRegion region,
+                Driver driverFacade) {
+            return java.util.Optional.empty();
         }
     }
 
@@ -166,13 +177,15 @@ class VisualFinderTest {
         private int allTemplateMatchCalls;
 
         @Override
-        public VisualElement findTemplateMatch(byte[] screenshotBytes, List<String> templatePaths, double confidenceThreshold, VisualRegion region, Driver driverFacade) {
+        public VisualElement findTemplateMatch(byte[] screenshotBytes, List<String> templatePaths,
+                double confidenceThreshold, VisualRegion region, Driver driverFacade) {
             templateMatchCalls++;
             return templateMatch;
         }
 
         @Override
-        public List<VisualElement> findAllTemplateMatches(byte[] screenshotBytes, List<String> templatePaths, double confidenceThreshold, VisualRegion region, Driver driverFacade) {
+        public List<VisualElement> findAllTemplateMatches(byte[] screenshotBytes, List<String> templatePaths,
+                double confidenceThreshold, VisualRegion region, Driver driverFacade) {
             allTemplateMatchCalls++;
             return allTemplateMatches;
         }

@@ -20,7 +20,7 @@
 | **🔌 API Testing** | [`rest-assured`](docs/examples/api-example.md) • [`playwright-java`](docs/engines/running-api-tests.md) • [`playwright-ts`](docs/engines/running-api-tests.md) | Data parity, 502/503/504 health filter, masked traffic logging (`api-traffic/`) ([API Docs](docs/engines/running-api-tests.md)) |
 | **🖥️ Desktop & Document** | Electron • Windows AppDriver • Apache PDFBox | Desktop application UI automation & PDF content verification ([PDF Docs](docs/examples/pdf-example.md)) |
 | **👁️ Visual AI** | Applitools Eyes & Ultrafast Grid (UFG) | Cross-browser visual check & AI baseline comparison for Web & Mobile ([Visual AI Docs](docs/subsystems/visual-ai-applitools.md)) |
-| **🔍 Visual OCR & Image** | Tesseract 5 OCR & OpenCV 4.9 Pyramid Matcher | Embedded 100% offline text & image template locator matching (0 MB core) ([OCR Docs](docs/subsystems/ocr-and-image-recognition.md)) |
+| **🔍 Visual OCR & Image** | Tesseract 5 OCR & OpenCV 4.9 Pyramid Matcher • optional LLM vision | Strategy-scoped `driver.vision(VisionStrategy)` locators: embedded 100% offline OCR/image matching (0 MB core), plus an optional opt-in LLM vision locator ([OCR Docs](docs/subsystems/ocr-and-image-recognition.md)) |
 | **🧪 Test Frameworks** | Cucumber BDD (`.feature`) & TestNG (`@Test`) | Dual framework execution modes via `FRAMEWORK=cucumber \| testng` ([TestNG Guide](docs/architecture-and-internals/cucumber-to-testng-migration-guide.md)) |
 
 ---
@@ -39,7 +39,8 @@
 > 4. **Multi-Engine API Testing (`API_ENGINE`)**:
 >    - Set `API_ENGINE=rest-assured` (default), `playwright-java`, or `playwright-ts`. Automatic health filtering (502/503/504) and traffic logging. ([Running API Tests](docs/engines/running-api-tests.md))
 > 5. **On-Demand OCR & OpenCV Subsystem (`IS_OCR_ENABLED`)**:
->    - Tesseract 5 OCR and OpenCV multi-scale matching are `compileOnly` dependencies carrying **0 MB core weight**. Set `IS_OCR_ENABLED=true` to enable. ([OCR & Image Recognition](docs/subsystems/ocr-and-image-recognition.md))
+>    - Tesseract 5 OCR and OpenCV multi-scale matching are `compileOnly` dependencies carrying **0 MB core weight**. Set `IS_OCR_ENABLED=true` to enable. All visual locators are reached via `driver.vision(VisionStrategy.OCR)`.
+>    - Optionally set `LLM_VISION_FALLBACK_ENABLED=true` to enable an opt-in LLM-based vision locator (`driver.vision(VisionStrategy.LLM)` / `VisionStrategy.OCR_THEN_LLM`) that locates elements from a natural-language description or reference images. ([OCR & Image Recognition](docs/subsystems/ocr-and-image-recognition.md))
 > 6. **Cloud Provider Parity**:
 >    - Playwright engines support local, Selenium Grid, BrowserStack, and LambdaTest execution. HeadSpin is intentionally unsupported and fails fast. ([Mobile & Cloud Setup](docs/engines/mobile-appium-setup.md))
 
@@ -225,7 +226,7 @@ flowchart LR
 
     subgraph Subsystems["Cross-Cutting Subsystems"]
         VIS["Applitools Visual AI<br/>(Eyes & Ultrafast Grid)"]
-        OCR["OCR & Image Engine<br/>(Tesseract OCR & OpenCV)"]
+        OCR["Vision Locators<br/>driver.vision(strategy) router<br/>(Tesseract OCR & OpenCV + optional LLM vision)"]
         REP["Reporting & Artifacts<br/>(ReportPortal, Log4j2, Screenshots, HARs)"]
     end
 

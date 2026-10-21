@@ -31,7 +31,7 @@ class VisualSubsystemTest {
         com.znsio.teswiz.runner.Visual visual = new com.znsio.teswiz.runner.Visual("WebDriver",
                 com.znsio.teswiz.entities.Platform.web, null, "testName", "userPersona", "appName");
 
-        assertThatThrownBy(() -> visual.findByText("SPIN"))
+        assertThatThrownBy(() -> visual.vision(com.znsio.teswiz.entities.VisionStrategy.OCR).findByText("SPIN"))
                 .isInstanceOf(VisualSubsystemDisabledException.class)
                 .hasMessageContaining("[teswiz] Visual OCR & Image Recognition Subsystem is Disabled!");
     }
@@ -43,7 +43,7 @@ class VisualSubsystemTest {
         com.znsio.teswiz.runner.Visual visual = new com.znsio.teswiz.runner.Visual("WebDriver",
                 com.znsio.teswiz.entities.Platform.web, null, "testName", "userPersona", "appName");
 
-        assertThatThrownBy(() -> visual.findByImage(List.of("invalid_path.png")))
+        assertThatThrownBy(() -> visual.vision(com.znsio.teswiz.entities.VisionStrategy.OCR).findByImage(List.of("invalid_path.png")))
                 .isInstanceOf(VisualSubsystemDisabledException.class)
                 .hasMessageContaining("[teswiz] Visual OCR & Image Recognition Subsystem is Disabled!");
     }
@@ -55,7 +55,7 @@ class VisualSubsystemTest {
         com.znsio.teswiz.runner.Visual visual = new com.znsio.teswiz.runner.Visual("WebDriver",
                 com.znsio.teswiz.entities.Platform.web, null, "testName", "userPersona", "appName");
 
-        assertThatThrownBy(() -> visual.findByTextOrImage("SPIN", List.of("spin.png")))
+        assertThatThrownBy(() -> visual.vision(com.znsio.teswiz.entities.VisionStrategy.OCR).findByTextOrImage("SPIN", List.of("spin.png")))
                 .isInstanceOf(VisualSubsystemDisabledException.class)
                 .hasMessageContaining("[teswiz] Visual OCR & Image Recognition Subsystem is Disabled!");
     }
@@ -67,7 +67,7 @@ class VisualSubsystemTest {
         com.znsio.teswiz.runner.Visual visual = new com.znsio.teswiz.runner.Visual("WebDriver",
                 com.znsio.teswiz.entities.Platform.web, null, "testName", "userPersona", "appName");
 
-        assertThatThrownBy(() -> visual.findByImageOrText(List.of("spin.png"), "SPIN"))
+        assertThatThrownBy(() -> visual.vision(com.znsio.teswiz.entities.VisionStrategy.OCR).findByImageOrText(List.of("spin.png"), "SPIN"))
                 .isInstanceOf(VisualSubsystemDisabledException.class)
                 .hasMessageContaining("[teswiz] Visual OCR & Image Recognition Subsystem is Disabled!");
     }

@@ -1,5 +1,8 @@
 package com.znsio.teswiz.visual;
 
+import static net.sourceforge.tess4j.ITessAPI.TessPageIteratorLevel.RIL_TEXTLINE;
+import static net.sourceforge.tess4j.ITessAPI.TessPageIteratorLevel.RIL_WORD;
+
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Rectangle;
@@ -12,28 +15,26 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import java.util.regex.Pattern;
 
 import javax.imageio.ImageIO;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import com.znsio.teswiz.exceptions.VisualSubsystemDisabledException;
 import com.znsio.teswiz.runner.Driver;
 import com.znsio.teswiz.runner.Setup;
 import com.znsio.teswiz.runner.VisualElement;
 
-import static net.sourceforge.tess4j.ITessAPI.TessPageIteratorLevel.RIL_TEXTLINE;
-import static net.sourceforge.tess4j.ITessAPI.TessPageIteratorLevel.RIL_WORD;
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.Word;
 
 public class OcrService {
     private static final Logger LOGGER = LogManager.getLogger(OcrService.class.getName());
     private static boolean tess4jAvailable = false;
-    private static final double[] PRIMARY_ROTATION_ANGLES = {90.0, 270.0, 45.0, -45.0, 30.0, -30.0, 180.0};
-    private static final double[] FINE_GRAINED_ROTATION_ANGLES = {15.0, -15.0, 60.0, -60.0, 75.0, -75.0, 105.0, 120.0, 135.0, 150.0, 210.0, 225.0, 240.0, 300.0, 315.0, 330.0};
+    private static final double[] PRIMARY_ROTATION_ANGLES = { 90.0, 270.0, 45.0, -45.0, 30.0, -30.0, 180.0 };
+    private static final double[] FINE_GRAINED_ROTATION_ANGLES = { 15.0, -15.0, 60.0, -60.0, 75.0, -75.0, 105.0, 120.0,
+            135.0, 150.0, 210.0, 225.0, 240.0, 300.0, 315.0, 330.0 };
 
     static {
         try {
@@ -46,17 +47,20 @@ public class OcrService {
             StringBuilder newJnaPath = new StringBuilder(existingJnaPath);
 
             if (new File(homebrewLib).exists() && !existingJnaPath.contains(homebrewLib)) {
-                if (!newJnaPath.isEmpty()) newJnaPath.append(File.pathSeparator);
+                if (!newJnaPath.isEmpty())
+                    newJnaPath.append(File.pathSeparator);
                 newJnaPath.append(homebrewLib);
             }
             if (new File(usrLocalLib).exists() && !existingJnaPath.contains(usrLocalLib)) {
-                if (!newJnaPath.isEmpty()) newJnaPath.append(File.pathSeparator);
+                if (!newJnaPath.isEmpty())
+                    newJnaPath.append(File.pathSeparator);
                 newJnaPath.append(usrLocalLib);
             }
             if (!newJnaPath.isEmpty()) {
                 System.setProperty("jna.library.path", newJnaPath.toString());
             }
-            LOGGER.info("Tess4J Tesseract 5 engine available on classpath. jna.library.path: " + System.getProperty("jna.library.path"));
+            LOGGER.info("Tess4J Tesseract 5 engine available on classpath. jna.library.path: "
+                    + System.getProperty("jna.library.path"));
         } catch (Throwable t) {
             LOGGER.warn("Tess4J Tesseract engine is not available on classpath: " + t.getMessage());
         }
@@ -70,7 +74,8 @@ public class OcrService {
         return findTextMatch(screenshotBytes, searchText, null, driverFacade);
     }
 
-    public static VisualElement findTextMatch(byte[] screenshotBytes, String searchText, com.znsio.teswiz.entities.VisualRegion region, Driver driverFacade) {
+    public static VisualElement findTextMatch(byte[] screenshotBytes, String searchText,
+            com.znsio.teswiz.entities.VisualRegion region, Driver driverFacade) {
         if (!isTess4jAvailable() || screenshotBytes == null || searchText == null || searchText.isBlank()) {
             return null;
         }
@@ -80,7 +85,8 @@ public class OcrService {
             return null;
         }
 
-        double scaleFactor = (driverFacade != null) ? driverFacade.getViewportScaleFactor(bufferedImage.getWidth()) : 1.0;
+        double scaleFactor = (driverFacade != null) ? driverFacade.getViewportScaleFactor(bufferedImage.getWidth())
+                : 1.0;
         CroppedRegion cropped = cropRegion(bufferedImage, region);
 
         applyCustomJnaLibraryPath();
@@ -101,17 +107,20 @@ public class OcrService {
 
             BufferedImage preprocessed = preprocessForOcr(cropped.image);
             List<Word> prepWords = tesseract.getWords(preprocessed, RIL_WORD);
-            VisualElement prepMatch = matchTextInWords(prepWords, normalizedSearch, searchText, scaleFactor, driverFacade);
+            VisualElement prepMatch = matchTextInWords(prepWords, normalizedSearch, searchText, scaleFactor,
+                    driverFacade);
             if (prepMatch != null) {
                 return prepMatch.withOffset(cropped.offsetX, cropped.offsetY);
             }
 
-            VisualElement lineMatch = searchLineMatch(tesseract, cropped.image, normalizedSearch, searchText, scaleFactor, driverFacade);
+            VisualElement lineMatch = searchLineMatch(tesseract, cropped.image, normalizedSearch, searchText,
+                    scaleFactor, driverFacade);
             if (lineMatch != null) {
                 return lineMatch.withOffset(cropped.offsetX, cropped.offsetY);
             }
 
-            VisualElement rotatedMatch = searchRotatedTextMatch(tesseract, cropped.image, normalizedSearch, searchText, scaleFactor, driverFacade);
+            VisualElement rotatedMatch = searchRotatedTextMatch(tesseract, cropped.image, normalizedSearch, searchText,
+                    scaleFactor, driverFacade);
             return rotatedMatch != null ? rotatedMatch.withOffset(cropped.offsetX, cropped.offsetY) : null;
         } catch (UnsatisfiedLinkError e) {
             LOGGER.error("Native Tesseract shared library (libtesseract) could not be loaded: " + e.getMessage());
@@ -123,11 +132,13 @@ public class OcrService {
         }
     }
 
-    public static List<VisualElement> findAllTextMatches(byte[] screenshotBytes, String searchText, Driver driverFacade) {
+    public static List<VisualElement> findAllTextMatches(byte[] screenshotBytes, String searchText,
+            Driver driverFacade) {
         return findAllTextMatches(screenshotBytes, searchText, null, driverFacade);
     }
 
-    public static List<VisualElement> findAllTextMatches(byte[] screenshotBytes, String searchText, com.znsio.teswiz.entities.VisualRegion region, Driver driverFacade) {
+    public static List<VisualElement> findAllTextMatches(byte[] screenshotBytes, String searchText,
+            com.znsio.teswiz.entities.VisualRegion region, Driver driverFacade) {
         if (!isTess4jAvailable() || screenshotBytes == null || searchText == null || searchText.isBlank()) {
             return Collections.emptyList();
         }
@@ -137,7 +148,8 @@ public class OcrService {
             return Collections.emptyList();
         }
 
-        double scaleFactor = (driverFacade != null) ? driverFacade.getViewportScaleFactor(bufferedImage.getWidth()) : 1.0;
+        double scaleFactor = (driverFacade != null) ? driverFacade.getViewportScaleFactor(bufferedImage.getWidth())
+                : 1.0;
         CroppedRegion cropped = cropRegion(bufferedImage, region);
 
         applyCustomJnaLibraryPath();
@@ -156,7 +168,8 @@ public class OcrService {
                 String wordText = word.getText();
                 if (wordText != null && isWordMatchingSearch(wordText, normalizedSearch)) {
                     Rectangle rect = word.getBoundingBox();
-                    VisualElement element = buildScaledVisualElement(rect.x, rect.y, rect.width, rect.height, scaleFactor, wordText.trim(), driverFacade);
+                    VisualElement element = buildScaledVisualElement(rect.x, rect.y, rect.width, rect.height,
+                            scaleFactor, wordText.trim(), driverFacade);
                     matches.add(element.withOffset(cropped.offsetX, cropped.offsetY));
                 }
             }
@@ -168,7 +181,8 @@ public class OcrService {
                     String wordText = word.getText();
                     if (wordText != null && isWordMatchingSearch(wordText, normalizedSearch)) {
                         Rectangle rect = word.getBoundingBox();
-                        VisualElement element = buildScaledVisualElement(rect.x, rect.y, rect.width, rect.height, scaleFactor, wordText.trim(), driverFacade);
+                        VisualElement element = buildScaledVisualElement(rect.x, rect.y, rect.width, rect.height,
+                                scaleFactor, wordText.trim(), driverFacade);
                         matches.add(element.withOffset(cropped.offsetX, cropped.offsetY));
                     }
                 }
@@ -178,6 +192,134 @@ public class OcrService {
         }
 
         return applyNonMaximumSuppression(matches);
+    }
+
+    /**
+     * Reads (recognises) the text within an optional {@code region} of the screenshot and returns it, using the
+     * {@link OcrReadHint#defaults() default} read tuning. Unlike {@link #findTextMatch}, this does not match against a
+     * supplied string - it returns whatever Tesseract recognises in the region.
+     *
+     * @return the recognised text, trimmed; an empty string when nothing is read, when Tesseract is unavailable, or
+     *         when the screenshot/region is unusable (never {@code null})
+     */
+    public static String readText(byte[] screenshotBytes, com.znsio.teswiz.entities.VisualRegion region,
+            Driver driverFacade) {
+        return readText(screenshotBytes, region, driverFacade, OcrReadHint.defaults());
+    }
+
+    /**
+     * Reads (recognises) the text within an optional {@code region} of the screenshot and returns it, tuned by
+     * {@code hint} (page-segmentation mode, upscale factor, character whitelist). Unlike {@link #findTextMatch}, this
+     * does not match against a supplied string - it returns whatever Tesseract recognises in the region.
+     *
+     * @param screenshotBytes the full-screen (or region source) screenshot bytes
+     * @param region          optional region to read; {@code null} reads the whole screenshot
+     * @param driverFacade    the owning driver facade (unused for reads, accepted for signature parity with the
+     *                        finders)
+     * @param hint            the read tuning; {@code null} falls back to {@link OcrReadHint#defaults()}
+     * @return the recognised text, trimmed; an empty string when nothing is read or OCR is unavailable (never
+     *         {@code null})
+     */
+    public static String readText(byte[] screenshotBytes, com.znsio.teswiz.entities.VisualRegion region,
+            Driver driverFacade, OcrReadHint hint) {
+        if (!isTess4jAvailable() || screenshotBytes == null) {
+            return "";
+        }
+
+        BufferedImage bufferedImage = parseScreenshot(screenshotBytes);
+        if (bufferedImage == null) {
+            return "";
+        }
+
+        OcrReadHint effectiveHint = hint != null ? hint : OcrReadHint.defaults();
+        CroppedRegion cropped = cropRegion(bufferedImage, region);
+        BufferedImage readyToRead = upscale(preprocessForOcr(cropped.image), effectiveHint.getUpscaleFactor());
+
+        applyCustomJnaLibraryPath();
+        String tessDataPath = resolveTessDataPath();
+        if (tessDataPath == null) {
+            throwTessDataNotFoundException();
+        }
+
+        try {
+            Tesseract tesseract = createTesseractInstance(tessDataPath);
+            applyReadHint(tesseract, effectiveHint);
+            String recognised = tesseract.doOCR(readyToRead);
+            String result = recognised == null ? "" : recognised.trim();
+            LOGGER.info("OCR read within region {} using {} recognised: '{}'",
+                    region != null ? region : "[entire screen]", effectiveHint, result);
+            return result;
+        } catch (UnsatisfiedLinkError e) {
+            LOGGER.error("Native Tesseract shared library (libtesseract) could not be loaded: " + e.getMessage());
+            throwNativeLibraryNotFoundException(e);
+            return "";
+        } catch (Throwable e) {
+            LOGGER.warn("Tesseract OCR read failed: " + e.getMessage());
+            return "";
+        }
+    }
+
+    /**
+     * Reads a numeric value within an optional {@code region} using a numeric-friendly hint, then normalises the
+     * recognised text (strips currency symbols/whitespace, removes thousands separators, parses the decimal).
+     *
+     * @return the parsed value, or {@link java.util.Optional#empty()} when the read is blank or not numeric - this
+     *         method never throws for an unreadable region
+     */
+    public static java.util.Optional<java.math.BigDecimal> readNumber(byte[] screenshotBytes,
+            com.znsio.teswiz.entities.VisualRegion region, Driver driverFacade) {
+        String recognised = readText(screenshotBytes, region, driverFacade, OcrReadHint.digits());
+        return normalizeNumber(recognised);
+    }
+
+    /**
+     * Normalises an OCR'd numeric string into a {@link java.math.BigDecimal}, tolerant of the common {@code "1,234.56"}
+     * grouping: drops every character that is not a digit, dot, comma, or minus, then removes the comma thousands
+     * separators and parses the decimal. Returns {@link java.util.Optional#empty()} for a blank or non-numeric read
+     * rather than throwing.
+     *
+     * <p>
+     * Public + static so the numeric normalisation can be unit-tested in isolation and reused by the strategy router
+     * when parsing an LLM-read value (e.g. {@code VisionFinder.readNumber} under the LLM arm).
+     */
+    public static java.util.Optional<java.math.BigDecimal> normalizeNumber(String recognised) {
+        if (recognised == null || recognised.isBlank()) {
+            return java.util.Optional.empty();
+        }
+        String stripped = recognised.trim().replaceAll("[^0-9.,-]", "");
+        String normalised = stripped.replace(",", "");
+        if (normalised.isEmpty() || "-".equals(normalised) || ".".equals(normalised)) {
+            return java.util.Optional.empty();
+        }
+        try {
+            return java.util.Optional.of(new java.math.BigDecimal(normalised));
+        } catch (NumberFormatException e) {
+            LOGGER.warn("OCR read '{}' (normalised '{}') is not a parseable number", recognised, normalised);
+            return java.util.Optional.empty();
+        }
+    }
+
+    private static void applyReadHint(Tesseract tesseract, OcrReadHint hint) {
+        tesseract.setPageSegMode(hint.getPageSegmentation().tesseractMode());
+        if (hint.hasCharacterWhitelist()) {
+            tesseract.setVariable("tessedit_char_whitelist", hint.getCharacterWhitelist());
+        }
+    }
+
+    private static BufferedImage upscale(BufferedImage image, double factor) {
+        if (factor <= 1.0) {
+            return image;
+        }
+        int scaledWidth = Math.max(1, (int) Math.round(image.getWidth() * factor));
+        int scaledHeight = Math.max(1, (int) Math.round(image.getHeight() * factor));
+        BufferedImage scaled = new BufferedImage(scaledWidth, scaledHeight,
+                image.getType() == 0 ? BufferedImage.TYPE_INT_ARGB : image.getType());
+        Graphics2D g2d = scaled.createGraphics();
+        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+        g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+        g2d.drawImage(image, 0, 0, scaledWidth, scaledHeight, null);
+        g2d.dispose();
+        return scaled;
     }
 
     private static BufferedImage preprocessForOcr(BufferedImage image) {
@@ -207,7 +349,8 @@ public class OcrService {
     private static boolean isWordMatchingSearch(String wordText, String normalizedSearch) {
         String trimmed = wordText.trim();
         String cleaned = trimmed.replaceAll("^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$", "");
-        return trimmed.equalsIgnoreCase(normalizedSearch) || cleaned.equalsIgnoreCase(normalizedSearch) || trimmed.toLowerCase().contains(normalizedSearch);
+        return trimmed.equalsIgnoreCase(normalizedSearch) || cleaned.equalsIgnoreCase(normalizedSearch)
+                || trimmed.toLowerCase().contains(normalizedSearch);
     }
 
     private static BufferedImage parseScreenshot(byte[] screenshotBytes) {
@@ -224,15 +367,18 @@ public class OcrService {
         if (customLibPath != null && !customLibPath.isBlank() && new File(customLibPath).exists()) {
             String currentJnaPath = System.getProperty("jna.library.path", "");
             if (!currentJnaPath.contains(customLibPath)) {
-                System.setProperty("jna.library.path", customLibPath + (currentJnaPath.isEmpty() ? "" : File.pathSeparator + currentJnaPath));
+                System.setProperty("jna.library.path",
+                        customLibPath + (currentJnaPath.isEmpty() ? "" : File.pathSeparator + currentJnaPath));
             }
         }
     }
 
-    private static VisualElement matchTextInWords(List<Word> words, String normalizedSearch, String searchText, double scaleFactor, Driver driverFacade) {
+    private static VisualElement matchTextInWords(List<Word> words, String normalizedSearch, String searchText,
+            double scaleFactor, Driver driverFacade) {
         String[] searchTokens = normalizedSearch.split("\\s+");
         if (searchTokens.length > 1) {
-            VisualElement sequenceMatch = searchWordSequence(words, searchTokens, searchText, scaleFactor, driverFacade);
+            VisualElement sequenceMatch = searchWordSequence(words, searchTokens, searchText, scaleFactor,
+                    driverFacade);
             if (sequenceMatch != null) {
                 return sequenceMatch;
             }
@@ -243,7 +389,8 @@ public class OcrService {
             return exactMatch;
         }
 
-        VisualElement boundaryMatch = searchWordBoundaryMatch(words, normalizedSearch, searchText, scaleFactor, driverFacade);
+        VisualElement boundaryMatch = searchWordBoundaryMatch(words, normalizedSearch, searchText, scaleFactor,
+                driverFacade);
         if (boundaryMatch != null) {
             return boundaryMatch;
         }
@@ -251,7 +398,8 @@ public class OcrService {
         return searchSubstringWordMatch(words, normalizedSearch, searchText, scaleFactor, driverFacade);
     }
 
-    private static VisualElement searchWordSequence(List<Word> words, String[] searchTokens, String searchText, double scaleFactor, Driver driverFacade) {
+    private static VisualElement searchWordSequence(List<Word> words, String[] searchTokens, String searchText,
+            double scaleFactor, Driver driverFacade) {
         for (int i = 0; i <= words.size() - searchTokens.length; i++) {
             boolean sequenceMatched = true;
             for (int j = 0; j < searchTokens.length; j++) {
@@ -271,25 +419,31 @@ public class OcrService {
                 int rectW = maxX - minX;
                 int rectH = maxY - minY;
 
-                VisualElement candidate = buildScaledVisualElement(minX, minY, rectW, rectH, scaleFactor, searchText, driverFacade);
-                LOGGER.info("Found candidate OCR word sequence match '{}' at viewport bounds [x={}, y={}, w={}, h={}]", searchText, candidate.getX(), candidate.getY(), candidate.getWidth(), candidate.getHeight());
+                VisualElement candidate = buildScaledVisualElement(minX, minY, rectW, rectH, scaleFactor, searchText,
+                        driverFacade);
+                LOGGER.info("Found candidate OCR word sequence match '{}' at viewport bounds [x={}, y={}, w={}, h={}]",
+                        searchText, candidate.getX(), candidate.getY(), candidate.getWidth(), candidate.getHeight());
                 return candidate;
             }
         }
         return null;
     }
 
-    private static VisualElement searchExactWordMatch(List<Word> words, String normalizedSearch, String searchText, double scaleFactor, Driver driverFacade) {
+    private static VisualElement searchExactWordMatch(List<Word> words, String normalizedSearch, String searchText,
+            double scaleFactor, Driver driverFacade) {
         for (Word word : words) {
             String wordText = word.getText();
             if (wordText != null) {
                 String cleaned = wordText.trim().replaceAll("^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$", "");
                 if (wordText.trim().equalsIgnoreCase(normalizedSearch) || cleaned.equalsIgnoreCase(normalizedSearch)) {
                     Rectangle rect = word.getBoundingBox();
-                    VisualElement element = buildScaledVisualElement(rect.x, rect.y, rect.width, rect.height, scaleFactor, wordText.trim(), driverFacade);
+                    VisualElement element = buildScaledVisualElement(rect.x, rect.y, rect.width, rect.height,
+                            scaleFactor, wordText.trim(), driverFacade);
                     if (LOGGER.isInfoEnabled()) {
-                        LOGGER.info(String.format("Found exact OCR word match '%s' for search '%s' at screenshot bounds [x=%d, y=%d, w=%d, h=%d] -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
-                            wordText.trim(), searchText, rect.x, rect.y, rect.width, rect.height, element.getX(), element.getY(), element.getWidth(), element.getHeight(), scaleFactor));
+                        LOGGER.info(String.format(
+                                "Found exact OCR word match '%s' for search '%s' at screenshot bounds [x=%d, y=%d, w=%d, h=%d] -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
+                                wordText.trim(), searchText, rect.x, rect.y, rect.width, rect.height, element.getX(),
+                                element.getY(), element.getWidth(), element.getHeight(), scaleFactor));
                     }
                     return element;
                 }
@@ -298,16 +452,21 @@ public class OcrService {
         return null;
     }
 
-    private static VisualElement searchWordBoundaryMatch(List<Word> words, String normalizedSearch, String searchText, double scaleFactor, Driver driverFacade) {
-        Pattern wordBoundaryPattern = Pattern.compile("\\b" + Pattern.quote(normalizedSearch) + "\\b", Pattern.CASE_INSENSITIVE);
+    private static VisualElement searchWordBoundaryMatch(List<Word> words, String normalizedSearch, String searchText,
+            double scaleFactor, Driver driverFacade) {
+        Pattern wordBoundaryPattern = Pattern.compile("\\b" + Pattern.quote(normalizedSearch) + "\\b",
+                Pattern.CASE_INSENSITIVE);
         for (Word word : words) {
             String wordText = word.getText();
             if (wordText != null && wordBoundaryPattern.matcher(wordText.trim()).find()) {
                 Rectangle rect = word.getBoundingBox();
-                VisualElement element = buildScaledVisualElement(rect.x, rect.y, rect.width, rect.height, scaleFactor, wordText.trim(), driverFacade);
+                VisualElement element = buildScaledVisualElement(rect.x, rect.y, rect.width, rect.height, scaleFactor,
+                        wordText.trim(), driverFacade);
                 if (LOGGER.isInfoEnabled()) {
-                    LOGGER.info(String.format("Found word-boundary OCR match '%s' for search '%s' at screenshot bounds [x=%d, y=%d, w=%d, h=%d] -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
-                        wordText.trim(), searchText, rect.x, rect.y, rect.width, rect.height, element.getX(), element.getY(), element.getWidth(), element.getHeight(), scaleFactor));
+                    LOGGER.info(String.format(
+                            "Found word-boundary OCR match '%s' for search '%s' at screenshot bounds [x=%d, y=%d, w=%d, h=%d] -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
+                            wordText.trim(), searchText, rect.x, rect.y, rect.width, rect.height, element.getX(),
+                            element.getY(), element.getWidth(), element.getHeight(), scaleFactor));
                 }
                 return element;
             }
@@ -315,15 +474,19 @@ public class OcrService {
         return null;
     }
 
-    private static VisualElement searchSubstringWordMatch(List<Word> words, String normalizedSearch, String searchText, double scaleFactor, Driver driverFacade) {
+    private static VisualElement searchSubstringWordMatch(List<Word> words, String normalizedSearch, String searchText,
+            double scaleFactor, Driver driverFacade) {
         for (Word word : words) {
             String wordText = word.getText();
             if (wordText != null && wordText.trim().toLowerCase().contains(normalizedSearch)) {
                 Rectangle rect = word.getBoundingBox();
-                VisualElement element = buildScaledVisualElement(rect.x, rect.y, rect.width, rect.height, scaleFactor, wordText.trim(), driverFacade);
+                VisualElement element = buildScaledVisualElement(rect.x, rect.y, rect.width, rect.height, scaleFactor,
+                        wordText.trim(), driverFacade);
                 if (LOGGER.isInfoEnabled()) {
-                    LOGGER.info(String.format("Found OCR word substring match '%s' for search '%s' at screenshot bounds [x=%d, y=%d, w=%d, h=%d] -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
-                        wordText.trim(), searchText, rect.x, rect.y, rect.width, rect.height, element.getX(), element.getY(), element.getWidth(), element.getHeight(), scaleFactor));
+                    LOGGER.info(String.format(
+                            "Found OCR word substring match '%s' for search '%s' at screenshot bounds [x=%d, y=%d, w=%d, h=%d] -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
+                            wordText.trim(), searchText, rect.x, rect.y, rect.width, rect.height, element.getX(),
+                            element.getY(), element.getWidth(), element.getHeight(), scaleFactor));
                 }
                 return element;
             }
@@ -331,16 +494,20 @@ public class OcrService {
         return null;
     }
 
-    private static VisualElement searchLineMatch(Tesseract tesseract, BufferedImage bufferedImage, String normalizedSearch, String searchText, double scaleFactor, Driver driverFacade) {
+    private static VisualElement searchLineMatch(Tesseract tesseract, BufferedImage bufferedImage,
+            String normalizedSearch, String searchText, double scaleFactor, Driver driverFacade) {
         List<Word> lines = tesseract.getWords(bufferedImage, RIL_TEXTLINE);
         for (Word line : lines) {
             String lineText = line.getText();
             if (lineText != null && lineText.trim().toLowerCase().contains(normalizedSearch)) {
                 Rectangle rect = line.getBoundingBox();
-                VisualElement element = buildScaledVisualElement(rect.x, rect.y, rect.width, rect.height, scaleFactor, lineText.trim(), driverFacade);
+                VisualElement element = buildScaledVisualElement(rect.x, rect.y, rect.width, rect.height, scaleFactor,
+                        lineText.trim(), driverFacade);
                 if (LOGGER.isInfoEnabled()) {
-                    LOGGER.info(String.format("Found OCR text line match '%s' for search '%s' at screenshot bounds [x=%d, y=%d, w=%d, h=%d] -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
-                        lineText.trim(), searchText, rect.x, rect.y, rect.width, rect.height, element.getX(), element.getY(), element.getWidth(), element.getHeight(), scaleFactor));
+                    LOGGER.info(String.format(
+                            "Found OCR text line match '%s' for search '%s' at screenshot bounds [x=%d, y=%d, w=%d, h=%d] -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
+                            lineText.trim(), searchText, rect.x, rect.y, rect.width, rect.height, element.getX(),
+                            element.getY(), element.getWidth(), element.getHeight(), scaleFactor));
                 }
                 return element;
             }
@@ -348,15 +515,19 @@ public class OcrService {
         return null;
     }
 
-    private static VisualElement searchRotatedTextMatch(Tesseract tesseract, BufferedImage originalImage, String normalizedSearch, String searchText, double scaleFactor, Driver driverFacade) {
-        VisualElement match = searchAngles(tesseract, originalImage, PRIMARY_ROTATION_ANGLES, normalizedSearch, searchText, scaleFactor, driverFacade, "Primary");
+    private static VisualElement searchRotatedTextMatch(Tesseract tesseract, BufferedImage originalImage,
+            String normalizedSearch, String searchText, double scaleFactor, Driver driverFacade) {
+        VisualElement match = searchAngles(tesseract, originalImage, PRIMARY_ROTATION_ANGLES, normalizedSearch,
+                searchText, scaleFactor, driverFacade, "Primary");
         if (match != null) {
             return match;
         }
-        return searchAngles(tesseract, originalImage, FINE_GRAINED_ROTATION_ANGLES, normalizedSearch, searchText, scaleFactor, driverFacade, "Fine-grained intermediate");
+        return searchAngles(tesseract, originalImage, FINE_GRAINED_ROTATION_ANGLES, normalizedSearch, searchText,
+                scaleFactor, driverFacade, "Fine-grained intermediate");
     }
 
-    private static VisualElement searchAngles(Tesseract tesseract, BufferedImage originalImage, double[] angles, String normalizedSearch, String searchText, double scaleFactor, Driver driverFacade, String passName) {
+    private static VisualElement searchAngles(Tesseract tesseract, BufferedImage originalImage, double[] angles,
+            String normalizedSearch, String searchText, double scaleFactor, Driver driverFacade, String passName) {
         int origW = originalImage.getWidth();
         int origH = originalImage.getHeight();
 
@@ -369,14 +540,20 @@ public class OcrService {
             List<Word> rotatedWords = tesseract.getWords(rotatedImage, RIL_WORD);
             VisualElement rawMatch = matchTextInWords(rotatedWords, normalizedSearch, searchText, 1.0, null);
             if (rawMatch != null) {
-                Rectangle rotRect = new Rectangle(rawMatch.getX(), rawMatch.getY(), rawMatch.getWidth(), rawMatch.getHeight());
-                Rectangle mappedRect = mapRotatedRectToOriginal(rotRect, angle, origW, origH, rotatedImage.getWidth(), rotatedImage.getHeight());
+                Rectangle rotRect = new Rectangle(rawMatch.getX(), rawMatch.getY(), rawMatch.getWidth(),
+                        rawMatch.getHeight());
+                Rectangle mappedRect = mapRotatedRectToOriginal(rotRect, angle, origW, origH, rotatedImage.getWidth(),
+                        rotatedImage.getHeight());
 
-                String matchedLabel = rawMatch.getLabel().startsWith("OCR: ") ? rawMatch.getLabel().substring(5) : rawMatch.getLabel();
-                VisualElement element = buildScaledVisualElement(mappedRect.x, mappedRect.y, mappedRect.width, mappedRect.height, scaleFactor, matchedLabel, driverFacade);
+                String matchedLabel = rawMatch.getLabel().startsWith("OCR: ") ? rawMatch.getLabel().substring(5)
+                        : rawMatch.getLabel();
+                VisualElement element = buildScaledVisualElement(mappedRect.x, mappedRect.y, mappedRect.width,
+                        mappedRect.height, scaleFactor, matchedLabel, driverFacade);
                 if (LOGGER.isInfoEnabled()) {
-                    LOGGER.info(String.format("Found rotated OCR match '%s' for search '%s' during %s pass at angle %.1f° -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
-                        matchedLabel, searchText, passName, angle, element.getX(), element.getY(), element.getWidth(), element.getHeight(), scaleFactor));
+                    LOGGER.info(String.format(
+                            "Found rotated OCR match '%s' for search '%s' during %s pass at angle %.1f° -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
+                            matchedLabel, searchText, passName, angle, element.getX(), element.getY(),
+                            element.getWidth(), element.getHeight(), scaleFactor));
                 }
                 return element;
             }
@@ -384,7 +561,8 @@ public class OcrService {
         return null;
     }
 
-    private static Rectangle mapRotatedRectToOriginal(Rectangle rotRect, double angleDegrees, int origW, int origH, int rotW, int rotH) {
+    private static Rectangle mapRotatedRectToOriginal(Rectangle rotRect, double angleDegrees, int origW, int origH,
+            int rotW, int rotH) {
         int x1 = rotRect.x;
         int y1 = rotRect.y;
         int x2 = rotRect.x + rotRect.width;
@@ -408,7 +586,8 @@ public class OcrService {
         return new Rectangle(minX, minY, rectW, rectH);
     }
 
-    private static Point mapRotatedPointToOriginal(int rotX, int rotY, double angleDegrees, int origW, int origH, int rotW, int rotH) {
+    private static Point mapRotatedPointToOriginal(int rotX, int rotY, double angleDegrees, int origW, int origH,
+            int rotW, int rotH) {
         double radians = Math.toRadians(-angleDegrees);
         double rotCenterX = rotW / 2.0;
         double rotCenterY = rotH / 2.0;
@@ -456,7 +635,8 @@ public class OcrService {
         }
     }
 
-    private static VisualElement buildScaledVisualElement(int rawX, int rawY, int rawWidth, int rawHeight, double scaleFactor, String labelText, Driver driverFacade) {
+    private static VisualElement buildScaledVisualElement(int rawX, int rawY, int rawWidth, int rawHeight,
+            double scaleFactor, String labelText, Driver driverFacade) {
         int logicalX = (int) Math.round(rawX / scaleFactor);
         int logicalY = (int) Math.round(rawY / scaleFactor);
         int logicalW = (int) Math.round(rawWidth / scaleFactor);
@@ -490,42 +670,46 @@ public class OcrService {
     private static void throwTessDataNotFoundException() {
         LOGGER.error("eng.traineddata language data file not found in system tessdata paths or configuration.");
         throw new VisualSubsystemDisabledException(
-                "\n====================================================================================================\n" +
-                " [teswiz] Tesseract Language Data (tessdata/eng.traineddata) Not Found!\n" +
-                "----------------------------------------------------------------------------------------------------\n" +
-                " Tesseract OCR requires 'eng.traineddata' to perform text recognition.\n\n" +
-                " To fix this:\n" +
-                "  - macOS:   run 'brew install tesseract' or 'brew install tesseract-lang'\n" +
-                "  - Linux:   run 'sudo apt-get install tesseract-ocr-eng'\n" +
-                "  - Windows: download eng.traineddata from https://github.com/tesseract-ocr/tessdata\n" +
-                "  - Or set 'TESWIZ_TESSERACT_DATA_PATH=/path/to/tessdata' in your teswiz_config.properties file.\n" +
-                "====================================================================================================\n");
+                "\n====================================================================================================\n"
+                        + " [teswiz] Tesseract Language Data (tessdata/eng.traineddata) Not Found!\n"
+                        + "----------------------------------------------------------------------------------------------------\n"
+                        + " Tesseract OCR requires 'eng.traineddata' to perform text recognition.\n\n"
+                        + " To fix this:\n"
+                        + "  - macOS:   run 'brew install tesseract' or 'brew install tesseract-lang'\n"
+                        + "  - Linux:   run 'sudo apt-get install tesseract-ocr-eng'\n"
+                        + "  - Windows: download eng.traineddata from https://github.com/tesseract-ocr/tessdata\n"
+                        + "  - Or set 'TESWIZ_TESSERACT_DATA_PATH=/path/to/tessdata' in your teswiz_config.properties file.\n"
+                        + "====================================================================================================\n");
     }
 
     private static void throwNativeLibraryNotFoundException(UnsatisfiedLinkError e) {
         throw new VisualSubsystemDisabledException(
-                "\n====================================================================================================\n" +
-                " [teswiz] Native Tesseract OCR Engine Not Found on Host Operating System!\n" +
-                "----------------------------------------------------------------------------------------------------\n" +
-                " Tesseract native shared library (libtesseract.dylib / libtesseract.so / tesseract.dll) could not be loaded.\n\n" +
-                " To install Tesseract for your operating system:\n" +
-                "  - macOS:   run 'brew install tesseract'\n" +
-                "  - Linux:   run 'sudo apt-get install tesseract-ocr libtesseract-dev'\n" +
-                "  - Windows: run 'winget install UB-Mannheim.TesseractOCR' or download from\n" +
-                "             https://github.com/UB-Mannheim/tesseract/wiki and add install dir to PATH.\n" +
-                "  - Alternative: set 'TESWIZ_TESSERACT_LIB_PATH=/path/to/lib' in your teswiz_config.properties.\n" +
-                "====================================================================================================\n", e);
+                "\n====================================================================================================\n"
+                        + " [teswiz] Native Tesseract OCR Engine Not Found on Host Operating System!\n"
+                        + "----------------------------------------------------------------------------------------------------\n"
+                        + " Tesseract native shared library (libtesseract.dylib / libtesseract.so / tesseract.dll) could not be loaded.\n\n"
+                        + " To install Tesseract for your operating system:\n"
+                        + "  - macOS:   run 'brew install tesseract'\n"
+                        + "  - Linux:   run 'sudo apt-get install tesseract-ocr libtesseract-dev'\n"
+                        + "  - Windows: run 'winget install UB-Mannheim.TesseractOCR' or download from\n"
+                        + "             https://github.com/UB-Mannheim/tesseract/wiki and add install dir to PATH.\n"
+                        + "  - Alternative: set 'TESWIZ_TESSERACT_LIB_PATH=/path/to/lib' in your teswiz_config.properties.\n"
+                        + "====================================================================================================\n",
+                e);
     }
 
     private static String resolveTessDataPath() {
         String path = checkConfiguredTessDataPath();
-        if (path != null) return path;
+        if (path != null)
+            return path;
 
         path = checkEnvironmentTessDataPath();
-        if (path != null) return path;
+        if (path != null)
+            return path;
 
         path = checkSystemTessDataPaths();
-        if (path != null) return path;
+        if (path != null)
+            return path;
 
         return extractTessDataFromClasspath();
     }
@@ -559,15 +743,10 @@ public class OcrService {
     }
 
     private static String checkSystemTessDataPaths() {
-        List<String> candidatePaths = List.of(
-                "/opt/homebrew/share/tessdata",
-                "/opt/homebrew/Cellar/tesseract/5.5.3/share/tessdata",
-                "/usr/local/share/tessdata",
-                "/usr/share/tessdata",
-                "/usr/share/tesseract-ocr/4.00/tessdata",
-                "/usr/share/tesseract-ocr/5/tessdata",
-                "C:\\Program Files\\Tesseract-OCR\\tessdata"
-        );
+        List<String> candidatePaths = List.of("/opt/homebrew/share/tessdata",
+                "/opt/homebrew/Cellar/tesseract/5.5.3/share/tessdata", "/usr/local/share/tessdata",
+                "/usr/share/tessdata", "/usr/share/tesseract-ocr/4.00/tessdata", "/usr/share/tesseract-ocr/5/tessdata",
+                "C:\\Program Files\\Tesseract-OCR\\tessdata");
 
         for (String candidate : candidatePaths) {
             File dataFile = new File(candidate, "eng.traineddata");
@@ -602,7 +781,8 @@ public class OcrService {
         }
     }
 
-    private static CroppedRegion cropRegion(BufferedImage bufferedImage, com.znsio.teswiz.entities.VisualRegion region) {
+    private static CroppedRegion cropRegion(BufferedImage bufferedImage,
+            com.znsio.teswiz.entities.VisualRegion region) {
         if (region == null) {
             return new CroppedRegion(bufferedImage, 0, 0);
         }

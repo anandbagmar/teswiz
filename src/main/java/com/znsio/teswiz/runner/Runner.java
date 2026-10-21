@@ -226,6 +226,63 @@ public class Runner {
         }
     }
 
+    public static boolean isLlmVisionFallbackEnabled() {
+        return Setup.getBooleanValueFromConfigs(Setup.LLM_VISION_FALLBACK_ENABLED);
+    }
+
+    public static String getLlmVisionProvider() {
+        String provider = Setup.getFromConfigs(Setup.LLM_VISION_PROVIDER);
+        return (provider == null || provider.isBlank()) ? "openai" : provider.trim();
+    }
+
+    public static String getLlmVisionModel() {
+        String model = Setup.getFromConfigs(Setup.LLM_VISION_MODEL);
+        return model == null ? "" : model.trim();
+    }
+
+    public static String getLlmVisionEndpoint() {
+        String endpoint = Setup.getFromConfigs(Setup.LLM_VISION_ENDPOINT);
+        return endpoint == null ? "" : endpoint.trim();
+    }
+
+    public static String getLlmVisionApiKeyEnvName() {
+        String envName = Setup.getFromConfigs(Setup.LLM_VISION_API_KEY_ENV);
+        return (envName == null || envName.isBlank()) ? "LLM_VISION_API_KEY" : envName.trim();
+    }
+
+    public static String getLlmVisionApiVersion() {
+        String apiVersion = Setup.getFromConfigs(Setup.LLM_VISION_API_VERSION);
+        return (apiVersion == null || apiVersion.isBlank()) ? "2024-06-01" : apiVersion.trim();
+    }
+
+    /**
+     * Optional override for the LLM vision startup health-check target. Blank (default) means the
+     * provider derives its own non-billable probe URL; an explicit http(s) URL is probed verbatim;
+     * the literal {@code none}/{@code off}/{@code false} opts out of the live probe (structural
+     * validation only). Useful for providers whose models-listing path teswiz cannot reliably derive.
+     */
+    public static String getLlmVisionHealthCheckUrl() {
+        String url = Setup.getFromConfigs(Setup.LLM_VISION_HEALTH_CHECK_URL);
+        return url == null ? "" : url.trim();
+    }
+
+    public static int getLlmVisionMaxRetries() {
+        return Math.max(1, Setup.getIntegerValueFromConfigs(Setup.LLM_VISION_MAX_RETRIES));
+    }
+
+    public static int getLlmVisionTimeoutSeconds() {
+        int timeout = Setup.getIntegerValueFromConfigs(Setup.LLM_VISION_TIMEOUT_SECONDS);
+        return timeout > 0 ? timeout : 30;
+    }
+
+    public static boolean isLlmVisionApiTrafficLoggingEnabled() {
+        return Setup.getBooleanValueFromConfigs(Setup.LLM_VISION_LOG_API_TRAFFIC);
+    }
+
+    public static boolean isLlmVisionSaveCapturesEnabled() {
+        return Setup.getBooleanValueFromConfigs(Setup.LLM_VISION_SAVE_CAPTURES);
+    }
+
     public static boolean isRunningInHeadlessMode() {
         return Setup.getBooleanValueFromConfigs(Setup.HEADLESS);
     }

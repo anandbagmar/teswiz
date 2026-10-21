@@ -119,11 +119,12 @@ public class Visual {
     private Driver driverFacade;
     private final com.znsio.teswiz.visual.OcrEngine ocrEngine = new com.znsio.teswiz.visual.TesseractOcrEngine();
     private final com.znsio.teswiz.visual.ImageMatcher imageMatcher = new com.znsio.teswiz.visual.OpenCvImageMatcher();
+    private final com.znsio.teswiz.visual.LlmVisionEngine llmVisionEngine = new com.znsio.teswiz.visual.LlmVisionService();
     private VisualFinder visualFinder;
 
     public void setDriverFacade(Driver driverFacade) {
         this.driverFacade = driverFacade;
-        this.visualFinder = new VisualFinder(this.innerDriver, driverFacade, this.ocrEngine, this.imageMatcher);
+        this.visualFinder = new VisualFinder(this.innerDriver, driverFacade, this.ocrEngine, this.imageMatcher, this.llmVisionEngine);
     }
 
     /**
@@ -134,13 +135,30 @@ public class Visual {
      */
     private VisualFinder visualFinder() {
         if (this.visualFinder == null) {
-            this.visualFinder = new VisualFinder(this.innerDriver, this.driverFacade, this.ocrEngine, this.imageMatcher);
+            this.visualFinder = new VisualFinder(this.innerDriver, this.driverFacade, this.ocrEngine, this.imageMatcher, this.llmVisionEngine);
         }
         return this.visualFinder;
     }
 
     public Driver getDriverFacade() {
         return this.driverFacade;
+    }
+
+    /**
+     * Returns the lazily-created {@link VisualFinder} that backs every strategy-scoped
+     * {@link VisionFinder}. Package-private: callers in the same {@code runner} package (notably
+     * {@link Driver}) reuse this single finder instance for internal visual locates.
+     */
+    VisualFinder getVisionDelegate() {
+        return visualFinder();
+    }
+
+    /**
+     * Entry point to the strategy-scoped visual locator surface. The returned {@link VisionFinder}
+     * routes every find to the engine chosen by {@code strategy} (OCR, LLM, or OCR-then-LLM).
+     */
+    public VisionFinder vision(com.znsio.teswiz.entities.VisionStrategy strategy) {
+        return new VisionFinder(strategy, getVisionDelegate());
     }
 
     record WebVisualNames(String appName, String testName) {
@@ -1263,93 +1281,4 @@ public class Visual {
                 proxySettings);
     }
 
-    // ------------------------------------------------------------------------
-    // Visual element find surface - delegated to VisualFinder (see VisualFinder).
-    // Visual retains these public methods for compatibility; Driver's find
-    // pass-throughs and direct callers continue to work unchanged.
-    // ------------------------------------------------------------------------
-
-    public VisualElement findByText(String text) {
-        return visualFinder().findByText(text);
-    }
-
-    public VisualElement findByText(String text, com.znsio.teswiz.entities.VisualRegion region) {
-        return visualFinder().findByText(text, region);
-    }
-
-    public VisualElement findByImage(List<String> imageTemplatePaths) {
-        return visualFinder().findByImage(imageTemplatePaths);
-    }
-
-    public VisualElement findByImage(List<String> imageTemplatePaths, double confidenceThreshold) {
-        return visualFinder().findByImage(imageTemplatePaths, confidenceThreshold);
-    }
-
-    public VisualElement findByImage(List<String> imageTemplatePaths, com.znsio.teswiz.entities.VisualRegion region) {
-        return visualFinder().findByImage(imageTemplatePaths, region);
-    }
-
-    public VisualElement findByImage(List<String> imageTemplatePaths, double confidenceThreshold, com.znsio.teswiz.entities.VisualRegion region) {
-        return visualFinder().findByImage(imageTemplatePaths, confidenceThreshold, region);
-    }
-
-    public VisualElement findByTextOrImage(String text, List<String> imageTemplatePaths) {
-        return visualFinder().findByTextOrImage(text, imageTemplatePaths);
-    }
-
-    public VisualElement findByTextOrImage(String text, List<String> imageTemplatePaths, com.znsio.teswiz.entities.VisualRegion region) {
-        return visualFinder().findByTextOrImage(text, imageTemplatePaths, region);
-    }
-
-    public VisualElement findByImageOrText(List<String> imageTemplatePaths, String text) {
-        return visualFinder().findByImageOrText(imageTemplatePaths, text);
-    }
-
-    public List<VisualElement> findAllByText(String text) {
-        return visualFinder().findAllByText(text);
-    }
-
-    public List<VisualElement> findAllByText(String text, com.znsio.teswiz.entities.VisualRegion region) {
-        return visualFinder().findAllByText(text, region);
-    }
-
-    public List<VisualElement> findAllByImage(List<String> imageTemplatePaths) {
-        return visualFinder().findAllByImage(imageTemplatePaths);
-    }
-
-    public List<VisualElement> findAllByImage(List<String> imageTemplatePaths, double confidenceThreshold) {
-        return visualFinder().findAllByImage(imageTemplatePaths, confidenceThreshold);
-    }
-
-    public List<VisualElement> findAllByImage(List<String> imageTemplatePaths, com.znsio.teswiz.entities.VisualRegion region) {
-        return visualFinder().findAllByImage(imageTemplatePaths, region);
-    }
-
-    public List<VisualElement> findAllByImage(List<String> imageTemplatePaths, double confidenceThreshold, com.znsio.teswiz.entities.VisualRegion region) {
-        return visualFinder().findAllByImage(imageTemplatePaths, confidenceThreshold, region);
-    }
-
-    public List<VisualElement> findAllByTextOrImage(String text, List<String> imageTemplatePaths) {
-        return visualFinder().findAllByTextOrImage(text, imageTemplatePaths);
-    }
-
-    public List<VisualElement> findAllByImageOrText(List<String> imageTemplatePaths, String text) {
-        return visualFinder().findAllByImageOrText(imageTemplatePaths, text);
-    }
-
-    public VisualElement findRelativeByText(String targetText, com.znsio.teswiz.entities.SpatialDirection direction, String anchorText) {
-        return visualFinder().findRelativeByText(targetText, direction, anchorText);
-    }
-
-    public VisualElement findRelativeByText(String targetText, com.znsio.teswiz.entities.SpatialDirection direction, VisualElement anchor) {
-        return visualFinder().findRelativeByText(targetText, direction, anchor);
-    }
-
-    public VisualElement findRelativeByImage(List<String> targetImagePaths, com.znsio.teswiz.entities.SpatialDirection direction, String anchorText) {
-        return visualFinder().findRelativeByImage(targetImagePaths, direction, anchorText);
-    }
-
-    public VisualElement findRelativeByImage(List<String> targetImagePaths, com.znsio.teswiz.entities.SpatialDirection direction, VisualElement anchor) {
-        return visualFinder().findRelativeByImage(targetImagePaths, direction, anchor);
-    }
 }

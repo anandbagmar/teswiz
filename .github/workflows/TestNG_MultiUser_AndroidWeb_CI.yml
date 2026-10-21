@@ -2,7 +2,7 @@ name: TestNG_MultiUser_AndroidWeb_CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, feature/llm-vision-fallback]
   pull_request:
     branches: [main]
 
