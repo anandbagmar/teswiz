@@ -1,6 +1,7 @@
 package com.znsio.teswiz.visual;
 
 import java.net.URI;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -96,9 +97,18 @@ public final class LlmVisionConfigValidator {
                 provider, Runner.getLlmVisionApiVersion(),
                 resolveApiKey(Runner.getLlmVisionApiKeyEnvName()), new GoogleAdcAccessTokenProvider());
 
-        Optional<LlmVisionHealthCheckProbe> maybeProbe;
+        String healthCheckOverride = Runner.getLlmVisionHealthCheckUrl();
+        if (!healthCheckOverride.isBlank()
+                && !LlmVisionHealthCheckResolver.isOptOut(healthCheckOverride)
+                && !LlmVisionHealthCheckResolver.isWellFormedHttpUrl(healthCheckOverride)) {
+            fail("LLM_VISION_HEALTH_CHECK_URL '" + healthCheckOverride + "' is not a well-formed http(s) URL. "
+                 + "Set it to a non-billable models-listing URL, leave it blank to auto-derive, "
+                 + "or set it to 'none' to skip the startup health-check.");
+        }
+
+        Optional<LlmVisionHealthCheckProbe> derivedProbe;
         try {
-            maybeProbe = visionProvider.buildHealthCheckProbe(
+            derivedProbe = visionProvider.buildHealthCheckProbe(
                     Runner.getLlmVisionEndpoint(), resolveApiKey(Runner.getLlmVisionApiKeyEnvName()));
         } catch (RuntimeException e) {
             fail("LLM vision health-check could not obtain credentials for provider '" + provider
@@ -106,8 +116,18 @@ public final class LlmVisionConfigValidator {
             return;
         }
 
+        Map<String, String> providerHeaders =
+                visionProvider.buildHeaders(resolveApiKey(Runner.getLlmVisionApiKeyEnvName()));
+        Optional<LlmVisionHealthCheckProbe> maybeProbe =
+                LlmVisionHealthCheckResolver.resolve(healthCheckOverride, derivedProbe, providerHeaders);
+
         if (maybeProbe.isEmpty()) {
-            LOGGER.info("Provider '{}' has no non-billable health-check probe; structural validation only.", provider);
+            if (LlmVisionHealthCheckResolver.isOptOut(healthCheckOverride)) {
+                LOGGER.info("LLM_VISION_HEALTH_CHECK_URL='{}' opts out of the live health-check; "
+                        + "structural validation only.", healthCheckOverride);
+            } else {
+                LOGGER.info("Provider '{}' has no non-billable health-check probe; structural validation only.", provider);
+            }
             return;
         }
 

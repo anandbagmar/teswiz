@@ -65,6 +65,7 @@ public class Setup {
     public static final String LLM_VISION_ENDPOINT = "LLM_VISION_ENDPOINT";
     public static final String LLM_VISION_API_KEY_ENV = "LLM_VISION_API_KEY_ENV";
     public static final String LLM_VISION_API_VERSION = "LLM_VISION_API_VERSION";
+    public static final String LLM_VISION_HEALTH_CHECK_URL = "LLM_VISION_HEALTH_CHECK_URL";
     public static final String LLM_VISION_MAX_RETRIES = "LLM_VISION_MAX_RETRIES";
     public static final String LLM_VISION_TIMEOUT_SECONDS = "LLM_VISION_TIMEOUT_SECONDS";
     public static final String LLM_VISION_LOG_API_TRAFFIC = "LLM_VISION_LOG_API_TRAFFIC";
@@ -478,6 +479,9 @@ public class Setup {
         configs.put(LLM_VISION_API_VERSION, getOverriddenStringValue(
                 LLM_VISION_API_VERSION,
                 getStringValueFromPropertiesIfAvailable(LLM_VISION_API_VERSION, "2024-06-01")));
+        configs.put(LLM_VISION_HEALTH_CHECK_URL, getOverriddenStringValue(
+                LLM_VISION_HEALTH_CHECK_URL,
+                getStringValueFromPropertiesIfAvailable(LLM_VISION_HEALTH_CHECK_URL, "")));
         configsInteger.put(LLM_VISION_MAX_RETRIES, getOverriddenIntValue(
                 LLM_VISION_MAX_RETRIES,
                 Integer.parseInt(getStringValueFromPropertiesIfAvailable(LLM_VISION_MAX_RETRIES, "1"))));

@@ -255,6 +255,17 @@ public class Runner {
         return (apiVersion == null || apiVersion.isBlank()) ? "2024-06-01" : apiVersion.trim();
     }
 
+    /**
+     * Optional override for the LLM vision startup health-check target. Blank (default) means the
+     * provider derives its own non-billable probe URL; an explicit http(s) URL is probed verbatim;
+     * the literal {@code none}/{@code off}/{@code false} opts out of the live probe (structural
+     * validation only). Useful for providers whose models-listing path teswiz cannot reliably derive.
+     */
+    public static String getLlmVisionHealthCheckUrl() {
+        String url = Setup.getFromConfigs(Setup.LLM_VISION_HEALTH_CHECK_URL);
+        return url == null ? "" : url.trim();
+    }
+
     public static int getLlmVisionMaxRetries() {
         return Math.max(1, Setup.getIntegerValueFromConfigs(Setup.LLM_VISION_MAX_RETRIES));
     }
