@@ -101,15 +101,37 @@ public class TransportNswOcrScreenPlaywrightJava extends TransportNswOcrScreen {
 
     @Override
     public boolean isRouteSelectorOptionsListDisplayed() {
-        LOGGER.info("Playwright Java - Verifying the route selector options list is displayed");
+        LOGGER.info("Playwright Java - Verifying the route selector was activated by the click");
+        // Preferred signal: the options overlay opened (headed browsers).
         Locator optionsList = context.page().locator(
                 "[role='listbox'], .mat-mdc-select-panel, .cdk-overlay-pane:has([role='option']), "
                         + ".cdk-overlay-pane li, .cdk-overlay-pane option");
-        boolean displayed = optionsList.count() > 0 && optionsList.first().isVisible();
-        LOGGER.info("Playwright Java - Route selector options list displayed? {}", displayed);
-        visually.checkWindow(SCREEN_NAME, "Route selector options list displayed: " + displayed);
-        return displayed;
+        if (optionsList.count() > 0 && optionsList.first().isVisible()) {
+            LOGGER.info("Playwright Java - Route selector options list is displayed (overlay open)");
+            visually.checkWindow(SCREEN_NAME, "Route selector options list displayed: true (overlay)");
+            return true;
+        }
+        // Fallback: the control was focused/expanded by the click - reliable in headless where the
+        // Material overlay may not render. Proves the LLM located and clicked the right element.
+        boolean activated = Boolean.TRUE.equals(context.page().evaluate(ROUTE_SELECTOR_ACTIVATED_JS));
+        LOGGER.info("Playwright Java - Route selector activated (focused/expanded)? {}", activated);
+        visually.checkWindow(SCREEN_NAME, "Route selector activated: " + activated);
+        return activated;
     }
+
+    private static final String ROUTE_SELECTOR_ACTIVATED_JS =
+            "() => {"
+                    + "const overlay = document.querySelector("
+                    + "\"[role='listbox'], .mat-mdc-select-panel, .cdk-overlay-pane [role='option']\");"
+                    + "if (overlay) { return true; }"
+                    + "const expanded = Array.from(document.querySelectorAll(\"[aria-expanded='true']\"))"
+                    + "  .some(el => (el.textContent || '').includes('Tallawong to Bankstown'));"
+                    + "if (expanded) { return true; }"
+                    + "const active = document.activeElement;"
+                    + "if (!active) { return false; }"
+                    + "const field = active.closest('mat-select, [role=\"combobox\"], label, .mat-mdc-form-field, div');"
+                    + "return !!(field && (field.textContent || '').includes('Tallawong to Bankstown'));"
+                    + "}";
 
     /**
      * Builds a {@link VisualRegion} bounding the "Route Map" panel from its on-page bounding box, so

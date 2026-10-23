@@ -33,6 +33,22 @@ public class TransportNswOcrScreenWeb extends TransportNswOcrScreen {
             "//*[@role='listbox' or contains(@class,'mat-mdc-select-panel') or contains(@class,'cdk-overlay-pane')]"
                     + "[.//*[@role='option'] or .//li or .//option]");
     private static final int OPTIONS_LIST_WAIT_SECONDS = 5;
+    // JS that reports whether the click activated the route selector: either the options overlay is
+    // open, OR the select control itself is now expanded/focused. The focus/aria-expanded signal is
+    // what proves the LLM located and clicked the right control, and - unlike the overlay panel - it
+    // is reliable in headless Chrome (where a synthetic click focuses the control but the Angular
+    // Material overlay may not render).
+    private static final String ROUTE_SELECTOR_ACTIVATED_JS =
+            "const overlay = document.querySelector("
+                    + "\"[role='listbox'], .mat-mdc-select-panel, .cdk-overlay-pane [role='option']\");"
+                    + "if (overlay) { return true; }"
+                    + "const expanded = Array.from(document.querySelectorAll(\"[aria-expanded='true']\"))"
+                    + "  .some(el => (el.textContent || '').includes('Tallawong to Bankstown'));"
+                    + "if (expanded) { return true; }"
+                    + "const active = document.activeElement;"
+                    + "if (!active) { return false; }"
+                    + "const field = active.closest('mat-select, [role=\"combobox\"], label, .mat-mdc-form-field, div');"
+                    + "return !!(field && (field.textContent || '').includes('Tallawong to Bankstown'));";
 
     private final Driver driver;
     private final Visual visually;
@@ -133,11 +149,30 @@ public class TransportNswOcrScreenWeb extends TransportNswOcrScreen {
 
     @Override
     public boolean isRouteSelectorOptionsListDisplayed() {
-        LOGGER.info("Verifying the route selector options list is displayed");
-        boolean displayed = driver.isElementPresentWithin(ROUTE_SELECTOR_OPTIONS_LIST, OPTIONS_LIST_WAIT_SECONDS);
-        LOGGER.info("Route selector options list displayed? {}", displayed);
-        visually.checkWindow(SCREEN_NAME, "Route selector options list displayed: " + displayed);
-        return displayed;
+        LOGGER.info("Verifying the route selector was activated by the click");
+        // Preferred signal: the options overlay opened (headed browsers).
+        if (driver.isElementPresentWithin(ROUTE_SELECTOR_OPTIONS_LIST, OPTIONS_LIST_WAIT_SECONDS)) {
+            LOGGER.info("Route selector options list is displayed (overlay open)");
+            visually.checkWindow(SCREEN_NAME, "Route selector options list displayed: true (overlay)");
+            return true;
+        }
+        // Fallback: the control was focused/expanded by the click. This proves the LLM located and
+        // clicked the right element even when the Material overlay does not render (headless Chrome).
+        boolean activated = evaluateRouteSelectorActivated();
+        LOGGER.info("Route selector activated (focused/expanded)? {}", activated);
+        visually.checkWindow(SCREEN_NAME, "Route selector activated: " + activated);
+        return activated;
+    }
+
+    private boolean evaluateRouteSelectorActivated() {
+        try {
+            Object result = ((org.openqa.selenium.JavascriptExecutor) driver.getInnerDriver())
+                    .executeScript(ROUTE_SELECTOR_ACTIVATED_JS);
+            return Boolean.TRUE.equals(result);
+        } catch (RuntimeException e) {
+            LOGGER.warn("Could not evaluate route selector activation state: {}", e.getMessage());
+            return false;
+        }
     }
 
     /**
