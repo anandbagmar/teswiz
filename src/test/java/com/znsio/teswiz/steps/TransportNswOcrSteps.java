@@ -8,6 +8,7 @@ import com.znsio.teswiz.context.SessionContext;
 import com.znsio.teswiz.context.TestExecutionContext;
 import com.znsio.teswiz.entities.Platform;
 import com.znsio.teswiz.entities.SAMPLE_TEST_CONTEXT;
+import com.znsio.teswiz.entities.VisionStrategy;
 import com.znsio.teswiz.runner.Drivers;
 import com.znsio.teswiz.runner.Runner;
 
@@ -50,5 +51,35 @@ public class TransportNswOcrSteps {
     @When("I visually click {string} using LLM with description {string}")
     public void iVisuallyClickUsingLlm(String elementName, String description) {
         new TransportNswOcrBL(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform()).clickElementUsingLlm(elementName, description);
+    }
+
+    @When("I visually click {string} within the Route Map panel using {string} with description {string}")
+    public void iVisuallyClickWithinRouteMapPanel(String elementName, String strategyPhrase, String description) {
+        VisionStrategy strategy = parseStrategy(strategyPhrase);
+        new TransportNswOcrBL(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform())
+                .clickElementInRouteMapPanel(elementName, strategy, description);
+    }
+
+    @Then("the route selector options list is displayed")
+    public void theRouteSelectorOptionsListIsDisplayed() {
+        new TransportNswOcrBL(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform()).verifyRouteSelectorOptionsListDisplayed();
+    }
+
+    /**
+     * Maps the human-readable strategy phrase used in the feature file ("LLM", "OCR-then-LLM") to the
+     * {@link VisionStrategy} enum. Only the LLM-backed strategies are accepted here, since these steps
+     * exercise the vision LLM locator.
+     */
+    private VisionStrategy parseStrategy(String strategyPhrase) {
+        String normalized = strategyPhrase.trim().toUpperCase().replace('-', '_');
+        switch (normalized) {
+            case "LLM":
+                return VisionStrategy.LLM;
+            case "OCR_THEN_LLM":
+                return VisionStrategy.OCR_THEN_LLM;
+            default:
+                throw new IllegalArgumentException("Unsupported vision strategy phrase: '" + strategyPhrase
+                        + "'. Expected 'LLM' or 'OCR-then-LLM'.");
+        }
     }
 }

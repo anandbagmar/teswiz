@@ -97,18 +97,14 @@ public class LlmVisionService implements LlmVisionEngine {
             return null;
         }
 
-        int offsetX = 0;
-        int offsetY = 0;
-        BufferedImage searchImage = image;
-        if (region != null) {
-            offsetX = Math.max(0, Math.min(region.getX(), image.getWidth() - 1));
-            offsetY = Math.max(0, Math.min(region.getY(), image.getHeight() - 1));
-            int w = Math.min(region.getWidth(), image.getWidth() - offsetX);
-            int h = Math.min(region.getHeight(), image.getHeight() - offsetY);
-            if (w > 0 && h > 0) {
-                searchImage = image.getSubimage(offsetX, offsetY, w, h);
-            }
-        }
+        double scaleFactor = (driverFacade != null) ? driverFacade.getViewportScaleFactor(image.getWidth()) : 1.0;
+        VisualRegionScaler.PixelRegion crop =
+                VisualRegionScaler.scaleRegionToPixels(region, image.getWidth(), image.getHeight(), scaleFactor);
+        int offsetX = crop.x();
+        int offsetY = crop.y();
+        BufferedImage searchImage = (region != null)
+                ? image.getSubimage(crop.x(), crop.y(), crop.width(), crop.height())
+                : image;
 
         byte[] searchImageBytes = encodePng(searchImage);
         if (searchImageBytes == null) {
@@ -124,7 +120,7 @@ public class LlmVisionService implements LlmVisionEngine {
         }
 
         VisualElement element = buildVisualElement(location, searchImage.getWidth(), searchImage.getHeight(), offsetX,
-                offsetY, effectiveDescription, driverFacade);
+                offsetY, scaleFactor, effectiveDescription, driverFacade);
         if (element != null) {
             saveCaptureIfEnabled(searchImage, location, effectiveDescription);
         }
@@ -144,7 +140,8 @@ public class LlmVisionService implements LlmVisionEngine {
             return "";
         }
 
-        BufferedImage searchImage = cropToRegion(image, region);
+        double scaleFactor = (driverFacade != null) ? driverFacade.getViewportScaleFactor(image.getWidth()) : 1.0;
+        BufferedImage searchImage = cropToRegion(image, region, scaleFactor);
         byte[] searchImageBytes = encodePng(searchImage);
         if (searchImageBytes == null) {
             return "";
@@ -160,15 +157,13 @@ public class LlmVisionService implements LlmVisionEngine {
      * Crops the screenshot to {@code region} (bounds-checked); returns the whole image when {@code region} is
      * {@code null} or degenerate.
      */
-    private BufferedImage cropToRegion(BufferedImage image, VisualRegion region) {
+    private BufferedImage cropToRegion(BufferedImage image, VisualRegion region, double scaleFactor) {
         if (region == null) {
             return image;
         }
-        int offsetX = Math.max(0, Math.min(region.getX(), image.getWidth() - 1));
-        int offsetY = Math.max(0, Math.min(region.getY(), image.getHeight() - 1));
-        int w = Math.min(region.getWidth(), image.getWidth() - offsetX);
-        int h = Math.min(region.getHeight(), image.getHeight() - offsetY);
-        return (w > 0 && h > 0) ? image.getSubimage(offsetX, offsetY, w, h) : image;
+        VisualRegionScaler.PixelRegion crop =
+                VisualRegionScaler.scaleRegionToPixels(region, image.getWidth(), image.getHeight(), scaleFactor);
+        return image.getSubimage(crop.x(), crop.y(), crop.width(), crop.height());
     }
 
     /**
@@ -453,31 +448,32 @@ public class LlmVisionService implements LlmVisionEngine {
     // --- Result building ---------------------------------------------------
 
     private VisualElement buildVisualElement(LlmLocation location, int imageWidth, int imageHeight, int offsetX,
-            int offsetY, String description, Driver driverFacade) {
-        if (!isWithinBounds(location, imageWidth, imageHeight)) {
-            LOGGER.warn("LLM vision returned out-of-bounds box [x={}, y={}, w={}, h={}] for image {}x{}; ignoring.",
+            int offsetY, double scaleFactor, String description, Driver driverFacade) {
+        // Clamp the located box to the crop bounds rather than rejecting it: a vision model routinely
+        // draws a box flush to (or 1px past) the image edge, which is a valid full-element match.
+        VisualRegionScaler.PixelRegion box =
+                VisualRegionScaler.clampBoxToImage(location.x, location.y, location.width, location.height,
+                        imageWidth, imageHeight);
+        if (box == null) {
+            LOGGER.warn("LLM vision returned an invalid box [x={}, y={}, w={}, h={}] for image {}x{}; ignoring.",
                     location.x, location.y, location.width, location.height, imageWidth, imageHeight);
             return null;
         }
 
-        double scaleFactor = (driverFacade != null) ? driverFacade.getViewportScaleFactor(imageWidth) : 1.0;
-        int logicalX = (int) Math.round((location.x + offsetX) / scaleFactor);
-        int logicalY = (int) Math.round((location.y + offsetY) / scaleFactor);
-        int logicalW = (int) Math.round(location.width / scaleFactor);
-        int logicalH = (int) Math.round(location.height / scaleFactor);
+        // box + offset are physical screenshot pixels (crop-relative -> absolute). Divide by the
+        // screenshot-level scaleFactor (computed from the FULL screenshot width, NOT the crop width)
+        // to get logical/viewport pixels. Using the crop width here would yield a bogus factor.
+        double factor = scaleFactor > 0 ? scaleFactor : 1.0;
+        int logicalX = (int) Math.round((box.x() + offsetX) / factor);
+        int logicalY = (int) Math.round((box.y() + offsetY) / factor);
+        int logicalW = (int) Math.round(box.width() / factor);
+        int logicalH = (int) Math.round(box.height() / factor);
 
         VisualElement element = new VisualElement(logicalX, logicalY, logicalW, logicalH, "LLM: " + description,
                 driverFacade);
         LOGGER.info("LLM vision located '{}' at viewport bounds [x={}, y={}, w={}, h={}] (scaleFactor: {})",
                 description, logicalX, logicalY, logicalW, logicalH, scaleFactor);
         return element;
-    }
-
-    private boolean isWithinBounds(LlmLocation location, int imageWidth, int imageHeight) {
-        if (location.x < 0 || location.y < 0 || location.width <= 0 || location.height <= 0) {
-            return false;
-        }
-        return location.x + location.width <= imageWidth && location.y + location.height <= imageHeight;
     }
 
     // --- Usage + traffic logging -------------------------------------------

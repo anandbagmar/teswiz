@@ -7,7 +7,9 @@ import org.apache.logging.log4j.Logger;
 
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
+import com.microsoft.playwright.options.BoundingBox;
 import com.znsio.teswiz.entities.VisionStrategy;
+import com.znsio.teswiz.entities.VisualRegion;
 import com.znsio.teswiz.runner.Visual;
 import com.znsio.teswiz.runner.VisualElement;
 import com.znsio.teswiz.screen.transportnsw.TransportNswOcrScreen;
@@ -82,6 +84,59 @@ public class TransportNswOcrScreenPlaywrightJava extends TransportNswOcrScreen {
         element.click();
         visually.checkWindow(SCREEN_NAME, "After clicking (LLM): " + elementName);
         return element;
+    }
+
+    @Override
+    public VisualElement clickElementInRouteMapPanel(String elementName, VisionStrategy strategy, String description) {
+        LOGGER.info("Playwright Java - Finding and clicking '{}' within the Route Map panel using {} with description: {}",
+                elementName, strategy, description);
+        VisualRegion panelRegion = resolveRouteMapPanelRegion();
+        LOGGER.info("Playwright Java - Route Map panel region for the visual locate: {}", panelRegion);
+        VisualElement element = visually.vision(strategy).findByText(description, panelRegion);
+        visually.checkWindow(SCREEN_NAME, "Before clicking (" + strategy + ", Route Map panel): " + elementName);
+        element.click();
+        visually.checkWindow(SCREEN_NAME, "After clicking (" + strategy + ", Route Map panel): " + elementName);
+        return element;
+    }
+
+    @Override
+    public boolean isRouteSelectorOptionsListDisplayed() {
+        LOGGER.info("Playwright Java - Verifying the route selector options list is displayed");
+        Locator optionsList = context.page().locator(
+                "[role='listbox'], .mat-mdc-select-panel, .cdk-overlay-pane:has([role='option']), "
+                        + ".cdk-overlay-pane li, .cdk-overlay-pane option");
+        boolean displayed = optionsList.count() > 0 && optionsList.first().isVisible();
+        LOGGER.info("Playwright Java - Route selector options list displayed? {}", displayed);
+        visually.checkWindow(SCREEN_NAME, "Route selector options list displayed: " + displayed);
+        return displayed;
+    }
+
+    /**
+     * Builds a {@link VisualRegion} bounding the "Route Map" panel from its on-page bounding box, so
+     * the vision locate is constrained to that panel. Falls back to {@code null} (whole-screen
+     * search) if the panel element or its bounds cannot be resolved.
+     */
+    private VisualRegion resolveRouteMapPanelRegion() {
+        try {
+            Locator panel = context.page()
+                    .getByText("Route Map", new Page.GetByTextOptions().setExact(true))
+                    .first()
+                    .locator("xpath=ancestor::*[self::section or self::div][1]");
+            if (panel.count() == 0) {
+                LOGGER.warn("Playwright Java - Route Map panel not found; locating against the whole screen");
+                return null;
+            }
+            BoundingBox box = panel.first().boundingBox();
+            if (box == null) {
+                LOGGER.warn("Playwright Java - Route Map panel has no bounding box; locating against the whole screen");
+                return null;
+            }
+            return VisualRegion.inRegion((int) box.x, (int) box.y, (int) box.width, (int) box.height);
+        } catch (RuntimeException e) {
+            LOGGER.warn("Playwright Java - Could not derive Route Map panel region ({}); locating against the whole screen",
+                    e.getMessage());
+            return null;
+        }
     }
 
     @Override

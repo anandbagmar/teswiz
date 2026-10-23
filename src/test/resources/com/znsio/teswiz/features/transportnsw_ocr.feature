@@ -60,16 +60,23 @@ Feature: Visual OCR and Image Recognition map navigation on Transport NSW Metro 
   # @proximity / @region). Run locally with a configured LLM endpoint + key, e.g.:
   #   CONFIG=./configs/transportnsw_ocr_config.properties TAG="@transportnsw and @llm" ./gradlew run
   # Requires LLM_VISION_FALLBACK_ENABLED=true and the provider endpoint/key in the config/env.
+  #
+  # These scenarios locate the 'Select route' dropdown within the Route Map panel (a large, labelled
+  # control the LLM locates reliably - pinpoint-clicking a pixel-sized map dot is the weakest case
+  # for an LLM locator). The locate is region-scoped to the panel so the model cannot return a
+  # coordinate up in the body text, and the outcome is VERIFIED against the DOM: the Then step asserts
+  # the dropdown's options list actually opened, so a wrong locate fails the test instead of silently
+  # passing a click that hit nothing.
   @web @llm @ocrThenLlm
-  Scenario: Navigate the Metro map using the OCR-then-LLM fallback strategy
+  Scenario: Open the Route Map route selector using the OCR-then-LLM fallback strategy
     Given I navigate to the Transport NSW Metro page at "https://transportnsw.info/travel-info/ways-to-get-around/metro"
     When I scroll to the "Explore the new route" interactive map section
-    And I visually click "a station dot on the Metro map" using OCR-then-LLM with description "a solid green circular station dot on the metro map"
-    And I visually click "Departures from here" using OCR-then-LLM with description "the 'Departures from here' option in the station callout popup"
+    And I visually click "the Select route dropdown" within the Route Map panel using "OCR-then-LLM" with description "the 'Select route' dropdown field showing 'Tallawong to Bankstown'"
+    Then the route selector options list is displayed
 
   @web @llm @llmOnly
-  Scenario: Navigate the Metro map using the LLM vision locator only
+  Scenario: Open the Route Map route selector using the LLM vision locator only
     Given I navigate to the Transport NSW Metro page at "https://transportnsw.info/travel-info/ways-to-get-around/metro"
     When I scroll to the "Explore the new route" interactive map section
-    And I visually click "a station dot on the Metro map" using LLM with description "a solid green circular station dot on the metro map"
-    And I visually click "Departures from here" using LLM with description "the 'Departures from here' option in the station callout popup"
+    And I visually click "the Select route dropdown" within the Route Map panel using "LLM" with description "the 'Select route' dropdown field showing 'Tallawong to Bankstown'"
+    Then the route selector options list is displayed

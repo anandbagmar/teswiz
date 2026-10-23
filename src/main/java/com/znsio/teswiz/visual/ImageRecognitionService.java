@@ -67,13 +67,13 @@ public class ImageRecognitionService {
         int offsetX = 0;
         int offsetY = 0;
         if (region != null) {
-            offsetX = Math.max(0, Math.min(region.getX(), bufferedImage.getWidth() - 1));
-            offsetY = Math.max(0, Math.min(region.getY(), bufferedImage.getHeight() - 1));
-            int w = Math.min(region.getWidth(), bufferedImage.getWidth() - offsetX);
-            int h = Math.min(region.getHeight(), bufferedImage.getHeight() - offsetY);
-            if (w > 0 && h > 0) {
-                bufferedImage = bufferedImage.getSubimage(offsetX, offsetY, w, h);
-            }
+            double scaleFactor = (driverFacade != null) ? driverFacade.getViewportScaleFactor(bufferedImage.getWidth())
+                    : 1.0;
+            VisualRegionScaler.PixelRegion crop = VisualRegionScaler.scaleRegionToPixels(
+                    region, bufferedImage.getWidth(), bufferedImage.getHeight(), scaleFactor);
+            offsetX = crop.x();
+            offsetY = crop.y();
+            bufferedImage = bufferedImage.getSubimage(crop.x(), crop.y(), crop.width(), crop.height());
         }
 
         Mat sceneMat = bufferedImageToMat(bufferedImage);
@@ -124,13 +124,13 @@ public class ImageRecognitionService {
         int offsetX = 0;
         int offsetY = 0;
         if (region != null) {
-            offsetX = Math.max(0, Math.min(region.getX(), bufferedImage.getWidth() - 1));
-            offsetY = Math.max(0, Math.min(region.getY(), bufferedImage.getHeight() - 1));
-            int w = Math.min(region.getWidth(), bufferedImage.getWidth() - offsetX);
-            int h = Math.min(region.getHeight(), bufferedImage.getHeight() - offsetY);
-            if (w > 0 && h > 0) {
-                bufferedImage = bufferedImage.getSubimage(offsetX, offsetY, w, h);
-            }
+            double scaleFactor = (driverFacade != null) ? driverFacade.getViewportScaleFactor(bufferedImage.getWidth())
+                    : 1.0;
+            VisualRegionScaler.PixelRegion crop = VisualRegionScaler.scaleRegionToPixels(
+                    region, bufferedImage.getWidth(), bufferedImage.getHeight(), scaleFactor);
+            offsetX = crop.x();
+            offsetY = crop.y();
+            bufferedImage = bufferedImage.getSubimage(crop.x(), crop.y(), crop.width(), crop.height());
         }
 
         Mat sceneMat = bufferedImageToMat(bufferedImage);

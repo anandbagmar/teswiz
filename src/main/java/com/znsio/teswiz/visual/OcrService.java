@@ -87,7 +87,7 @@ public class OcrService {
 
         double scaleFactor = (driverFacade != null) ? driverFacade.getViewportScaleFactor(bufferedImage.getWidth())
                 : 1.0;
-        CroppedRegion cropped = cropRegion(bufferedImage, region);
+        CroppedRegion cropped = cropRegion(bufferedImage, region, scaleFactor);
 
         applyCustomJnaLibraryPath();
         String tessDataPath = resolveTessDataPath();
@@ -150,7 +150,7 @@ public class OcrService {
 
         double scaleFactor = (driverFacade != null) ? driverFacade.getViewportScaleFactor(bufferedImage.getWidth())
                 : 1.0;
-        CroppedRegion cropped = cropRegion(bufferedImage, region);
+        CroppedRegion cropped = cropRegion(bufferedImage, region, scaleFactor);
 
         applyCustomJnaLibraryPath();
         String tessDataPath = resolveTessDataPath();
@@ -232,7 +232,9 @@ public class OcrService {
         }
 
         OcrReadHint effectiveHint = hint != null ? hint : OcrReadHint.defaults();
-        CroppedRegion cropped = cropRegion(bufferedImage, region);
+        double scaleFactor = (driverFacade != null) ? driverFacade.getViewportScaleFactor(bufferedImage.getWidth())
+                : 1.0;
+        CroppedRegion cropped = cropRegion(bufferedImage, region, scaleFactor);
         BufferedImage readyToRead = upscale(preprocessForOcr(cropped.image), effectiveHint.getUpscaleFactor());
 
         applyCustomJnaLibraryPath();
@@ -782,15 +784,15 @@ public class OcrService {
     }
 
     private static CroppedRegion cropRegion(BufferedImage bufferedImage,
-            com.znsio.teswiz.entities.VisualRegion region) {
+            com.znsio.teswiz.entities.VisualRegion region, double scaleFactor) {
         if (region == null) {
             return new CroppedRegion(bufferedImage, 0, 0);
         }
-        int offsetX = Math.max(0, Math.min(region.getX(), bufferedImage.getWidth() - 1));
-        int offsetY = Math.max(0, Math.min(region.getY(), bufferedImage.getHeight() - 1));
-        int w = Math.min(region.getWidth(), bufferedImage.getWidth() - offsetX);
-        int h = Math.min(region.getHeight(), bufferedImage.getHeight() - offsetY);
-        BufferedImage subimage = (w > 0 && h > 0) ? bufferedImage.getSubimage(offsetX, offsetY, w, h) : bufferedImage;
-        return new CroppedRegion(subimage, offsetX, offsetY);
+        // Region is in logical/viewport pixels; the screenshot is in physical pixels. Scale by the
+        // runtime factor so the crop is correct on Retina/HiDPI/external displays.
+        VisualRegionScaler.PixelRegion crop = VisualRegionScaler.scaleRegionToPixels(
+                region, bufferedImage.getWidth(), bufferedImage.getHeight(), scaleFactor);
+        BufferedImage subimage = bufferedImage.getSubimage(crop.x(), crop.y(), crop.width(), crop.height());
+        return new CroppedRegion(subimage, crop.x(), crop.y());
     }
 }
