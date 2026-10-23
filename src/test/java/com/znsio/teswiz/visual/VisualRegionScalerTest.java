@@ -111,4 +111,48 @@ class VisualRegionScalerTest {
     void clampBox_rejectsNegativeOrigin() {
         assertThat(VisualRegionScaler.clampBoxToImage(-1, 10, 20, 20, 261, 104)).isNull();
     }
+
+    // --- toLogicalRegion: physical crop-relative match -> absolute logical/viewport coordinates ----
+
+    @Test
+    void toLogical_unitScale_noOffset_returnsSameCoordinates() {
+        VisualRegionScaler.PixelRegion logical = VisualRegionScaler.toLogicalRegion(100, 200, 50, 40, 0, 0, 1.0);
+
+        assertThat(logical.x()).isEqualTo(100);
+        assertThat(logical.y()).isEqualTo(200);
+        assertThat(logical.width()).isEqualTo(50);
+        assertThat(logical.height()).isEqualTo(40);
+    }
+
+    @Test
+    void toLogical_addsCropOffsetBeforeScaling() {
+        // match at crop-relative (10,20) inside a region cropped at physical offset (300,640), unit scale:
+        // absolute physical = (310, 660); logical (scale 1.0) = (310, 660).
+        VisualRegionScaler.PixelRegion logical = VisualRegionScaler.toLogicalRegion(10, 20, 30, 25, 300, 640, 1.0);
+
+        assertThat(logical.x()).isEqualTo(310);
+        assertThat(logical.y()).isEqualTo(660);
+        assertThat(logical.width()).isEqualTo(30);
+        assertThat(logical.height()).isEqualTo(25);
+    }
+
+    @Test
+    void toLogical_retina2x_addsOffsetThenDividesByScale() {
+        // Retina: crop offset is in physical px (e.g. 618 = 309 logical * 2). A match at crop-relative
+        // (40,60) -> absolute physical (658,760) -> logical (/2) = (329, 380).
+        VisualRegionScaler.PixelRegion logical = VisualRegionScaler.toLogicalRegion(40, 60, 100, 80, 618, 700, 2.0);
+
+        assertThat(logical.x()).isEqualTo(329);
+        assertThat(logical.y()).isEqualTo(380);
+        assertThat(logical.width()).isEqualTo(50);
+        assertThat(logical.height()).isEqualTo(40);
+    }
+
+    @Test
+    void toLogical_nonPositiveScaleFallsBackToUnit() {
+        VisualRegionScaler.PixelRegion logical = VisualRegionScaler.toLogicalRegion(10, 10, 20, 20, 0, 0, 0.0);
+
+        assertThat(logical.x()).isEqualTo(10);
+        assertThat(logical.y()).isEqualTo(10);
+    }
 }

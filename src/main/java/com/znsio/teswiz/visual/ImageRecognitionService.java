@@ -64,11 +64,14 @@ public class ImageRecognitionService {
             return null;
         }
 
+        // scaleFactor MUST be computed from the FULL screenshot width (before cropping), so it stays
+        // correct on Retina/HiDPI regardless of the region crop size.
+        double scaleFactor = (driverFacade != null) ? driverFacade.getViewportScaleFactor(bufferedImage.getWidth())
+                : 1.0;
+
         int offsetX = 0;
         int offsetY = 0;
         if (region != null) {
-            double scaleFactor = (driverFacade != null) ? driverFacade.getViewportScaleFactor(bufferedImage.getWidth())
-                    : 1.0;
             VisualRegionScaler.PixelRegion crop = VisualRegionScaler.scaleRegionToPixels(
                     region, bufferedImage.getWidth(), bufferedImage.getHeight(), scaleFactor);
             offsetX = crop.x();
@@ -90,11 +93,11 @@ public class ImageRecognitionService {
 
                 try {
                     String templateName = new File(templatePath).getName();
-                    VisualElement match = matchMultiScale(sceneMat, templateMat, templateName, confidenceThreshold, driverFacade);
+                    VisualElement match = matchMultiScale(sceneMat, templateMat, templateName, confidenceThreshold,
+                            offsetX, offsetY, scaleFactor, driverFacade);
                     if (match != null) {
-                        VisualElement offsetMatch = match.withOffset(offsetX, offsetY);
-                        LOGGER.info("Successfully matched visual template '{}' at bounds {}", templateName, offsetMatch);
-                        return offsetMatch;
+                        LOGGER.info("Successfully matched visual template '{}' at bounds {}", templateName, match);
+                        return match;
                     }
                 } finally {
                     templateMat.release();
@@ -121,11 +124,13 @@ public class ImageRecognitionService {
             return Collections.emptyList();
         }
 
+        // scaleFactor MUST be computed from the FULL screenshot width (before cropping).
+        double scaleFactor = (driverFacade != null) ? driverFacade.getViewportScaleFactor(bufferedImage.getWidth())
+                : 1.0;
+
         int offsetX = 0;
         int offsetY = 0;
         if (region != null) {
-            double scaleFactor = (driverFacade != null) ? driverFacade.getViewportScaleFactor(bufferedImage.getWidth())
-                    : 1.0;
             VisualRegionScaler.PixelRegion crop = VisualRegionScaler.scaleRegionToPixels(
                     region, bufferedImage.getWidth(), bufferedImage.getHeight(), scaleFactor);
             offsetX = crop.x();
@@ -148,10 +153,8 @@ public class ImageRecognitionService {
 
                 try {
                     String templateName = new File(templatePath).getName();
-                    List<VisualElement> templateMatches = matchAllMultiScale(sceneMat, templateMat, templateName, confidenceThreshold, driverFacade);
-                    for (VisualElement m : templateMatches) {
-                        matches.add(m.withOffset(offsetX, offsetY));
-                    }
+                    matches.addAll(matchAllMultiScale(sceneMat, templateMat, templateName, confidenceThreshold,
+                            offsetX, offsetY, scaleFactor, driverFacade));
                 } finally {
                     templateMat.release();
                 }
@@ -208,7 +211,8 @@ public class ImageRecognitionService {
         return templateMat;
     }
 
-    private static VisualElement matchMultiScale(Mat scene, Mat template, String templateName, double threshold, Driver driverFacade) {
+    private static VisualElement matchMultiScale(Mat scene, Mat template, String templateName, double threshold,
+            int offsetX, int offsetY, double scaleFactor, Driver driverFacade) {
         double bestVal = -1.0;
         Point bestLoc = null;
         int bestW = 0;
@@ -247,7 +251,8 @@ public class ImageRecognitionService {
         }
 
         if (bestVal >= threshold && bestLoc != null) {
-            return buildMatchedVisualElement(bestLoc, bestW, bestH, templateName, sceneWidth, bestVal, threshold, driverFacade);
+            return buildMatchedVisualElement(bestLoc, bestW, bestH, templateName, bestVal, threshold,
+                    offsetX, offsetY, scaleFactor, driverFacade);
         }
 
         if (LOGGER.isDebugEnabled()) {
@@ -256,7 +261,8 @@ public class ImageRecognitionService {
         return null;
     }
 
-    private static List<VisualElement> matchAllMultiScale(Mat scene, Mat template, String templateName, double threshold, Driver driverFacade) {
+    private static List<VisualElement> matchAllMultiScale(Mat scene, Mat template, String templateName, double threshold,
+            int offsetX, int offsetY, double scaleFactor, Driver driverFacade) {
         List<VisualElement> results = new ArrayList<>();
         int sceneWidth = scene.cols();
         int sceneHeight = scene.rows();
@@ -275,17 +281,16 @@ public class ImageRecognitionService {
                 Mat resultMat = new Mat();
                 try {
                     Imgproc.matchTemplate(scene, scaledTemplate, resultMat, Imgproc.TM_CCOEFF_NORMED);
-                    double scaleFactor = (driverFacade != null) ? driverFacade.getViewportScaleFactor(sceneWidth) : 1.0;
 
                     for (int y = 0; y < resultMat.rows(); y++) {
                         for (int x = 0; x < resultMat.cols(); x++) {
                             double matchVal = resultMat.get(y, x)[0];
                             if (matchVal >= threshold) {
-                                int logicalX = (int) Math.round(x / scaleFactor);
-                                int logicalY = (int) Math.round(y / scaleFactor);
-                                int logicalW = (int) Math.round(scaledW / scaleFactor);
-                                int logicalH = (int) Math.round(scaledH / scaleFactor);
-                                results.add(new VisualElement(logicalX, logicalY, logicalW, logicalH, templateName, driverFacade));
+                                // Add the crop offset (physical px) then convert to logical/viewport px.
+                                VisualRegionScaler.PixelRegion logical = VisualRegionScaler.toLogicalRegion(
+                                        x, y, scaledW, scaledH, offsetX, offsetY, scaleFactor);
+                                results.add(new VisualElement(logical.x(), logical.y(), logical.width(),
+                                        logical.height(), templateName, driverFacade));
                             }
                         }
                     }
@@ -303,20 +308,21 @@ public class ImageRecognitionService {
         return scaledW > sceneWidth || scaledH > sceneHeight || scaledW < 5 || scaledH < 5;
     }
 
-    private static VisualElement buildMatchedVisualElement(Point bestLoc, int bestW, int bestH, String templateName, int sceneWidth, double matchVal, double threshold, Driver driverFacade) {
+    private static VisualElement buildMatchedVisualElement(Point bestLoc, int bestW, int bestH, String templateName,
+            double matchVal, double threshold, int offsetX, int offsetY, double scaleFactor, Driver driverFacade) {
         if (LOGGER.isInfoEnabled()) {
             LOGGER.info(String.format("Template '%s' matched with score %.4f >= threshold %.2f", templateName, matchVal, threshold));
         }
-        double scaleFactor = (driverFacade != null) ? driverFacade.getViewportScaleFactor(sceneWidth) : 1.0;
-        int logicalX = (int) Math.round(bestLoc.x / scaleFactor);
-        int logicalY = (int) Math.round(bestLoc.y / scaleFactor);
-        int logicalW = (int) Math.round(bestW / scaleFactor);
-        int logicalH = (int) Math.round(bestH / scaleFactor);
+        // bestLoc is crop-relative physical px. Add the crop offset, then convert to logical/viewport
+        // px using the FULL-screenshot scale factor (passed in, not derived from the crop width).
+        VisualRegionScaler.PixelRegion logical = VisualRegionScaler.toLogicalRegion(
+                (int) bestLoc.x, (int) bestLoc.y, bestW, bestH, offsetX, offsetY, scaleFactor);
         if (LOGGER.isInfoEnabled()) {
-            LOGGER.info(String.format("Template '%s' matched at screenshot bounds [x=%d, y=%d, w=%d, h=%d] -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
-                templateName, (int) bestLoc.x, (int) bestLoc.y, bestW, bestH, logicalX, logicalY, logicalW, logicalH, scaleFactor));
+            LOGGER.info(String.format("Template '%s' matched at crop bounds [x=%d, y=%d, w=%d, h=%d] (crop offset %d,%d) -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
+                templateName, (int) bestLoc.x, (int) bestLoc.y, bestW, bestH, offsetX, offsetY,
+                logical.x(), logical.y(), logical.width(), logical.height(), scaleFactor));
         }
-        return new VisualElement(logicalX, logicalY, logicalW, logicalH, templateName, driverFacade);
+        return new VisualElement(logical.x(), logical.y(), logical.width(), logical.height(), templateName, driverFacade);
     }
 
     private static List<VisualElement> applyNonMaximumSuppression(List<VisualElement> rawMatches) {

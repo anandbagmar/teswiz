@@ -86,6 +86,31 @@ public final class VisualRegionScaler {
         return new PixelRegion(x, y, clampedWidth, clampedHeight);
     }
 
+    /**
+     * Converts a located box from physical, crop-relative screenshot pixels back to absolute
+     * logical/viewport pixels: adds the crop's physical offset, then divides by the physical/logical
+     * scale factor. This is the inverse of {@link #scaleRegionToPixels} and is shared by every
+     * engine that locates within a region (OCR, image matching, LLM) so clicks land in the right
+     * place on Retina/HiDPI and when a region offset is in play.
+     *
+     * @param x           match x relative to the crop, in physical pixels
+     * @param y           match y relative to the crop, in physical pixels
+     * @param width       match width, in physical pixels
+     * @param height      match height, in physical pixels
+     * @param offsetX     the crop's left edge in absolute physical screenshot pixels
+     * @param offsetY     the crop's top edge in absolute physical screenshot pixels
+     * @param scaleFactor physical/logical ratio (screenshotWidth / viewportWidth); &le; 0 means 1.0
+     */
+    public static PixelRegion toLogicalRegion(int x, int y, int width, int height, int offsetX, int offsetY,
+            double scaleFactor) {
+        double scale = scaleFactor > 0 ? scaleFactor : 1.0;
+        int logicalX = (int) Math.round((x + offsetX) / scale);
+        int logicalY = (int) Math.round((y + offsetY) / scale);
+        int logicalW = (int) Math.round(width / scale);
+        int logicalH = (int) Math.round(height / scale);
+        return new PixelRegion(logicalX, logicalY, logicalW, logicalH);
+    }
+
     private static int clamp(int value, int min, int max) {
         return Math.max(min, Math.min(value, max));
     }
