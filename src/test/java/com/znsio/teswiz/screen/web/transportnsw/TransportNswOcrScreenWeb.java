@@ -27,6 +27,10 @@ public class TransportNswOcrScreenWeb extends TransportNswOcrScreen {
     // Padding (px) added around the anchor element so the dropdown field and its label are fully
     // inside the region handed to the vision locator.
     private static final int REGION_PADDING = 40;
+    // How long to wait for the "Select route" field to be present after scrolling it into view.
+    // The page lazy-renders the Route Map panel, and the panel's position varies by viewport height
+    // and machine, so the field is scrolled into view (not assumed visible from the heading scroll).
+    private static final int ROUTE_SELECTOR_FIELD_WAIT_SECONDS = 10;
     // An opened select/dropdown options list. Covers Angular Material overlay panels, ARIA listboxes,
     // and a native <select> in an expanded state - whichever the site uses, an open list matches one.
     private static final By ROUTE_SELECTOR_OPTIONS_LIST = By.xpath(
@@ -181,37 +185,54 @@ public class TransportNswOcrScreenWeb extends TransportNswOcrScreen {
      * viewport screenshot, but {@code WebElement.getLocation()} returns DOCUMENT coordinates, so the
      * current scroll offset is subtracted to convert document-space to viewport-space (otherwise, on
      * a scrolled page, the region would point far below the screenshot and the crop would be empty).
-     * Falls back to {@code null} (whole-screen search) if the panel cannot be resolved or is not in
-     * the current viewport.
+     * <p>
+     * The "Select route" field is explicitly scrolled into view here rather than relying on the
+     * earlier heading scroll: the Route Map panel lazy-renders and its position varies by viewport
+     * height and machine, so on some displays the heading-centered scroll leaves the dropdown off
+     * screen. If the field still cannot be resolved after scrolling, this fails fast with an
+     * {@link IllegalStateException} instead of silently searching the whole screen - a whole-screen
+     * locate confidently clicks the wrong control and masks the real problem.
      */
     private VisualRegion resolveRouteMapPanelRegion() {
-        if (!driver.isElementPresent(ROUTE_SELECTOR_FIELD)) {
-            LOGGER.warn("Route selector field anchor not found; locating against the whole screen instead");
-            return null;
-        }
-        try {
-            org.openqa.selenium.WebElement field = driver.findElement(ROUTE_SELECTOR_FIELD);
-            org.openqa.selenium.Point docLocation = field.getLocation();
-            org.openqa.selenium.Dimension size = field.getSize();
+        org.openqa.selenium.WebElement field = scrollRouteSelectorFieldIntoView();
+        org.openqa.selenium.Point docLocation = field.getLocation();
+        org.openqa.selenium.Dimension size = field.getSize();
 
-            long scrollX = toLong(((org.openqa.selenium.JavascriptExecutor) driver.getInnerDriver())
-                    .executeScript("return Math.round(window.pageXOffset || document.documentElement.scrollLeft || 0);"));
-            long scrollY = toLong(((org.openqa.selenium.JavascriptExecutor) driver.getInnerDriver())
-                    .executeScript("return Math.round(window.pageYOffset || document.documentElement.scrollTop || 0);"));
+        long scrollX = toLong(((org.openqa.selenium.JavascriptExecutor) driver.getInnerDriver())
+                .executeScript("return Math.round(window.pageXOffset || document.documentElement.scrollLeft || 0);"));
+        long scrollY = toLong(((org.openqa.selenium.JavascriptExecutor) driver.getInnerDriver())
+                .executeScript("return Math.round(window.pageYOffset || document.documentElement.scrollTop || 0);"));
 
-            // Convert document-space to viewport-space, then pad so the field + label are fully framed.
-            int viewportX = (int) (docLocation.getX() - scrollX) - REGION_PADDING;
-            int viewportY = (int) (docLocation.getY() - scrollY) - REGION_PADDING;
-            int width = size.getWidth() + (2 * REGION_PADDING);
-            int height = size.getHeight() + (2 * REGION_PADDING);
-            VisualRegion region = VisualRegion.inRegion(viewportX, viewportY, width, height);
-            LOGGER.info("Route selector field: document=({}, {}), size=({}x{}), scroll=({}, {}) -> padded viewport region {}",
-                    docLocation.getX(), docLocation.getY(), size.getWidth(), size.getHeight(), scrollX, scrollY, region);
-            return region;
-        } catch (RuntimeException e) {
-            LOGGER.warn("Could not derive route selector region ({}); locating against the whole screen", e.getMessage());
-            return null;
+        // Convert document-space to viewport-space, then pad so the field + label are fully framed.
+        int viewportX = (int) (docLocation.getX() - scrollX) - REGION_PADDING;
+        int viewportY = (int) (docLocation.getY() - scrollY) - REGION_PADDING;
+        int width = size.getWidth() + (2 * REGION_PADDING);
+        int height = size.getHeight() + (2 * REGION_PADDING);
+        VisualRegion region = VisualRegion.inRegion(viewportX, viewportY, width, height);
+        LOGGER.info("Route selector field: document=({}, {}), size=({}x{}), scroll=({}, {}) -> padded viewport region {}",
+                docLocation.getX(), docLocation.getY(), size.getWidth(), size.getHeight(), scrollX, scrollY, region);
+        return region;
+    }
+
+    /**
+     * Waits for the "Select route" field to be present, scrolls it to the center of the viewport,
+     * and returns it. Throws {@link IllegalStateException} if the field never appears - the Route
+     * Map panel is required for this scenario, so an absent anchor is a hard failure, not a
+     * fall-back-to-whole-screen situation.
+     */
+    private org.openqa.selenium.WebElement scrollRouteSelectorFieldIntoView() {
+        if (!driver.isElementPresentWithin(ROUTE_SELECTOR_FIELD, ROUTE_SELECTOR_FIELD_WAIT_SECONDS)) {
+            throw new IllegalStateException(
+                    "Route selector field ('Tallawong to Bankstown') not found within "
+                            + ROUTE_SELECTOR_FIELD_WAIT_SECONDS + "s. The Route Map panel did not render in "
+                            + "the viewport, so the region for the visual locate cannot be derived.");
         }
+        org.openqa.selenium.WebElement field = driver.findElement(ROUTE_SELECTOR_FIELD);
+        ((org.openqa.selenium.JavascriptExecutor) driver.getInnerDriver())
+                .executeScript("arguments[0].scrollIntoView({block: 'center', inline: 'center'});", field);
+        // Let the scroll settle so getLocation()/scroll offsets are consistent with the screenshot.
+        try { Thread.sleep(500); } catch (InterruptedException ignored) {}
+        return field;
     }
 
     private long toLong(Object jsNumber) {

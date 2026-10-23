@@ -133,32 +133,42 @@ public class TransportNswOcrScreenPlaywrightJava extends TransportNswOcrScreen {
                     + "return !!(field && (field.textContent || '').includes('Tallawong to Bankstown'));"
                     + "}";
 
+    // Padding (px) added around the anchor element so the dropdown field and its label are fully
+    // inside the region handed to the vision locator.
+    private static final int REGION_PADDING = 40;
+
     /**
-     * Builds a {@link VisualRegion} bounding the "Route Map" panel from its on-page bounding box, so
-     * the vision locate is constrained to that panel. Falls back to {@code null} (whole-screen
-     * search) if the panel element or its bounds cannot be resolved.
+     * Builds a {@link VisualRegion} bounding the "Select route" field from its on-page bounding box
+     * (viewport-relative in Playwright, so no scroll-offset math is needed), so the vision locate is
+     * constrained to that dropdown. The field is scrolled into view first because the Route Map
+     * panel lazy-renders and its position varies by viewport height and machine. If the field cannot
+     * be resolved, this fails fast with an {@link IllegalStateException} instead of silently
+     * searching the whole screen - a whole-screen locate confidently clicks the wrong control.
      */
     private VisualRegion resolveRouteMapPanelRegion() {
-        try {
-            Locator panel = context.page()
-                    .getByText("Route Map", new Page.GetByTextOptions().setExact(true))
-                    .first()
-                    .locator("xpath=ancestor::*[self::section or self::div][1]");
-            if (panel.count() == 0) {
-                LOGGER.warn("Playwright Java - Route Map panel not found; locating against the whole screen");
-                return null;
-            }
-            BoundingBox box = panel.first().boundingBox();
-            if (box == null) {
-                LOGGER.warn("Playwright Java - Route Map panel has no bounding box; locating against the whole screen");
-                return null;
-            }
-            return VisualRegion.inRegion((int) box.x, (int) box.y, (int) box.width, (int) box.height);
-        } catch (RuntimeException e) {
-            LOGGER.warn("Playwright Java - Could not derive Route Map panel region ({}); locating against the whole screen",
-                    e.getMessage());
-            return null;
+        Locator field = context.page()
+                .getByText("Tallawong to Bankstown", new Page.GetByTextOptions().setExact(false))
+                .last();
+        if (field.count() == 0) {
+            throw new IllegalStateException(
+                    "Route selector field ('Tallawong to Bankstown') not found. The Route Map panel did "
+                            + "not render, so the region for the visual locate cannot be derived.");
         }
+        field.scrollIntoViewIfNeeded();
+        try { Thread.sleep(500); } catch (InterruptedException ignored) {}
+        BoundingBox box = field.boundingBox();
+        if (box == null) {
+            throw new IllegalStateException(
+                    "Route selector field has no bounding box; the Route Map panel is not visible in the viewport.");
+        }
+        int x = (int) box.x - REGION_PADDING;
+        int y = (int) box.y - REGION_PADDING;
+        int width = (int) box.width + (2 * REGION_PADDING);
+        int height = (int) box.height + (2 * REGION_PADDING);
+        VisualRegion region = VisualRegion.inRegion(x, y, width, height);
+        LOGGER.info("Playwright Java - Route selector field box=({}, {}, {}x{}) -> padded region {}",
+                (int) box.x, (int) box.y, (int) box.width, (int) box.height, region);
+        return region;
     }
 
     @Override
