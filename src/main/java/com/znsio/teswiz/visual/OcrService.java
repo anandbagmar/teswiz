@@ -100,28 +100,28 @@ public class OcrService {
             String normalizedSearch = searchText.trim().toLowerCase();
             List<Word> words = tesseract.getWords(cropped.image, RIL_WORD);
 
-            VisualElement wordMatch = matchTextInWords(words, normalizedSearch, searchText, scaleFactor, driverFacade);
+            VisualElement wordMatch = matchTextInWords(words, normalizedSearch, searchText, cropped.offsetX,
+                    cropped.offsetY, scaleFactor, driverFacade);
             if (wordMatch != null) {
-                return wordMatch.withOffset(cropped.offsetX, cropped.offsetY);
+                return wordMatch;
             }
 
             BufferedImage preprocessed = preprocessForOcr(cropped.image);
             List<Word> prepWords = tesseract.getWords(preprocessed, RIL_WORD);
-            VisualElement prepMatch = matchTextInWords(prepWords, normalizedSearch, searchText, scaleFactor,
-                    driverFacade);
+            VisualElement prepMatch = matchTextInWords(prepWords, normalizedSearch, searchText, cropped.offsetX,
+                    cropped.offsetY, scaleFactor, driverFacade);
             if (prepMatch != null) {
-                return prepMatch.withOffset(cropped.offsetX, cropped.offsetY);
+                return prepMatch;
             }
 
             VisualElement lineMatch = searchLineMatch(tesseract, cropped.image, normalizedSearch, searchText,
-                    scaleFactor, driverFacade);
+                    cropped.offsetX, cropped.offsetY, scaleFactor, driverFacade);
             if (lineMatch != null) {
-                return lineMatch.withOffset(cropped.offsetX, cropped.offsetY);
+                return lineMatch;
             }
 
-            VisualElement rotatedMatch = searchRotatedTextMatch(tesseract, cropped.image, normalizedSearch, searchText,
-                    scaleFactor, driverFacade);
-            return rotatedMatch != null ? rotatedMatch.withOffset(cropped.offsetX, cropped.offsetY) : null;
+            return searchRotatedTextMatch(tesseract, cropped.image, normalizedSearch, searchText, cropped.offsetX,
+                    cropped.offsetY, scaleFactor, driverFacade);
         } catch (UnsatisfiedLinkError e) {
             LOGGER.error("Native Tesseract shared library (libtesseract) could not be loaded: " + e.getMessage());
             throwNativeLibraryNotFoundException(e);
@@ -168,9 +168,8 @@ public class OcrService {
                 String wordText = word.getText();
                 if (wordText != null && isWordMatchingSearch(wordText, normalizedSearch)) {
                     Rectangle rect = word.getBoundingBox();
-                    VisualElement element = buildScaledVisualElement(rect.x, rect.y, rect.width, rect.height,
-                            scaleFactor, wordText.trim(), driverFacade);
-                    matches.add(element.withOffset(cropped.offsetX, cropped.offsetY));
+                    matches.add(buildVisualElementFromMatch(rect.x, rect.y, rect.width, rect.height,
+                            cropped.offsetX, cropped.offsetY, scaleFactor, wordText.trim(), driverFacade));
                 }
             }
 
@@ -181,9 +180,8 @@ public class OcrService {
                     String wordText = word.getText();
                     if (wordText != null && isWordMatchingSearch(wordText, normalizedSearch)) {
                         Rectangle rect = word.getBoundingBox();
-                        VisualElement element = buildScaledVisualElement(rect.x, rect.y, rect.width, rect.height,
-                                scaleFactor, wordText.trim(), driverFacade);
-                        matches.add(element.withOffset(cropped.offsetX, cropped.offsetY));
+                        matches.add(buildVisualElementFromMatch(rect.x, rect.y, rect.width, rect.height,
+                                cropped.offsetX, cropped.offsetY, scaleFactor, wordText.trim(), driverFacade));
                     }
                 }
             }
@@ -376,32 +374,34 @@ public class OcrService {
     }
 
     private static VisualElement matchTextInWords(List<Word> words, String normalizedSearch, String searchText,
-            double scaleFactor, Driver driverFacade) {
+            int offsetX, int offsetY, double scaleFactor, Driver driverFacade) {
         String[] searchTokens = normalizedSearch.split("\\s+");
         if (searchTokens.length > 1) {
-            VisualElement sequenceMatch = searchWordSequence(words, searchTokens, searchText, scaleFactor,
-                    driverFacade);
+            VisualElement sequenceMatch = searchWordSequence(words, searchTokens, searchText, offsetX, offsetY,
+                    scaleFactor, driverFacade);
             if (sequenceMatch != null) {
                 return sequenceMatch;
             }
         }
 
-        VisualElement exactMatch = searchExactWordMatch(words, normalizedSearch, searchText, scaleFactor, driverFacade);
+        VisualElement exactMatch = searchExactWordMatch(words, normalizedSearch, searchText, offsetX, offsetY,
+                scaleFactor, driverFacade);
         if (exactMatch != null) {
             return exactMatch;
         }
 
-        VisualElement boundaryMatch = searchWordBoundaryMatch(words, normalizedSearch, searchText, scaleFactor,
-                driverFacade);
+        VisualElement boundaryMatch = searchWordBoundaryMatch(words, normalizedSearch, searchText, offsetX, offsetY,
+                scaleFactor, driverFacade);
         if (boundaryMatch != null) {
             return boundaryMatch;
         }
 
-        return searchSubstringWordMatch(words, normalizedSearch, searchText, scaleFactor, driverFacade);
+        return searchSubstringWordMatch(words, normalizedSearch, searchText, offsetX, offsetY, scaleFactor,
+                driverFacade);
     }
 
     private static VisualElement searchWordSequence(List<Word> words, String[] searchTokens, String searchText,
-            double scaleFactor, Driver driverFacade) {
+            int offsetX, int offsetY, double scaleFactor, Driver driverFacade) {
         for (int i = 0; i <= words.size() - searchTokens.length; i++) {
             boolean sequenceMatched = true;
             for (int j = 0; j < searchTokens.length; j++) {
@@ -421,8 +421,8 @@ public class OcrService {
                 int rectW = maxX - minX;
                 int rectH = maxY - minY;
 
-                VisualElement candidate = buildScaledVisualElement(minX, minY, rectW, rectH, scaleFactor, searchText,
-                        driverFacade);
+                VisualElement candidate = buildVisualElementFromMatch(minX, minY, rectW, rectH, offsetX, offsetY,
+                        scaleFactor, searchText, driverFacade);
                 LOGGER.info("Found candidate OCR word sequence match '{}' at viewport bounds [x={}, y={}, w={}, h={}]",
                         searchText, candidate.getX(), candidate.getY(), candidate.getWidth(), candidate.getHeight());
                 return candidate;
@@ -432,15 +432,15 @@ public class OcrService {
     }
 
     private static VisualElement searchExactWordMatch(List<Word> words, String normalizedSearch, String searchText,
-            double scaleFactor, Driver driverFacade) {
+            int offsetX, int offsetY, double scaleFactor, Driver driverFacade) {
         for (Word word : words) {
             String wordText = word.getText();
             if (wordText != null) {
                 String cleaned = wordText.trim().replaceAll("^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$", "");
                 if (wordText.trim().equalsIgnoreCase(normalizedSearch) || cleaned.equalsIgnoreCase(normalizedSearch)) {
                     Rectangle rect = word.getBoundingBox();
-                    VisualElement element = buildScaledVisualElement(rect.x, rect.y, rect.width, rect.height,
-                            scaleFactor, wordText.trim(), driverFacade);
+                    VisualElement element = buildVisualElementFromMatch(rect.x, rect.y, rect.width, rect.height,
+                            offsetX, offsetY, scaleFactor, wordText.trim(), driverFacade);
                     if (LOGGER.isInfoEnabled()) {
                         LOGGER.info(String.format(
                                 "Found exact OCR word match '%s' for search '%s' at screenshot bounds [x=%d, y=%d, w=%d, h=%d] -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
@@ -455,15 +455,15 @@ public class OcrService {
     }
 
     private static VisualElement searchWordBoundaryMatch(List<Word> words, String normalizedSearch, String searchText,
-            double scaleFactor, Driver driverFacade) {
+            int offsetX, int offsetY, double scaleFactor, Driver driverFacade) {
         Pattern wordBoundaryPattern = Pattern.compile("\\b" + Pattern.quote(normalizedSearch) + "\\b",
                 Pattern.CASE_INSENSITIVE);
         for (Word word : words) {
             String wordText = word.getText();
             if (wordText != null && wordBoundaryPattern.matcher(wordText.trim()).find()) {
                 Rectangle rect = word.getBoundingBox();
-                VisualElement element = buildScaledVisualElement(rect.x, rect.y, rect.width, rect.height, scaleFactor,
-                        wordText.trim(), driverFacade);
+                VisualElement element = buildVisualElementFromMatch(rect.x, rect.y, rect.width, rect.height, offsetX,
+                        offsetY, scaleFactor, wordText.trim(), driverFacade);
                 if (LOGGER.isInfoEnabled()) {
                     LOGGER.info(String.format(
                             "Found word-boundary OCR match '%s' for search '%s' at screenshot bounds [x=%d, y=%d, w=%d, h=%d] -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
@@ -477,13 +477,13 @@ public class OcrService {
     }
 
     private static VisualElement searchSubstringWordMatch(List<Word> words, String normalizedSearch, String searchText,
-            double scaleFactor, Driver driverFacade) {
+            int offsetX, int offsetY, double scaleFactor, Driver driverFacade) {
         for (Word word : words) {
             String wordText = word.getText();
             if (wordText != null && wordText.trim().toLowerCase().contains(normalizedSearch)) {
                 Rectangle rect = word.getBoundingBox();
-                VisualElement element = buildScaledVisualElement(rect.x, rect.y, rect.width, rect.height, scaleFactor,
-                        wordText.trim(), driverFacade);
+                VisualElement element = buildVisualElementFromMatch(rect.x, rect.y, rect.width, rect.height, offsetX,
+                        offsetY, scaleFactor, wordText.trim(), driverFacade);
                 if (LOGGER.isInfoEnabled()) {
                     LOGGER.info(String.format(
                             "Found OCR word substring match '%s' for search '%s' at screenshot bounds [x=%d, y=%d, w=%d, h=%d] -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
@@ -497,14 +497,15 @@ public class OcrService {
     }
 
     private static VisualElement searchLineMatch(Tesseract tesseract, BufferedImage bufferedImage,
-            String normalizedSearch, String searchText, double scaleFactor, Driver driverFacade) {
+            String normalizedSearch, String searchText, int offsetX, int offsetY, double scaleFactor,
+            Driver driverFacade) {
         List<Word> lines = tesseract.getWords(bufferedImage, RIL_TEXTLINE);
         for (Word line : lines) {
             String lineText = line.getText();
             if (lineText != null && lineText.trim().toLowerCase().contains(normalizedSearch)) {
                 Rectangle rect = line.getBoundingBox();
-                VisualElement element = buildScaledVisualElement(rect.x, rect.y, rect.width, rect.height, scaleFactor,
-                        lineText.trim(), driverFacade);
+                VisualElement element = buildVisualElementFromMatch(rect.x, rect.y, rect.width, rect.height, offsetX,
+                        offsetY, scaleFactor, lineText.trim(), driverFacade);
                 if (LOGGER.isInfoEnabled()) {
                     LOGGER.info(String.format(
                             "Found OCR text line match '%s' for search '%s' at screenshot bounds [x=%d, y=%d, w=%d, h=%d] -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
@@ -518,18 +519,20 @@ public class OcrService {
     }
 
     private static VisualElement searchRotatedTextMatch(Tesseract tesseract, BufferedImage originalImage,
-            String normalizedSearch, String searchText, double scaleFactor, Driver driverFacade) {
+            String normalizedSearch, String searchText, int offsetX, int offsetY, double scaleFactor,
+            Driver driverFacade) {
         VisualElement match = searchAngles(tesseract, originalImage, PRIMARY_ROTATION_ANGLES, normalizedSearch,
-                searchText, scaleFactor, driverFacade, "Primary");
+                searchText, offsetX, offsetY, scaleFactor, driverFacade, "Primary");
         if (match != null) {
             return match;
         }
         return searchAngles(tesseract, originalImage, FINE_GRAINED_ROTATION_ANGLES, normalizedSearch, searchText,
-                scaleFactor, driverFacade, "Fine-grained intermediate");
+                offsetX, offsetY, scaleFactor, driverFacade, "Fine-grained intermediate");
     }
 
     private static VisualElement searchAngles(Tesseract tesseract, BufferedImage originalImage, double[] angles,
-            String normalizedSearch, String searchText, double scaleFactor, Driver driverFacade, String passName) {
+            String normalizedSearch, String searchText, int offsetX, int offsetY, double scaleFactor,
+            Driver driverFacade, String passName) {
         int origW = originalImage.getWidth();
         int origH = originalImage.getHeight();
 
@@ -540,7 +543,7 @@ public class OcrService {
             }
 
             List<Word> rotatedWords = tesseract.getWords(rotatedImage, RIL_WORD);
-            VisualElement rawMatch = matchTextInWords(rotatedWords, normalizedSearch, searchText, 1.0, null);
+            VisualElement rawMatch = matchTextInWords(rotatedWords, normalizedSearch, searchText, 0, 0, 1.0, null);
             if (rawMatch != null) {
                 Rectangle rotRect = new Rectangle(rawMatch.getX(), rawMatch.getY(), rawMatch.getWidth(),
                         rawMatch.getHeight());
@@ -549,8 +552,8 @@ public class OcrService {
 
                 String matchedLabel = rawMatch.getLabel().startsWith("OCR: ") ? rawMatch.getLabel().substring(5)
                         : rawMatch.getLabel();
-                VisualElement element = buildScaledVisualElement(mappedRect.x, mappedRect.y, mappedRect.width,
-                        mappedRect.height, scaleFactor, matchedLabel, driverFacade);
+                VisualElement element = buildVisualElementFromMatch(mappedRect.x, mappedRect.y, mappedRect.width,
+                        mappedRect.height, offsetX, offsetY, scaleFactor, matchedLabel, driverFacade);
                 if (LOGGER.isInfoEnabled()) {
                     LOGGER.info(String.format(
                             "Found rotated OCR match '%s' for search '%s' during %s pass at angle %.1f° -> viewport bounds [x=%d, y=%d, w=%d, h=%d] (scaleFactor: %.2f)",
@@ -637,13 +640,23 @@ public class OcrService {
         }
     }
 
-    private static VisualElement buildScaledVisualElement(int rawX, int rawY, int rawWidth, int rawHeight,
-            double scaleFactor, String labelText, Driver driverFacade) {
-        int logicalX = (int) Math.round(rawX / scaleFactor);
-        int logicalY = (int) Math.round(rawY / scaleFactor);
-        int logicalW = (int) Math.round(rawWidth / scaleFactor);
-        int logicalH = (int) Math.round(rawHeight / scaleFactor);
-        return new VisualElement(logicalX, logicalY, logicalW, logicalH, "OCR: " + labelText, driverFacade);
+    /**
+     * Converts a raw OCR match - in physical, crop-relative screenshot pixels - to a
+     * {@link VisualElement} in absolute logical/viewport coordinates, routing through the shared
+     * {@link VisualRegionScaler#toLogicalRegion} so OCR uses the same coordinate conversion as image
+     * matching and the LLM locate. The crop offset (physical pixels) is added before dividing by the
+     * scale factor, which is what keeps clicks accurate on Retina/HiDPI displays when a region crop
+     * is in play. Package-private and {@code Driver}-free so the conversion can be unit-tested.
+     *
+     * @param offsetX the crop's left edge in absolute physical screenshot pixels ({@code 0} for a full-screen search)
+     * @param offsetY the crop's top edge in absolute physical screenshot pixels ({@code 0} for a full-screen search)
+     */
+    static VisualElement buildVisualElementFromMatch(int rawX, int rawY, int rawWidth, int rawHeight, int offsetX,
+            int offsetY, double scaleFactor, String labelText, Driver driverFacade) {
+        VisualRegionScaler.PixelRegion logical = VisualRegionScaler.toLogicalRegion(rawX, rawY, rawWidth, rawHeight,
+                offsetX, offsetY, scaleFactor);
+        return new VisualElement(logical.x(), logical.y(), logical.width(), logical.height(), "OCR: " + labelText,
+                driverFacade);
     }
 
     private static List<VisualElement> applyNonMaximumSuppression(List<VisualElement> rawMatches) {
