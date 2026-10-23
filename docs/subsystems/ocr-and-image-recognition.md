@@ -76,7 +76,7 @@ flowchart TD
     G2 --> H
     G3 --> H
 
-    H --> I["Map Screenshot Bounding Box to Logical Viewport Coordinates"]
+    H --> I["VisualRegionScaler.toLogicalRegion<br/>add crop offset, divide by scale factor"]
     I --> J["Automatic Highlight Overlay<br/>inject fixed CSS div or outline"]
     J --> K["Perform Native Click / Input / Verification Action"]
 ```
@@ -100,7 +100,7 @@ sequenceDiagram
         Driver->>LLM: Send screenshot plus description or reference images
         LLM-->>Driver: Return located bounds plus token usage
     end
-    Driver->>Driver: Convert bounds via getViewportScaleFactor
+    Driver->>Driver: VisualRegionScaler.toLogicalRegion (crop offset + scale factor)
     Driver->>Screen: Clear previous highlight overlay
     Driver->>Screen: Inject highlight overlay
     Step->>Driver: click or sendKeys or checkWindow
@@ -128,6 +128,13 @@ The subsystem follows the Feature → Step → BL → Screen pattern, with respo
   touch, native coordinate input, Selenium `Actions`, or synthesised DOM events.
 - **`VisualElementWebElementAdapter`** — adapts a `VisualElement` to the Selenium `WebElement` API (used by
   `VisualBy` locators), kept separate from the value object.
+- **`VisualRegionScaler`** — the single, pure helper that converts between logical/CSS pixels (what the DOM and
+  Selenium/Appium report) and physical/screenshot pixels (what a capture actually contains). It is used by every
+  region-aware engine (OCR, image matching, LLM): `scaleRegionToPixels` maps a logical `VisualRegion` to the
+  physical crop rectangle, `clampBoxToImage` keeps a located box inside the searched image (tolerating a box
+  flush to the edge), and `toLogicalRegion` converts a located box back to absolute logical coordinates by
+  adding the crop's physical offset and dividing by the runtime scale factor. Centralising this is what keeps
+  clicks accurate on Retina/HiDPI displays and when a region offset is in play.
 
 ---
 
@@ -135,9 +142,9 @@ The subsystem follows the Feature → Step → BL → Screen pattern, with respo
 
 The visual subsystem handles screen resolutions, High-DPI displays (macOS Retina 2x/3x, Windows 125%/150%/200% scale factor), and headless browser modes (`HEADLESS=true`):
 
-- **Dynamic Scale Factor**: `driver.getViewportScaleFactor(screenshotImageWidth)` calculates `scaleFactor = screenshotImageWidth / window.innerWidth` at runtime.
-- **Logical CSS Viewport Bounding**: OCR physical screenshot bounds `(x, y, w, h)` are dynamically divided by `scaleFactor` to produce logical CSS viewport coordinates.
-- **Universal Portability**: Highlight overlay `<div>` elements use CSS `position: fixed` and `pointer-events: none`, guaranteeing 100% accurate visual alignment across macOS, Windows, Linux, headed browsers, and headless CI execution.
+- **Dynamic Scale Factor**: `driver.getViewportScaleFactor(screenshotImageWidth)` calculates `scaleFactor = screenshotImageWidth / window.innerWidth` at runtime from the real capture, never hard-coded per OS.
+- **Central Coordinate Conversion**: all logical↔physical conversion lives in one pure helper, `VisualRegionScaler`, shared by the OCR, image-matching, and LLM engines. `scaleRegionToPixels` maps a logical `VisualRegion` to the physical crop rectangle (so a region-scoped locate crops the right part of a Retina screenshot), and `toLogicalRegion` converts the located box back by **adding the crop's physical offset and then dividing by `scaleFactor`** — the crop offset matters whenever the search runs on a sub-region rather than the whole screenshot.
+- **Universal Portability**: Highlight overlay `<div>` elements use CSS `position: fixed` and `pointer-events: none`, guaranteeing accurate visual alignment across macOS (Retina and non-Retina), Windows, Linux, external monitors, headed browsers, and headless CI execution.
 
 ---
 
