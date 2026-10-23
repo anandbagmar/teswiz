@@ -1,3 +1,84 @@
+## 1.0.45
+# Release Notes - teswiz v1.0.45
+
+_Previous release: v1.0.44_
+
+## 🚀 Key Highlights & Enhancements
+
+### 👁️ New: LLM Vision Locator (`VisionStrategy.LLM` / `VisionStrategy.OCR_THEN_LLM`)
+
+An opt-in, vision-capable LLM can now locate an on-screen element from a natural-language description (and/or reference images) when deterministic OCR and image matching are not enough. It is reached through the same strategy-scoped entry point as OCR — `driver.vision(VisionStrategy.LLM)` or `driver.vision(VisionStrategy.OCR_THEN_LLM)` — so the calling style is unchanged; only the strategy differs.
+
+- **Three vision strategies.** `VisionStrategy` now has `OCR`, `LLM`, and `OCR_THEN_LLM`. `OCR_THEN_LLM` tries deterministic OCR/image matching first and only falls back to the LLM on a miss (requires `IS_OCR_ENABLED=true`, since the first tier is OCR).
+- **Ten providers out of the box.** `openai`, `azure-openai`, `anthropic`, `gemini`, `vertex-gemini`, `groq`, `xai`, `openrouter`, `ollama`, `bedrock`, plus `custom` for any OpenAI-compatible chat-completions endpoint. A provider factory selects the implementation from config.
+- **Disabled by default and CI-safe.** The locator is off unless `LLM_VISION_FALLBACK_ENABLED=true`. The API key is read from an **environment variable** (the config stores only the env-var *name*, never the key), so it works cleanly in CI. `vertex-gemini` uses Google Application Default Credentials and `ollama` targets a local server, so neither needs an API key.
+- **Fail-fast startup validation.** When enabled, teswiz validates the configuration at startup — structural checks plus, for providers that expose a non-billable models listing, a lightweight authorization health-check — so misconfiguration fails immediately rather than mid-test. The health-check target is configurable (`LLM_VISION_HEALTH_CHECK_URL`): auto-derive (default), probe an explicit URL, or skip the live probe entirely.
+- **Per-call traffic logging and usage tracking.** Optional masked request/response capture is written under each scenario's `llm-vision-traffic/` report folder (`LLM_VISION_LOG_API_TRAFFIC`), and token usage is accumulated per run. Network retries and per-call timeout are configurable.
+
+### 🔢 New: OCR read-value API (`readText` / `readValue` / `readNumber`)
+
+The strategy-scoped finder now exposes **read-from-region** methods that return the recognised value rather than a clickable element:
+
+- `readText(region)` / `readText(region, hint)` — return whatever text is recognised in a region.
+- `readValue(region, description)` — read a described value (OCR, or LLM-assisted under the LLM arm).
+- `readNumber(region)` / `readNumber(region, description)` — read and normalise a numeric value (tolerant of currency symbols, whitespace, and thousands separators), returning `Optional<BigDecimal>`.
+
+A new `OcrReadHint` lets callers tune the read (page-segmentation mode, upscale factor, character whitelist), with digit-friendly defaults for numeric reads.
+
+### 🖥️ HiDPI / Retina coordinate accuracy for region-scoped locates
+
+Region-scoped visual locates now click the correct place across display environments — macOS Retina and non-Retina, external monitors, Windows, Linux, and headless.
+
+- **One central, pure converter: `VisualRegionScaler`.** It owns every conversion between logical/CSS pixels (what the DOM and Selenium/Appium report) and physical/screenshot pixels (what a capture contains): `scaleRegionToPixels` maps a logical `VisualRegion` to the physical crop rectangle, `clampBoxToImage` keeps a located box inside the searched image (tolerating a box flush to the edge), and `toLogicalRegion` converts a located box back to absolute logical coordinates by adding the crop's physical offset **before** dividing by the runtime scale factor.
+- **Scale factor is computed at runtime**, from the real screenshot width versus viewport width — never hard-coded per OS.
+- **All three engines share this one conversion.** `ImageRecognitionService`, `OcrService`, and the LLM locate were each handling crop-offset/scale their own way. OCR in particular added the crop offset in physical pixels to an already-scaled logical coordinate, which mislocated region-scoped matches by the scale factor on Retina displays. They now all route through `VisualRegionScaler.toLogicalRegion`.
+
+## 🛠️ Changed Files Summary
+
+- `build.gradle` — version bump to `1.0.45`; dependency upgrades (Selenium `4.51.0`, Appium java-client `11.0.0`, REST-assured `6.2.0`, Applitools Eyes `5.83.13`/`5.86.13`/`5.79.55`, ONNX Runtime `1.31.0`); new `compileOnly`/`test` dependency `com.google.auth:google-auth-library-oauth2-http:1.30.0` (for `vertex-gemini` ADC); plugin bumps (`io.freefair.aspectj` `9.8.2`, `ben-manes.versions` `0.66.0`); Gradle wrapper `9.8.1`.
+- `src/main/java/com/znsio/teswiz/visual/` — new LLM vision subsystem: `LlmVisionService`, `LlmVisionEngine`, `LlmVisionProvider` + `LlmVisionProviderFactory` and the ten provider classes, `LlmVisionConfigValidator`, `LlmVisionHealthCheckResolver`/`Probe`, `LlmVisionTrafficRecorder`/`CaptureWriter`, `LlmVisionUsage`/`UsageRegistry`, plus GCP token providers. New `VisualRegionScaler`; DPR/offset fixes in `ImageRecognitionService` and `OcrService`; new `OcrReadHint`.
+- `src/main/java/com/znsio/teswiz/runner/` — new `VisionFinder` (strategy-scoped `findBy*` + `readText`/`readValue`/`readNumber`); `Driver`, `Visual`, `VisualFinder`, `Runner`, `Setup` extended for the vision strategies and read API.
+- `src/main/java/com/znsio/teswiz/entities/VisionStrategy.java` — added `LLM` and `OCR_THEN_LLM`.
+- `configs/` — added the LLM-vision property block to the canonical template and every example `*.properties` file (all commented/opt-in, defaults preserved).
+- `docs/` — OCR/vision subsystem docs updated for the LLM locator, read-value API, and the `VisualRegionScaler` coordinate conversion.
+- `src/test/java/com/znsio/teswiz/visual/` + `runner/` — extensive new unit coverage: per-provider tests, config-validation/health-check, traffic recorder, usage registry, JSON parsing, `VisualRegionScalerTest`, `OcrCoordinateMappingTest`, `OcrReadHintTest`, `OcrNumberNormalizationTest`, `VisionFinderReadRoutingTest`, and a `transportnsw_ocr` scenario exercising region-scoped LLM/OCR-then-LLM locates.
+- `package.json` — `playwright` `1.64.1`, `@applitools/eyes-playwright` `1.51.1`, `appium-xcuitest-driver` `12.18.2`.
+
+## ⚙️ New Configuration Properties (all opt-in, disabled by default)
+
+Added to `configs/teswiz/teswiz_config.properties.template` (and all example configs, commented):
+
+| Property | Purpose |
+| :--- | :--- |
+| `LLM_VISION_FALLBACK_ENABLED` | Master switch for the LLM vision locator (default `false`). |
+| `LLM_VISION_PROVIDER` | `openai` / `azure-openai` / `anthropic` / `gemini` / `vertex-gemini` / `groq` / `xai` / `openrouter` / `ollama` / `bedrock` / `custom`. |
+| `LLM_VISION_MODEL` | Model id. Optional for openai/azure/anthropic/gemini/vertex-gemini; mandatory for groq, xai, openrouter, ollama, bedrock. |
+| `LLM_VISION_ENDPOINT` | Vision chat-completions endpoint. |
+| `LLM_VISION_API_KEY_ENV` | Name of the env var holding the API key (never the key itself). |
+| `LLM_VISION_API_VERSION` | Azure OpenAI api-version (default `2024-06-01`). |
+| `LLM_VISION_HEALTH_CHECK_URL` | Startup health-check target: blank (auto-derive), explicit URL, or `none`/`off`/`false` to skip. |
+| `LLM_VISION_MAX_RETRIES` | Network retries per LLM call (default `1`). |
+| `LLM_VISION_TIMEOUT_SECONDS` | Per-call network timeout (default `30`). |
+| `LLM_VISION_LOG_API_TRAFFIC` | Write masked per-call request/response files (default `true`). |
+| `LLM_VISION_SAVE_CAPTURES` | Save the images sent to the LLM for diagnostics (default `true`). |
+
+## ⬆️ Dependency & Tooling Updates
+
+- Selenium `4.50.0` → `4.51.0`
+- Appium java-client `10.1.1` → `11.0.0`
+- REST-assured `6.0.1` → `6.2.0`
+- Applitools Eyes: images `5.83.9` → `5.83.13`, playwright `5.86.9` → `5.86.13`, appium `5.79.50` → `5.79.55`
+- ONNX Runtime `1.30.0` → `1.31.0`; Byte Buddy `1.18.14` → `1.18.15`
+- New: `com.google.auth:google-auth-library-oauth2-http:1.30.0` (for `vertex-gemini` ADC)
+- Gradle wrapper `9.8.0` → `9.8.1`; AspectJ weaving plugin `9.8.0` → `9.8.2`; versions plugin `0.65.0` → `0.66.0`
+- Node: `playwright` `1.63.0` → `1.64.1`, `@applitools/eyes-playwright` `^1.49.3` → `1.51.1`, `appium-xcuitest-driver` `12.15.1` → `12.18.2`
+
+## 📝 Notes & Compatibility
+
+- **No breaking API changes.** The LLM locator and read-value methods are additive; existing OCR/image usage is unaffected. `VisionStrategy.OCR` behaviour is unchanged.
+- **LLM vision is strictly opt-in.** It stays disabled unless `LLM_VISION_FALLBACK_ENABLED=true`, and `OCR_THEN_LLM` additionally requires `IS_OCR_ENABLED=true`.
+- **Playwright browser binaries:** this release bumps Playwright to `1.64.1`. After upgrading, run `./node_modules/.bin/playwright install` (or `npx playwright install`) so the matching browser binaries are present, otherwise Playwright-engine tests fail to launch a browser.
+
 ## 1.0.44
 # Release Notes — teswiz v1.0.44
 
