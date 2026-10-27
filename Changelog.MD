@@ -1,3 +1,19 @@
+## 1.0.46-SNAPSHOT
+# Release Notes - teswiz v1.0.46-SNAPSHOT
+
+_Previous release: v1.0.45_
+
+## 🚀 Key Highlights & Enhancements
+### 🔔 New: generic test-run notification plumbing (`com.znsio.teswiz.reporting.notify`)
+Reusable Slack + email delivery of test-run results, so any teswiz consumer gets run-notifications without rebuilding the plumbing. Migrated from the casino integration-test framework (GAMC-19572); the consumer supplies only the message content (subject / Slack text / HTML body), teswiz owns gating and delivery.
+- **`NotificationConfig`** — loads a `notifications.properties` resource and layers an environment override on every switch (env wins over the file; a blank/absent env value falls through to the file). Secrets (Slack webhook URLs, SMTP password) are read only from the environment, never the file.
+- **`SlackSender`** — POSTs a message to a per-type incoming webhook via the JDK `HttpClient`; never throws (a blank webhook → `SKIPPED_NO_DESTINATION`, any transport error or non-2xx → `FAILED`).
+- **`EmailSender`** — sends a self-contained HTML email over SMTP via `jakarta.mail` (new `com.sun.mail:jakarta.mail` dependency), with bounded 15s connect/IO/write timeouts and an unauthenticated-relay path; never throws.
+- **`BranchGate`** — exact + glob branch allowlist with a stale-literal-entry report (a warning, never a failure).
+- **`RunEnvironment`** — resolves GitLab-CI vs local run provenance (pipeline/job/commit/runner, or host/user) plus a reconstructed reproduce command, from an injected environment map so it is unit-testable offline.
+- **`NotificationType` / `NotificationChannel` / `NotificationOutcome`** — the switch model (three types × two channels) and the sender outcome enum. `com.znsio.teswiz.exceptions.NotificationException` surfaces a broken config at load time.
+- All senders are delivery-safe: a notification problem is recorded as an outcome and swallowed, never failing a run. Unit-tested under `com.znsio.teswiz.reporting.notify`.
+
 ## 1.0.45
 # Release Notes - teswiz v1.0.45
 

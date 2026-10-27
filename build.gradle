@@ -20,7 +20,7 @@ plugins {
     id "io.github.ben-manes.versions" version "0.66.0"
 }
 
-def teswizVersion = "1.0.45"
+def teswizVersion = "1.0.46-SNAPSHOT"
 def aspectJVersion = "1.9.25.1"
 def jadbVersion = "1.3.0"
 
@@ -210,6 +210,11 @@ tasks.compileJava {
 
 dependencies {
     implementation fileTree(dir: "$project.projectDir/libs", include: ['*.jar'])
+
+    // Email notifications (GAMC-19572): Jakarta Mail for correct MIME/HTML + STARTTLS in
+    // com.znsio.teswiz.reporting.notify.EmailSender, rather than a hand-rolled SMTP client.
+    // com.sun.mail:jakarta.mail bundles both the jakarta.mail API and its Angus runtime.
+    implementation 'com.sun.mail:jakarta.mail:2.0.1'
 
     // api: types from these leak into teswiz's own public method signatures/fields/extends
     // clauses, so downstream consumers need them on their compile classpath too. See
