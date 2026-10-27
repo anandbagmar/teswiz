@@ -71,12 +71,12 @@ Feature: Visual OCR and Image Recognition map navigation on Transport NSW Metro 
   Scenario: Open the Route Map route selector using the OCR-then-LLM fallback strategy
     Given I navigate to the Transport NSW Metro page at "https://transportnsw.info/travel-info/ways-to-get-around/metro"
     When I scroll to the "Explore the new route" interactive map section
-    And I visually click "the Select route dropdown" within the Route Map panel using "OCR-then-LLM" with description "the 'Select route' dropdown field showing 'Tallawong to Bankstown'"
+    And I visually click "the Select route dropdown" within the Route Map panel using "OCR-then-LLM" with description "the 'Select route' dropdown field showing the Metro route between Tallawong and Bankstown"
     Then the route selector options list is displayed
 
   @web @llm @llmOnly
   Scenario: Open the Route Map route selector using the LLM vision locator only
     Given I navigate to the Transport NSW Metro page at "https://transportnsw.info/travel-info/ways-to-get-around/metro"
     When I scroll to the "Explore the new route" interactive map section
-    And I visually click "the Select route dropdown" within the Route Map panel using "LLM" with description "the 'Select route' dropdown field showing 'Tallawong to Bankstown'"
+    And I visually click "the Select route dropdown" within the Route Map panel using "LLM" with description "the 'Select route' dropdown field showing the Metro route between Tallawong and Bankstown"
     Then the route selector options list is displayed

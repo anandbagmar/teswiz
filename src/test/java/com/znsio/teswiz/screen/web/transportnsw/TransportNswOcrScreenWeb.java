@@ -17,13 +17,17 @@ public class TransportNswOcrScreenWeb extends TransportNswOcrScreen {
     private static final String SCREEN_NAME = TransportNswOcrScreenWeb.class.getSimpleName();
     private static final Logger LOGGER = LogManager.getLogger(SCREEN_NAME);
 
-    // Anchor the region on the current route value ("Tallawong to Bankstown"), which sits inside the
-    // "Select route" dropdown field. Deriving the region from this element (with padding) frames the
-    // actual dropdown for the vision locate, rather than the panel heading. A broad ancestor of the
-    // heading was previously used but resolved to just the heading strip (above the dropdown).
+    // Anchor the region on the current route value, which sits inside the "Select route" dropdown
+    // field. Deriving the region from this element (with padding) frames the actual dropdown for the
+    // vision locate, rather than the panel heading. A broad ancestor of the heading was previously
+    // used but resolved to just the heading strip (above the dropdown).
+    // The route label names the two terminus stations ("Tallawong" and "Bankstown") but the site
+    // varies the direction ("Tallawong to Bankstown" vs "Bankstown to Tallawong"), so the anchor
+    // matches on the presence of BOTH station names rather than a fixed ordering.
     private static final By ROUTE_SELECTOR_FIELD = By.xpath(
-            "//*[contains(normalize-space(.), 'Tallawong to Bankstown')]"
-                    + "[not(.//*[contains(normalize-space(.), 'Tallawong to Bankstown')])]");
+            "//*[contains(normalize-space(.), 'Tallawong') and contains(normalize-space(.), 'Bankstown')]"
+                    + "[not(.//*[contains(normalize-space(.), 'Tallawong') "
+                    + "and contains(normalize-space(.), 'Bankstown')])]");
     // Padding (px) added around the anchor element so the dropdown field and its label are fully
     // inside the region handed to the vision locator.
     private static final int REGION_PADDING = 40;
@@ -46,13 +50,14 @@ public class TransportNswOcrScreenWeb extends TransportNswOcrScreen {
             "const overlay = document.querySelector("
                     + "\"[role='listbox'], .mat-mdc-select-panel, .cdk-overlay-pane [role='option']\");"
                     + "if (overlay) { return true; }"
+                    + "const hasRouteLabel = txt => txt.includes('Tallawong') && txt.includes('Bankstown');"
                     + "const expanded = Array.from(document.querySelectorAll(\"[aria-expanded='true']\"))"
-                    + "  .some(el => (el.textContent || '').includes('Tallawong to Bankstown'));"
+                    + "  .some(el => hasRouteLabel(el.textContent || ''));"
                     + "if (expanded) { return true; }"
                     + "const active = document.activeElement;"
                     + "if (!active) { return false; }"
                     + "const field = active.closest('mat-select, [role=\"combobox\"], label, .mat-mdc-form-field, div');"
-                    + "return !!(field && (field.textContent || '').includes('Tallawong to Bankstown'));";
+                    + "return !!(field && hasRouteLabel(field.textContent || ''));";
 
     private final Driver driver;
     private final Visual visually;
@@ -223,7 +228,7 @@ public class TransportNswOcrScreenWeb extends TransportNswOcrScreen {
     private org.openqa.selenium.WebElement scrollRouteSelectorFieldIntoView() {
         if (!driver.isElementPresentWithin(ROUTE_SELECTOR_FIELD, ROUTE_SELECTOR_FIELD_WAIT_SECONDS)) {
             throw new IllegalStateException(
-                    "Route selector field ('Tallawong to Bankstown') not found within "
+                    "Route selector field (showing the Tallawong/Bankstown route) not found within "
                             + ROUTE_SELECTOR_FIELD_WAIT_SECONDS + "s. The Route Map panel did not render in "
                             + "the viewport, so the region for the visual locate cannot be derived.");
         }

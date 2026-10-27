@@ -1,6 +1,7 @@
 package com.znsio.teswiz.screen.web.playwrightjava.transportnsw;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -124,14 +125,20 @@ public class TransportNswOcrScreenPlaywrightJava extends TransportNswOcrScreen {
                     + "const overlay = document.querySelector("
                     + "\"[role='listbox'], .mat-mdc-select-panel, .cdk-overlay-pane [role='option']\");"
                     + "if (overlay) { return true; }"
+                    + "const hasRouteLabel = txt => txt.includes('Tallawong') && txt.includes('Bankstown');"
                     + "const expanded = Array.from(document.querySelectorAll(\"[aria-expanded='true']\"))"
-                    + "  .some(el => (el.textContent || '').includes('Tallawong to Bankstown'));"
+                    + "  .some(el => hasRouteLabel(el.textContent || ''));"
                     + "if (expanded) { return true; }"
                     + "const active = document.activeElement;"
                     + "if (!active) { return false; }"
                     + "const field = active.closest('mat-select, [role=\"combobox\"], label, .mat-mdc-form-field, div');"
-                    + "return !!(field && (field.textContent || '').includes('Tallawong to Bankstown'));"
+                    + "return !!(field && hasRouteLabel(field.textContent || ''));"
                     + "}";
+
+    // The route label names both terminus stations ("Tallawong" and "Bankstown") but the site varies
+    // the direction, so match either ordering rather than a fixed "Tallawong to Bankstown" string.
+    private static final Pattern ROUTE_LABEL_PATTERN =
+            Pattern.compile("Tallawong.*Bankstown|Bankstown.*Tallawong");
 
     // Padding (px) added around the anchor element so the dropdown field and its label are fully
     // inside the region handed to the vision locator.
@@ -147,12 +154,12 @@ public class TransportNswOcrScreenPlaywrightJava extends TransportNswOcrScreen {
      */
     private VisualRegion resolveRouteMapPanelRegion() {
         Locator field = context.page()
-                .getByText("Tallawong to Bankstown", new Page.GetByTextOptions().setExact(false))
+                .getByText(ROUTE_LABEL_PATTERN)
                 .last();
         if (field.count() == 0) {
             throw new IllegalStateException(
-                    "Route selector field ('Tallawong to Bankstown') not found. The Route Map panel did "
-                            + "not render, so the region for the visual locate cannot be derived.");
+                    "Route selector field (showing the Tallawong/Bankstown route) not found. The Route Map "
+                            + "panel did not render, so the region for the visual locate cannot be derived.");
         }
         field.scrollIntoViewIfNeeded();
         try { Thread.sleep(500); } catch (InterruptedException ignored) {}
