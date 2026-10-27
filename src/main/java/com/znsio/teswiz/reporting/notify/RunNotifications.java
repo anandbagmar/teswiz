@@ -28,6 +28,7 @@ public final class RunNotifications {
     private static final String CI_BRANCH_ENV = "CI_COMMIT_REF_NAME";
     private static final String REPORTS_DIR = "reports";
     private static final String JUNIT_REPORT_FILE = "cucumber-junit-report.xml";
+    private static final String NOT_SET = "not-set";
 
     private RunNotifications() {
     }
@@ -113,7 +114,30 @@ public final class RunNotifications {
 
     private static String resolveBranch(Map<String, String> environment) {
         String ciRef = environment.get(CI_BRANCH_ENV);
-        return ciRef == null ? "" : ciRef.trim();
+        if (ciRef != null && !ciRef.trim().isEmpty()) {
+            return ciRef.trim();
+        }
+        return branchFromSetup();
+    }
+
+    /**
+     * Falls back to the branch teswiz already resolved during {@code Setup} (the {@code BRANCH_NAME} config, which is
+     * itself the {@code BRANCH_NAME} env/property else {@code git rev-parse --abbrev-ref HEAD}). This keeps branch
+     * resolution in one place — teswiz's {@code Setup} — instead of re-running git here. Returns an empty string when
+     * it is unset/unresolved so the branch gate behaves as "no branch". {@code Setup} is referenced fully-qualified on
+     * purpose: an auto-import-organizer keeps stripping an added import from this file.
+     */
+    private static String branchFromSetup() {
+        try {
+            String branch = com.znsio.teswiz.runner.Setup.getFromConfigs(com.znsio.teswiz.runner.Setup.BRANCH_NAME);
+            if (branch == null || branch.isBlank() || NOT_SET.equalsIgnoreCase(branch.trim())) {
+                return "";
+            }
+            return branch.trim();
+        } catch (RuntimeException e) {
+            LOGGER.debug("Could not read the branch from Setup; branch left empty: {}", e.getMessage());
+            return "";
+        }
     }
 
     private static String hostName() {

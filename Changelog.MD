@@ -4,15 +4,15 @@
 _Previous release: v1.0.45_
 
 ## 🚀 Key Highlights & Enhancements
-### 🔔 New: generic test-run notification plumbing (`com.znsio.teswiz.reporting.notify`)
-Reusable Slack + email delivery of test-run results, so any teswiz consumer gets run-notifications without rebuilding the plumbing. Migrated from the casino integration-test framework (GAMC-19572); the consumer supplies only the message content (subject / Slack text / HTML body), teswiz owns gating and delivery.
-- **`NotificationConfig`** — loads a `notifications.properties` resource and layers an environment override on every switch (env wins over the file; a blank/absent env value falls through to the file). Secrets (Slack webhook URLs, SMTP password) are read only from the environment, never the file.
-- **`SlackSender`** — POSTs a message to a per-type incoming webhook via the JDK `HttpClient`; never throws (a blank webhook → `SKIPPED_NO_DESTINATION`, any transport error or non-2xx → `FAILED`).
-- **`EmailSender`** — sends a self-contained HTML email over SMTP via `jakarta.mail` (new `com.sun.mail:jakarta.mail` dependency), with bounded 15s connect/IO/write timeouts and an unauthenticated-relay path; never throws.
-- **`BranchGate`** — exact + glob branch allowlist with a stale-literal-entry report (a warning, never a failure).
-- **`RunEnvironment`** — resolves GitLab-CI vs local run provenance (pipeline/job/commit/runner, or host/user) plus a reconstructed reproduce command, from an injected environment map so it is unit-testable offline.
-- **`NotificationType` / `NotificationChannel` / `NotificationOutcome`** — the switch model (three types × two channels) and the sender outcome enum. `com.znsio.teswiz.exceptions.NotificationException` surfaces a broken config at load time.
-- All senders are delivery-safe: a notification problem is recorded as an outcome and swallowed, never failing a run. Unit-tested under `com.znsio.teswiz.reporting.notify`.
+### 🔔 New: generic end-of-run notification engine (`com.znsio.teswiz.reporting.notify`)
+teswiz now owns the entire test-run notification runtime — Slack + email channels, delivery, gating, and the **end-of-run trigger** — so any consumer gets run-notifications by supplying only the message content. teswiz's `Runner` fires it itself after the cucumber report is written; a consumer configures a composer and never wires a Gradle task. Migrated and generalised from the casino integration-test framework (GAMC-19572).
+- **`RunNotifications.fireIfConfigured(...)`** — the entry point teswiz's `Runner` calls after `cucumber-junit-report.xml` is complete and before JVM exit. Loads `notifications.properties`, resolves the consumer's composer by the `notify.composer.class` key, builds a `RunResult` (JUnit XML from `LOG_DIR/reports/`, counts, run environment), and delivers via `Notifier`. A no-op when no composer is configured; every failure is logged and swallowed so a notifier problem never changes a run's result. The run branch is resolved from `CI_COMMIT_REF_NAME` else teswiz's already-resolved `Setup.BRANCH_NAME` (CI/property else git) — branch resolution stays in one place, not re-run here.
+- **`RunNotificationComposer` (SPI) + `Notification` / `RunResult`** — the consumer implements `compose(RunResult) → List<Notification>`; a `Notification` carries a free-form type key, subject, Slack text, HTML body, and the resolved per-channel destinations. teswiz never branches on the type key.
+- **`NotificationSettings`** — generic loader: reads a `.properties` resource and layers an environment override on every key (env wins; blank/absent env falls through to the file), mapping `notify.enabled` → `NOTIFY_ENABLED`. Secrets are read from the environment only, never the file.
+- **`Notifier`** — applies the master switch (`notify.enabled`) + branch allowlist (`notify.branches`) gate, then sends each `Notification` to the channels whose destination is present; returns a per-target `NotificationOutcome` map and never throws.
+- **`SlackSender`** — POSTs `{"text":...}` to an incoming webhook (the webhook URL is the channel + the secret); **`EmailSender`** sends self-contained HTML over SMTP via `jakarta.mail` with bounded 15s timeouts and an unauthenticated-relay path. Both never throw.
+- **Content helpers** — `JUnitResults` (parse the JUnit XML → counts + failures-by-feature), `HtmlReport` (status-banner card / footer / links / Slack separator / escape), `LlmUsageLog` (tolerant, fail-soft parse of teswiz's end-of-run "LLM Vision Usage Summary"), `RunEnvironment` (GitLab-CI vs local provenance). `BranchGate` + `NotificationChannel` + `NotificationOutcome` round out the model; `com.znsio.teswiz.exceptions.NotificationException` surfaces a broken config.
+- All delivery-safe: a notification problem is recorded as an outcome and swallowed, never failing a run. Unit-tested under `com.znsio.teswiz.reporting.notify`.
 
 ## 1.0.45
 # Release Notes - teswiz v1.0.45
