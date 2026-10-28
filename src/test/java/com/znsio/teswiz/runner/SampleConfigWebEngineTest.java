@@ -14,13 +14,21 @@ class SampleConfigWebEngineTest {
     private static final String CONFIGS_DIR = "configs";
     private static final String WEB_ENGINE = "WEB_ENGINE";
     private static final String SELENIUM = "selenium";
+    // End-of-run notification files (notify.* keys) are not teswiz execution configs, so they do not declare
+    // WEB_ENGINE and are deliberately excluded from this execution-config check.
+    private static final String NOTIFICATIONS_FILE_SUFFIX = "notifications.properties";
 
     @Test
     void shouldExplicitlySetWebEngineToSeleniumInAllCheckedInSampleConfigs() throws IOException {
         try (var paths = Files.walk(Path.of(CONFIGS_DIR))) {
-            assertThat(paths.filter(path -> path.toString().endsWith(".properties")))
+            assertThat(paths.filter(this::isExecutionConfiguration))
                     .allSatisfy(this::assertWebEngineIsExplicitlySetToSelenium);
         }
+    }
+
+    private boolean isExecutionConfiguration(Path path) {
+        String name = path.toString();
+        return name.endsWith(".properties") && !name.endsWith(NOTIFICATIONS_FILE_SUFFIX);
     }
 
     private void assertWebEngineIsExplicitlySetToSelenium(Path configFile) {
