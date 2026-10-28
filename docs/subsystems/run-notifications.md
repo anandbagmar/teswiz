@@ -10,11 +10,12 @@ small composer interface; it never wires a Gradle task or an after-suite hook.
 
 The feature is **entirely opt-in and OFF by default**:
 
-- If `notifications.properties` is not on the classpath, teswiz does nothing.
+- If the `NOTIFICATIONS_CONFIG_FILE` config key is unset, teswiz does nothing.
 - If `notify.composer.class` is blank, teswiz does nothing.
 - If `notify.enabled` is `false` (the default), nothing is delivered.
 
-A notifier problem is always **logged and swallowed** — it can never change a run's pass/fail result.
+A notifier problem is **logged and swallowed** by default — it never changes a run's pass/fail result (opt in to
+fail-fast with `notify.fail.on.error`, see below).
 
 ---
 
@@ -23,7 +24,7 @@ A notifier problem is always **logged and swallowed** — it can never change a 
 ```mermaid
 flowchart TD
     RUN["teswiz Runner\n(cucumber report written,\ncounts known)"] --> FIRE["RunNotifications.fireIfConfigured(total, passed, failed)"]
-    FIRE -->|load| SET["notifications.properties\n(NotificationSettings: file + env override)"]
+    FIRE -->|load NOTIFICATIONS_CONFIG_FILE| SET["notifications.properties\n(NotificationSettings: file + env override)"]
     FIRE -->|resolve notify.composer.class| COMP["RunNotificationComposer\n(client-implemented SPI)"]
     FIRE -->|build| RR["RunResult\n(JUnit XML, counts, RunEnvironment)"]
     RR --> COMP
@@ -53,16 +54,28 @@ says and which destinations it targets. teswiz never branches on what a message 
 
 ## ⚙️ Configuration
 
-Notification settings are **separate** from the teswiz execution config. They use lower-case dotted keys and live in
-their own classpath resource: `notifications.properties`.
+Notification settings are **separate** from the teswiz execution config, in their own `notifications.properties` file
+with lower-case dotted keys. teswiz finds that file through the **`NOTIFICATIONS_CONFIG_FILE`** key in your
+`config.properties` — exactly how teswiz resolves its other external config files (`ENVIRONMENT_CONFIG_FILE`,
+`TEST_DATA_FILE`, the Applitools config). Leave `NOTIFICATIONS_CONFIG_FILE` unset to disable notifications entirely;
+there is no magic classpath fallback.
 
-A ready-made, **disabled** `notifications.properties` already ships on the sample test classpath at
-`src/test/resources/notifications.properties`, so the sample runs are a complete no-op out of the box. Use it as your
-starting point, or copy the fully-commented canonical template and turn on only what you need:
+```properties
+# in config.properties
+NOTIFICATIONS_CONFIG_FILE=./configs/teswiz/notifications.properties
+```
+
+A ready-made, **disabled** `configs/teswiz/notifications.properties` ships in the repo and is the path every example
+`config.properties` points at, so the sample runs are a complete no-op out of the box. Use it as your starting point,
+or copy the fully-commented canonical template and turn on only what you need:
 
 ```
-configs/teswiz/notifications.properties.template  ->  src/test/resources/notifications.properties
+configs/teswiz/notifications.properties.template  ->  <your notifications.properties>
 ```
+
+The file may live anywhere on disk (it is loaded by path, not from the classpath). Placing it under `configs/` is
+fine — the execution-config validator deliberately ignores `*notifications.properties` because it is not a teswiz
+execution config.
 
 | Key | Purpose | Default |
 | :--- | :--- | :--- |

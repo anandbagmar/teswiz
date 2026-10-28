@@ -18,6 +18,10 @@ WEB_ENGINE=selenium
 
 # Test data and environment
 ENVIRONMENT_CONFIG_FILE=./src/test/resources/environments.json
+# End-of-run Slack/email notifications file (notify.* keys live there, NOT here). Points at a
+# notifications.properties on disk; blank/unset disables notifications. Ships disabled by default.
+# See docs/subsystems/run-notifications.md and configs/teswiz/notifications.properties.template.
+NOTIFICATIONS_CONFIG_FILE=./configs/teswiz/notifications.properties
 #TARGET_ENVIRONMENT=prod
 #TEST_DATA_FILE=./src/test/resources/testData.json
 #TAG=@tag
@@ -114,14 +118,6 @@ SHOW_SENSITIVE_DATA=false
 #ORGANIZATION_NAME=<organization-name>
 #TELEMETRY_ENDPOINT=https://us.i.posthog.com/capture/
 #TELEMETRY_API_KEY=<telemetry-api-key>
-
-# End-of-run notifications (Slack + email). OFF by default and configured separately.
-# teswiz fires the end-of-run notification itself after the cucumber report is written.
-# The notification keys (notify.*) are lower-case dotted keys and live in their own resource,
-# NOT in this execution-config file. Copy the canonical template below to your test resources
-# (src/test/resources/notifications.properties) and set notify.enabled=true to turn it on:
-#   ./configs/teswiz/notifications.properties.template
-# See docs/subsystems/run-notifications.md for the full guide.
 
 # Runtime defaults. System properties and environment variables override these values.
 #TESWIZ_RUNTIME_CONFIG_FILE=./configs/teswiz/teswiz_runtime.properties

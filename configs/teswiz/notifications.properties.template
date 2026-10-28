@@ -1,13 +1,13 @@
 # ============================================================================
 # teswiz end-of-run notifications — canonical template
 # ============================================================================
-# Copy this file to your project's test resources as `notifications.properties`
-# (so it is on the runtime classpath, e.g. src/test/resources/notifications.properties)
-# and uncomment the keys you need. teswiz fires the end-of-run notification itself
-# from its Runner, after the cucumber report is written and before the JVM exits.
+# Copy this file to a notifications.properties on disk (anywhere; e.g. alongside the
+# shipped configs/teswiz/notifications.properties) and point NOTIFICATIONS_CONFIG_FILE
+# in your config.properties at it. teswiz fires the end-of-run notification itself from
+# its Runner, after the cucumber report is written and before the JVM exits.
 #
 # This file is OPTIONAL and OFF by default:
-#   - If the resource is absent, teswiz does nothing (no cost).
+#   - If NOTIFICATIONS_CONFIG_FILE is unset, teswiz does nothing (no cost).
 #   - If `notify.composer.class` is blank, teswiz does nothing.
 #   - If `notify.enabled` is false (the default below), nothing is delivered.
 # A notifier problem is always logged and swallowed; it never changes a run's result.

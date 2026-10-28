@@ -456,9 +456,11 @@ Current reporting behavior includes:
 Owns the opt-in **end-of-run notification** runtime — Slack + email channels, gating, delivery, and the end-of-run
 trigger. teswiz's `Runner` fires `RunNotifications.fireIfConfigured(...)` after the cucumber report is written and
 before JVM exit; a consuming project only implements a `RunNotificationComposer` (resolved from the
-`notify.composer.class` key in a `notifications.properties` classpath resource) that turns the finished `RunResult`
-into zero or more `Notification`s. Everything is OFF by default and every failure is logged and swallowed, so a
-notifier problem never changes a run's result.
+`notify.composer.class` key in the notifications file named by `NOTIFICATIONS_CONFIG_FILE`) that turns the finished
+`RunResult` into zero or more `Notification`s. The notifications file is resolved by filesystem path from the
+`NOTIFICATIONS_CONFIG_FILE` config key — the same convention teswiz uses for its other external config files; unset
+means notifications are off, with no classpath fallback. Everything is OFF by default and every failure is logged and
+swallowed, so a notifier problem never changes a run's result.
 
 * `RunNotifications` — the entry point; loads settings, resolves the composer, builds the `RunResult`, delivers
 * `RunNotificationComposer` (SPI) / `Notification` / `RunResult` — the client seam and its inputs/outputs

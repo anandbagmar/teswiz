@@ -11,11 +11,12 @@ import com.znsio.teswiz.exceptions.NotificationException;
 
 /**
  * The end-of-run notification entry point teswiz invokes from its {@code Runner} after the cucumber report is complete
- * and before the JVM exits. It is entirely opt-in and self-contained: when a consuming project configures a
- * {@link RunNotificationComposer} (via the {@code notify.composer.class} setting in {@code notifications.properties}),
- * teswiz loads it, hands it the finished {@link RunResult}, and delivers whatever {@link Notification}s it returns
- * through the {@link Notifier}. When no composer is configured — or the settings resource is absent — teswiz does
- * nothing, so a project that does not use notifications pays no cost.
+ * and before the JVM exits. It is entirely opt-in and self-contained: teswiz resolves the notifications properties
+ * file from the {@code NOTIFICATIONS_CONFIG_FILE} config (the same file-path convention used for
+ * {@code ENVIRONMENT_CONFIG_FILE} / {@code TEST_DATA_FILE} / Applitools config), loads the {@link RunNotificationComposer}
+ * named by its {@code notify.composer.class} setting, hands it the finished {@link RunResult}, and delivers whatever
+ * {@link Notification}s it returns through the {@link Notifier}. When {@code NOTIFICATIONS_CONFIG_FILE} is unset, or no
+ * composer is configured, teswiz does nothing — a project that does not use notifications pays no cost.
  * <p>
  * Failure handling is governed by the {@code notify.fail.on.error} setting. By default ({@code false}) every failure
  * here is logged and swallowed, so a notifier problem — a transient Slack/SMTP blip, a bad composer, an undeliverable
@@ -29,7 +30,6 @@ public final class RunNotifications {
     private static final org.apache.logging.log4j.Logger LOGGER = org.apache.logging.log4j.LogManager
             .getLogger(RunNotifications.class.getName());
 
-    private static final String SETTINGS_RESOURCE = "notifications.properties";
     private static final String COMPOSER_CLASS_KEY = "notify.composer.class";
     private static final String FAIL_ON_ERROR_KEY = "notify.fail.on.error";
     private static final String LOG_DIR_PROPERTY = "LOG_DIR";
@@ -42,8 +42,9 @@ public final class RunNotifications {
     }
 
     /**
-     * Fires the configured run notification, if any. Loads {@code notifications.properties}, resolves the composer
-     * named by {@code notify.composer.class}, resolves the completed cucumber JUnit XML from {@code LOG_DIR}, builds
+     * Fires the configured run notification, if any. Loads the notifications file named by
+     * {@code NOTIFICATIONS_CONFIG_FILE}, resolves the composer named by {@code notify.composer.class}, resolves the
+     * completed cucumber JUnit XML from {@code LOG_DIR}, builds
      * the {@link RunResult}, and delivers the composed messages. A no-op (logged at debug) when nothing is configured.
      * Swallows every failure by default; throws {@link NotificationException} only when {@code notify.fail.on.error}
      * is set and the run wanted to notify but could not.
@@ -118,12 +119,41 @@ public final class RunNotifications {
         LOGGER.warn("Run notification failed; swallowed — the run result is NOT affected: {}", e.getMessage());
     }
 
+    /**
+     * Resolves the notifications config file from the {@code NOTIFICATIONS_CONFIG_FILE} teswiz config (the same
+     * file-path convention teswiz uses for {@code ENVIRONMENT_CONFIG_FILE}, {@code TEST_DATA_FILE}, etc.) and loads
+     * it from the filesystem. Returns {@code null} — notifications are simply off — when the key is unset/{@code
+     * not-set}, mirroring how an unset config path disables a feature elsewhere in teswiz (no magic classpath
+     * fallback). A path that is set but unreadable is a misconfiguration and surfaces as a {@link NotificationException}
+     * (swallowed unless {@code notify.fail.on.error=true}).
+     */
     private static NotificationSettings loadSettingsOrNull() {
-        try {
-            return NotificationSettings.load(SETTINGS_RESOURCE);
-        } catch (RuntimeException noSettings) {
-            LOGGER.debug("No {} on the classpath; skipping run notifications.", SETTINGS_RESOURCE);
+        String configFile = notificationsConfigFile();
+        if (configFile.isEmpty()) {
+            LOGGER.debug("{} is not set; skipping run notifications.",
+                    com.znsio.teswiz.runner.Setup.NOTIFICATIONS_CONFIG_FILE);
             return null;
+        }
+        return NotificationSettings.loadFromFile(Path.of(configFile));
+    }
+
+    /**
+     * Reads the {@code NOTIFICATIONS_CONFIG_FILE} path from teswiz config, returning an empty string when it is
+     * unset/{@code not-set}. {@code Setup} is referenced fully-qualified on purpose: an auto-import-organizer keeps
+     * stripping an added import from this file.
+     */
+    private static String notificationsConfigFile() {
+        try {
+            String path = com.znsio.teswiz.runner.Setup
+                    .getFromConfigs(com.znsio.teswiz.runner.Setup.NOTIFICATIONS_CONFIG_FILE);
+            if (path == null || path.isBlank() || NOT_SET.equalsIgnoreCase(path.trim())) {
+                return "";
+            }
+            return path.trim();
+        } catch (RuntimeException e) {
+            LOGGER.debug("Could not read {} from Setup; skipping run notifications: {}",
+                    com.znsio.teswiz.runner.Setup.NOTIFICATIONS_CONFIG_FILE, e.getMessage());
+            return "";
         }
     }
 

@@ -130,6 +130,7 @@ public class Setup {
     private static final String ENVIRONMENT_CONFIG_FILE = "ENVIRONMENT_CONFIG_FILE";
     private static final String PROXY_KEY = "PROXY_KEY";
     private static final String TEST_DATA_FILE = "TEST_DATA_FILE";
+    public static final String NOTIFICATIONS_CONFIG_FILE = "NOTIFICATIONS_CONFIG_FILE";
     public static final String APPLITOOLS_CONFIGURATION = "APPLITOOLS_CONFIGURATION";
     public static final String APPLITOOLS_BATCH_NAME_SUFFIX = "APPLITOOLS_BATCH_NAME_SUFFIX";
     private static final String LAUNCH_NAME_SUFFIX = "LAUNCH_NAME_SUFFIX";
@@ -397,6 +398,7 @@ public class Setup {
         configsBoolean.put(CLOUD_USE_PROXY, getOverriddenBooleanValue(CLOUD_USE_PROXY, getBooleanValueFromPropertiesIfAvailable(CLOUD_USE_PROXY, false)));
         configsBoolean.put(CLOUD_USE_LOCAL_TESTING, getOverriddenBooleanValue(CLOUD_USE_LOCAL_TESTING, getBooleanValueFromPropertiesIfAvailable(CLOUD_USE_LOCAL_TESTING, false)));
         configs.put(ENVIRONMENT_CONFIG_FILE, getOverriddenStringValue(ENVIRONMENT_CONFIG_FILE, getStringValueFromPropertiesIfAvailable(ENVIRONMENT_CONFIG_FILE, NOT_SET)));
+        configs.put(NOTIFICATIONS_CONFIG_FILE, getOverriddenStringValue(NOTIFICATIONS_CONFIG_FILE, getStringValueFromPropertiesIfAvailable(NOTIFICATIONS_CONFIG_FILE, NOT_SET)));
         configsBoolean.put(IS_VISUAL, getOverriddenBooleanValue(IS_VISUAL, getBooleanValueFromPropertiesIfAvailable(IS_VISUAL, false)));
         configsBoolean.put(FAIL_TEST_ON_VISUAL_DIFFERENCE, getOverriddenBooleanValue(FAIL_TEST_ON_VISUAL_DIFFERENCE, getBooleanValueFromPropertiesIfAvailable(FAIL_TEST_ON_VISUAL_DIFFERENCE, true)));
         configs.put(LOG_DIR, getOverriddenStringValue(LOG_DIR, getStringValueFromPropertiesIfAvailable(LOG_DIR, DEFAULT_LOG_DIR)));

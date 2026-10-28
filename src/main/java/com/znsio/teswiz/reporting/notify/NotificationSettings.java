@@ -61,6 +61,29 @@ public final class NotificationSettings {
     }
 
     /**
+     * Loads settings from a properties file on the filesystem (resolved from the {@code NOTIFICATIONS_CONFIG_FILE}
+     * config path, the same way teswiz resolves its other external config files) using the real process environment
+     * for overrides.
+     *
+     * @param file the path to the notifications properties file
+     * @return the loaded settings
+     */
+    public static NotificationSettings loadFromFile(java.nio.file.Path file) {
+        return loadFromFile(file, System.getenv());
+    }
+
+    /**
+     * Loads settings from a properties file on the filesystem against an explicit environment — the unit-test seam.
+     *
+     * @param file        the path to the notifications properties file
+     * @param environment the environment variables to consult for overrides
+     * @return the loaded settings
+     */
+    public static NotificationSettings loadFromFile(java.nio.file.Path file, Map<String, String> environment) {
+        return new NotificationSettings(loadPropertiesFromFile(file), environment);
+    }
+
+    /**
      * Resolves a key to its string value (env override wins over the file), trimmed; empty string when unset.
      *
      * @param key the property key
@@ -132,6 +155,25 @@ public final class NotificationSettings {
             LOGGER.debug("Loaded {} notification settings from {}", properties.size(), resourceName);
         } catch (IOException e) {
             throw new NotificationException("Failed to load " + resourceName, e);
+        }
+        return properties;
+    }
+
+    private static Properties loadPropertiesFromFile(java.nio.file.Path file) {
+        if (file == null) {
+            throw new NotificationException("No notifications config file path was provided.");
+        }
+        if (!java.nio.file.Files.isReadable(file)) {
+            throw new NotificationException("Notifications config file not found or unreadable: " + file
+                    + ". Point NOTIFICATIONS_CONFIG_FILE at a valid notifications.properties, or leave it unset to "
+                    + "disable notifications.");
+        }
+        Properties properties = new Properties();
+        try (InputStream stream = java.nio.file.Files.newInputStream(file)) {
+            properties.load(stream);
+            LOGGER.debug("Loaded {} notification settings from {}", properties.size(), file);
+        } catch (IOException e) {
+            throw new NotificationException("Failed to load notifications config file " + file, e);
         }
         return properties;
     }

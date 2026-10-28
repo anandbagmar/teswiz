@@ -18,6 +18,9 @@ class ConfigurationFilesConsistencyTest {
     private static final Path CONFIG_ROOT = Path.of("configs");
     private static final Path TEMPLATE = CONFIG_ROOT.resolve("teswiz/teswiz_config.properties.template");
     private static final Pattern PROPERTY_PATTERN = Pattern.compile("^#?([A-Z][A-Z0-9_]*)=.*$");
+    // End-of-run notification files (notify.* lower-case keys) are a different kind of config, not teswiz execution
+    // configs, so they are deliberately outside the canonical execution-config contract checked here.
+    private static final String NOTIFICATIONS_FILE_SUFFIX = "notifications.properties";
     private static final List<String> COMMON_PROPERTIES = List.of(
             "FRAMEWORK", "WEB_ENGINE", "ENVIRONMENT_CONFIG_FILE", "LOG_DIR", "LOG_PROPERTIES_FILE", "PARALLEL",
             "PLATFORM", "RUN_IN_CI", "TARGET_ENVIRONMENT", "TEST_DATA_FILE", "SHOW_SENSITIVE_DATA");
@@ -25,7 +28,7 @@ class ConfigurationFilesConsistencyTest {
     @Test
     void everyExecutionConfigurationContainsTheCommonContract() throws IOException {
         try (Stream<Path> paths = Files.walk(CONFIG_ROOT)) {
-            paths.filter(path -> path.toString().endsWith(".properties"))
+            paths.filter(this::isExecutionConfiguration)
                     .forEach(this::assertCommonPropertiesPresent);
         }
     }
@@ -34,7 +37,7 @@ class ConfigurationFilesConsistencyTest {
     void everyExecutionConfigurationFollowsTheCanonicalTemplate() throws IOException {
         List<String> templateProperties = templateProperties();
         try (Stream<Path> paths = Files.walk(CONFIG_ROOT)) {
-            paths.filter(path -> path.toString().endsWith(".properties"))
+            paths.filter(this::isExecutionConfiguration)
                     .forEach(path -> assertTemplatePropertiesPresent(path, templateProperties));
         }
     }
@@ -44,9 +47,14 @@ class ConfigurationFilesConsistencyTest {
         List<String> templateProperties = templateProperties();
         Set<String> templatePropertySet = Set.copyOf(templateProperties);
         try (Stream<Path> paths = Files.walk(CONFIG_ROOT)) {
-            paths.filter(path -> path.toString().endsWith(".properties"))
+            paths.filter(this::isExecutionConfiguration)
                     .forEach(path -> assertTemplatePropertyOrder(path, templateProperties, templatePropertySet));
         }
+    }
+
+    private boolean isExecutionConfiguration(Path path) {
+        String name = path.toString();
+        return name.endsWith(".properties") && !name.endsWith(NOTIFICATIONS_FILE_SUFFIX);
     }
 
     private List<String> templateProperties() throws IOException {
