@@ -14,6 +14,9 @@ teswiz now owns the entire test-run notification runtime — Slack + email chann
 - **Content helpers** — `JUnitResults` (parse the JUnit XML → counts + failures-by-feature), `HtmlReport` (status-banner card / footer / links / Slack separator / escape), `LlmUsageLog` (tolerant, fail-soft parse of teswiz's end-of-run "LLM Vision Usage Summary"), `RunEnvironment` (GitLab-CI vs local provenance). `BranchGate` + `NotificationChannel` + `NotificationOutcome` round out the model; `com.znsio.teswiz.exceptions.NotificationException` surfaces a broken config.
 - All delivery-safe: a notification problem is recorded as an outcome and swallowed, never failing a run. Unit-tested under `com.znsio.teswiz.reporting.notify`.
 
+### 🐞 Fixed: Playwright-Java browser teardown no longer crashes Chromium on a headful run
+On a headful run (e.g. macOS), the bundled Chromium ("Chrome for Testing") sometimes died with an OS "quit unexpectedly" crash dialog at the end of a run. Cause: `PlaywrightJavaWebDriver.closeSession()` closed the browser and then **immediately** stopped the Playwright node driver, while `browser().close()` was wrapped in a silent swallow and `playwright().close()` was unguarded — so the node driver was torn down while the Chromium process it launched was still exiting, orphaning it. Fix: a new `closeBrowserThenDriver(...)` closes the browser, **settles briefly** (`BROWSER_CLOSE_SETTLE_MILLIS`) so Chromium finishes exiting, then stops the node driver — both steps guarded and logged (at `debug`) rather than silently swallowed, so a teardown problem never propagates out of the after-scenario hook. No API change.
+
 ## 1.0.45
 # Release Notes - teswiz v1.0.45
 
