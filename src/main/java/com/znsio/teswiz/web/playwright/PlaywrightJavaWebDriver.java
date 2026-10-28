@@ -8,8 +8,6 @@ import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import org.json.JSONObject;
 import org.openqa.selenium.By;
@@ -24,7 +22,6 @@ import org.openqa.selenium.logging.LogEntries;
 import org.openqa.selenium.logging.LogType;
 import org.openqa.selenium.logging.Logs;
 
-import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Page.NavigateOptions;
 import com.microsoft.playwright.Tracing;
 import com.microsoft.playwright.options.WaitUntilState;
@@ -36,16 +33,22 @@ import com.znsio.teswiz.visual.PlaywrightVisualResults;
 import com.znsio.teswiz.visual.PlaywrightVisualSessionRequest;
 import com.znsio.teswiz.web.playwright.screen.PlaywrightJavaScreenContext;
 
-import org.openqa.selenium.WindowType;
-
 public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.selenium.JavascriptExecutor,
         org.openqa.selenium.TakesScreenshot, PlaywrightVisualDriver, com.znsio.teswiz.visual.NativeCoordinateInput {
-    private static final Logger LOGGER = LogManager.getLogger(PlaywrightJavaWebDriver.class.getName());
+    // Loggers fully-qualified on purpose: an auto-import-organizer repeatedly rewrites a short
+    // `LogManager` import to java.util.logging.LogManager (wrong) and drops the Logger import.
+    private static final org.apache.logging.log4j.Logger LOGGER = org.apache.logging.log4j.LogManager
+            .getLogger(PlaywrightJavaWebDriver.class.getName());
     private static final String BROWSERSTACK_EXECUTOR_PREFIX = "browserstack_executor:";
     private static final String LAMBDATEST_ACTION_PREFIX = "lambdatest_action:";
     private static final String LEGACY_LAMBDATEST_NAME_PREFIX = "lambda-name=";
     private static final String LEGACY_LAMBDATEST_STATUS_PREFIX = "lambda-status=";
     private static final String LEGACY_LAMBDATEST_COMMENT_PREFIX = "lambda-comment=";
+    // After browser().close() the bundled Chromium ("Chrome for Testing") process exits
+    // asynchronously; give it a brief moment to finish before playwright().close() stops the
+    // node driver, otherwise the still-live browser is orphaned and dies with a crash dialog
+    // ("Google Chrome for Testing quit unexpectedly") on a headful macOS run.
+    private static final long BROWSER_CLOSE_SETTLE_MILLIS = 500L;
     private final PlaywrightJavaSession session;
     private Duration implicitWaitTimeout = Duration.ZERO;
     private Duration pageLoadTimeout = Duration.ofSeconds(
@@ -134,14 +137,12 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
     // The Selenium By locator bridge is Selenium/Appium-only; locating by By on this engine is unsupported.
     @Override
     public List<WebElement> findElements(By by) {
-        throw unsupported(com.znsio.teswiz.web.WebCapability.ELEMENT_LOCATION_BY_SELENIUM_LOCATOR,
-                "findElements(By)");
+        throw unsupported(com.znsio.teswiz.web.WebCapability.ELEMENT_LOCATION_BY_SELENIUM_LOCATOR, "findElements(By)");
     }
 
     @Override
     public WebElement findElement(By by) {
-        throw unsupported(com.znsio.teswiz.web.WebCapability.ELEMENT_LOCATION_BY_SELENIUM_LOCATOR,
-                "findElement(By)");
+        throw unsupported(com.znsio.teswiz.web.WebCapability.ELEMENT_LOCATION_BY_SELENIUM_LOCATOR, "findElement(By)");
     }
 
     @Override
@@ -250,7 +251,7 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
             }
 
             @Override
-            public WebDriver newWindow(WindowType typeHint) {
+            public WebDriver newWindow(org.openqa.selenium.WindowType typeHint) {
                 throw unsupported(com.znsio.teswiz.web.WebCapability.MULTIPLE_WINDOWS, "newWindow(WindowType)");
             }
         };
@@ -590,11 +591,35 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
         if (runtime.decrementSessions() != 0) {
             return;
         }
+        closeBrowserThenDriver(runtime);
+    }
+
+    /**
+     * Closes the shared browser, lets its Chromium process exit, then stops the Playwright node driver — in that order.
+     * The settle between the two is what prevents a headful "Chrome for Testing quit unexpectedly" crash dialog: the
+     * driver must not be torn down while the browser process it launched is still alive. Both steps are guarded so a
+     * teardown problem is logged, not thrown — it must never propagate out of the after-scenario hook.
+     */
+    private void closeBrowserThenDriver(PlaywrightJavaRuntime runtime) {
         try {
             runtime.browser().close();
-        } catch (RuntimeException ignored) {
+            settleAfterBrowserClose();
+        } catch (RuntimeException e) {
+            LOGGER.debug("Playwright browser close failed during teardown (ignored): {}", e.getMessage());
         }
-        runtime.playwright().close();
+        try {
+            runtime.playwright().close();
+        } catch (RuntimeException e) {
+            LOGGER.debug("Playwright driver close failed during teardown (ignored): {}", e.getMessage());
+        }
+    }
+
+    private void settleAfterBrowserClose() {
+        try {
+            Thread.sleep(BROWSER_CLOSE_SETTLE_MILLIS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     private void writeConsoleLog() {

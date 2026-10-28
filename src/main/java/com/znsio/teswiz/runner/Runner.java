@@ -1,26 +1,10 @@
 package com.znsio.teswiz.runner;
 
-import com.znsio.teswiz.context.SessionContext;
-import com.znsio.teswiz.context.TestExecutionContext;
-import com.znsio.teswiz.entities.Platform;
-import com.znsio.teswiz.entities.TEST_CONTEXT;
-import com.znsio.teswiz.exceptions.InvalidTestDataException;
-import com.znsio.teswiz.testng.TestNgExecutionResult;
-import com.znsio.teswiz.testng.TestNgGroupSelection;
-import com.znsio.teswiz.testng.TestNgRunner;
-import com.znsio.teswiz.testng.TestNgTagExpressionParser;
-import com.znsio.teswiz.testng.TestNgTestClassDiscovery;
-import com.znsio.teswiz.api.ApiEngine;
-import com.znsio.teswiz.web.WebEngine;
-import com.znsio.teswiz.tools.JsonPrettyPrinter;
-import com.znsio.teswiz.tools.SensitiveDataMasker;
-import io.cucumber.core.cli.Main;
-import net.masterthought.cucumber.Reportable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.assertj.core.api.SoftAssertions;
-import org.json.JSONObject;
-import org.json.JSONTokener;
+import static com.znsio.teswiz.runner.DeviceSetup.getCloudNameFromCapabilities;
+import static com.znsio.teswiz.runner.Setup.HOST_NAME;
+import static com.znsio.teswiz.runner.Setup.IS_FAILING_TEST_SUITE;
+import static com.znsio.teswiz.runner.Setup.PARALLEL;
+import static com.znsio.teswiz.runner.Setup.SET_HARD_GATE;
 
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -30,8 +14,28 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static com.znsio.teswiz.runner.DeviceSetup.getCloudNameFromCapabilities;
-import static com.znsio.teswiz.runner.Setup.*;
+import org.assertj.core.api.SoftAssertions;
+import org.json.JSONObject;
+import org.json.JSONTokener;
+
+import com.znsio.teswiz.api.ApiEngine;
+import com.znsio.teswiz.context.SessionContext;
+import com.znsio.teswiz.context.TestExecutionContext;
+import com.znsio.teswiz.entities.Platform;
+import com.znsio.teswiz.entities.TEST_CONTEXT;
+import com.znsio.teswiz.exceptions.InvalidTestDataException;
+import com.znsio.teswiz.reporting.notify.RunNotifications;
+import com.znsio.teswiz.testng.TestNgExecutionResult;
+import com.znsio.teswiz.testng.TestNgGroupSelection;
+import com.znsio.teswiz.testng.TestNgRunner;
+import com.znsio.teswiz.testng.TestNgTagExpressionParser;
+import com.znsio.teswiz.testng.TestNgTestClassDiscovery;
+import com.znsio.teswiz.tools.JsonPrettyPrinter;
+import com.znsio.teswiz.tools.SensitiveDataMasker;
+import com.znsio.teswiz.web.WebEngine;
+
+import io.cucumber.core.cli.Main;
+import net.masterthought.cucumber.Reportable;
 
 public class Runner {
     public static final String NOT_SET = "not-set";
@@ -41,7 +45,8 @@ public class Runner {
     public static final String WARN = "WARN";
 
     private static final String TESWIZ_STEPS_PACKAGE = "com.znsio.teswiz.steps";
-    private static final Logger LOGGER = LogManager.getLogger(Runner.class.getName());
+    private static final org.apache.logging.log4j.Logger LOGGER = org.apache.logging.log4j.LogManager
+            .getLogger(Runner.class.getName());
     private static final String INVALID_KEY_MESSAGE = "Invalid key name ('%s') provided";
 
     public Runner() {
@@ -78,11 +83,13 @@ public class Runner {
     private void runTestNgMode(String testClassesPackageDir) {
         String testClassesPackage = testClassesPackageDir.replace('/', '.');
         List<String> testClasses = TestNgTestClassDiscovery.discoverTestClassesIn(testClassesPackage);
-        LOGGER.info("Begin running {} TestNG test class(es) discovered in package '{}'", testClasses.size(), testClassesPackage);
+        LOGGER.info("Begin running {} TestNG test class(es) discovered in package '{}'", testClasses.size(),
+                testClassesPackage);
         TestNgGroupSelection groupSelection = TestNgTagExpressionParser.parse(Setup.getRawTagBeforeCucumberInference());
         TestNgExecutionResult executionResult = TestNgRunner.run(testClasses, groupSelection,
                 Setup.getIntegerValueFromConfigs(PARALLEL));
-        LOGGER.info("TestNG execution: passed={}, failed={}", executionResult.passedCount(), executionResult.failedCount());
+        LOGGER.info("TestNG execution: passed={}, failed={}", executionResult.passedCount(),
+                executionResult.failedCount());
 
         boolean isHardGate = isHardGateSet();
         byte status;
@@ -92,7 +99,8 @@ public class Runner {
             LOGGER.info("SET_HARD_GATE is '%s'. Returning status '%s' of hard gate".formatted(isHardGate, status));
         } else {
             status = (byte) (executionResult.allTestsPassed() ? 0 : 1);
-            LOGGER.info("SET_HARD_GATE is '%s'. Return actual status '%s' of test execution".formatted(isHardGate, status));
+            LOGGER.info(
+                    "SET_HARD_GATE is '%s'. Return actual status '%s' of test execution".formatted(isHardGate, status));
         }
 
         Setup.cleanUpExecutionEnvironment();
@@ -109,13 +117,11 @@ public class Runner {
         args.add(featuresDir);
         boolean isHardGate = isHardGateSet();
         boolean isRunningFailingTests = isRunningFailingTestSuite();
-        String prettyArgs = args.stream()
-                .map(arg -> "\t" + arg + ",")
+        String prettyArgs = args.stream().map(arg -> "\t" + arg + ",")
                 .collect(Collectors.joining("\n", "\t[\n", "\n\t]"));
 
-        LOGGER.info("Begin running tests with args:\n{}",
-                SensitiveDataMasker.mask(prettyArgs));
-//        LOGGER.info("Begin running tests with args: {}", args);
+        LOGGER.info("Begin running tests with args:\n{}", SensitiveDataMasker.mask(prettyArgs));
+        // LOGGER.info("Begin running tests with args: {}", args);
         String[] array = args.toArray(String[]::new);
         try {
             byte status = Main.run(array);
@@ -135,12 +141,19 @@ public class Runner {
             LOGGER.info("Passed scenarios: {}", passedScenarios);
             LOGGER.info("Failed scenarios: {}", failedScenarios);
 
+            // Fire the opt-in end-of-run notification now that the cucumber report is complete and the counts are
+            // known — the only point the report is fully written. Entirely self-contained and swallowed, so it never
+            // changes the run's exit status (GAMC-19572).
+            RunNotifications.fireIfConfigured(totalScenarios, passedScenarios, failedScenarios);
+
             if (isHardGate) {
-                status = getStatus(isRunningFailingTests, totalFeatures, totalScenarios, passedScenarios, failedScenarios);
-                LOGGER.info("SET_HARD_GATE is '%s', and '%s' is '%s'. Returning status '%s' of hard gate".
-                        formatted(isHardGate, IS_FAILING_TEST_SUITE, isRunningFailingTests, status));
+                status = getStatus(isRunningFailingTests, totalFeatures, totalScenarios, passedScenarios,
+                        failedScenarios);
+                LOGGER.info("SET_HARD_GATE is '%s', and '%s' is '%s'. Returning status '%s' of hard gate"
+                        .formatted(isHardGate, IS_FAILING_TEST_SUITE, isRunningFailingTests, status));
             } else {
-                LOGGER.info("SET_HARD_GATE is '%s'. Return actual status '%s' of test execution".formatted(isHardGate, status));
+                LOGGER.info("SET_HARD_GATE is '%s'. Return actual status '%s' of test execution".formatted(isHardGate,
+                        status));
             }
             System.exit(status);
         } catch (Exception e) {
@@ -154,14 +167,16 @@ public class Runner {
         return Setup.getBooleanValueFromConfigs(SET_HARD_GATE);
     }
 
-    static byte getStatus(boolean runningFailingTestSuite, int totalFeatures, int totalScenarios, int passedScenarios, int failedScenarios) {
+    static byte getStatus(boolean runningFailingTestSuite, int totalFeatures, int totalScenarios, int passedScenarios,
+            int failedScenarios) {
         byte status;
         LOGGER.info("Is runningFailingTestSuite: {}", runningFailingTestSuite);
 
         // running failing test suite - passedScenarios==0, exit 0
         // running passing test suite - failedScenarios==0, exit 0
-        status = (runningFailingTestSuite && passedScenarios == 0) ||
-                 (!runningFailingTestSuite && failedScenarios == 0) ? (byte) 0 : (byte) 1;
+        status = (runningFailingTestSuite && passedScenarios == 0) || (!runningFailingTestSuite && failedScenarios == 0)
+                ? (byte) 0
+                : (byte) 1;
         LOGGER.info("Status: {}", status);
         return status;
     }
@@ -256,10 +271,10 @@ public class Runner {
     }
 
     /**
-     * Optional override for the LLM vision startup health-check target. Blank (default) means the
-     * provider derives its own non-billable probe URL; an explicit http(s) URL is probed verbatim;
-     * the literal {@code none}/{@code off}/{@code false} opts out of the live probe (structural
-     * validation only). Useful for providers whose models-listing path teswiz cannot reliably derive.
+     * Optional override for the LLM vision startup health-check target. Blank (default) means the provider derives its
+     * own non-billable probe URL; an explicit http(s) URL is probed verbatim; the literal
+     * {@code none}/{@code off}/{@code false} opts out of the live probe (structural validation only). Useful for
+     * providers whose models-listing path teswiz cannot reliably derive.
      */
     public static String getLlmVisionHealthCheckUrl() {
         String url = Setup.getFromConfigs(Setup.LLM_VISION_HEALTH_CHECK_URL);
@@ -324,12 +339,10 @@ public class Runner {
         System.setProperty("OUTPUT_DIRECTORY", logDir);
         LOGGER.info("teswiz Runner");
         LOGGER.info("Provided parameters:");
-        LOGGER.info("{}",
-                SensitiveDataMasker.mask(JsonPrettyPrinter.prettyPrint(args)));
+        LOGGER.info("{}", SensitiveDataMasker.mask(JsonPrettyPrinter.prettyPrint(args)));
         if (args.length != 3) {
-            throw new InvalidTestDataException(
-                    "Expected following parameters: 'String configFilePath, String " +
-                    "stepDefDirName, String " + "featuresDirName");
+            throw new InvalidTestDataException("Expected following parameters: 'String configFilePath, String "
+                    + "stepDefDirName, String " + "featuresDirName");
         }
         new Runner(args[0], args[1], args[2]);
     }
@@ -339,18 +352,16 @@ public class Runner {
     }
 
     public static SoftAssertions getSoftAssertion(long threadId) {
-        return (SoftAssertions) getTestExecutionContext(threadId).getTestState(
-                TEST_CONTEXT.SOFT_ASSERTIONS);
+        return (SoftAssertions) getTestExecutionContext(threadId).getTestState(TEST_CONTEXT.SOFT_ASSERTIONS);
     }
 
     public static Driver setCurrentDriverForUser(String userPersona, Platform forPlatform,
-                                                 TestExecutionContext context) {
+            TestExecutionContext context) {
         return Drivers.setDriverFor(userPersona, forPlatform, context);
     }
 
     public static Platform fetchPlatform(long threadId) {
-        String userPersona = getTestExecutionContext(threadId).getTestStateAsString(
-                TEST_CONTEXT.CURRENT_USER_PERSONA);
+        String userPersona = getTestExecutionContext(threadId).getTestStateAsString(TEST_CONTEXT.CURRENT_USER_PERSONA);
         return Drivers.getPlatformForUser(userPersona);
     }
 
@@ -361,7 +372,8 @@ public class Runner {
     public static String getBaseURLForWeb() {
         String baseUrlToBeUsed = Setup.getFromConfigs(Setup.BASE_URL_FOR_WEB);
         LOGGER.info("Using baseUrl KEY in configs for web: '{}'", baseUrlToBeUsed);
-        Object updatedBaseUrlForWeb = getTestExecutionContext(Thread.currentThread().getId()).getTestState(TEST_CONTEXT.UPDATED_BASE_URL_FOR_WEB);
+        Object updatedBaseUrlForWeb = getTestExecutionContext(Thread.currentThread().getId())
+                .getTestState(TEST_CONTEXT.UPDATED_BASE_URL_FOR_WEB);
         if (null != updatedBaseUrlForWeb) {
             baseUrlToBeUsed = updatedBaseUrlForWeb.toString();
             LOGGER.info("Using updated baseUrl key for web: '{}'", baseUrlToBeUsed);
@@ -423,8 +435,7 @@ public class Runner {
             return new JSONObject(new JSONTokener(inputStream));
         } catch (Exception e) {
             throw new InvalidTestDataException(
-                    String.format("There was a problem while setting browser config file '%s'",
-                                  browserConfigFile));
+                    String.format("There was a problem while setting browser config file '%s'", browserConfigFile));
         }
     }
 

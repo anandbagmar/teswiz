@@ -18,6 +18,10 @@ WEB_ENGINE=selenium
 
 # Test data and environment
 ENVIRONMENT_CONFIG_FILE=./src/test/resources/environments.json
+# End-of-run Slack/email notifications file (notify.* keys live there, NOT here). Points at a
+# notifications.properties on disk; blank/unset disables notifications. Ships disabled by default.
+# See docs/subsystems/run-notifications.md and configs/teswiz/notifications.properties.template.
+NOTIFICATIONS_CONFIG_FILE=./configs/teswiz/notifications.properties
 #TARGET_ENVIRONMENT=prod
 #TEST_DATA_FILE=./src/test/resources/testData.json
 #TAG=@tag
