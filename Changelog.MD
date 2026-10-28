@@ -1,3 +1,45 @@
+## 1.0.46
+# Release Notes - teswiz v1.0.46
+
+_Previous release: v1.0.45_
+
+## 🚀 Key Highlights & Enhancements
+
+### 🔔 New: generic end-of-run notification engine (`com.znsio.teswiz.reporting.notify`)
+
+teswiz now owns the entire test-run notification runtime — Slack + email channels, delivery, gating, and the **end-of-run trigger** — so any consumer gets run-notifications by supplying only the message content. teswiz's `Runner` fires it itself after the cucumber report is written; a consumer configures a composer and never wires a Gradle task.
+
+- **`RunNotifications.fireIfConfigured(...)`** — the entry point teswiz's `Runner` calls after `cucumber-junit-report.xml` is complete and before JVM exit. Loads the notifications file named by the `NOTIFICATIONS_CONFIG_FILE` config key (same file-path convention teswiz uses for `ENVIRONMENT_CONFIG_FILE` / `TEST_DATA_FILE`; unset = notifications off), resolves the consumer's composer via `notify.composer.class`, builds a `RunResult` (JUnit XML from `LOG_DIR/reports/`, counts, run environment), and delivers via `Notifier`. A no-op when no composer is configured; every failure is logged and swallowed so a notifier problem never changes a run's result. The run branch is resolved from `CI_COMMIT_REF_NAME` else teswiz's already-resolved `Setup.BRANCH_NAME`.
+- **`RunNotificationComposer` (SPI) + `Notification` / `RunResult`** — the consumer implements `compose(RunResult) → List<Notification>`; a `Notification` carries a free-form type key, subject, Slack text, HTML body, and resolved per-channel destinations. teswiz never branches on the type key.
+- **`NotificationSettings`** — generic loader: reads a `.properties` resource and layers an environment override on every key (env wins; blank/absent env falls through to the file), mapping `notify.enabled` → `NOTIFY_ENABLED`. Secrets are read from the environment only, never the file.
+- **`Notifier`** — applies the master switch (`notify.enabled`) + branch allowlist (`notify.branches`) gate, then sends each `Notification` to the channels whose destination is present; returns a per-target `NotificationOutcome` map and never throws.
+- **`SlackSender`** — POSTs `{"text":...}` to an incoming webhook; **`EmailSender`** sends self-contained HTML over SMTP via `jakarta.mail` with bounded 15s timeouts and an unauthenticated-relay path. Both never throw.
+- **Content helpers** — `JUnitResults` (parse JUnit XML → counts + failures-by-feature), `HtmlReport` (status card / footer / links / Slack separator / escape), `LlmUsageLog` (fail-soft parse of teswiz's end-of-run "LLM Vision Usage Summary"), `RunEnvironment` (run provenance). `BranchGate` + `NotificationChannel` + `NotificationOutcome` round out the model; `com.znsio.teswiz.exceptions.NotificationException` surfaces a broken config.
+- **CI-provider-agnostic run provenance** — a new `CiProvider` detects the CI system from its signature environment variable (GitLab, GitHub Actions, Jenkins, CircleCI, Bitbucket Pipelines, Azure Pipelines) and maps that provider's native variable names onto teswiz's common fields (pipeline/job id + URL, short commit, who triggered it, runner); an unrecognised environment resolves as a local run (host + user). `CiProvider` is the single source of truth for CI detection: `RunTelemetry.detectCiProvider()` delegates to `CiProvider.telemetryLabel(...)`.
+- **Opt-in fail-fast (`notify.fail.on.error`, default `false`)** — notifications stay best-effort by default (a transient Slack/SMTP failure, a missing destination for an enabled channel, or a broken composer is logged and swallowed). Set `notify.fail.on.error=true` to make a run that wanted to notify but could not fail fast with a `NotificationException` naming the channel.
+- **Configurable via `NOTIFICATIONS_CONFIG_FILE`** — the notifications file is resolved from the new `NOTIFICATIONS_CONFIG_FILE` key in `config.properties` (added to the canonical template and all example configs in template order), not a hardcoded classpath resource. A ready-made **disabled** `configs/teswiz/notifications.properties` ships in the repo (guarded by `SampleNotificationsPropertiesTest`).
+- **Example config + docs** — added the canonical `configs/teswiz/notifications.properties.template` (lower-case `notify.*` keys, every key OFF by default), a `docs/subsystems/run-notifications.md` guide (with a Mermaid flow diagram), and wired it into the docs index, README, and architecture notes.
+- All delivery-safe and unit-tested under `com.znsio.teswiz.reporting.notify` (including `CiProviderTest`, `RunEnvironmentGenericCiTest`, `BranchGateTest`, `NotifierTest`, `SlackSenderTest`, `EmailSenderTest`, and `RunNotificationsFailFastTest`).
+
+## 🐞 Fixes
+
+### Playwright-Java browser teardown no longer crashes Chromium on a headful run
+
+On a headful run (e.g. macOS), the bundled Chromium ("Chrome for Testing") sometimes died with an OS "quit unexpectedly" crash dialog at the end of a run. Cause: `PlaywrightJavaWebDriver.closeSession()` closed the browser and then **immediately** stopped the Playwright node driver, orphaning the still-exiting Chromium process. Fix: a new `closeBrowserThenDriver(...)` closes the browser, **settles briefly** (`BROWSER_CLOSE_SETTLE_MILLIS`) so Chromium finishes exiting, then stops the node driver — both steps guarded and logged (at `debug`) rather than silently swallowed, so a teardown problem never propagates out of the after-scenario hook. No API change.
+
+### Transport NSW OCR screen: route anchor fixed for reversed label
+
+Corrected the route anchor handling in the `transportnsw_ocr` example so a reversed label resolves to the right region (`TransportNswOcrScreenWeb`, `TransportNswOcrScreenPlaywrightJava`, and the `transportnsw_ocr.feature`).
+
+## ⬆️ Dependency Upgrades
+
+- `google-auth-library-oauth2-http` 1.30.0 → 1.54.0
+- Appium 3.8.0 → 3.9.0
+- `appium-uiautomator2-driver` 8.7.0 → 8.7.2
+- `appium-xcuitest-driver` 12.19.1 → 12.20.0
+- Updated transitive dependencies (`@appium/base-driver`, `@appium/support`, `@appium/types`, `asyncbox`, `body-parser`, `@appium/docutils`, `lilconfig`, `yargs`) and regenerated `package-lock.json`.
+- Maintains compatibility with Node.js 20.19.0+, 22.12.0+, and 24.0.0+.
+
 ## 1.0.46-SNAPSHOT
 # Release Notes - teswiz v1.0.46-SNAPSHOT
 
