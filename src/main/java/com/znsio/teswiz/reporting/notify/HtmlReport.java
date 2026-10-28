@@ -4,10 +4,10 @@ import java.util.Map;
 
 /**
  * Generic, self-contained HTML + Slack rendering helpers for a notification. "Self-contained" means the HTML carries
- * only an inline {@code <style>} and no external asset references (no {@code <link>}, {@code <script>} or {@code src=}),
- * so it renders in any mail client without fetching anything. These helpers know nothing about what the message means —
- * a consuming project supplies the title, body fragments and link labels. The run-context footer and the Slack
- * separator are provided so every teswiz consumer renders provenance consistently.
+ * only an inline {@code <style>} and no external asset references (no {@code <link>}, {@code <script>} or
+ * {@code src=}), so it renders in any mail client without fetching anything. These helpers know nothing about what the
+ * message means — a consuming project supplies the title, body fragments and link labels. The run-context footer and
+ * the Slack separator are provided so every teswiz consumer renders provenance consistently.
  */
 public final class HtmlReport {
 
@@ -102,7 +102,7 @@ public final class HtmlReport {
         if (environment == null) {
             return "";
         }
-        StringBuilder text = new StringBuilder("\nRun context\n");
+        StringBuilder text = new StringBuilder("\n_Run context_\n");
         if (environment.isCi()) {
             appendLine(text, "Pipeline", "#" + environment.pipelineId() + " " + environment.pipelineUrl());
             appendLine(text, "Job", environment.jobName() + " (#" + environment.jobId() + ") " + environment.jobUrl());
@@ -111,12 +111,14 @@ public final class HtmlReport {
             appendLine(text, "Triggered by", environment.triggeredBy());
             appendLine(text, "Runner", environment.runner());
         } else {
-            appendLine(text, "Ran on", "local");
-            appendLine(text, "Host", environment.host());
-            appendLine(text, "User", environment.user());
             appendLine(text, "Branch", environment.branch());
+            appendLine(text, "Ran on", localLine(environment));
         }
-        return text.append("Reproduce with: ").append(environment.reproduceCommand()).toString();
+        String reproduce = environment.reproduceCommand();
+        if (reproduce != null && !reproduce.isBlank()) {
+            text.append("\n*Reproduce:*\n`").append(reproduce).append('`');
+        }
+        return text.toString();
     }
 
     /**
@@ -145,8 +147,19 @@ public final class HtmlReport {
 
     private static void appendLine(StringBuilder text, String label, String value) {
         if (value != null && !value.isBlank()) {
-            text.append("• ").append(label).append(": ").append(value).append('\n');
+            text.append("• *").append(label).append(":* ").append(value).append('\n');
         }
+    }
+
+    private static String localLine(RunEnvironment environment) {
+        StringBuilder local = new StringBuilder("local");
+        if (environment.host() != null && !environment.host().isBlank()) {
+            local.append(" · ").append(environment.host());
+        }
+        if (environment.user() != null && !environment.user().isBlank()) {
+            local.append(" (").append(environment.user()).append(')');
+        }
+        return local.toString();
     }
 
     private static String ciRows(RunEnvironment environment) {
