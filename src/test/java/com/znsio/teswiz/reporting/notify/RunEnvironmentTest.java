@@ -11,7 +11,8 @@ import org.junit.jupiter.api.Test;
  * <p>
  * The provenance is resolved from an injected environment map, an already-resolved branch, and host/user suppliers, so
  * it is deterministic offline. A GitLab run (CI_PIPELINE_ID present) carries pipeline/job/commit/runner; a local run
- * carries host + user. Both carry the platform/environment prefix inputs and a reconstructed reproduce command.
+ * carries host + user. Both carry the platform/environment prefix inputs: these prefer the injected environment map and
+ * only fall back to teswiz's resolved configuration when the map has no value.
  */
 class RunEnvironmentTest {
 
@@ -43,6 +44,26 @@ class RunEnvironmentTest {
         assertThat(env.host()).isEqualTo("Anands-MacBook-Pro.local");
         assertThat(env.user()).isEqualTo("Anand.Bagmar");
         assertThat(env.branch()).isEqualTo("my-feature-branch");
+    }
+
+    @Test
+    void platformAndEnvironmentFromTheEnvironmentMapAreUsedWhenPresent() {
+        RunEnvironment env = RunEnvironment.resolve(Map.of("PLATFORM", "web", "TARGET_ENVIRONMENT", "STAGE"), "branch",
+                () -> "host", () -> "user");
+
+        assertThat(env.platform()).isEqualTo("web");
+        assertThat(env.environment()).isEqualTo("STAGE");
+    }
+
+    @Test
+    void platformAndEnvironmentFallBackToResolvedConfigAndDegradeToEmptyWhenUnavailable() {
+        // The map carries neither key, so resolve() reads teswiz's resolved configuration via Setup. In this offline
+        // unit test Setup is not initialised, so that read fails and degrades to an empty string rather than throwing.
+        RunEnvironment env = RunEnvironment.resolve(Map.of("INTEGRATION", "sup_cleo"), "branch", () -> "host",
+                () -> "user");
+
+        assertThat(env.platform()).isEmpty();
+        assertThat(env.environment()).isEmpty();
     }
 
     @Test
