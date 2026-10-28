@@ -178,7 +178,8 @@ public final class RunNotifications {
         Path logDirPath = logDir.isEmpty() ? null : Path.of(logDir);
         Path junitReportXml = resolveJunitReport(logDirPath);
         RunEnvironment runEnvironment = RunEnvironment.resolve(environment, resolveBranch(environment),
-                RunNotifications::hostName, RunNotifications::userName);
+                RunNotifications::hostName, RunNotifications::userName,
+                com.znsio.teswiz.runner.Setup::getFromConfigs);
         return new RunResult(junitReportXml, logDirPath, totalScenarios, passedScenarios, failedScenarios, environment,
                 runEnvironment);
     }
