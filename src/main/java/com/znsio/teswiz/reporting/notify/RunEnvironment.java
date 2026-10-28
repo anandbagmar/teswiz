@@ -1,7 +1,5 @@
 package com.znsio.teswiz.reporting.notify;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -9,15 +7,18 @@ import java.util.function.Supplier;
  * The provenance of a single run, captured for the notification subject and footer so a recipient can trace a result
  * back to where it ran. A CI run carries the pipeline and job identifiers + URLs, the branch, the short commit, who
  * triggered it and which runner executed it; a local run carries the host machine name and the logged-in user. Both
- * carry the detected CI provider name, the platform (web/api) and target environment (for the subject prefix) and a
- * reconstructed, copy-pasteable {@code reproduce} command built from the resolved run inputs ({@code INTEGRATION} /
- * {@code TAG} / {@code CONFIG} / {@code TARGET_ENVIRONMENT}) — faithful and reproducible, though not the literal
- * keystrokes (the original argv is not recoverable in the separate notify JVM).
+ * carry the detected CI provider name, the platform (web/api) and target environment (for the subject prefix).
  * <p>
- * The CI facts are resolved generically through {@link CiProvider}: teswiz detects whichever CI system produced the
- * run (GitLab, GitHub Actions, Jenkins, CircleCI, Bitbucket, Azure Pipelines, …) from its signature environment
- * variable and reads that provider's native variable names, so this is no longer GitLab-specific. An unrecognised
- * environment resolves as a local run.
+ * It deliberately carries no "reproduce command": which run inputs identify a run is domain knowledge teswiz does not
+ * have (it has no notion of a region/market/brand/integration tuple), so a consuming project composes that string
+ * itself — from the generic {@link HtmlReport#reproduceCommand(Map)} builder if it wants shell-safe quoting — and
+ * passes it to {@link HtmlReport#footer(RunEnvironment, String)} /
+ * {@link HtmlReport#slackFooter(RunEnvironment, String)}.
+ * <p>
+ * The CI facts are resolved generically through {@link CiProvider}: teswiz detects whichever CI system produced the run
+ * (GitLab, GitHub Actions, Jenkins, CircleCI, Bitbucket, Azure Pipelines, …) from its signature environment variable
+ * and reads that provider's native variable names, so this is no longer GitLab-specific. An unrecognised environment
+ * resolves as a local run.
  * <p>
  * {@link #resolve} reads everything from an injected environment map, the already-resolved branch, and a host-name and
  * user-name supplier, so the resolution is deterministic and unit-testable offline; the reporter passes
@@ -26,17 +27,14 @@ import java.util.function.Supplier;
  */
 public record RunEnvironment(boolean isCi, String ciProvider, String platform, String environment, String pipelineId,
         String pipelineUrl, String jobId, String jobName, String jobUrl, String branch, String commit,
-        String triggeredBy, String runner, String host, String user, String reproduceCommand) {
+        String triggeredBy, String runner, String host, String user) {
 
     private static final String PLATFORM = "PLATFORM";
     private static final String TARGET_ENVIRONMENT = "TARGET_ENVIRONMENT";
 
-    private static final List<String> REPRODUCE_KEYS = List.of("INTEGRATION", "TAG", "CONFIG", "TARGET_ENVIRONMENT");
-    private static final String GRADLE_RUN = "./gradlew run";
-
     /**
-     * Resolves the run provenance from the environment, the already-resolved branch, and the host / user suppliers.
-     * The CI provider and its fields are resolved generically via {@link CiProvider#detect(Map)}.
+     * Resolves the run provenance from the environment, the already-resolved branch, and the host / user suppliers. The
+     * CI provider and its fields are resolved generically via {@link CiProvider#detect(Map)}.
      *
      * @param environment  the process environment (CI vars + run inputs); the reporter passes {@code System.getenv()}
      * @param branch       the branch the reporter already resolved (CI ref else git); reused here, not re-derived
@@ -53,19 +51,7 @@ public record RunEnvironment(boolean isCi, String ciProvider, String platform, S
                 provider.pipelineUrl(environment), provider.jobId(environment), provider.jobName(environment),
                 provider.jobUrl(environment), branch == null ? "" : branch.trim(), provider.commit(environment),
                 provider.triggeredBy(environment), provider.runner(environment), ci ? "" : safeGet(hostSupplier),
-                ci ? "" : safeGet(userSupplier), reproduceCommand(environment));
-    }
-
-    private static String reproduceCommand(Map<String, String> environment) {
-        List<String> parts = new ArrayList<>();
-        for (String key : REPRODUCE_KEYS) {
-            String value = value(environment, key);
-            if (!value.isEmpty()) {
-                parts.add(key + "=" + value);
-            }
-        }
-        parts.add(GRADLE_RUN);
-        return String.join(" ", parts);
+                ci ? "" : safeGet(userSupplier));
     }
 
     private static String value(Map<String, String> environment, String key) {

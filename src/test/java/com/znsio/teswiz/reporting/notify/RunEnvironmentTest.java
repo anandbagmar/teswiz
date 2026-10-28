@@ -19,8 +19,9 @@ class RunEnvironmentTest {
     void ciRunResolvesPipelineJobAndIsMarkedCi() {
         RunEnvironment env = RunEnvironment.resolve(
                 Map.of("CI_PIPELINE_ID", "1234567", "CI_PIPELINE_URL", "https://gitlab/pipe/1234567", "CI_JOB_ID",
-                        "8901234", "CI_JOB_NAME", "sup_pragmaticplay-row-uk", "CI_JOB_URL", "https://gitlab/job/8901234",
-                        "CI_COMMIT_SHORT_SHA", "af9a330a", "INTEGRATION", "sup_pragmaticplay"),
+                        "8901234", "CI_JOB_NAME", "sup_pragmaticplay-row-uk", "CI_JOB_URL",
+                        "https://gitlab/job/8901234", "CI_COMMIT_SHORT_SHA", "af9a330a", "INTEGRATION",
+                        "sup_pragmaticplay"),
                 "F_GAMC-19572_notifications", () -> "ignored-on-ci", () -> "ignored-on-ci");
 
         assertThat(env.isCi()).isTrue();
@@ -42,18 +43,6 @@ class RunEnvironmentTest {
         assertThat(env.host()).isEqualTo("Anands-MacBook-Pro.local");
         assertThat(env.user()).isEqualTo("Anand.Bagmar");
         assertThat(env.branch()).isEqualTo("my-feature-branch");
-    }
-
-    @Test
-    void reproduceCommandIsBuiltFromTheResolvedRunInputs() {
-        RunEnvironment env = RunEnvironment.resolve(
-                Map.of("INTEGRATION", "sup_cleo", "TAG", "@suite_sanity", "TARGET_ENVIRONMENT", "STAGE"),
-                "master", () -> "host", () -> "user");
-
-        assertThat(env.reproduceCommand()).contains("INTEGRATION=sup_cleo");
-        assertThat(env.reproduceCommand()).contains("TAG=@suite_sanity");
-        assertThat(env.reproduceCommand()).contains("TARGET_ENVIRONMENT=STAGE");
-        assertThat(env.reproduceCommand()).endsWith("./gradlew run");
     }
 
     @Test

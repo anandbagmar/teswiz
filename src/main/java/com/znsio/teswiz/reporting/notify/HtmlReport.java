@@ -64,17 +64,20 @@ public final class HtmlReport {
      * or the host + user for a local run, plus the reconstructed reproduce command. Returns an empty string when no
      * environment is supplied.
      *
-     * @param environment the resolved run provenance (may be {@code null})
+     * @param environment      the resolved run provenance (may be {@code null})
+     * @param reproduceCommand the client-supplied "how to re-run this" command (may be blank → the Reproduce line is
+     *                         omitted). teswiz does not know which run inputs matter, so the consumer composes this
+     *                         (e.g. via {@link #reproduceCommand(Map)}).
      * @return the footer HTML, or an empty string
      */
-    public static String footer(RunEnvironment environment) {
+    public static String footer(RunEnvironment environment, String reproduceCommand) {
         if (environment == null) {
             return "";
         }
         String rows = environment.isCi() ? ciRows(environment) : localRows(environment);
-        return "<div class=\"footer\"><strong>Run context</strong><table>" + rows + "</table>"
-                + "<p class=\"muted\">Reproduce with:<br><code>" + escape(environment.reproduceCommand())
-                + "</code></p></div>";
+        String reproduce = (reproduceCommand == null || reproduceCommand.isBlank()) ? ""
+                : "<p class=\"muted\">Reproduce with:<br><code>" + escape(reproduceCommand) + "</code></p>";
+        return "<div class=\"footer\"><strong>Run context</strong><table>" + rows + "</table>" + reproduce + "</div>";
     }
 
     /**
@@ -105,10 +108,12 @@ public final class HtmlReport {
     /**
      * Renders the plain-text run-context footer for a Slack message, mirroring {@link #footer(RunEnvironment)}.
      *
-     * @param environment the resolved run provenance (may be {@code null})
+     * @param environment      the resolved run provenance (may be {@code null})
+     * @param reproduceCommand the client-supplied "how to re-run this" command (may be blank → the Reproduce line is
+     *                         omitted); the consumer composes it (e.g. via {@link #reproduceCommand(Map)})
      * @return the Slack footer text (leading newline included), or an empty string
      */
-    public static String slackFooter(RunEnvironment environment) {
+    public static String slackFooter(RunEnvironment environment, String reproduceCommand) {
         if (environment == null) {
             return "";
         }
@@ -125,11 +130,52 @@ public final class HtmlReport {
             appendLine(text, "Branch", environment.branch());
             appendLine(text, "Ran on", localLine(environment));
         }
-        String reproduce = environment.reproduceCommand();
-        if (reproduce != null && !reproduce.isBlank()) {
-            text.append("\n*Reproduce:*\n`").append(reproduce).append('`');
+        if (reproduceCommand != null && !reproduceCommand.isBlank()) {
+            text.append("\n*Reproduce:*\n`").append(reproduceCommand).append('`');
         }
         return text.toString();
+    }
+
+    /**
+     * Builds a copy-paste-safe {@code K=V … ./gradlew run} command from the client's ordered run inputs. teswiz owns
+     * only the shell-safety (and the {@code ./gradlew run} suffix), never which keys matter — the caller decides that
+     * (e.g. a casino composer passes its {@code REGION/MARKET/BRAND/INTEGRATION/GAME/TAG/CONFIG} tuple), so the domain
+     * vocabulary stays out of teswiz. Blank values are skipped; each value is POSIX-shell-quoted — left bare when it
+     * has no shell metacharacters, single-quoted (with embedded single quotes escaped the standard {@code '\''} way)
+     * when it contains whitespace or specials such as the spaces and parentheses in a Cucumber TAG.
+     *
+     * @param orderedInputs the run inputs in the order they should appear (use an insertion-ordered map); may be empty
+     * @return the reproduce command string (never {@code null}); just {@code ./gradlew run} when no inputs are given
+     */
+    public static String reproduceCommand(Map<String, String> orderedInputs) {
+        StringBuilder command = new StringBuilder();
+        if (orderedInputs != null) {
+            for (Map.Entry<String, String> input : orderedInputs.entrySet()) {
+                String value = input.getValue();
+                if (value != null && !value.isBlank()) {
+                    command.append(input.getKey()).append('=').append(shellQuote(value.trim())).append(' ');
+                }
+            }
+        }
+        return command.append("./gradlew run").toString();
+    }
+
+    private static String shellQuote(String value) {
+        if (!needsQuoting(value)) {
+            return value;
+        }
+        return "'" + value.replace("'", "'\\''") + "'";
+    }
+
+    private static boolean needsQuoting(String value) {
+        for (int i = 0; i < value.length(); i++) {
+            char character = value.charAt(i);
+            boolean safe = Character.isLetterOrDigit(character) || "@_-./=:,".indexOf(character) >= 0;
+            if (!safe) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -144,10 +190,10 @@ public final class HtmlReport {
 
     /**
      * Renders the full per-scenario breakdown as HTML — one {@code
-     * 
+     *
     <h3>} heading and a {@code status / scenario /
-     * time} table per feature, in document order. A failed scenario shows its reason under the name; a scenario with no
-     * recorded time shows an em dash. Returns an empty string when there are no scenarios.
+       * time} table per feature, in document order. A failed scenario shows its reason under the name; a scenario with
+     * no recorded time shows an em dash. Returns an empty string when there are no scenarios.
      *
      * @param scenariosByFeature every scenario grouped by feature (from {@link JUnitResults#scenariosByFeature()})
      * @return the scenario-breakdown HTML, or an empty string
