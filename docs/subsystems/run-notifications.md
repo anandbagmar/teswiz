@@ -135,6 +135,12 @@ detects the CI provider from its signature environment variable and reads that p
 An unrecognised environment resolves as a **local** run (host + user). The branch is resolved once by teswiz (the CI
 ref, else `BRANCH_NAME` from config, else `git rev-parse`) and reused here.
 
+`RunEnvironment` also carries the **platform** (`PLATFORM`) and **target environment** (`TARGET_ENVIRONMENT`) — handy
+for a composer that wants a `[PLATFORM][ENV]` subject prefix. These prefer the process environment but **fall back to
+teswiz's already-resolved configuration** (`Setup.getFromConfigs`) when the environment has no value: on a local run
+they typically live in `config.properties`, not the shell, so reading only `System.getenv` would leave them blank.
+A CI run that exports them still takes the exported value. Either is an empty string when neither source has it.
+
 ---
 
 ## ✍️ Implementing a composer
