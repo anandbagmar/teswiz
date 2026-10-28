@@ -1,5 +1,6 @@
 package com.znsio.teswiz.reporting.notify;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -24,6 +25,14 @@ public final class HtmlReport {
             + "ul{margin:4px 0 12px 20px}a{color:#1565c0}"
             + "code{background:#f4f5f7;border:1px solid #e0e0e0;border-radius:4px;padding:2px 6px;"
             + "font-family:Menlo,Consolas,monospace;font-size:12px;display:inline-block;word-break:break-all}"
+            + "table.scenarios th{width:auto}"
+            + "table.scenarios td.status,table.scenarios th.status{width:64px;text-align:center}"
+            + "table.scenarios td.time,table.scenarios th.time{width:64px;text-align:right;color:#666;"
+            + "white-space:nowrap}"
+            + ".pill{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;"
+            + "color:#fff}"
+            + ".pill.pass{background:#2e7d32}.pill.fail{background:#b00020}.pill.skip{background:#9e9e9e}"
+            + ".reason{color:#b00020;font-size:12px;display:block;margin-top:2px}"
             + ".footer{padding:12px 20px;background:#fafafa;border-top:1px solid #e0e0e0;color:#666;font-size:12px}"
             + "</style>";
 
@@ -134,6 +143,74 @@ public final class HtmlReport {
     }
 
     /**
+     * Renders the full per-scenario breakdown as HTML — one {@code
+     * 
+    <h3>} heading and a {@code status / scenario /
+     * time} table per feature, in document order. A failed scenario shows its reason under the name; a scenario with no
+     * recorded time shows an em dash. Returns an empty string when there are no scenarios.
+     *
+     * @param scenariosByFeature every scenario grouped by feature (from {@link JUnitResults#scenariosByFeature()})
+     * @return the scenario-breakdown HTML, or an empty string
+     */
+    public static String scenarioTable(List<JUnitResults.FeatureScenarios> scenariosByFeature) {
+        if (scenariosByFeature == null || scenariosByFeature.isEmpty()) {
+            return "";
+        }
+        StringBuilder html = new StringBuilder("<h3>Scenarios</h3>");
+        for (JUnitResults.FeatureScenarios feature : scenariosByFeature) {
+            html.append("<p><strong>").append(escape(feature.feature())).append("</strong></p>")
+                    .append("<table class=\"scenarios\"><tr><th class=\"status\">Status</th><th>Scenario</th>")
+                    .append("<th class=\"time\">Time</th></tr>");
+            for (JUnitResults.Scenario scenario : feature.scenarios()) {
+                html.append(scenarioRow(scenario));
+            }
+            html.append("</table>");
+        }
+        return html.toString();
+    }
+
+    /**
+     * Renders the full per-scenario breakdown as Slack mrkdwn — a bold feature name then one blockquoted glyph line per
+     * scenario (✅ pass, 🔴 fail, ⚪ skip), with the failure reason indented beneath a failed scenario and, when
+     * requested, the per-scenario time appended. Returns an empty string when there are no scenarios.
+     *
+     * @param scenariosByFeature every scenario grouped by feature (from {@link JUnitResults#scenariosByFeature()})
+     * @param showTime           whether to append each scenario's run time
+     * @return the scenario-breakdown mrkdwn, or an empty string
+     */
+    public static String slackScenarios(List<JUnitResults.FeatureScenarios> scenariosByFeature, boolean showTime) {
+        if (scenariosByFeature == null || scenariosByFeature.isEmpty()) {
+            return "";
+        }
+        StringBuilder text = new StringBuilder();
+        for (JUnitResults.FeatureScenarios feature : scenariosByFeature) {
+            text.append("*").append(slackEscape(feature.feature())).append("*\n");
+            for (JUnitResults.Scenario scenario : feature.scenarios()) {
+                appendSlackScenario(text, scenario, showTime);
+            }
+        }
+        return text.toString();
+    }
+
+    /**
+     * Formats a duration in seconds for display — whole seconds under a minute (e.g. {@code 42.5s}), otherwise minutes
+     * and seconds (e.g. {@code 3m 05s}). A non-positive duration renders as an em dash.
+     *
+     * @param seconds the duration in seconds
+     * @return the formatted duration
+     */
+    public static String formatDuration(double seconds) {
+        if (seconds <= 0) {
+            return "\u2014";
+        }
+        if (seconds < 60) {
+            return trimSeconds(seconds) + "s";
+        }
+        int minutes = (int) (seconds / 60);
+        return minutes + "m " + String.format("%02d", Math.round(seconds - minutes * 60.0)) + "s";
+    }
+
+    /**
      * Escapes the five XML/HTML metacharacters so arbitrary scenario and feature names are safe inside HTML.
      *
      * @param raw the raw text
@@ -186,5 +263,58 @@ public final class HtmlReport {
             return escape(text);
         }
         return "<a href=\"" + escape(url) + "\">" + escape(text) + "</a>";
+    }
+
+    private static String scenarioRow(JUnitResults.Scenario scenario) {
+        StringBuilder cell = new StringBuilder("<td>").append(escape(scenario.name()));
+        if (scenario.failed() && !scenario.reason().isBlank()) {
+            cell.append("<span class=\"reason\">").append(escape(scenario.reason())).append("</span>");
+        }
+        cell.append("</td>");
+        return "<tr><td class=\"status\">" + pill(scenario) + "</td>" + cell + "<td class=\"time\">"
+                + formatDuration(scenario.time()) + "</td></tr>";
+    }
+
+    private static String pill(JUnitResults.Scenario scenario) {
+        if (scenario.failed()) {
+            return "<span class=\"pill fail\">FAIL</span>";
+        }
+        if (scenario.skipped()) {
+            return "<span class=\"pill skip\">SKIP</span>";
+        }
+        return "<span class=\"pill pass\">PASS</span>";
+    }
+
+    private static void appendSlackScenario(StringBuilder text, JUnitResults.Scenario scenario, boolean showTime) {
+        text.append("> ").append(glyph(scenario)).append("  ").append(slackEscape(scenario.name()));
+        if (showTime && scenario.time() > 0) {
+            text.append("  _").append(formatDuration(scenario.time())).append('_');
+        }
+        text.append('\n');
+        if (scenario.failed() && !scenario.reason().isBlank()) {
+            text.append(">     \u21b3 ").append(slackEscape(scenario.reason())).append('\n');
+        }
+    }
+
+    private static String glyph(JUnitResults.Scenario scenario) {
+        if (scenario.failed()) {
+            return "\uD83D\uDD34";
+        }
+        if (scenario.skipped()) {
+            return "\u26aa";
+        }
+        return "\u2705";
+    }
+
+    private static String slackEscape(String raw) {
+        if (raw == null) {
+            return "";
+        }
+        return raw.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+    }
+
+    private static String trimSeconds(double seconds) {
+        String formatted = String.format("%.1f", seconds);
+        return formatted.endsWith(".0") ? formatted.substring(0, formatted.length() - 2) : formatted;
     }
 }

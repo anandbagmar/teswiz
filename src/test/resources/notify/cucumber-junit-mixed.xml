@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="Cucumber" time="42.5" tests="5" skipped="1" failures="2" errors="0" timestamp="2026-10-28T06:56:22.754828Z">
+<testcase classname="In-Game Bet" name="Place a bet at the minimum stake" time="6.125">
+<system-out><![CDATA[
+Given a player session is active for "valid" user...........................passed
+When the player places a bet of 10.0........................................passed
+Then the bet is accepted....................................................passed
+]]></system-out>
+</testcase>
+<testcase classname="In-Game Bet" name="Place a bet above the balance is rejected" time="1.5">
+<failure type="com.entain.casino.exceptions.BetRejectedException" message="Expected bet to be accepted but it was rejected with INSUFFICIENT_FUNDS">
+<![CDATA[com.entain.casino.exceptions.BetRejectedException: Expected bet to be accepted but it was rejected with INSUFFICIENT_FUNDS
+	at com.entain.casino.businessLayer.GamePlayBL.assertBetAccepted(GamePlayBL.java:88)
+]]>
+</failure>
+<system-out><![CDATA[
+Given a player session is active for "valid" user...........................passed
+When the player places a bet of 999999.0....................................failed
+Then the bet is accepted....................................................skipped
+]]></system-out>
+</testcase>
+<testcase classname="Void" name="Void an accepted bet" time="3.0">
+<system-out><![CDATA[
+Given an accepted bet of 10.0...............................................passed
+When the bet is voided......................................................passed
+Then the player's balance is restored.......................................passed
+]]></system-out>
+</testcase>
+<testcase classname="Void" name="Void a non-existent bet is rejected" time="2.2">
+<failure type="com.entain.casino.exceptions.VoidRejectedException" message="Expected void to be rejected with TXN_NOT_FOUND">
+<![CDATA[com.entain.casino.exceptions.VoidRejectedException: Expected void to be rejected with TXN_NOT_FOUND
+	at com.entain.casino.businessLayer.VoidBL.assertVoidRejected(VoidBL.java:61)
+]]>
+</failure>
+<system-out><![CDATA[
+Given no bet exists for the player..........................................passed
+When a void is requested for an unknown transaction.........................failed
+]]></system-out>
+</testcase>
+<testcase classname="Balance" name="Balance check is skipped pending data" time="0.0">
+<skipped/>
+<system-out><![CDATA[
+Given a player session is active for "valid" user...........................skipped
+]]></system-out>
+</testcase>
+</testsuite>
