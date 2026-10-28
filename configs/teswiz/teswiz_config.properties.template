@@ -115,6 +115,14 @@ SHOW_SENSITIVE_DATA=false
 #TELEMETRY_ENDPOINT=https://us.i.posthog.com/capture/
 #TELEMETRY_API_KEY=<telemetry-api-key>
 
+# End-of-run notifications (Slack + email). OFF by default and configured separately.
+# teswiz fires the end-of-run notification itself after the cucumber report is written.
+# The notification keys (notify.*) are lower-case dotted keys and live in their own resource,
+# NOT in this execution-config file. Copy the canonical template below to your test resources
+# (src/test/resources/notifications.properties) and set notify.enabled=true to turn it on:
+#   ./configs/teswiz/notifications.properties.template
+# See docs/subsystems/run-notifications.md for the full guide.
+
 # Runtime defaults. System properties and environment variables override these values.
 #TESWIZ_RUNTIME_CONFIG_FILE=./configs/teswiz/teswiz_runtime.properties
 #TESWIZ_DRIVER_WAIT_TIMEOUT_SECONDS=10

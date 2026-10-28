@@ -51,8 +51,9 @@ public final class HtmlReport {
     }
 
     /**
-     * Renders the run-context footer: the GitLab pipeline / job trace for a CI run, or the host + user for a local run,
-     * plus the reconstructed reproduce command. Returns an empty string when no environment is supplied.
+     * Renders the run-context footer: the CI pipeline / job trace for a CI run (labelled with the detected provider),
+     * or the host + user for a local run, plus the reconstructed reproduce command. Returns an empty string when no
+     * environment is supplied.
      *
      * @param environment the resolved run provenance (may be {@code null})
      * @return the footer HTML, or an empty string
@@ -104,6 +105,7 @@ public final class HtmlReport {
         }
         StringBuilder text = new StringBuilder("\n_Run context_\n");
         if (environment.isCi()) {
+            appendLine(text, "CI", environment.ciProvider());
             appendLine(text, "Pipeline", "#" + environment.pipelineId() + " " + environment.pipelineUrl());
             appendLine(text, "Job", environment.jobName() + " (#" + environment.jobId() + ") " + environment.jobUrl());
             appendLine(text, "Branch", environment.branch());
@@ -163,7 +165,8 @@ public final class HtmlReport {
     }
 
     private static String ciRows(RunEnvironment environment) {
-        return row("Pipeline", link(environment.pipelineUrl(), "#" + environment.pipelineId()))
+        return row("CI", escape(environment.ciProvider()))
+                + row("Pipeline", link(environment.pipelineUrl(), "#" + environment.pipelineId()))
                 + row("Job", link(environment.jobUrl(), environment.jobName() + " (#" + environment.jobId() + ")"))
                 + row("Branch", escape(environment.branch())) + row("Commit", escape(environment.commit()))
                 + row("Triggered by", escape(environment.triggeredBy())) + row("Runner", escape(environment.runner()));

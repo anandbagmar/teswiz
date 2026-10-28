@@ -34,6 +34,7 @@ flowchart TD
     SUB --> SUB3["ReportPortal Integration"]
     SUB --> SUB4["AspectJ Logging"]
     SUB --> SUB5["BrowserStack Local"]
+    SUB --> SUB6["Run Notifications (Slack/Email)"]
 
     CFG --> CFG1["Configuration Parameters"]
     CFG --> CFG2["Docker Setup"]
@@ -82,6 +83,7 @@ flowchart TD
 | 📊 **ReportPortal Integration** | Real-time test result dashboard publishing and launch metadata | [ReportPortal Setup](subsystems/reportportal-integration.md) |
 | 📝 **AspectJ Logging** | Automated framework and test method execution tracing | [Logging Guide](subsystems/aspectj-logging.md) |
 | 🔒 **BrowserStack Local** | Configuring secure tunnel connections for cloud grid testing | [Local Testing Setup](subsystems/browserstack-local.md) |
+| 🔔 **Run Notifications** | Opt-in end-of-run Slack + email notifications, CI-provider agnostic, OFF by default | [Notifications Guide](subsystems/run-notifications.md) |
 
 ---
 

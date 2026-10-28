@@ -1,5 +1,6 @@
 package com.znsio.teswiz.analytics;
 
+import com.znsio.teswiz.reporting.notify.CiProvider;
 import com.znsio.teswiz.runner.Runner;
 import com.znsio.teswiz.runner.Setup;
 import com.znsio.teswiz.tools.cmd.CommandLineExecutor;
@@ -216,14 +217,9 @@ public class RunTelemetry {
     }
 
     private static String detectCiProvider() {
-        if (System.getenv("GITHUB_ACTIONS") != null) return "github_actions";
-        if (System.getenv("JENKINS_URL") != null) return "jenkins";
-        if (System.getenv("GITLAB_CI") != null) return "gitlab";
-        if (System.getenv("TF_BUILD") != null) return "azure_devops";
-        if (System.getenv("CIRCLECI") != null) return "circleci";
-        if (System.getenv("BITBUCKET_COMMIT") != null) return "bitbucket";
-        if (getOverriddenBooleanValue(Setup.RUN_IN_CI, false)) return "ci_generic";
-        return "local";
+        // Delegate to the single source of truth for CI detection so the provider list never drifts between the
+        // telemetry label here and the notification run-context footer (com.znsio.teswiz.reporting.notify.CiProvider).
+        return CiProvider.telemetryLabel(System.getenv(), getOverriddenBooleanValue(Setup.RUN_IN_CI, false));
     }
 
     private static boolean isDockerEnvironment() {

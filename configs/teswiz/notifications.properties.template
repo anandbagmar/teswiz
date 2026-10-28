@@ -1,0 +1,66 @@
+# ============================================================================
+# teswiz end-of-run notifications — canonical template
+# ============================================================================
+# Copy this file to your project's test resources as `notifications.properties`
+# (so it is on the runtime classpath, e.g. src/test/resources/notifications.properties)
+# and uncomment the keys you need. teswiz fires the end-of-run notification itself
+# from its Runner, after the cucumber report is written and before the JVM exits.
+#
+# This file is OPTIONAL and OFF by default:
+#   - If the resource is absent, teswiz does nothing (no cost).
+#   - If `notify.composer.class` is blank, teswiz does nothing.
+#   - If `notify.enabled` is false (the default below), nothing is delivered.
+# A notifier problem is always logged and swallowed; it never changes a run's result.
+#
+# ENVIRONMENT OVERRIDES: every key can be overridden by an environment variable
+# whose name is the key upper-snake-cased with dots as underscores
+#   notify.enabled        -> NOTIFY_ENABLED
+#   notify.smtp.host      -> NOTIFY_SMTP_HOST
+# The env value always wins over the file value, so a project can ship these
+# safe (off) defaults and have CI flip only the switches it needs.
+#
+# SECRETS are NEVER read from this file — teswiz reads them from the environment:
+#   SMTP_PASSWORD        the SMTP account password (email channel)
+#   <slack webhook url>  resolved by your composer, by convention from an env var
+# ----------------------------------------------------------------------------
+
+# --- Master switch -----------------------------------------------------------
+# Off by default. Set to true (or export NOTIFY_ENABLED=true in CI) to deliver.
+notify.enabled=false
+
+# --- Fail-fast policy --------------------------------------------------------
+# Off by default: a notification problem (a transient Slack/SMTP failure, a missing
+# destination for an enabled channel, or a broken composer) is logged and swallowed,
+# so it never flips a passing run to failed. Set to true to FAIL THE RUN whenever a
+# run wanted to notify but could not — catches misconfiguration immediately instead
+# of silently never notifying. A clean (or deliberately disabled) notification never
+# fails the run either way.
+notify.fail.on.error=false
+
+# --- Composer (the client seam) ---------------------------------------------
+# Fully-qualified class implementing com.znsio.teswiz.reporting.notify.RunNotificationComposer,
+# with a public no-arg constructor. teswiz hands it the finished RunResult and delivers
+# whatever Notifications it returns. Blank (default) = no notifications.
+#notify.composer.class=com.yourproject.notify.RunNotificationComposerImpl
+
+# --- Branch allowlist (gate) -------------------------------------------------
+# Comma-separated branches allowed to notify. Supports a trailing-* glob prefix.
+# Defaults to "master" when blank. The run branch is resolved from the CI ref
+# (e.g. CI_COMMIT_REF_NAME) else teswiz's resolved BRANCH_NAME.
+#notify.branches=master,main,release/*
+
+# --- Slack channel -----------------------------------------------------------
+# teswiz posts {"text":...} to an incoming webhook. The webhook URL is the whole
+# destination AND the secret, so your composer supplies it (read it from an env
+# var, never commit it). This flag is a convenience toggle your composer may read.
+#notify.slack.enabled=false
+
+# --- Email channel (SMTP via jakarta.mail) -----------------------------------
+# Non-secret SMTP facts live here; the password is read from the SMTP_PASSWORD env var.
+#notify.email.enabled=false
+#notify.smtp.host=smtp.example.com
+#notify.smtp.port=587
+#notify.smtp.tls=true
+#notify.smtp.auth=true
+#notify.smtp.from=teswiz-ci@example.com
+#notify.smtp.username=teswiz-ci@example.com

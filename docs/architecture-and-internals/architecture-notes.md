@@ -451,6 +451,34 @@ Current reporting behavior includes:
 * HTML report classifications aggregated from scenario metadata, including personas, platforms, engines, providers,
   and when available, provider-native cloud session ids, report URLs, and normalized provider artifact URLs
 
+#### `com.znsio.teswiz.reporting.notify`
+
+Owns the opt-in **end-of-run notification** runtime — Slack + email channels, gating, delivery, and the end-of-run
+trigger. teswiz's `Runner` fires `RunNotifications.fireIfConfigured(...)` after the cucumber report is written and
+before JVM exit; a consuming project only implements a `RunNotificationComposer` (resolved from the
+`notify.composer.class` key in a `notifications.properties` classpath resource) that turns the finished `RunResult`
+into zero or more `Notification`s. Everything is OFF by default and every failure is logged and swallowed, so a
+notifier problem never changes a run's result.
+
+* `RunNotifications` — the entry point; loads settings, resolves the composer, builds the `RunResult`, delivers
+* `RunNotificationComposer` (SPI) / `Notification` / `RunResult` — the client seam and its inputs/outputs
+* `NotificationSettings` — generic `.properties` loader with same-named environment overrides (env wins); secrets
+  read from the environment only
+* `Notifier` — applies the master switch (`notify.enabled`) + branch allowlist (`notify.branches`) gate, then routes
+  each message to `SlackSender` / `EmailSender` by whether it carries a destination
+* `CiProvider` / `RunEnvironment` — CI-provider-agnostic run provenance: the provider (GitLab, GitHub Actions,
+  Jenkins, CircleCI, Bitbucket, Azure Pipelines, …) is detected from its signature env var and its native variables
+  are mapped onto common fields; an unrecognised environment resolves as a local run. `CiProvider` is the single
+  source of truth for CI detection across teswiz — `com.znsio.teswiz.analytics.RunTelemetry` delegates its
+  `ci_provider` telemetry label to `CiProvider.telemetryLabel(...)`, so the provider list is defined once
+* fail-fast policy — notifications are best-effort by default (every failure logged and swallowed); setting
+  `notify.fail.on.error=true` makes `RunNotifications` throw `NotificationException` when a run wanted to notify but
+  could not (delivery failure, missing destination for an enabled channel, or a broken composer)
+* `HtmlReport` / `JUnitResults` / `LlmUsageLog` — content helpers (self-contained HTML + Slack rendering,
+  failures-by-feature from the JUnit XML, and teswiz's LLM-vision usage summary)
+
+See [Run Notifications](../subsystems/run-notifications.md) for the configuration guide.
+
 ### `com.znsio.teswiz.filters`
 
 Owns RestAssured filters that apply to every API call in a suite, regardless of which client built the request. Both are registered globally on `RestAssured` once during `Setup.setupExecutionEnvironment()` — not attached per-request — so they cover any RestAssured usage, not just calls routed through `RestAssuredService`. Both are on by default and opt out via config.
@@ -504,6 +532,7 @@ When adding new code for the dual-engine architecture:
 * prefer Appium server lifecycle and hub URL normalization under `mobile.server`
 * prefer provider-specific Appium/mobile cloud behavior under `mobile.provider`
 * prefer reporting adaptation code under `reporting`
+* prefer end-of-run notification code (channels, gating, delivery, run provenance) under `reporting.notify`
 * prefer shared app-path resolution, version detection, and download handling under `config.app`
 * prefer shared capability lookup and capability-file persistence under `config.capability`
 * prefer browser-config evolution code under `config.browser`

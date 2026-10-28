@@ -167,9 +167,10 @@ If you need a fresh dependency resolution:
 
 * **Applitools Eyes & Ultrafast Grid (UFG)**: Visual checking for Selenium Web, Playwright-Java Web, Playwright-TS Web, Android, and iOS ([Visual AI Guide](docs/subsystems/visual-ai-applitools.md)).
 * **ReportPortal Integration**: Real-time publishing of engine, platform, provider, persona, and session metadata ([ReportPortal Setup](docs/subsystems/reportportal-integration.md)).
+* **End-of-run Notifications**: Opt-in Slack + email run notifications fired by teswiz's Runner, CI-provider agnostic and OFF by default ([Notifications Guide](docs/subsystems/run-notifications.md)).
 * **Unified Scenario Diagnostic Artifacts**: Console logs, rolling debug logs, screenshots, traces, HARs, and cloud provider session links ([Debugging Guide](docs/architecture-and-internals/debugging-tests.md)).
 
-> 📖 **Read more**: [Running Visual Tests](docs/subsystems/visual-ai-applitools.md) • [ReportPortal Setup](docs/subsystems/reportportal-integration.md) • [Configuration Parameters](docs/configuration/configuration-parameters.md)
+> 📖 **Read more**: [Running Visual Tests](docs/subsystems/visual-ai-applitools.md) • [ReportPortal Setup](docs/subsystems/reportportal-integration.md) • [Run Notifications](docs/subsystems/run-notifications.md) • [Configuration Parameters](docs/configuration/configuration-parameters.md)
 
 ---
 
@@ -227,7 +228,7 @@ flowchart LR
     subgraph Subsystems["Cross-Cutting Subsystems"]
         VIS["Applitools Visual AI<br/>(Eyes & Ultrafast Grid)"]
         OCR["Vision Locators<br/>driver.vision(strategy) router<br/>(Tesseract OCR & OpenCV + optional LLM vision)"]
-        REP["Reporting & Artifacts<br/>(ReportPortal, Log4j2, Screenshots, HARs)"]
+        REP["Reporting & Artifacts<br/>(ReportPortal, Log4j2, Screenshots, HARs,<br/>Slack/Email run notifications)"]
     end
 
     CUC --> BL
