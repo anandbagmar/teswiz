@@ -1,3 +1,59 @@
+## 1.0.47
+# Release Notes - teswiz v1.0.47
+
+_Previous release: v1.0.46_
+
+This release builds on the generic end-of-run notification engine shipped in 1.0.46, making the notification content richer and the run-provenance resolution cleaner, more generic, and deterministic.
+
+## 🚀 Enhancements
+
+### 📊 Full per-scenario breakdown + run duration in notification reports
+
+The notification content model now exposes the complete per-scenario detail of a run, not just the failure summary, so a Slack/email notification can render the whole result.
+
+- **`JUnitResults.scenariosByFeature()`** — every scenario grouped by feature name, each carrying its status, reason, and time. Backed by a new `ScenarioStatus` enum and `Scenario` / `FeatureScenarios` records.
+- **`JUnitResults.durationSeconds()`** — the total run duration parsed from the JUnit XML.
+- **`failuresByFeature()` is now derived from the same scenario list**, so the existing API is unchanged for current callers — this is additive.
+- **`HtmlReport` rendering helpers** — `scenarioTable` (an email status-pill table), `slackScenarios` (a Slack glyph blockquote), and `formatDuration`, plus the pill/table CSS to style them.
+- Covered by a new `JUnitResultsTest` and a mixed JUnit fixture exercising status, reason, time, and feature grouping.
+
+## 🔧 Refactors
+
+### Reproduce-command made generic — no domain keys in `RunEnvironment`
+
+`RunEnvironment` no longer builds or carries a "reproduce command". It previously held a hardcoded list of consumer run-input keys (`REGION`, `MARKET`, `BRAND`, `INTEGRATION`, `GAME`, `TAG`, `CONFIG`, `TARGET_ENVIRONMENT`) — domain coupling teswiz should not own.
+
+- Dropped the `reproduceCommand` field, the key list, and its builder from `RunEnvironment`.
+- Added a generic **`HtmlReport.reproduceCommand(Map<String,String> orderedInputs)`** that POSIX-shell-quotes a caller-supplied ordered map into a `K=V ... ./gradlew run` string — bare when safe, single-quoted (with `'\''` escaping) when a value has spaces or shell specials.
+- `footer(env, cmd)` / `slackFooter(env, cmd)` now take the command as a parameter, so the consuming project composes it and teswiz only renders and shell-escapes.
+- The reproduce-command tests moved out of `RunEnvironmentTest` into a new `HtmlReportTest` (ordering, quoting, embedded-quote, blank-skip, empty-map).
+- Fixes the `zsh: unknown sort specifier` error that a Cucumber `TAG` containing parentheses caused when the old, unquoted command was pasted into a shell.
+
+## 🐞 Fixes
+
+### Notification platform/environment resolved from merged config, deterministically
+
+- `RunEnvironment` now resolves `PLATFORM` / `TARGET_ENVIRONMENT` from the injected process environment first, falling back to an **injected configuration lookup** rather than reaching into a global configuration singleton. On a real run the reporter wires this to teswiz's merged configuration (`Setup::getFromConfigs`), so a local run still picks up values from `config.properties`.
+- Because the fallback is injected rather than read from global static state, resolution is now deterministic and unit-testable offline — removing an order-dependent unit-test failure where another test populating the global config singleton would leak a stale `TARGET_ENVIRONMENT` value into `RunEnvironment`.
+- The 4-arg `RunEnvironment.resolve(...)` keeps its signature and now holds no dependency on global state; a new 5-arg overload takes the explicit config lookup for the real run.
+
+## 📝 Docs
+
+- `docs/subsystems/run-notifications.md` updated to note that `RunEnvironment` platform/environment fall back to resolved configuration.
+
+## 🛠️ Changed Files Summary
+
+- `src/main/java/com/znsio/teswiz/reporting/notify/JUnitResults.java`
+- `src/main/java/com/znsio/teswiz/reporting/notify/HtmlReport.java`
+- `src/main/java/com/znsio/teswiz/reporting/notify/RunEnvironment.java`
+- `src/main/java/com/znsio/teswiz/reporting/notify/RunNotifications.java`
+- `src/test/java/com/znsio/teswiz/reporting/notify/JUnitResultsTest.java`
+- `src/test/java/com/znsio/teswiz/reporting/notify/HtmlReportTest.java`
+- `src/test/java/com/znsio/teswiz/reporting/notify/RunEnvironmentTest.java`
+- `src/test/resources/notify/cucumber-junit-mixed.xml`
+- `docs/subsystems/run-notifications.md`
+- `build.gradle` (version bump to 1.0.47-SNAPSHOT)
+
 ## 1.0.46
 # Release Notes - teswiz v1.0.46
 
