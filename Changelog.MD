@@ -1,5 +1,23 @@
-## 1.0.47
-# Release Notes - teswiz v1.0.47
+## 1.0.48-SNAPSHOT
+# Release Notes - teswiz v1.0.48-SNAPSHOT
+
+_Previous release: v1.0.47_
+
+This release adds engine-agnostic body accessors to `TeswizApiResponse` so API consumers can map a response body without reaching for a specific HTTP engine's types.
+
+## 🚀 Enhancements
+
+### 🧩 Typed JSON mapping and XML reading on `TeswizApiResponse`
+
+`TeswizApiResponse` previously exposed only `asJsonObject()` / `asJsonArray()` (org.json). Four additive accessors now cover the common "map the body to my own type" and "read an XML supplier" needs, all working off the raw response-body string so they are independent of the RestAssured or Playwright engine that produced the response:
+
+- **`as(Class<T>)`** — map the JSON body to a caller-supplied type via Jackson.
+- **`as(TypeReference<T>)`** — map the JSON body to a generic type such as `List<Foo>`.
+- **`asXmlDocument()`** — parse the body as an XXE-safe `org.w3c.dom.Document` (external entity resolution and DOCTYPE disabled; the body is untrusted server data).
+- **`xmlString(xpath)`** — evaluate an XPath against the XML body, returning the matched text or an empty string when the path matches nothing.
+
+A malformed body fails fast with `InvalidTestDataException` naming the target type / XPath. Purely additive: no existing method, engine, or consumer changes. Covered by a new `TeswizApiResponseTest`.
+
 
 _Previous release: v1.0.46_
 
