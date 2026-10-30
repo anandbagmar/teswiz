@@ -472,12 +472,18 @@ swallowed, so a notifier problem never changes a run's result.
   Jenkins, CircleCI, Bitbucket, Azure Pipelines, …) is detected from its signature env var and its native variables
   are mapped onto common fields; an unrecognised environment resolves as a local run. `CiProvider` is the single
   source of truth for CI detection across teswiz — `com.znsio.teswiz.analytics.RunTelemetry` delegates its
-  `ci_provider` telemetry label to `CiProvider.telemetryLabel(...)`, so the provider list is defined once
+  `ci_provider` telemetry label to `CiProvider.telemetryLabel(...)`, so the provider list is defined once.
+  `RunEnvironment` also carries the platform and target environment, read from the process environment first and then
+  from an injected configuration lookup (`Setup::getFromConfigs` on a real run), so it holds no hidden dependency on
+  global state. It carries no reproduce command: which run inputs matter is consumer knowledge
 * fail-fast policy — notifications are best-effort by default (every failure logged and swallowed); setting
   `notify.fail.on.error=true` makes `RunNotifications` throw `NotificationException` when a run wanted to notify but
   could not (delivery failure, missing destination for an enabled channel, or a broken composer)
-* `HtmlReport` / `JUnitResults` / `LlmUsageLog` — content helpers (self-contained HTML + Slack rendering,
-  failures-by-feature from the JUnit XML, and teswiz's LLM-vision usage summary)
+* `HtmlReport` / `JUnitResults` / `LlmUsageLog` — content helpers. `JUnitResults` parses the JUnit XML into counts,
+  run duration, the full per-scenario breakdown (`scenariosByFeature()`) and failures-by-feature. `HtmlReport` renders
+  self-contained HTML (status card, `scenarioTable`) and Slack text (`slackScenarios`), formats durations, and builds
+  a shell-safe reproduce command from caller-supplied inputs (`reproduceCommand(Map)`) that the consumer passes to
+  `footer(env, cmd)` / `slackFooter(env, cmd)`. `LlmUsageLog` reads teswiz's LLM-vision usage summary
 
 See [Run Notifications](../subsystems/run-notifications.md) for the configuration guide.
 

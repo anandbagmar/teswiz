@@ -17,9 +17,13 @@ This release adds engine-agnostic body accessors to `TeswizApiResponse` so API c
 - **`xmlString(xpath)`** — evaluate an XPath against the XML body, returning the matched text or an empty string when the path matches nothing.
 
 A malformed body fails fast with `InvalidTestDataException` naming the target type / XPath. Purely additive: no existing method, engine, or consumer changes. Covered by a new `TeswizApiResponseTest`.
+
 ### 🔁 `API_MAX_RETRIES` can now be set in the config file
+
 The Playwright API engine retries each call up to `API_MAX_RETRIES` times (default 3), but until now the key was only read from an environment variable or `-D` system property, so a value in `config.properties` was silently ignored (although the docs and config template listed it as a config key). It now resolves like the other numeric keys: environment variable / system property first, then the config file, then the default of 3, and never below 1 (`Runner.getApiMaxRetries()`). Consumers whose API calls are not safe to resend (for example wallet bet/win/void POSTs) can pin `API_MAX_RETRIES=1` in their config to fail fast on the first 502/503/504 or exception, matching the RestAssured engine. Default behaviour is unchanged. Covered by a new `ApiMaxRetriesConfigTest`.
 
+## 1.0.47
+# Release Notes - teswiz v1.0.47
 
 _Previous release: v1.0.46_
 

@@ -56,13 +56,43 @@ flowchart TD
 
     E --> F["Environment Health Filter<br/>(Fail-fast on 502/503/504)"]
     F --> G["Masked API Traffic Logger<br/>(Write per-call logs to target/reports/api-traffic/)"]
+    G --> H["TeswizApiResponse<br/>(engine-neutral, raw body string)"]
+
+    H --> I1["asJsonObject() / asJsonArray()<br/>(org.json)"]
+    H --> I2["as(Class) / as(TypeReference)<br/>(Jackson, typed JSON)"]
+    H --> I3["asXmlDocument() / xmlString(xpath)<br/>(XXE-safe XML)"]
 ```
 
 All engines support full payload serialization and data type parity:
 - Data payloads: `Map<String, Object>`, `Collection`/`List`, `JSONObject`, `JSONArray`, `String`, numbers, booleans, and byte arrays.
 - HTTP operations: `GET`, `POST`, `PUT`, `PATCH`, `DELETE`.
-- Transient Retry Handling: Automatic retries (configurable via `API_MAX_RETRIES`, default: 3 attempts with progressive linear backoff) on network timeouts, connection drops, and gateway server errors (`502 Bad Gateway`, `503 Service Unavailable`, `504 Gateway Timeout`). Application-level status codes (e.g. 200, 400, 401, 404, 422, and 500 Internal Server Error) represent expected application responses or application bugs and return immediately without retry.
+- Transient Retry Handling: Automatic retries (configurable via `API_MAX_RETRIES`, resolved from an environment variable or `-D` system property first, then `config.properties`, then the default of 3, and never below 1; progressive linear backoff) on network timeouts, connection drops, and gateway server errors (`502 Bad Gateway`, `503 Service Unavailable`, `504 Gateway Timeout`). Application-level status codes (e.g. 200, 400, 401, 404, 422, and 500 Internal Server Error) represent expected application responses or application bugs and return immediately without retry.
 - Traffic logging: Automatic masked HTTP request/response logging under `api-traffic/`.
+
+> **Calls that are not safe to resend** (for example POSTs that place a bet or void a transaction): set `API_MAX_RETRIES=1` in `config.properties` to fail fast on the first 502/503/504 or exception instead of retrying.
+
+## Reading the response body
+
+Every engine returns a `TeswizApiResponse`. The accessors below work off the raw body string, so they behave the same whichever engine produced the response.
+
+| Accessor | Use it to |
+| :--- | :--- |
+| `asJsonObject()` / `asJsonArray()` | Read JSON with `org.json` |
+| `as(Class<T>)` | Map the JSON body to your own type (Jackson) |
+| `as(TypeReference<T>)` | Map the JSON body to a generic type such as `List<Foo>` |
+| `asXmlDocument()` | Parse the body as an `org.w3c.dom.Document`. DOCTYPE and external entities are disabled because the body is untrusted |
+| `xmlString(xpath)` | Evaluate an XPath against the XML body; returns the matched text, or an empty string when nothing matches |
+
+```java
+TeswizApiResponse response = ApiService.get(baseUrl, queryParams);
+
+Forecast forecast = response.as(Forecast.class);
+List<Forecast> forecasts = response.as(new TypeReference<List<Forecast>>() {});
+
+String city = response.xmlString("/response/location/city");
+```
+
+A body that is not valid JSON or XML, or an invalid XPath, fails fast with an `InvalidTestDataException` that names the target type or XPath.
 
 ## API Config.properties File Params:
 

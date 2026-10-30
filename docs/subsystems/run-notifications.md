@@ -27,7 +27,12 @@ flowchart TD
     FIRE -->|load NOTIFICATIONS_CONFIG_FILE| SET["notifications.properties\n(NotificationSettings: file + env override)"]
     FIRE -->|resolve notify.composer.class| COMP["RunNotificationComposer\n(client-implemented SPI)"]
     FIRE -->|build| RR["RunResult\n(JUnit XML, counts, RunEnvironment)"]
+    CFG["teswiz merged config\n(Setup::getFromConfigs)"] -.->|"PLATFORM / TARGET_ENVIRONMENT\nfallback when env var unset"| RR
     RR --> COMP
+    RR -->|junitReportXml| JUR["JUnitResults\n(counts, durationSeconds,\nscenariosByFeature, failuresByFeature)"]
+    COMP -.->|reads| JUR
+    COMP -.->|renders with| HTMLR["HtmlReport\n(document, scenarioTable,\nslackScenarios, formatDuration,\nfooter / slackFooter, reproduceCommand)"]
+    JUR -.-> HTMLR
     COMP -->|compose RunResult -> List&lt;Notification&gt;| NTF["Notifier"]
     NTF -->|gate: notify.enabled + notify.branches| GATE{"gates open?"}
     GATE -->|no| NOOP["nothing sent"]
@@ -41,14 +46,18 @@ flowchart TD
         SLACK
         EMAIL
         RR
+        CFG
+        JUR
+        HTMLR
     end
     subgraph CLIENT_OWNS["client owns"]
         COMP
     end
 ```
 
-**teswiz owns** the trigger, settings loading, gating, and the two channels. **The client owns** what each message
-says and which destinations it targets. teswiz never branches on what a message *means*.
+**teswiz owns** the trigger, settings loading, gating, the two channels, and the content helpers (`JUnitResults`,
+`HtmlReport`) a composer can use. **The client owns** what each message says and which destinations it targets. teswiz
+never branches on what a message *means*.
 
 ---
 
@@ -141,6 +150,11 @@ teswiz's already-resolved configuration** (`Setup.getFromConfigs`) when the envi
 they typically live in `config.properties`, not the shell, so reading only `System.getenv` would leave them blank.
 A CI run that exports them still takes the exported value. Either is an empty string when neither source has it.
 
+The configuration fallback is an **injected lookup**, not a read of global state:
+`RunEnvironment.resolve(env, branch, hostSupplier, userSupplier, configLookup)` takes it as its last argument, and
+`RunNotifications` passes `Setup::getFromConfigs`. The 4-argument `resolve(...)` overload uses no fallback (platform and
+environment come from the map only), which keeps resolution deterministic and unit-testable offline.
+
 ---
 
 ## ✍️ Implementing a composer
@@ -178,8 +192,65 @@ notify.composer.class=com.yourproject.notify.RunNotificationComposerImpl
 notify.branches=master,main
 ```
 
-The `HtmlReport` and `JUnitResults` helpers in the same package build a self-contained HTML card, a Slack footer,
-and failures-by-feature counts from the run's JUnit XML if you want richer content.
+---
+
+## 🧱 Report content helpers
+
+`JUnitResults` and `HtmlReport` (same package) are optional building blocks for richer messages. teswiz only parses
+and renders; what goes into a message stays your composer's decision.
+
+### `JUnitResults` — parse the run's JUnit XML
+
+Load it with `JUnitResults.fromXml(result.junitReportXml())`. The path is `null` when no report was written, so check
+`JUnitResults.isReadable(path)` first.
+
+| Method | Returns |
+| :--- | :--- |
+| `totalTests()`, `passed()`, `failed()`, `errors()`, `skipped()` | Scenario counts |
+| `hasFailures()`, `isEmpty()` | Convenience flags |
+| `durationSeconds()` | Total run duration from the suite's `time` attribute (`0` when absent) |
+| `scenariosByFeature()` | **Every** scenario grouped by feature, in document order. Each `Scenario` has `name`, `status` (`ScenarioStatus`: passed, failed, errored, skipped), `reason` and `time` |
+| `failuresByFeature()` | Failing scenario names per feature. Derived from the same list as `scenariosByFeature()` |
+
+### `HtmlReport` — render it
+
+| Method | Purpose |
+| :--- | :--- |
+| `document(title, failed, body, footer)` | Self-contained HTML card with a pass/fail status banner |
+| `scenarioTable(scenariosByFeature)` | Email breakdown: one status-pill table (status, scenario, time) per feature; a failed scenario shows its reason |
+| `slackScenarios(scenariosByFeature, showTime)` | Slack breakdown: bold feature name, then one blockquoted line per scenario (✅ pass, 🔴 fail, ⚪ skip) |
+| `formatDuration(seconds)` | `42.5s` under a minute, `3m 05s` above it, `—` for a non-positive value |
+| `footer(env, reproduceCommand)` / `slackFooter(env, reproduceCommand)` | Run-context footer (CI trace or host + user) for email and Slack |
+| `links(labelToUrl, env)` | Drill-down links, shown on CI runs only |
+| `reproduceCommand(orderedInputs)` | Builds a shell-safe `K=V ... ./gradlew run` string |
+| `withSlackSeparator(text)`, `escape(raw)` | Slack separator line and HTML escaping |
+
+### The reproduce command is yours to compose
+
+teswiz has no notion of which run inputs identify a run (region, market, brand, tag, and so on), so
+`RunEnvironment` carries **no** reproduce command. Your composer picks the inputs, in the order it wants, and passes
+the result to the footers:
+
+```java
+Map<String, String> inputs = new LinkedHashMap<>();   // insertion order is the output order
+inputs.put("TARGET_ENVIRONMENT", result.runEnvironment().environment());
+inputs.put("TAG", "@smoke and not @wip");              // spaces are fine; see quoting below
+
+String command = HtmlReport.reproduceCommand(inputs);
+// TARGET_ENVIRONMENT=prod TAG='@smoke and not @wip' ./gradlew run
+
+String htmlFooter = HtmlReport.footer(result.runEnvironment(), command);
+String slackFooter = HtmlReport.slackFooter(result.runEnvironment(), command);
+```
+
+Quoting is POSIX-shell safe: a value is left bare when it has no shell metacharacters and single-quoted otherwise
+(an embedded `'` becomes `'\''`). This matters for Cucumber tags such as `@a and (@b or @c)`, which would otherwise
+break when pasted into zsh. Blank values are skipped; an empty map yields just `./gradlew run`. Pass a blank command
+to `footer(...)` / `slackFooter(...)` to omit the "Reproduce" line.
+
+> **Upgrading from 1.0.46:** `footer(env)` and `slackFooter(env)` became `footer(env, reproduceCommand)` and
+> `slackFooter(env, reproduceCommand)`, and `RunEnvironment.reproduceCommand()` was removed. Build the command with
+> `HtmlReport.reproduceCommand(...)` and pass it in.
 
 ---
 
