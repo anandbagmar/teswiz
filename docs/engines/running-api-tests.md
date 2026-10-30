@@ -79,6 +79,7 @@ Switching `API_ENGINE` must not change the request your test sends. These rules 
 |---|---|
 | `Map` / `Collection` body | JSON written with Jackson. An explicit `null` field or list element is **kept** (`{"amount":null}`), a decimal stays a decimal (`1.0`), key order is preserved. Nested `JSONObject`, `JSONArray` and `JSONObject.NULL` are written as the JSON they hold. A value that cannot be written as JSON fails fast with an `InvalidTestDataException` |
 | `String` / `byte[]` body | Sent exactly as given |
+| `JSONObject` / `JSONArray` body (passed directly) | Sent as the JSON text it holds |
 | `null` body | An empty body |
 | URL you pass | Treated as already encoded: a valid `%XX` escape is **never encoded a second time**. Only characters that are illegal in a URL (a space, a non-ASCII character, a stray `%`) are percent-encoded |
 | `queryParams` map | Each name and value is encoded once and appended to the URL. A `null` value is skipped. A `null` or empty map adds no query |

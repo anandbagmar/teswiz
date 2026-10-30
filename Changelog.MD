@@ -1,3 +1,25 @@
+## 1.0.49-SNAPSHOT (unreleased)
+# Release Notes - teswiz v1.0.49-SNAPSHOT (unreleased)
+
+_Previous release: v1.0.48_
+
+This release makes the RestAssured and Playwright API engines send the same request, so switching `API_ENGINE` no longer changes what goes on the wire.
+
+## 🐞 Fixes
+
+### 🔁 Identical requests on both API engines
+
+- **Request bodies.** A `Map` or `Collection` body is now written by one shared Jackson serialiser (`JsonRequestBody`) on both engines. Explicit `null` fields and `null` list elements are kept (org.json dropped them on the Playwright path), decimals stay decimals (`1.0`, not `1`), and key order is preserved. Nested `JSONObject`, `JSONArray` and `JSONObject.NULL` values are written as the JSON they hold. A body that cannot be written as JSON fails fast with `InvalidTestDataException`.
+- **URLs on RestAssured.** A valid `%XX` escape in a URL is no longer encoded a second time (`%3A` used to become `%253A`). Only characters that are illegal in a URL (a space, a non-ASCII character, a stray `%`) are percent-encoded (`RequestUrl`). `queryParams` map values are encoded once, and a `null` value is skipped, as on Playwright.
+- **Behaviour change to check.** If a test relied on the Playwright engine omitting a `null` field, that field is now sent. Remove the key from the map to leave it out.
+- Covered by a new `ApiEngineRequestContractTest`: 9 request contracts run against both engines using a local recording server.
+
+## 📝 Docs
+
+- `docs/engines/running-api-tests.md`: new "What goes on the wire" section with the rules above.
+- `docs/architecture-and-internals/architecture-notes.md`: new `com.znsio.teswiz.api` package section with a diagram, and a package rule for shared request shaping.
+- `docs/architecture-and-internals/playwright-migration-guide.md`: note on the identical-request behaviour for teams moving off direct RestAssured calls.
+
 ## 1.0.48
 # Release Notes - teswiz v1.0.48
 

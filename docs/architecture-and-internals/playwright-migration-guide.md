@@ -215,3 +215,5 @@ If legacy test code calls `io.restassured.RestAssured` directly in step definiti
    - `response.getHeaders()` $\rightarrow$ `response.getHeaders()`
 
 3. **Set `API_ENGINE=playwright-java` in suite configuration.**
+
+> **The request is the same on every engine.** A `Map` / `Collection` body is written by one shared Jackson serialiser, so explicit `null` fields and list elements are sent (not dropped) and a decimal such as `1.0` stays `1.0`. A URL you pass is treated as already encoded, so a valid `%XX` escape is never encoded a second time, and `queryParams` values are encoded once. If a test depended on a `null` field being omitted, remove the key from the map instead. See [What goes on the wire](../engines/running-api-tests.md#what-goes-on-the-wire-same-for-every-engine).

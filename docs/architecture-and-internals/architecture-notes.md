@@ -27,6 +27,7 @@
   - [`com.znsio.teswiz.web.selenium`](#comznsioteswizwebselenium)
   - [`com.znsio.teswiz.web.playwright`](#comznsioteswizwebplaywright)
   - [`com.znsio.teswiz.reporting`](#comznsioteswizreporting)
+  - [`com.znsio.teswiz.api`](#comznsioteswizapi)
   - [`com.znsio.teswiz.filters`](#comznsioteswizfilters)
   - [`com.znsio.teswiz.visual`](#comznsioteswizvisual)
   - [`com.znsio.teswiz.testng`](#comznsioteswiztestng)
@@ -487,6 +488,46 @@ swallowed, so a notifier problem never changes a run's result.
 
 See [Run Notifications](../subsystems/run-notifications.md) for the configuration guide.
 
+### `com.znsio.teswiz.api`
+
+Owns the engine-neutral API client layer behind the `ApiService` facade (`com.znsio.teswiz.services`). `ApiService`
+reads `API_ENGINE` and returns an `ApiEngineClient`; every call comes back as a `TeswizApiResponse`, so a test never
+touches an HTTP engine's own types.
+
+```mermaid
+flowchart LR
+    BL["Business layer"] --> SVC["ApiService"]
+    SVC --> SEL{"API_ENGINE"}
+    SEL -->|rest-assured| RA["RestAssuredApiEngineClient"]
+    SEL -->|"playwright-java / playwright-ts"| PW["PlaywrightApiEngineClient"]
+
+    RA --> JRB["JsonRequestBody<br/>(Map / Collection -> JSON)"]
+    PW --> JRB
+    RA --> URL["RequestUrl<br/>(encode illegal chars once,<br/>append queryParams once)"]
+
+    RA --> RESP["TeswizApiResponse"]
+    PW --> RESP
+```
+
+* `ApiEngine` / `ApiEngineClient` — the engine enum and the client contract (`get`, `post`, `put`, `patch`, `delete`,
+  `head`, `options`, `postMultipart`)
+* `RestAssuredApiEngineClient` / `PlaywrightApiEngineClient` — the two client implementations. Today `ApiService` routes
+  both `playwright-java` and `playwright-ts` to `PlaywrightApiEngineClient`; `PlaywrightApiManager` owns its
+  `APIRequestContext` lifecycle
+* `TeswizApiResponse` — the engine-neutral response: status, body, headers and timing, plus `asJsonObject()` /
+  `asJsonArray()`, typed `as(...)` mapping and XML reading from the raw body string
+* `JsonRequestBody` (package-private) — the one place a `Map` / `Collection` body becomes JSON, shared by both
+  engines. Explicit `null` fields and list elements are kept, decimals stay decimals, key order is preserved, nested
+  org.json values are written as the JSON they hold, and an unwritable value fails fast with `InvalidTestDataException`
+* `RequestUrl` (package-private) — used by the RestAssured client, which runs with URL encoding turned off so it
+  behaves like Playwright. It percent-encodes only characters that are illegal in a URL (never a valid `%XX`) and
+  appends `queryParams` values encoded once, skipping `null` values
+
+The rule behind the two helpers: switching `API_ENGINE` must not change the request that goes on the wire. The
+`ApiEngineRequestContractTest` suite pins that by recording the raw request on a local server and running each contract
+against both engines. See [Running API tests](../engines/running-api-tests.md#what-goes-on-the-wire-same-for-every-engine)
+for the user-facing rules.
+
 ### `com.znsio.teswiz.filters`
 
 Owns RestAssured filters that apply to every API call in a suite, regardless of which client built the request. Both are registered globally on `RestAssured` once during `Setup.setupExecutionEnvironment()` — not attached per-request — so they cover any RestAssured usage, not just calls routed through `RestAssuredService`. Both are on by default and opt out via config.
@@ -541,6 +582,8 @@ When adding new code for the dual-engine architecture:
 * prefer provider-specific Appium/mobile cloud behavior under `mobile.provider`
 * prefer reporting adaptation code under `reporting`
 * prefer end-of-run notification code (channels, gating, delivery, run provenance) under `reporting.notify`
+* prefer API engine clients and request/response shaping shared across them under `api`; when both engines must send
+  the same request, put that logic in one shared helper there rather than in each client
 * prefer shared app-path resolution, version detection, and download handling under `config.app`
 * prefer shared capability lookup and capability-file persistence under `config.capability`
 * prefer browser-config evolution code under `config.browser`
