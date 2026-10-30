@@ -281,6 +281,9 @@ public class Runner {
         return url == null ? "" : url.trim();
     }
 
+    public static int getApiMaxRetries() {
+        return Math.max(1, Setup.getIntegerValueFromConfigs(Setup.API_MAX_RETRIES));
+    }
     public static int getLlmVisionMaxRetries() {
         return Math.max(1, Setup.getIntegerValueFromConfigs(Setup.LLM_VISION_MAX_RETRIES));
     }

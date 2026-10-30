@@ -9,6 +9,7 @@ import com.znsio.teswiz.filters.apitraffic.ApiTrafficLogging;
 import com.znsio.teswiz.filters.apitraffic.ApiTrafficRecord;
 import com.znsio.teswiz.filters.apitraffic.ApiTrafficRecorder;
 import com.znsio.teswiz.filters.apitraffic.TeswizScenarioDirectoryResolver;
+import com.znsio.teswiz.runner.Runner;
 import com.znsio.teswiz.tools.OverriddenVariable;
 import com.znsio.teswiz.tools.SensitiveDataMasker;
 import org.apache.logging.log4j.LogManager;
@@ -116,7 +117,7 @@ public class PlaywrightApiEngineClient implements ApiEngineClient {
         applyQueryParams(options, queryParams);
         String requestBodyStr = applyRequestBody(options, body);
 
-        int maxRetries = OverriddenVariable.getOverriddenIntValue("API_MAX_RETRIES", 3);
+        int maxRetries = Runner.getApiMaxRetries();
         Exception lastException = null;
 
         for (int attempt = 1; attempt <= maxRetries; attempt++) {

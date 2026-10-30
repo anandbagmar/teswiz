@@ -104,6 +104,7 @@ public class Setup {
     public static final String MASK_KEYS_OVERRIDE = "MASK_KEYS_OVERRIDE";
     public static final String API_TRAFFIC_LOGGING = "API_TRAFFIC_LOGGING";
     public static final String API_ENGINE = "API_ENGINE";
+    public static final String API_MAX_RETRIES = "API_MAX_RETRIES";
     public static final String ENABLE_USAGE_ANALYTICS = "ENABLE_USAGE_ANALYTICS";
     public static final String ORGANIZATION_NAME = "ORGANIZATION_NAME";
     public static final String TELEMETRY_ENDPOINT = "TELEMETRY_ENDPOINT";
@@ -387,6 +388,8 @@ public class Setup {
         configs.put(BROWSER, getOverriddenStringValue(BROWSER, getStringValueFromPropertiesIfAvailable(BROWSER, CHROME)));
         configs.put(WEB_ENGINE, getOverriddenStringValue(WEB_ENGINE, getStringValueFromPropertiesIfAvailable(WEB_ENGINE, DEFAULT_WEB_ENGINE)));
         configs.put(API_ENGINE, getOverriddenStringValue(API_ENGINE, getStringValueFromPropertiesIfAvailable(API_ENGINE, ApiEngine.REST_ASSURED.getConfigValue())));
+        configsInteger.put(API_MAX_RETRIES, getOverriddenIntValue(API_MAX_RETRIES,
+                Integer.parseInt(getStringValueFromPropertiesIfAvailable(API_MAX_RETRIES, "3"))));
         configs.put(BUILD_ID, getOverriddenStringValue(BUILD_ID, getStringValueFromPropertiesIfAvailable(BUILD_ID, NOT_SET)));
         configs.put(BUILD_ID, getOverriddenStringValue(configs.get(BUILD_ID), NOT_SET));
         configs.put(BUILD_INITIATION_REASON, getOverriddenStringValue(BUILD_INITIATION_REASON, getStringValueFromPropertiesIfAvailable(BUILD_INITIATION_REASON, NOT_SET)));
