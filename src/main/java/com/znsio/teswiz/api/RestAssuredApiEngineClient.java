@@ -19,7 +19,7 @@ public class RestAssuredApiEngineClient implements ApiEngineClient {
         if (customHeaders != null && !customHeaders.isEmpty()) {
             headers.putAll(customHeaders);
         }
-        return RestAssured.given().relaxedHTTPSValidation().headers(headers);
+        return RestAssured.given().relaxedHTTPSValidation().urlEncodingEnabled(false).headers(headers);
     }
 
     private Map<String, String> getDefaultHeaders() {
@@ -51,11 +51,10 @@ public class RestAssuredApiEngineClient implements ApiEngineClient {
     public TeswizApiResponse get(String url, Map<String, Object> queryParams, Map<String, String> headers) {
         LOGGER.info("Processing GET call via RestAssured");
         RequestSpecification requestSpec = getRequestSpec(headers);
-        if (queryParams != null && !queryParams.isEmpty()) {
-            requestSpec.queryParams(queryParams);
-        }
+        String target = RequestUrl.encodeIllegalCharacters(
+                RequestUrl.withQueryParams(stripTrailingQuestionMark(url), queryParams));
         long startTime = System.currentTimeMillis();
-        Response response = requestSpec.get(stripTrailingQuestionMark(url));
+        Response response = requestSpec.get(target);
         long responseTime = System.currentTimeMillis() - startTime;
         return convertResponse(response, responseTime);
     }
@@ -64,11 +63,8 @@ public class RestAssuredApiEngineClient implements ApiEngineClient {
         if (body == null || body instanceof String || body instanceof byte[] || body instanceof File) {
             return body;
         }
-        if (body instanceof Map) {
-            return new org.json.JSONObject((Map<?, ?>) body).toString();
-        }
-        if (body instanceof java.util.Collection) {
-            return new org.json.JSONArray((java.util.Collection<?>) body).toString();
+        if (JsonRequestBody.isStructured(body)) {
+            return JsonRequestBody.toJson(body);
         }
         if (body instanceof org.json.JSONObject || body instanceof org.json.JSONArray) {
             return body.toString();
@@ -84,7 +80,7 @@ public class RestAssuredApiEngineClient implements ApiEngineClient {
             requestSpec.body(processBody(body));
         }
         long startTime = System.currentTimeMillis();
-        Response response = requestSpec.post(url);
+        Response response = requestSpec.post(RequestUrl.encodeIllegalCharacters(url));
         long responseTime = System.currentTimeMillis() - startTime;
         return convertResponse(response, responseTime);
     }
@@ -92,7 +88,7 @@ public class RestAssuredApiEngineClient implements ApiEngineClient {
     @Override
     public TeswizApiResponse postMultipart(String url, Map<String, Object> formFields, Map<String, File> files, Map<String, String> headers) {
         LOGGER.info("Processing POST multipart call via RestAssured");
-        RequestSpecification requestSpec = RestAssured.given().relaxedHTTPSValidation();
+        RequestSpecification requestSpec = RestAssured.given().relaxedHTTPSValidation().urlEncodingEnabled(false);
         if (headers != null && !headers.isEmpty()) {
             requestSpec.headers(headers);
         }
@@ -107,7 +103,7 @@ public class RestAssuredApiEngineClient implements ApiEngineClient {
             }
         }
         long startTime = System.currentTimeMillis();
-        Response response = requestSpec.post(url);
+        Response response = requestSpec.post(RequestUrl.encodeIllegalCharacters(url));
         long responseTime = System.currentTimeMillis() - startTime;
         return convertResponse(response, responseTime);
     }
@@ -120,7 +116,7 @@ public class RestAssuredApiEngineClient implements ApiEngineClient {
             requestSpec.body(processBody(body));
         }
         long startTime = System.currentTimeMillis();
-        Response response = requestSpec.put(url);
+        Response response = requestSpec.put(RequestUrl.encodeIllegalCharacters(url));
         long responseTime = System.currentTimeMillis() - startTime;
         return convertResponse(response, responseTime);
     }
@@ -133,7 +129,7 @@ public class RestAssuredApiEngineClient implements ApiEngineClient {
             requestSpec.body(processBody(body));
         }
         long startTime = System.currentTimeMillis();
-        Response response = requestSpec.patch(url);
+        Response response = requestSpec.patch(RequestUrl.encodeIllegalCharacters(url));
         long responseTime = System.currentTimeMillis() - startTime;
         return convertResponse(response, responseTime);
     }
@@ -143,7 +139,7 @@ public class RestAssuredApiEngineClient implements ApiEngineClient {
         LOGGER.info("Processing DELETE call via RestAssured");
         RequestSpecification requestSpec = getRequestSpec(headers);
         long startTime = System.currentTimeMillis();
-        Response response = requestSpec.delete(url);
+        Response response = requestSpec.delete(RequestUrl.encodeIllegalCharacters(url));
         long responseTime = System.currentTimeMillis() - startTime;
         return convertResponse(response, responseTime);
     }
@@ -153,7 +149,7 @@ public class RestAssuredApiEngineClient implements ApiEngineClient {
         LOGGER.info("Processing HEAD call via RestAssured");
         RequestSpecification requestSpec = getRequestSpec(headers);
         long startTime = System.currentTimeMillis();
-        Response response = requestSpec.head(url);
+        Response response = requestSpec.head(RequestUrl.encodeIllegalCharacters(url));
         long responseTime = System.currentTimeMillis() - startTime;
         return convertResponse(response, responseTime);
     }
@@ -163,7 +159,7 @@ public class RestAssuredApiEngineClient implements ApiEngineClient {
         LOGGER.info("Processing OPTIONS call via RestAssured");
         RequestSpecification requestSpec = getRequestSpec(headers);
         long startTime = System.currentTimeMillis();
-        Response response = requestSpec.options(url);
+        Response response = requestSpec.options(RequestUrl.encodeIllegalCharacters(url));
         long responseTime = System.currentTimeMillis() - startTime;
         return convertResponse(response, responseTime);
     }

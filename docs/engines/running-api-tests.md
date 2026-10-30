@@ -45,7 +45,7 @@ teswiz supports three API engines through the unified `ApiService` facade:
 flowchart TD
     A["Test / Step Definition"] --> B["ApiService Facade"]
     B --> C{"API_ENGINE Selection"}
-    
+
     C -->|rest-assured| D1["RestAssured API Engine Adapter"]
     C -->|playwright-java| D2["Playwright-Java APIRequestContext Adapter"]
     C -->|playwright-ts| D3["Playwright-TS API Worker Adapter"]
@@ -70,6 +70,22 @@ All engines support full payload serialization and data type parity:
 - Traffic logging: Automatic masked HTTP request/response logging under `api-traffic/`.
 
 > **Calls that are not safe to resend** (for example POSTs that place a bet or void a transaction): set `API_MAX_RETRIES=1` in `config.properties` to fail fast on the first 502/503/504 or exception instead of retrying.
+
+## What goes on the wire (same for every engine)
+
+Switching `API_ENGINE` must not change the request your test sends. These rules hold on both engines and are pinned by `ApiEngineRequestContractTest`, which records the raw request on a local server:
+
+| Input | What is sent |
+|---|---|
+| `Map` / `Collection` body | JSON written with Jackson. An explicit `null` field or list element is **kept** (`{"amount":null}`), a decimal stays a decimal (`1.0`), key order is preserved. Nested `JSONObject`, `JSONArray` and `JSONObject.NULL` are written as the JSON they hold. A value that cannot be written as JSON fails fast with an `InvalidTestDataException` |
+| `String` / `byte[]` body | Sent exactly as given |
+| `null` body | An empty body |
+| URL you pass | Treated as already encoded: a valid `%XX` escape is **never encoded a second time**. Only characters that are illegal in a URL (a space, a non-ASCII character, a stray `%`) are percent-encoded |
+| `queryParams` map | Each name and value is encoded once and appended to the URL. A `null` value is skipped. A `null` or empty map adds no query |
+
+So to send a query value that contains reserved characters, either pass it in the `queryParams` map (teswiz encodes it) or encode it yourself in the URL (teswiz leaves it as it is). Do not encode it and also pass it in the map.
+
+> A space in a `queryParams` value may be written as `+` (Playwright) or `%20` (RestAssured). Both decode to the same value on the server.
 
 ## Reading the response body
 
