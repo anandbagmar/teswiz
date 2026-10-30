@@ -1,3 +1,64 @@
+## 1.0.49
+# Release Notes - teswiz v1.0.49
+
+_Previous release: v1.0.48_
+
+This release makes the RestAssured and Playwright API engines send the same request, so switching `API_ENGINE` no longer changes what goes on the wire.
+
+## ⚠️ Behaviour change to check
+
+If a test relied on the Playwright engine **omitting** a `null` field from a `Map` or `Collection` body, that field is now sent (`{"amount":null}`). Remove the key from the map to leave it out.
+
+## 🐞 Fixes
+
+### 🔁 Identical requests on every API engine
+
+**Request bodies.** A `Map` or `Collection` body is now written by one shared Jackson serialiser (`JsonRequestBody`) on both engines:
+
+- Explicit `null` fields and `null` list elements are kept. The Playwright path used to drop them because it went through org.json.
+- Decimals stay decimals (`1.0`, not `1`), and key order is preserved.
+- Nested `JSONObject`, `JSONArray` and `JSONObject.NULL` values are written as the JSON they hold.
+- A body that cannot be written as JSON fails fast with `InvalidTestDataException`.
+
+**URLs on RestAssured.** A URL you pass is treated as already encoded (`RequestUrl`):
+
+- A valid `%XX` escape is no longer encoded a second time. `%3A` used to be sent as `%253A`.
+- Only characters that are illegal in a URL (a space, a non-ASCII character, a stray `%`) are percent-encoded.
+- `queryParams` map values are encoded once, and a `null` value is skipped, as on Playwright.
+
+A space in a `queryParams` value may go out as `+` (Playwright) or `%20` (RestAssured). Both decode to the same value on the server.
+
+### `playwright-ts` for `API_ENGINE` is the same client as `playwright-java`
+
+`API_ENGINE=playwright-ts` has always been routed to the Playwright Java `APIRequestContext` client. There is no separate TypeScript API worker. The docs said otherwise and now say so correctly, so the request fix above applies to `playwright-ts` with no extra change.
+
+## ✅ Tests
+
+- New `ApiEngineRequestContractTest` records the raw request on a local HTTP server and runs 9 contracts against each of `rest-assured`, `playwright-java` and `playwright-ts` (27 cases). It covers null fields at every level, decimals, collection bodies, empty and `null` bodies, `null` query maps, already-encoded URLs, reserved characters in `queryParams`, an unencoded space in a URL, and org.json values inside a map.
+
+## 📝 Docs
+
+- `docs/engines/running-api-tests.md`: new "What goes on the wire (same for every engine)" section, including `JSONObject` / `JSONArray` bodies passed directly. The `playwright-ts` description and engine diagram are corrected.
+- `docs/architecture-and-internals/architecture-notes.md`: new `com.znsio.teswiz.api` package section with a diagram, a package rule for shared request shaping, and the architecture diagram corrected for `playwright-ts`.
+- `docs/architecture-and-internals/playwright-migration-guide.md`: note that the request is the same on every engine and what to do if a test depended on a dropped `null` field.
+- `README.md`, `docs/configuration/configuration-parameters.md`, `docs/getting-started/configuring-test-execution.md`, `docs/examples/api-example.md`: `playwright-ts` API wording corrected.
+
+## 🛠️ Changed Files Summary
+
+- `src/main/java/com/znsio/teswiz/api/JsonRequestBody.java` (new)
+- `src/main/java/com/znsio/teswiz/api/RequestUrl.java` (new)
+- `src/main/java/com/znsio/teswiz/api/RestAssuredApiEngineClient.java`
+- `src/main/java/com/znsio/teswiz/api/PlaywrightApiEngineClient.java`
+- `src/test/java/com/znsio/teswiz/services/ApiEngineRequestContractTest.java` (new)
+- `docs/engines/running-api-tests.md`
+- `docs/architecture-and-internals/architecture-notes.md`
+- `docs/architecture-and-internals/playwright-migration-guide.md`
+- `docs/configuration/configuration-parameters.md`
+- `docs/getting-started/configuring-test-execution.md`
+- `docs/examples/api-example.md`
+- `README.md`
+- `Changelog.MD`
+
 ## 1.0.49-SNAPSHOT (unreleased)
 # Release Notes - teswiz v1.0.49-SNAPSHOT (unreleased)
 
