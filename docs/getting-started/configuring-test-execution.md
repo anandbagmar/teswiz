@@ -102,7 +102,7 @@ PLATFORM=api ./gradlew run
 # Override API engine to Playwright Java APIRequestContext
 PLATFORM=api API_ENGINE=playwright-java ./gradlew run
 
-# Override API engine to Playwright TypeScript Worker
+# Override API engine to playwright-ts (uses the same Playwright Java API client as playwright-java)
 PLATFORM=api API_ENGINE=playwright-ts ./gradlew run
 ```
 

@@ -38,8 +38,10 @@ import com.znsio.teswiz.runner.Setup;
  * Pins what each API engine actually puts on the wire, against a local HTTP server that records the raw request.
  *
  * <p>
- * Both engines must send the same bytes for the same call, so a project can switch {@code API_ENGINE} without its
- * payloads changing. In particular a {@code Map}/{@code Collection} body keeps explicit {@code null} fields and decimal
+ * Every {@code API_ENGINE} value ({@code rest-assured}, {@code playwright-java}, {@code playwright-ts}) must send the
+ * same bytes for the same call, so a project can switch {@code API_ENGINE} without its payloads changing. Both
+ * Playwright values are routed to the same Java client by {@code ApiService}; running {@code playwright-ts} here pins
+ * that routing, so a future separate TypeScript API path could not diverge unnoticed. In particular a {@code Map}/{@code Collection} body keeps explicit {@code null} fields and decimal
  * numbers as written (Jackson semantics, which is what RestAssured itself used for a map body), a {@code null} body is
  * sent as an empty body, a {@code null} query-param map adds no query, and an already-encoded query string in the URL
  * is passed through without being encoded again.
@@ -84,7 +86,7 @@ class ApiEngineRequestContractTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { "rest-assured", "playwright-java" })
+    @ValueSource(strings = { "rest-assured", "playwright-java", "playwright-ts" })
     void mapBodyKeepsNullFieldsAtEveryLevel(String apiEngine) throws IOException {
         useEngine(apiEngine);
 
@@ -99,7 +101,7 @@ class ApiEngineRequestContractTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { "rest-assured", "playwright-java" })
+    @ValueSource(strings = { "rest-assured", "playwright-java", "playwright-ts" })
     void mapBodyKeepsDecimalNumbersAsWritten(String apiEngine) throws IOException {
         useEngine(apiEngine);
         Map<String, Object> body = new LinkedHashMap<>();
@@ -111,7 +113,7 @@ class ApiEngineRequestContractTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { "rest-assured", "playwright-java" })
+    @ValueSource(strings = { "rest-assured", "playwright-java", "playwright-ts" })
     void collectionBodyKeepsNullElementsAndFields(String apiEngine) throws IOException {
         useEngine(apiEngine);
         Map<String, Object> element = new LinkedHashMap<>();
@@ -127,7 +129,7 @@ class ApiEngineRequestContractTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { "rest-assured", "playwright-java" })
+    @ValueSource(strings = { "rest-assured", "playwright-java", "playwright-ts" })
     void nullBodyIsSentAsAnEmptyBody(String apiEngine) throws IOException {
         useEngine(apiEngine);
 
@@ -138,7 +140,7 @@ class ApiEngineRequestContractTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { "rest-assured", "playwright-java" })
+    @ValueSource(strings = { "rest-assured", "playwright-java", "playwright-ts" })
     void nullQueryParamMapAddsNoQuery(String apiEngine) throws IOException {
         useEngine(apiEngine);
 
@@ -149,7 +151,7 @@ class ApiEngineRequestContractTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { "rest-assured", "playwright-java" })
+    @ValueSource(strings = { "rest-assured", "playwright-java", "playwright-ts" })
     void alreadyEncodedQueryInUrlIsNotEncodedAgain(String apiEngine) throws IOException {
         useEngine(apiEngine);
 
@@ -159,7 +161,7 @@ class ApiEngineRequestContractTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { "rest-assured", "playwright-java" })
+    @ValueSource(strings = { "rest-assured", "playwright-java", "playwright-ts" })
     void queryParamValuesWithReservedCharactersAreEncodedOnce(String apiEngine) throws IOException {
         useEngine(apiEngine);
         Map<String, Object> queryParams = new LinkedHashMap<>();
@@ -175,7 +177,7 @@ class ApiEngineRequestContractTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { "rest-assured", "playwright-java" })
+    @ValueSource(strings = { "rest-assured", "playwright-java", "playwright-ts" })
     void unencodedSpaceInUrlIsEncodedOnce(String apiEngine) throws IOException {
         useEngine(apiEngine);
 
@@ -185,7 +187,7 @@ class ApiEngineRequestContractTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { "rest-assured", "playwright-java" })
+    @ValueSource(strings = { "rest-assured", "playwright-java", "playwright-ts" })
     void mapBodyWithOrgJsonValuesIsSentAsJson(String apiEngine) throws IOException {
         useEngine(apiEngine);
         Map<String, Object> body = new LinkedHashMap<>();

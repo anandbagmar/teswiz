@@ -39,7 +39,7 @@ teswiz supports three API engines through the unified `ApiService` facade:
 
 - **`rest-assured`** (default): RestAssured HTTP client execution.
 - **`playwright-java`**: Playwright Java native `APIRequestContext` HTTP execution.
-- **`playwright-ts`**: Playwright TypeScript worker protocol HTTP execution.
+- **`playwright-ts`**: Accepted so a suite using `WEB_ENGINE=playwright-ts` can keep one engine name. API calls use the same Playwright Java `APIRequestContext` client as `playwright-java`; there is no separate TypeScript API worker, so requests, retries and traffic logging behave identically to `playwright-java`.
 
 ```mermaid
 flowchart TD
@@ -47,12 +47,10 @@ flowchart TD
     B --> C{"API_ENGINE Selection"}
 
     C -->|rest-assured| D1["RestAssured API Engine Adapter"]
-    C -->|playwright-java| D2["Playwright-Java APIRequestContext Adapter"]
-    C -->|playwright-ts| D3["Playwright-TS API Worker Adapter"]
+    C -->|"playwright-java / playwright-ts"| D2["Playwright-Java APIRequestContext Adapter"]
 
     D1 --> E["HTTP Operations (GET, POST, PUT, PATCH, DELETE)"]
     D2 --> E
-    D3 --> E
 
     E --> F["Environment Health Filter<br/>(Fail-fast on 502/503/504)"]
     F --> G["Masked API Traffic Logger<br/>(Write per-call logs to target/reports/api-traffic/)"]

@@ -94,8 +94,7 @@ flowchart LR
     IPC --> PWT[Playwright TS worker]
     MAPP --> APP[Appium Java runtime]
     APIE --> RA[RestAssured HTTP Client]
-    APIE --> PWJ_A[Playwright-Java APIRequestContext]
-    APIE --> PWTS_A[Playwright-TS API Worker]
+    APIE --> PWJ_A["Playwright Java APIRequestContext<br/>(playwright-java and playwright-ts)"]
     DSK --> ELE[Electron / WinAppDriver / Apache PDFBox]
 
     WD --> B[Web Browser]
@@ -104,7 +103,6 @@ flowchart LR
     APP --> D[Android / iOS device, emulator, or cloud device]
     RA --> API_END[REST / HTTP Endpoints]
     PWJ_A --> API_END
-    PWTS_A --> API_END
     ELE --> APP_DESK[Desktop Application / PDF File]
 
     SH --> META[Engine name, provider, platform, persona, session id]

@@ -49,7 +49,7 @@ For the complete property list and all available defaults, use the
     WEB_ENGINE=selenium -> Which web engine should be used for Platform.web? Supported: selenium | playwright-java | playwright-ts
                            Default is selenium. All checked-in sample config.properties files now declare this explicitly.
     API_ENGINE=rest-assured -> Which API engine should be used for API testing? Supported: rest-assured | playwright-java | playwright-ts
-                               Default is rest-assured. Dynamically dispatches HTTP calls to RestAssured, Playwright Java APIRequestContext, or Playwright TS worker.
+                               Default is rest-assured. Dispatches HTTP calls to RestAssured or to the Playwright Java APIRequestContext (playwright-java and playwright-ts both use the Playwright Java client).
     API_MAX_RETRIES=3 -> Maximum retry attempts for transient API network timeouts or 5xx server issues (default: 3, minimum: 1). Resolved from an environment variable / -D system property first, then this config file. Set to 1 for calls that are not safe to resend.
     BUILD_ID=BUILDID -> The key name of the environment variable that has the corresponding build id of the test execution
     CLOUD_KEY=<auth / api key> for pCloudy / Headspin

@@ -31,7 +31,7 @@ API_ENGINE=playwright-java
 
 - **`rest-assured`**: Default engine delegating to RestAssured.
 - **`playwright-java`**: Playwright Java engine utilizing `APIRequestContext` for ultra-fast, native HTTP execution.
-- **`playwright-ts`**: Playwright TypeScript web & API automation suite integration.
+- **`playwright-ts`**: Accepted for `API_ENGINE` so a suite that uses `WEB_ENGINE=playwright-ts` can keep one engine name. API calls use the same Playwright Java `APIRequestContext` client as `playwright-java`; there is no separate TypeScript API worker.
 
 ---
 

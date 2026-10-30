@@ -113,7 +113,7 @@ API_ENGINE=rest-assured
 | :--- | :--- | :--- | :--- |
 | `rest-assured` | RestAssured HTTP Client | Standard REST API automation (default) | [API Example](docs/examples/api-example.md) • [API Guide](docs/engines/running-api-tests.md) |
 | `playwright-java` | Playwright Java `APIRequestContext` | High-throughput native Playwright API calls in Java | [API Guide](docs/engines/running-api-tests.md) • [Migration Plan](docs/todos/Playwright-API-Engine-Implementation-And-Migration-Plan.md) |
-| `playwright-ts` | Playwright TypeScript Worker Protocol | Asynchronous API execution via TypeScript worker IPC | [API Guide](docs/engines/running-api-tests.md) • [Migration Plan](docs/todos/Playwright-API-Engine-Implementation-And-Migration-Plan.md) |
+| `playwright-ts` | Playwright Java `APIRequestContext` | Same client as `playwright-java`; there is no separate TypeScript API worker | [API Guide](docs/engines/running-api-tests.md) • [Migration Plan](docs/todos/Playwright-API-Engine-Implementation-And-Migration-Plan.md) |
 
 > 📖 **Read more**: [API Test Execution Guide](docs/engines/running-api-tests.md) • [API Example](docs/examples/api-example.md)
 
@@ -215,8 +215,7 @@ flowchart LR
         end
         subgraph ApiEngines["API Engines"]
             RA["RestAssured"]
-            PWJ_A["Playwright-Java API"]
-            PWTS_A["Playwright-TS API"]
+            PWJ_A["Playwright API<br/>(playwright-java and playwright-ts)"]
         end
         subgraph DesktopEngines["Desktop & Document Engines"]
             ELE["Electron"]
