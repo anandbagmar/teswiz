@@ -255,7 +255,7 @@ dependencies {
     implementation "com.squareup.okhttp3:okhttp:5.5.0"
     implementation "io.github.bonigarcia:webdrivermanager:6.4.0"
     implementation "net.masterthought:cucumber-reporting:5.11.0"
-    implementation "net.bytebuddy:byte-buddy:1.18.15"
+    implementation "net.bytebuddy:byte-buddy:1.18.16"
     implementation "org.apache.commons:commons-lang3:3.21.0"
     implementation "org.apache.commons:commons-rng-simple:1.7"
     implementation 'org.apache.logging.log4j:log4j-core:2+'
