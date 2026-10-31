@@ -267,12 +267,12 @@ dependencies {
     // Optional visual & OCR subsystem compileOnly dependencies
     compileOnly "org.openpnp:opencv:4.9.0-0"
     compileOnly "net.sourceforge.tess4j:tess4j:5.11.0"
-    compileOnly "com.microsoft.onnxruntime:onnxruntime:1.31.0"
+    compileOnly "com.microsoft.onnxruntime:onnxruntime:1.31.1"
     compileOnly "com.google.auth:google-auth-library-oauth2-http:1.54.0"
 
     testImplementation "org.openpnp:opencv:4.9.0-0"
     testImplementation "net.sourceforge.tess4j:tess4j:5.11.0"
-    testImplementation "com.microsoft.onnxruntime:onnxruntime:1.31.0"
+    testImplementation "com.microsoft.onnxruntime:onnxruntime:1.31.1"
     testImplementation "com.google.auth:google-auth-library-oauth2-http:1.54.0"
 
     testImplementation "org.junit.jupiter:junit-jupiter:6.1.3"
