@@ -214,7 +214,7 @@ dependencies {
     // Email notifications (GAMC-19572): Jakarta Mail for correct MIME/HTML + STARTTLS in
     // com.znsio.teswiz.reporting.notify.EmailSender, rather than a hand-rolled SMTP client.
     // com.sun.mail:jakarta.mail bundles both the jakarta.mail API and its Angus runtime.
-    implementation 'com.sun.mail:jakarta.mail:2.0.1'
+    implementation 'com.sun.mail:jakarta.mail:2.0.2'
 
     // api: types from these leak into teswiz's own public method signatures/fields/extends
     // clauses, so downstream consumers need them on their compile classpath too. See
