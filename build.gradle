@@ -252,7 +252,7 @@ dependencies {
     implementation "com.github.erosb:everit-json-schema:1.14.6"
     implementation "com.github.vidstige:jadb:$jadbVersion"
     implementation 'com.jayway.jsonpath:json-path:3.0.0'
-    implementation "com.squareup.okhttp3:okhttp:5.5.0"
+    implementation "com.squareup.okhttp3:okhttp:5.5.1"
     implementation "io.github.bonigarcia:webdrivermanager:6.4.0"
     implementation "net.masterthought:cucumber-reporting:5.11.0"
     implementation "net.bytebuddy:byte-buddy:1.18.15"
