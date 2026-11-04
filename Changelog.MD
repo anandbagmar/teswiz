@@ -1,3 +1,59 @@
+## 1.0.51
+# Release Notes - teswiz v1.0.51
+
+_Previous release: v1.0.50_
+
+This release makes the Slack "why did things fail?" block read as an aligned table and caps it at the top causes. It also documents the CI job-permission rule for workflows.
+
+## 🚀 Enhancements
+
+### 📊 Slack failure breakdown is an aligned table, capped at the top causes
+
+`FailureBreakdownRenderer.slack(...)` now renders the failure breakdown so it reads as a table in Slack:
+
+- **Heading with counts:** `*Why did things fail?*  8 failures · 3 causes`. The wording is singular for one (`1 failure · 1 cause`).
+- **Aligned rows in a code block:** each row is the count (right-aligned), the exception type (padded to the longest type shown) and the place, biggest cause first. The code block makes Slack show it monospaced, so the columns line up.
+- **Top causes only:** at most `DEFAULT_MAX_CAUSES` (10) causes are listed, followed by `_+K more causes in the full report_`. The new `slack(breakdown, maxCauses)` overload changes the limit.
+- **Safe output:** a backtick in a type or place is printed as `'`, so it can't close the code block early.
+- `html(breakdown)` is unchanged.
+
+Rendered in Slack:
+
+~~~~text
+*Why did things fail?*  8 failures · 3 causes
+```
+6  IndexOutOfBoundsException     RewardsBL.awardFreeSpins:113
+1  AssertJMultipleFailuresError  BalanceTracking.assertReduced:111
+1  TargetClosedError             GamePlayScreenPlaywrightJava.spin:396
+```
+~~~~
+
+## ⚠️ Upgrading from 1.0.50
+
+The Slack text has changed. In 1.0.50 it was `*Why did things fail? (N)*` followed by one `Type @ Place  count` line per cause, with every cause listed. If your composer or its tests match the old text, update them. If you need more than 10 causes, pass a larger limit with `slack(breakdown, maxCauses)`.
+
+## ✅ Tests
+
+- New `FailureBreakdownSlackLayoutTest` (7 tests) covers the heading counts and singular wording, right-aligned counts, column padding to the causes shown, the default top-10 limit and the configurable limit, the "+K more causes" line, and backtick handling.
+- `FailureBreakdownRendererTest` now covers only the HTML table and empty output. Its old Slack-layout test was removed, because the new class pins the new layout.
+
+## 📝 Docs
+
+- `docs/subsystems/run-notifications.md`: new Slack example and behaviour, an upgrade note for the layout change, and the flow diagram now shows the top-N Slack rendering.
+- `docs/architecture-and-internals/architecture-notes.md`: the `reporting.notify.failure` package is now described in the package notes.
+- `.github/actions/run-and-collect-tests-README.md`: new "Job Permissions" section. Every job declares `permissions:`, with `contents: read` by default and `actions: write` only when it uses `cleanup-branch-artifacts`.
+- `Changelog.MD`: the 1.0.50 entry now includes the CI token permissions fix and the dependency updates that shipped in it, and its security table renders correctly.
+
+## 🛠️ Changed Files Summary
+
+- `src/main/java/com/znsio/teswiz/reporting/notify/failure/FailureBreakdownRenderer.java`
+- `src/test/java/com/znsio/teswiz/reporting/notify/failure/FailureBreakdownSlackLayoutTest.java` (new)
+- `src/test/java/com/znsio/teswiz/reporting/notify/failure/FailureBreakdownRendererTest.java`
+- `docs/subsystems/run-notifications.md`
+- `docs/architecture-and-internals/architecture-notes.md`
+- `.github/actions/run-and-collect-tests-README.md`
+- `Changelog.MD`
+
 ## 1.0.51-SNAPSHOT (unreleased)
 # Release Notes - teswiz v1.0.51-SNAPSHOT (unreleased)
 
