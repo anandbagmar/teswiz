@@ -33,7 +33,7 @@ flowchart TD
     COMP -.->|reads| JUR
     COMP -.->|renders with| HTMLR["HtmlReport\n(document, scenarioTable,\nslackScenarios, formatDuration,\nfooter / slackFooter, reproduceCommand)"]
     JUR -.-> HTMLR
-    JUR -.->|failureBreakdown| FB["failure.FailureBreakdown\n(causes, byType, plus)\n+ FailureBreakdownRenderer"]
+    JUR -.->|failureBreakdown| FB["failure.FailureBreakdown\n(causes, byType, plus)\n+ FailureBreakdownRenderer\n(slack: top N causes, html)"]
     COMP -.->|renders with| FB
     COMP -->|compose RunResult -> List&lt;Notification&gt;| NTF["Notifier"]
     NTF -->|gate: notify.enabled + notify.branches| GATE{"gates open?"}
@@ -251,6 +251,11 @@ If there are more causes than `maxCauses`, one line after the code block counts 
 backtick in a type or place is printed as `'`, so it can't close the code block early.
 
 The HTML block is a three-column table (`Exception type`, `Where`, `Count`) with a `Total failed` row.
+
+> **Upgrading from 1.0.50:** the Slack text changed. 1.0.50 rendered `*Why did things fail? (N)*` followed by one
+> `Type @ Place  count` line per cause, with every cause listed. It now renders the heading and aligned rows shown
+> above, listing at most `DEFAULT_MAX_CAUSES` (10) causes. If your composer or its tests match the old text, update
+> them, or pass a larger limit with `slack(breakdown, maxCauses)`. `html(breakdown)` is unchanged.
 
 ### `HtmlReport` — render it
 

@@ -483,6 +483,11 @@ swallowed, so a notifier problem never changes a run's result.
   self-contained HTML (status card, `scenarioTable`) and Slack text (`slackScenarios`), formats durations, and builds
   a shell-safe reproduce command from caller-supplied inputs (`reproduceCommand(Map)`) that the consumer passes to
   `footer(env, cmd)` / `slackFooter(env, cmd)`. `LlmUsageLog` reads teswiz's LLM-vision usage summary
+* `reporting.notify.failure` — the "why did things fail?" breakdown. `FailureClassifier` turns a failed scenario
+  (its JUnit exception `type` and `trace`) into a `FailureCause`: the simple exception name plus the first stack frame
+  in the code under test, skipping JDK and well-known library frames. `FailureBreakdown` counts causes biggest first,
+  with a total that always equals failed + errored. `FailureBreakdownRenderer` renders it as a Slack code-block table
+  (top `DEFAULT_MAX_CAUSES` causes, configurable) and as an HTML table
 
 See [Run Notifications](../subsystems/run-notifications.md) for the configuration guide.
 

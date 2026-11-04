@@ -62,6 +62,22 @@ test-results-${{ inputs.id }}
 
 If `artifact-name` is provided, that is used instead.
 
+## 🔐 Job Permissions
+
+Declare a `permissions:` block on every job instead of relying on the repository's default token permissions. CodeQL flags jobs that leave it out.
+
+- A job that only runs this action needs `contents: read`. Artifact upload uses the runner's own token, not `GITHUB_TOKEN`.
+- A job that also calls `./.github/actions/cleanup-branch-artifacts` needs `actions: write` as well, because that action deletes older artifacts through the Actions API.
+
+```yaml
+jobs:
+  my_tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write   # only if the job uses cleanup-branch-artifacts
+```
+
 ## ✅ Conditional Usage
 
 - Use `exit_code` output to determine success/failure in downstream steps.

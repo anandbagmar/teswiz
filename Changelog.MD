@@ -1,9 +1,44 @@
+## 1.0.51-SNAPSHOT (unreleased)
+# Release Notes - teswiz v1.0.51-SNAPSHOT (unreleased)
+
+_Previous release: v1.0.50_
+
+## 🚀 Enhancements
+
+### 📊 Slack failure breakdown is an aligned table, capped at the top causes
+
+`FailureBreakdownRenderer.slack(...)` now renders the "why did things fail?" block so it reads as a table in Slack:
+
+- **Heading with counts:** `*Why did things fail?*  8 failures · 3 causes`, singular for one (`1 failure · 1 cause`).
+- **Aligned rows in a code block:** count (right-aligned), exception type (padded to the longest type shown) and place, biggest cause first. The code block makes Slack show it monospaced, so the columns line up.
+- **Top causes only:** lists at most `DEFAULT_MAX_CAUSES` (10) causes, then `_+K more causes in the full report_`. A new `slack(breakdown, maxCauses)` overload changes the limit.
+- **Safe output:** a backtick in a type or place is printed as `'`, so it can't close the code block early.
+- `html(breakdown)` is unchanged.
+
+```text
+*Why did things fail?*  8 failures · 3 causes
+6  IndexOutOfBoundsException     RewardsBL.awardFreeSpins:113
+1  AssertJMultipleFailuresError  BalanceTracking.assertReduced:111
+1  TargetClosedError             GamePlayScreenPlaywrightJava.spin:396
+```
+(The three rows are wrapped in a code block in the actual message.)
+
+**Upgrading from 1.0.50:** the Slack text changed from `*Why did things fail? (N)*` plus `Type @ Place  count` lines listing every cause. If a composer or its tests match the old text, update them, or pass a larger limit with `slack(breakdown, maxCauses)`.
+
+Covered by a new `FailureBreakdownSlackLayoutTest`. `FailureBreakdownRendererTest` now covers only the HTML table and empty output; its old Slack-layout test was removed because the new class pins the new layout.
+
+## 📝 Docs
+
+- `docs/subsystems/run-notifications.md`: new Slack example and behaviour, an upgrade note for the layout change, and the flow diagram now shows the top-N Slack rendering.
+- `docs/architecture-and-internals/architecture-notes.md`: `reporting.notify.failure` package described.
+- `.github/actions/run-and-collect-tests-README.md`: new "Job Permissions" section (`contents: read`, plus `actions: write` only with `cleanup-branch-artifacts`).
+
 ## 1.0.50
 # Release Notes - teswiz v1.0.50
 
 _Previous release: v1.0.49_
 
-This release adds a "why did things fail?" breakdown to the end-of-run notification content, so a Slack or email notification can group failures by cause instead of just counting them.
+This release adds a "why did things fail?" breakdown to the end-of-run notification content, so a Slack or email notification can group failures by cause instead of just counting them. It also resolves all critical and high npm security alerts, tightens CI token permissions, and picks up patch and minor dependency updates.
 
 ## 🚀 Enhancements
 
@@ -35,19 +70,28 @@ Resolves the critical and high Dependabot alerts on transitive npm dependencies 
 | `node-forge` | High: RSA PKCS#1 v1.5 signature verification, plus several TLS and PEM DoS issues | 1.4.0 | 1.4.3 | override bumped |
 | `multer` | High: DoS via a pending asynchronous `fileFilter` | 2.3.0 | 2.5.0 | override bumped |
 | `body-parser` | High: DoS via trailing bytes after a compressed body (2 advisories) | 2.3.0 (bundled), 1.20.8 | 2.4.0, 1.20.9 | `appium-xcuitest-driver` bump; scoped overrides for `@appium/base-driver` and `express@4.22.2` |
-
-- `appium-xcuitest-driver` moves within the 12.x line (12.20.0 → 12.22.8) and keeps the same `appium ^3` peer range. Its bundled `shell-quote` and `body-parser` copies can't be changed with npm `overrides`, so the driver bump is what fixes them.
-- `body-parser` 1.x (used by `local-cors-proxy`'s Express 4) is pinned with a scoped override, so it is not forced onto 2.x.
 | `follow-redirects` | High: sensitive headers and custom credentials can follow cross-realm redirects | 1.16.1 | 1.16.2 | new override |
 | `qs` | Moderate: array-limit bypass, `isBuffer` DoS, `stringify` comma-format DoS (3 advisories) | 6.15.3 | 6.17.1 | override bumped |
 | `fast-uri` | Moderate: scheme spoofing, host confusion, mailto header injection, host case normalisation (4 advisories) | 4.1.4 | 4.2.3 | override bumped |
 | `js-yaml` | Moderate: `maxTotalMergeKeys` does not limit CPU for empty merge sources | 5.2.2 | 5.5.0 | override bumped |
 
+- `appium-xcuitest-driver` moves within the 12.x line (12.20.0 → 12.22.8) and keeps the same `appium ^3` peer range. Its bundled `shell-quote` and `body-parser` copies can't be changed with npm `overrides`, so the driver bump is what fixes them.
+- `body-parser` 1.x (used by `local-cors-proxy`'s Express 4) is pinned with a scoped override, so it is not forced onto 2.x.
 - `npm audit` after the change: **0 critical** (was 2), **0 high** (was 5), 36 moderate, 1 low (49 → 37 total).
 - **No fix available yet:**
   - `glob` (moderate, AbortSignal bypass) and `minimatch` (moderate, globparts DoS): every patched version is a major bump (`glob` 14.0.2+, `minimatch` 11.0.1+). The vulnerable copies are also bundled inside `appium-uiautomator2-driver` and `appium-xcuitest-driver`, which overrides can't reach, and the latest `@appium/support` (7.2.9) still pins `glob` 13.0.6. These need an upstream Appium release.
   - `request` (moderate, SSRF): deprecated, and 2.88.2 is the final release. It is pulled in only by `appium-device-farm` → `local-cors-proxy`.
   - Most of the remaining moderate count is npm flagging the parents of these three packages.
+
+### CI token permissions
+
+`API_Engines_CI.yml` and `InteractiveCLI_CI.yml` now declare `permissions: contents: read` for their jobs, instead of inheriting the repository's default token permissions. This resolves the CodeQL "Workflow does not contain permissions" alerts.
+
+## ⬆️ Dependency Updates
+
+**Java (Gradle), patch and minor releases:** `rest-assured` 6.2.0 → 6.3.0, `cucumber-reporting` 5.11.0 → 5.12.0, `eyes-images-java5` 5.83.13 → 5.83.15, `eyes-appium-java5` 5.79.55 → 5.79.57, `jakarta.mail` 2.0.1 → 2.0.2, `okhttp` 5.5.0 → 5.5.1, `byte-buddy` 1.18.15 → 1.18.16, and the optional `onnxruntime` 1.31.0 → 1.31.1 and `google-auth-library-oauth2-http` 1.54.0 → 1.55.0.
+
+**npm:** `appium-xcuitest-driver` 12.20.0 → 12.22.8, `appium-uiautomator2-driver` 8.7.2 → 8.7.3, `@appium/relaxed-caps-plugin` 3.0.1 → 3.0.2, `@applitools/eyes-playwright` 1.51.2 → 1.51.4. The Appium drivers stay on the lines that support Appium 3; `appium-uiautomator2-driver` 9.x and `appium-xcuitest-driver` 13.x require Appium 4, which is still in beta.
 
 ## 📝 Docs
 
@@ -65,8 +109,11 @@ Resolves the critical and high Dependabot alerts on transitive npm dependencies 
 - `src/test/java/com/znsio/teswiz/reporting/notify/failure/FailureBreakdownTest.java` (new)
 - `src/test/java/com/znsio/teswiz/reporting/notify/failure/FailureBreakdownRendererTest.java` (new)
 - `src/test/resources/notify/cucumber-junit-failure-causes.xml` (new)
+- `.github/workflows/API_Engines_CI.yml`
+- `.github/workflows/InteractiveCLI_CI.yml`
 - `docs/subsystems/run-notifications.md`
-- `package.json` (`appium-xcuitest-driver` bump, security overrides)
+- `build.gradle` (dependency updates)
+- `package.json` (Appium driver bumps, security overrides)
 - `package-lock.json` (regenerated)
 
 ## 1.0.49
