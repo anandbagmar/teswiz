@@ -29,10 +29,12 @@ flowchart TD
     FIRE -->|build| RR["RunResult\n(JUnit XML, counts, RunEnvironment)"]
     CFG["teswiz merged config\n(Setup::getFromConfigs)"] -.->|"PLATFORM / TARGET_ENVIRONMENT\nfallback when env var unset"| RR
     RR --> COMP
-    RR -->|junitReportXml| JUR["JUnitResults\n(counts, durationSeconds,\nscenariosByFeature, failuresByFeature)"]
+    RR -->|junitReportXml| JUR["JUnitResults\n(counts, durationSeconds,\nscenariosByFeature, failuresByFeature,\nfailureBreakdown)"]
     COMP -.->|reads| JUR
     COMP -.->|renders with| HTMLR["HtmlReport\n(document, scenarioTable,\nslackScenarios, formatDuration,\nfooter / slackFooter, reproduceCommand)"]
     JUR -.-> HTMLR
+    JUR -.->|failureBreakdown| FB["failure.FailureBreakdown\n(causes, byType, plus)\n+ FailureBreakdownRenderer"]
+    COMP -.->|renders with| FB
     COMP -->|compose RunResult -> List&lt;Notification&gt;| NTF["Notifier"]
     NTF -->|gate: notify.enabled + notify.branches| GATE{"gates open?"}
     GATE -->|no| NOOP["nothing sent"]
@@ -49,6 +51,7 @@ flowchart TD
         CFG
         JUR
         HTMLR
+        FB
     end
     subgraph CLIENT_OWNS["client owns"]
         COMP
@@ -56,7 +59,7 @@ flowchart TD
 ```
 
 **teswiz owns** the trigger, settings loading, gating, the two channels, and the content helpers (`JUnitResults`,
-`HtmlReport`) a composer can use. **The client owns** what each message says and which destinations it targets. teswiz
+`HtmlReport`, the `failure` breakdown) a composer can use. **The client owns** what each message says and which destinations it targets. teswiz
 never branches on what a message *means*.
 
 ---
@@ -209,8 +212,38 @@ Load it with `JUnitResults.fromXml(result.junitReportXml())`. The path is `null`
 | `totalTests()`, `passed()`, `failed()`, `errors()`, `skipped()` | Scenario counts |
 | `hasFailures()`, `isEmpty()` | Convenience flags |
 | `durationSeconds()` | Total run duration from the suite's `time` attribute (`0` when absent) |
-| `scenariosByFeature()` | **Every** scenario grouped by feature, in document order. Each `Scenario` has `name`, `status` (`ScenarioStatus`: passed, failed, errored, skipped), `reason` and `time` |
+| `scenariosByFeature()` | **Every** scenario grouped by feature, in document order. Each `Scenario` has `name`, `status` (`ScenarioStatus`: passed, failed, errored, skipped), `reason` (the `message` attribute), `time`, `type` (the fully-qualified exception class from the `type` attribute) and `trace` (the stack trace in the element body). `type` and `trace` are `""` when absent |
 | `failuresByFeature()` | Failing scenario names per feature. Derived from the same list as `scenariosByFeature()` |
+| `failureBreakdown()` | The failed and errored scenarios counted by cause — see [Failure breakdown](#failure-breakdown--why-did-things-fail) |
+
+`reason` alone rarely names the exception: an uncaught exception's message is just its text (`Index 0 out of bounds
+for length 0`), and an XML parser turns the line breaks inside the attribute into spaces. Use `type` for what kind of
+failure it was and `trace` for where it came from.
+
+### Failure breakdown — "why did things fail?"
+
+`com.znsio.teswiz.reporting.notify.failure` turns failing scenarios into causes. A cause is the simple exception class
+name plus the place it came from: the first stack frame of the code under test, with JDK and well-known library frames
+skipped. For an AssertJ soft-assertion wrapper (`AssertJMultipleFailuresError`, thrown from the after-scenario hook),
+the place is the assertion's own origin line from the message instead. Scenarios failing on the same line are one cause,
+so eight failures from one bug read as one line, not eight.
+
+| Type | Use |
+| :--- | :--- |
+| `FailureBreakdown` | `JUnitResults.failureBreakdown()` or `FailureBreakdown.of(scenariosByFeature)`. `causes()` is the per-cause count, biggest first; `byType()` merges places; `total()` always equals `failed() + errors()` (an unclassifiable failure is counted as `Unclassified`, never dropped); `plus(other)` merges several runs |
+| `FailureClassifier` | `classify(scenario)` → `FailureCause(type, location)` for one failed scenario |
+| `FailureBreakdownRenderer` | `slack(breakdown)` and `html(breakdown)`; both return `""` for an empty breakdown |
+
+Rendered for Slack:
+
+```text
+*Why did things fail? (8)*
+  IndexOutOfBoundsException @ RewardsBL.awardFreeSpins:113  6
+  AssertJMultipleFailuresError @ BalanceTracking.assertReduced:111  1
+  TargetClosedError @ GamePlayScreenPlaywrightJava.spin:396  1
+```
+
+The HTML block is a three-column table (`Exception type`, `Where`, `Count`) with a `Total failed` row.
 
 ### `HtmlReport` — render it
 

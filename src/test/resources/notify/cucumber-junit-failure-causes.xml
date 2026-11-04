@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="Cucumber" time="20.0" tests="7" skipped="0" failures="5" errors="1" timestamp="2026-11-04T02:18:57.000000Z">
+<testcase classname="Free Spins Workflow" name="Award and play free spins" time="5.1">
+<failure type="java.lang.IndexOutOfBoundsException" message="Index 0 out of bounds for length 0">
+<![CDATA[java.lang.IndexOutOfBoundsException: Index 0 out of bounds for length 0
+	at java.base/jdk.internal.util.Preconditions.outOfBounds(Preconditions.java:64)
+	at java.base/jdk.internal.util.Preconditions.outOfBoundsCheckIndex(Preconditions.java:70)
+	at java.base/jdk.internal.util.Preconditions.checkIndex(Preconditions.java:266)
+	at java.base/java.util.Objects.checkIndex(Objects.java:361)
+	at java.base/java.util.ArrayList.get(ArrayList.java:427)
+	at com.entain.casino.businessLayer.domain.RewardsBL.awardFreeSpins(RewardsBL.java:113)
+	at com.entain.casino.glue.steps.domain.RewardsSteps.thePlayerIsAwardedFreeSpins(RewardsSteps.java:32)
+	at ✽.the player is awarded free spins(file:///builds/freespin.feature:30)
+]]>
+</failure>
+</testcase>
+<testcase classname="Free Spins Workflow" name="Award and play free spins with no wins leaves the balance unchanged" time="5.2">
+<failure type="java.lang.IndexOutOfBoundsException" message="Index 0 out of bounds for length 0">
+<![CDATA[java.lang.IndexOutOfBoundsException: Index 0 out of bounds for length 0
+	at java.base/jdk.internal.util.Preconditions.outOfBounds(Preconditions.java:64)
+	at java.base/java.util.ArrayList.get(ArrayList.java:427)
+	at com.entain.casino.businessLayer.domain.RewardsBL.awardFreeSpins(RewardsBL.java:113)
+	at com.entain.casino.glue.steps.domain.RewardsSteps.thePlayerIsAwardedFreeSpins(RewardsSteps.java:32)
+]]>
+</failure>
+</testcase>
+<testcase classname="In-Game Bet" name="Balance is reduced after the bet" time="3.3">
+<failure type="org.assertj.core.error.AssertJMultipleFailuresError" message="
+Multiple Failures (1 failure)
+-- failure 1 --
+[step 4: And the player's balance is reduced] [Balance should be reduced after the bet (pre-operation 1018.49, so expected strictly less)] 
+Expecting actual:
+  1018.49
+to be less than:
+  1018.49 
+at BalanceTracking.assertReduced(BalanceTracking.java:111)">
+<![CDATA[org.assertj.core.error.AssertJMultipleFailuresError: 
+Multiple Failures (1 failure)
+-- failure 1 --
+[step 4: And the player's balance is reduced] [Balance should be reduced after the bet (pre-operation 1018.49, so expected strictly less)] 
+Expecting actual:
+  1018.49
+to be less than:
+  1018.49 
+at BalanceTracking.assertReduced(BalanceTracking.java:111)
+	at com.znsio.teswiz.steps.Hooks.afterScenario(Hooks.java:82)
+	at com.znsio.teswiz.steps.Hooks.afterScenario(Hooks.java:67)
+	at com.znsio.teswiz.steps.RunCukes.afterScenario(RunCukes.java:40)
+]]>
+</failure>
+</testcase>
+<testcase classname="In-Game Bet" name="Browser closes mid-run" time="0.8">
+<error type="com.microsoft.playwright.impl.TargetClosedError" message="Error { message='Target page, context or browser has been closed' }">
+<![CDATA[com.microsoft.playwright.impl.TargetClosedError: Error { message='Target page, context or browser has been closed' }
+	at com.microsoft.playwright.impl.Connection.dispatch(Connection.java:100)
+	at com.microsoft.playwright.impl.PageImpl.screenshot(PageImpl.java:55)
+	at com.entain.casino.screen.web.playwrightjava.GamePlayScreenPlaywrightJava.spin(GamePlayScreenPlaywrightJava.java:396)
+	at com.entain.casino.businessLayer.domain.GamePlayBL.placeBet(GamePlayBL.java:70)
+]]>
+</error>
+</testcase>
+<testcase classname="Misc" name="Failure with no type attribute" time="0.5">
+<failure message="Something failed but the runner wrote no type">
+<![CDATA[Something failed but the runner wrote no type]]>
+</failure>
+</testcase>
+<testcase classname="Misc" name="Failure with a blank type attribute" time="0.4">
+<failure type="  " message="Blank type">
+</failure>
+</testcase>
+<testcase classname="Misc" name="Passing scenario" time="3.0">
+<system-out><![CDATA[
+Given a player session is active...passed
+]]></system-out>
+</testcase>
+</testsuite>

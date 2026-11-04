@@ -15,6 +15,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
 import com.znsio.teswiz.exceptions.NotificationException;
+import com.znsio.teswiz.reporting.notify.failure.FailureBreakdown;
 
 /**
  * A generic, immutable parse of a cucumber/JUnit {@code testsuite} XML — the counts (tests / passed / failed / errors /
@@ -38,6 +39,7 @@ public final class JUnitResults {
     private static final String CLASSNAME_ATTRIBUTE = "classname";
     private static final String NAME_ATTRIBUTE = "name";
     private static final String MESSAGE_ATTRIBUTE = "message";
+    private static final String TYPE_ATTRIBUTE = "type";
     private static final String TIME_ATTRIBUTE = "time";
     private static final String TESTS_ATTRIBUTE = "tests";
     private static final String FAILURES_ATTRIBUTE = "failures";
@@ -156,6 +158,14 @@ public final class JUnitResults {
     }
 
     /**
+     * @return the failed and errored scenarios counted by cause — exception type and where it came from — biggest
+     *         first; empty when nothing failed. The total always equals {@code failed() + errors()}.
+     */
+    public FailureBreakdown failureBreakdown() {
+        return FailureBreakdown.of(scenariosByFeature);
+    }
+
+    /**
      * Whether the XML at this path is present and parseable into a {@code <testsuite>}. Never throws — any problem
      * (missing, truncated, malformed) returns {@code false}. Lets a caller tell a file still being written from a
      * complete one.
@@ -216,17 +226,21 @@ public final class JUnitResults {
         double time = doubleAttribute(testcase, TIME_ATTRIBUTE);
         Element error = firstChild(testcase, ERROR_TAG);
         if (error != null) {
-            return new Scenario(name, ScenarioStatus.ERRORED, reasonOf(error), time);
+            return scenarioFrom(name, ScenarioStatus.ERRORED, error, time);
         }
         Element failure = firstChild(testcase, FAILURE_TAG);
         if (failure != null) {
-            return new Scenario(name, ScenarioStatus.FAILED, reasonOf(failure), time);
+            return scenarioFrom(name, ScenarioStatus.FAILED, failure, time);
         }
         Element skipped = firstChild(testcase, SKIPPED_TAG);
         if (skipped != null) {
-            return new Scenario(name, ScenarioStatus.SKIPPED, reasonOf(skipped), time);
+            return scenarioFrom(name, ScenarioStatus.SKIPPED, skipped, time);
         }
         return new Scenario(name, ScenarioStatus.PASSED, "", time);
+    }
+
+    private static Scenario scenarioFrom(String name, ScenarioStatus status, Element outcome, double time) {
+        return new Scenario(name, status, reasonOf(outcome), time, typeOf(outcome), traceOf(outcome));
     }
 
     // The human-readable reason comes from the child element's `message` attribute (Cucumber writes it for a
@@ -234,6 +248,19 @@ public final class JUnitResults {
     private static String reasonOf(Element outcome) {
         String message = outcome.getAttribute(MESSAGE_ATTRIBUTE);
         return message == null ? "" : message.trim();
+    }
+
+    // The exception class comes from the child element's `type` attribute — the fully-qualified class name that the
+    // message alone never carries. "" when the runner wrote none.
+    private static String typeOf(Element outcome) {
+        String type = outcome.getAttribute(TYPE_ATTRIBUTE);
+        return type == null ? "" : type.trim();
+    }
+
+    // The stack trace is the child element's body text (Cucumber writes it as CDATA). "" when there is none.
+    private static String traceOf(Element outcome) {
+        String body = outcome.getTextContent();
+        return body == null ? "" : body.trim();
     }
 
     private static Element firstChild(Element testcase, String tag) {
@@ -304,8 +331,24 @@ public final class JUnitResults {
      * @param status the outcome
      * @param reason the failure/skip reason (the {@code message} attribute), or an empty string when none
      * @param time   the scenario run time in seconds (the {@code time} attribute), or {@code 0} when absent
+     * @param type   the fully-qualified exception class (the {@code type} attribute of the {@code <failure>/<error>}),
+     *               or an empty string when the runner wrote none
+     * @param trace  the stack trace (the body of the {@code <failure>/<error>}), or an empty string when none
      */
-    public record Scenario(String name, ScenarioStatus status, String reason, double time) {
+    public record Scenario(String name, ScenarioStatus status, String reason, double time, String type, String trace) {
+
+        /**
+         * Convenience constructor for a scenario with no recorded exception type or stack trace (for example a passed
+         * or skipped one); both are the empty string.
+         *
+         * @param name   the scenario name
+         * @param status the outcome
+         * @param reason the failure/skip reason, or an empty string
+         * @param time   the run time in seconds
+         */
+        public Scenario(String name, ScenarioStatus status, String reason, double time) {
+            this(name, status, reason, time, "", "");
+        }
 
         /** @return {@code true} when this scenario failed or errored */
         public boolean failed() {
