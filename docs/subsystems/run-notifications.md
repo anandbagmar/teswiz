@@ -232,16 +232,23 @@ so eight failures from one bug read as one line, not eight.
 | :--- | :--- |
 | `FailureBreakdown` | `JUnitResults.failureBreakdown()` or `FailureBreakdown.of(scenariosByFeature)`. `causes()` is the per-cause count, biggest first; `byType()` merges places; `total()` always equals `failed() + errors()` (an unclassifiable failure is counted as `Unclassified`, never dropped); `plus(other)` merges several runs |
 | `FailureClassifier` | `classify(scenario)` → `FailureCause(type, location)` for one failed scenario |
-| `FailureBreakdownRenderer` | `slack(breakdown)` and `html(breakdown)`; both return `""` for an empty breakdown |
+| `FailureBreakdownRenderer` | `slack(breakdown)` (top `DEFAULT_MAX_CAUSES` = 10 causes), `slack(breakdown, maxCauses)` and `html(breakdown)`; all return `""` for an empty breakdown |
 
-Rendered for Slack:
+Rendered for Slack: a bold heading with the failure and cause counts, then one row per cause in a code block so Slack
+shows it monospaced. Each row is the count (right-aligned), the type (padded to the longest type shown) and the place.
 
-```text
-*Why did things fail? (8)*
-  IndexOutOfBoundsException @ RewardsBL.awardFreeSpins:113  6
-  AssertJMultipleFailuresError @ BalanceTracking.assertReduced:111  1
-  TargetClosedError @ GamePlayScreenPlaywrightJava.spin:396  1
+~~~~text
+*Why did things fail?*  8 failures · 3 causes
 ```
+6  IndexOutOfBoundsException     RewardsBL.awardFreeSpins:113
+1  AssertJMultipleFailuresError  BalanceTracking.assertReduced:111
+1  TargetClosedError             GamePlayScreenPlaywrightJava.spin:396
+```
+~~~~
+
+If there are more causes than `maxCauses`, one line after the code block counts the rest, e.g.
+`_+4 more causes in the full report_`. The wording is singular for one (`1 failure · 1 cause`, `+1 more cause`). A
+backtick in a type or place is printed as `'`, so it can't close the code block early.
 
 The HTML block is a three-column table (`Exception type`, `Where`, `Count`) with a `Total failed` row.
 

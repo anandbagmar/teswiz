@@ -12,10 +12,10 @@ import com.znsio.teswiz.reporting.notify.JUnitResults.Scenario;
 import com.znsio.teswiz.reporting.notify.JUnitResults.ScenarioStatus;
 
 /**
- * One renderer produces the failure breakdown for both the Slack message and the HTML email, so the block looks the
- * same wherever it appears. These cases pin that output: the heading carries the total, each cause shows its simple
- * type name, its place and its count, biggest first, and an empty breakdown renders nothing so a green run is
- * untouched.
+ * One renderer produces the failure breakdown for both the Slack message and the HTML email. These cases pin the HTML
+ * table (simple type name, place and count per cause, a total row, escaping) and that an empty breakdown renders
+ * nothing in either channel, so a green run is untouched. The Slack layout is pinned by
+ * {@link FailureBreakdownSlackLayoutTest}.
  */
 class FailureBreakdownRendererTest {
 
@@ -24,19 +24,6 @@ class FailureBreakdownRendererTest {
             failedAt("b", "java.lang.IndexOutOfBoundsException", "RewardsBL", "awardFreeSpins", 113),
             failedAt("c", "com.x.PoolExhaustedException", "UserPool", "lease", 9),
             new Scenario("d", ScenarioStatus.FAILED, "no type", 0.1)))));
-
-    @Test
-    @DisplayName("slack heads with the total, then one line per cause with its place and count, biggest first")
-    void slackBlock() {
-        String slack = FailureBreakdownRenderer.slack(breakdown);
-
-        assertThat(slack).startsWith("*Why did things fail? (4)*\n");
-        assertThat(slack).contains("  IndexOutOfBoundsException @ RewardsBL.awardFreeSpins:113  2\n");
-        assertThat(slack).contains("  PoolExhaustedException @ UserPool.lease:9  1\n");
-        assertThat(slack).contains("  Unclassified  1\n");
-        assertThat(slack.indexOf("IndexOutOfBoundsException")).isLessThan(slack.indexOf("PoolExhaustedException"));
-        assertThat(slack).doesNotContain("java.lang").doesNotContain("com.x");
-    }
 
     @Test
     @DisplayName("html is a table of type, place and count with a total row")
