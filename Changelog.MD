@@ -1,3 +1,74 @@
+## 1.0.50
+# Release Notes - teswiz v1.0.50
+
+_Previous release: v1.0.49_
+
+This release adds a "why did things fail?" breakdown to the end-of-run notification content, so a Slack or email notification can group failures by cause instead of just counting them.
+
+## 🚀 Enhancements
+
+### 📊 Failure type, stack trace, and a failure breakdown in notification reports
+
+- **`JUnitResults.Scenario` gains `type` and `trace`.** `type` is the fully-qualified exception class, read from the `type` attribute of the JUnit `<failure>` / `<error>` element; `trace` is its stack trace body. Both are `""` when the runner wrote none. The 4-argument `Scenario` constructor is kept for a scenario with no recorded exception (a passed or skipped one), so existing callers are unaffected.
+- **Why this is needed:** the existing `reason` rarely names the exception on its own — an uncaught exception's message is just its text (`Index 0 out of bounds for length 0`) — and an XML parser collapses the line breaks inside the attribute into spaces.
+- **New `com.znsio.teswiz.reporting.notify.failure` package** turns failing scenarios into causes:
+  - **`FailureClassifier.classify(scenario)`** returns a `FailureCause`: the simple exception class name, plus the place it came from — the first stack frame belonging to the code under test, with JDK and well-known library frames (JUnit, Cucumber, AssertJ, Playwright, Selenium, RestAssured, Appium, and more) skipped. For an AssertJ soft-assertion wrapper (`AssertJMultipleFailuresError`, thrown from the after-scenario hook, whose own stack points at the framework), the place comes from the assertion's own origin line in the message instead.
+  - **`FailureCause(type, location)`** — two scenarios with an equal cause failed for the same reason, so eight failures on one line read as one cause, not eight entries.
+  - **`FailureBreakdown`** — `JUnitResults.failureBreakdown()` or `FailureBreakdown.of(scenariosByFeature)` tallies failed and errored scenarios by cause, biggest first. `total()` always equals `failed() + errors()`: an unclassifiable failure is counted as `Unclassified`, never dropped. `plus(other)` merges breakdowns across several runs.
+  - **`FailureBreakdownRenderer`** — `slack(breakdown)` renders a bold heading with the total and one line per cause (`Type @ Class.method:line  count`); `html(breakdown)` renders a three-column table (exception type, where, count) with a total row. Both return `""` for an empty breakdown, so a green run carries no block.
+- Covered by new `JUnitResultsFailureDetailsTest`, `FailureClassifierTest`, `FailureBreakdownTest`, and `FailureBreakdownRendererTest`, plus a `cucumber-junit-failure-causes.xml` fixture.
+
+```text
+*Why did things fail? (8)*
+  IndexOutOfBoundsException @ RewardsBL.awardFreeSpins:113  6
+  AssertJMultipleFailuresError @ BalanceTracking.assertReduced:111  1
+  TargetClosedError @ GamePlayScreenPlaywrightJava.spin:396  1
+```
+
+## 🔒 Security
+
+Resolves the critical and high Dependabot alerts on transitive npm dependencies in `package-lock.json`. All of them come in through the Appium toolchain; none are in the Java framework.
+
+| Package | Advisory | Before | After | How |
+| :--- | :--- | :--- | :--- | :--- |
+| `shell-quote` | Critical: `quote()` command injection via a line terminator | 1.10.0 (bundled in `appium-xcuitest-driver`) | 1.12.0 | `appium-xcuitest-driver` 12.20.0 → 12.22.8; override 1.11.0 → 1.12.0 |
+| `node-forge` | High: RSA PKCS#1 v1.5 signature verification, plus several TLS and PEM DoS issues | 1.4.0 | 1.4.3 | override bumped |
+| `multer` | High: DoS via a pending asynchronous `fileFilter` | 2.3.0 | 2.5.0 | override bumped |
+| `body-parser` | High: DoS via trailing bytes after a compressed body (2 advisories) | 2.3.0 (bundled), 1.20.8 | 2.4.0, 1.20.9 | `appium-xcuitest-driver` bump; scoped overrides for `@appium/base-driver` and `express@4.22.2` |
+
+- `appium-xcuitest-driver` moves within the 12.x line (12.20.0 → 12.22.8) and keeps the same `appium ^3` peer range. Its bundled `shell-quote` and `body-parser` copies can't be changed with npm `overrides`, so the driver bump is what fixes them.
+- `body-parser` 1.x (used by `local-cors-proxy`'s Express 4) is pinned with a scoped override, so it is not forced onto 2.x.
+| `follow-redirects` | High: sensitive headers and custom credentials can follow cross-realm redirects | 1.16.1 | 1.16.2 | new override |
+| `qs` | Moderate: array-limit bypass, `isBuffer` DoS, `stringify` comma-format DoS (3 advisories) | 6.15.3 | 6.17.1 | override bumped |
+| `fast-uri` | Moderate: scheme spoofing, host confusion, mailto header injection, host case normalisation (4 advisories) | 4.1.4 | 4.2.3 | override bumped |
+| `js-yaml` | Moderate: `maxTotalMergeKeys` does not limit CPU for empty merge sources | 5.2.2 | 5.5.0 | override bumped |
+
+- `npm audit` after the change: **0 critical** (was 2), **0 high** (was 5), 36 moderate, 1 low (49 → 37 total).
+- **No fix available yet:**
+  - `glob` (moderate, AbortSignal bypass) and `minimatch` (moderate, globparts DoS): every patched version is a major bump (`glob` 14.0.2+, `minimatch` 11.0.1+). The vulnerable copies are also bundled inside `appium-uiautomator2-driver` and `appium-xcuitest-driver`, which overrides can't reach, and the latest `@appium/support` (7.2.9) still pins `glob` 13.0.6. These need an upstream Appium release.
+  - `request` (moderate, SSRF): deprecated, and 2.88.2 is the final release. It is pulled in only by `appium-device-farm` → `local-cors-proxy`.
+  - Most of the remaining moderate count is npm flagging the parents of these three packages.
+
+## 📝 Docs
+
+- `docs/subsystems/run-notifications.md`: `scenariosByFeature()` documented with the new `type` and `trace` fields; new "Failure breakdown" section with the type table and a rendered Slack example; flow diagram updated to show `failure.FailureBreakdown` / `FailureBreakdownRenderer` feeding off `JUnitResults`.
+
+## 🛠️ Changed Files Summary
+
+- `src/main/java/com/znsio/teswiz/reporting/notify/JUnitResults.java`
+- `src/main/java/com/znsio/teswiz/reporting/notify/failure/FailureCause.java` (new)
+- `src/main/java/com/znsio/teswiz/reporting/notify/failure/FailureClassifier.java` (new)
+- `src/main/java/com/znsio/teswiz/reporting/notify/failure/FailureBreakdown.java` (new)
+- `src/main/java/com/znsio/teswiz/reporting/notify/failure/FailureBreakdownRenderer.java` (new)
+- `src/test/java/com/znsio/teswiz/reporting/notify/JUnitResultsFailureDetailsTest.java` (new)
+- `src/test/java/com/znsio/teswiz/reporting/notify/failure/FailureClassifierTest.java` (new)
+- `src/test/java/com/znsio/teswiz/reporting/notify/failure/FailureBreakdownTest.java` (new)
+- `src/test/java/com/znsio/teswiz/reporting/notify/failure/FailureBreakdownRendererTest.java` (new)
+- `src/test/resources/notify/cucumber-junit-failure-causes.xml` (new)
+- `docs/subsystems/run-notifications.md`
+- `package.json` (`appium-xcuitest-driver` bump, security overrides)
+- `package-lock.json` (regenerated)
+
 ## 1.0.49
 # Release Notes - teswiz v1.0.49
 
