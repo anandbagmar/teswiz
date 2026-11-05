@@ -39,8 +39,9 @@ public final class FailureBreakdownRenderer {
      * Renders the Slack block: a bold heading with the failure and cause counts
      * ({@code *Why did things fail?*  4 failures · 3 causes}), then the top causes as aligned rows inside a code block
      * — count (right-aligned), type, place — biggest first. When more causes exist than are listed, one line after the
-     * code block says how many more are in the full report. Backticks in a cause become {@code '} so they cannot close
-     * the code block.
+     * code block says how many more are in the full report. Slack markup in a cause is neutralised: {@code & < >}
+     * become their entities (so a constructor-frame place like {@code Widget.<init>:7} is not read as a mention and
+     * dropped) and a backtick becomes {@code '} so it cannot close the code block.
      *
      * @param breakdown the failure breakdown
      * @param maxCauses the most causes to list
@@ -55,8 +56,8 @@ public final class FailureBreakdownRenderer {
     }
 
     /**
-     * Renders the HTML block: a three-column table (exception type, where, count) headed by the breakdown title, with
-     * a total row.
+     * Renders the HTML block: a three-column table (exception type, where, count) headed by the breakdown title, with a
+     * total row.
      *
      * @param breakdown the failure breakdown
      * @return the HTML block, or an empty string when there are no failures
@@ -81,6 +82,12 @@ public final class FailureBreakdownRenderer {
                 + counted(breakdown.causes().size(), "cause") + "\n";
     }
 
+    // Slack reads & < > as markup everywhere, even inside a code block, so a place like Widget.<init>:7 would lose its
+    // <init>; a backtick would also close the code block. Replace & first, or the & in &lt;/&gt; is double-escaped.
+    private static String slackSafe(String text) {
+        return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('`', '\'');
+    }
+
     // The rows sit in a code block so Slack renders them monospaced and the padded columns line up.
     private static String slackRows(List<Map.Entry<FailureCause, Integer>> shown) {
         int countWidth = shown.stream().mapToInt(entry -> String.valueOf(entry.getValue()).length()).max().orElse(1);
@@ -93,13 +100,16 @@ public final class FailureBreakdownRenderer {
     }
 
     private static String slackRow(FailureCause cause, int count, int countWidth, int typeWidth) {
+        // Pad on the raw text so the monospaced columns line up, then escape — the entities &amp;/&lt;/&gt; each
+        // render as one glyph in Slack, so escaping before padding would miscount the width and break alignment.
         String row = padLeft(String.valueOf(count), countWidth) + COLUMN_GAP + padRight(cause.type(), typeWidth)
                 + COLUMN_GAP + cause.location();
-        return insideCodeBlock(row.stripTrailing());
+        return slackSafe(row.stripTrailing());
     }
 
     private static String moreCausesLine(int hiddenCauses) {
-        return hiddenCauses <= 0 ? "" : "_+" + counted(hiddenCauses, "more cause") + " in the full report_\n";
+        return hiddenCauses <= 0 ? ""
+                : "_+" + slackSafe(counted(hiddenCauses, "more cause")) + " in the full report_\n";
     }
 
     private static String counted(int count, String noun) {
@@ -112,11 +122,6 @@ public final class FailureBreakdownRenderer {
 
     private static String padRight(String text, int width) {
         return text + " ".repeat(Math.max(0, width - text.length()));
-    }
-
-    // A backtick inside a code block would close it early; a plain quote reads the same.
-    private static String insideCodeBlock(String text) {
-        return text.replace('`', '\'');
     }
 
     private static String htmlRow(FailureCause cause, int count) {

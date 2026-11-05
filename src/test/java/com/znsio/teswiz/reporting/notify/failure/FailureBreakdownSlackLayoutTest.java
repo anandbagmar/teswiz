@@ -30,13 +30,10 @@ class FailureBreakdownSlackLayoutTest {
                 failedAt("c", "com.x.PoolExhaustedException", "UserPool", "lease", 9),
                 new Scenario("d", ScenarioStatus.FAILED, "no type", 0.1));
 
-        assertThat(FailureBreakdownRenderer.slack(breakdown)).isEqualTo(
-                "*Why did things fail?*  4 failures · 3 causes\n"
-                        + FENCE + "\n"
+        assertThat(FailureBreakdownRenderer.slack(breakdown))
+                .isEqualTo("*Why did things fail?*  4 failures · 3 causes\n" + FENCE + "\n"
                         + "2  IndexOutOfBoundsException  RewardsBL.awardFreeSpins:113\n"
-                        + "1  PoolExhaustedException     UserPool.lease:9\n"
-                        + "1  Unclassified\n"
-                        + FENCE + "\n");
+                        + "1  PoolExhaustedException     UserPool.lease:9\n" + "1  Unclassified\n" + FENCE + "\n");
     }
 
     @Test
@@ -93,6 +90,52 @@ class FailureBreakdownSlackLayoutTest {
 
         assertThat(slack).contains("1  Odd'Error  Widget.go:7\n");
         assertThat(slack.replace(FENCE, "")).doesNotContain("`");
+    }
+
+    @Test
+    @DisplayName("a constructor-frame place keeps its <init> in slack (escaped so slack does not drop it)")
+    void constructorFramePlaceSurvives() {
+        FailureBreakdown breakdown = breakdownOf(failedAt("a", "com.x.BoomError", "Widget", "<init>", 7));
+
+        String slack = FailureBreakdownRenderer.slack(breakdown);
+
+        assertThat(slack).contains("1  BoomError  Widget.&lt;init&gt;:7\n").doesNotContain("<init>");
+    }
+
+    @Test
+    @DisplayName("slack escapes & and > in a type so slack does not read them as markup")
+    void ampersandAndAngleInTypeAreEscaped() {
+        FailureBreakdown breakdown = breakdownOf(failedAt("a", "com.x.A&B>CError", "Widget", "go", 7));
+
+        String slack = FailureBreakdownRenderer.slack(breakdown);
+
+        assertThat(slack).contains("1  A&amp;B&gt;CError  Widget.go:7\n");
+    }
+
+    @Test
+    @DisplayName("escaping is applied after padding, so an escaped row still lines up with a plain row")
+    void escapedRowStaysAligned() {
+        FailureBreakdown breakdown = breakdownOf(failedAt("a", "com.x.BoomError", "Widget", "<init>", 7),
+                failedAt("b", "com.x.BoomError", "Widget", "<init>", 7),
+                failedAt("c", "com.x.BustError", "Widget", "run", 9));
+
+        String slack = FailureBreakdownRenderer.slack(breakdown);
+
+        // BoomError and BustError are the same width, so both place columns start at the same offset; the entities
+        // &lt; / &gt; must not have widened the first row (padding is on the raw text).
+        assertThat(slack).contains(
+                FENCE + "\n" + "2  BoomError  Widget.&lt;init&gt;:7\n" + "1  BustError  Widget.run:9\n" + FENCE + "\n");
+    }
+
+    @Test
+    @DisplayName("slack escapes markup in the +K more causes line too")
+    void moreCausesLineIsEscaped() {
+        FailureBreakdown breakdown = breakdownOf(failedAt("a", "com.x.BoomError", "Widget", "go", 7),
+                failedAt("b", "com.x.A<B>Error", "Widget", "go", 8));
+
+        String slack = FailureBreakdownRenderer.slack(breakdown, 1);
+
+        assertThat(slack).doesNotContain("<").doesNotContain(">");
     }
 
     @Test

@@ -247,8 +247,12 @@ shows it monospaced. Each row is the count (right-aligned), the type (padded to 
 ~~~~
 
 If there are more causes than `maxCauses`, one line after the code block counts the rest, e.g.
-`_+4 more causes in the full report_`. The wording is singular for one (`1 failure · 1 cause`, `+1 more cause`). A
-backtick in a type or place is printed as `'`, so it can't close the code block early.
+`_+4 more causes in the full report_`. The wording is singular for one (`1 failure · 1 cause`, `+1 more cause`). Slack
+markup in a type or place is neutralised: `&`, `<` and `>` become their HTML entities (`&amp;`, `&lt;`, `&gt;`) and a
+backtick is printed as `'`. Slack reads `&`, `<` and `>` as markup even inside a code block, so without this a
+constructor-frame place like `Widget.<init>:7` would have its `<init>` read as a mention and dropped. The entities each
+render as a single glyph, so the rendered table looks unchanged and the columns stay aligned (escaping happens after
+the fixed-width padding).
 
 The HTML block is a three-column table (`Exception type`, `Where`, `Count`) with a `Total failed` row.
 
