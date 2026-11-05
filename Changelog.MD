@@ -1,3 +1,45 @@
+## 1.0.52
+# Release Notes - teswiz v1.0.52
+
+_Previous release: v1.0.51_
+
+This release makes the Slack "why did things fail?" block survive Slack markup in an exception type or place, so a failure thrown from a constructor keeps its `<init>`.
+
+## 🐛 Fixes
+
+### 🔒 Slack failure breakdown escapes `&`, `<` and `>`
+
+Slack reads `&`, `<` and `>` as markup everywhere in a message, even inside a triple-backtick code block. A failure thrown from a constructor has a place like `Widget.<init>:7`, and Slack read `<init>` as a mention and dropped it, so the row showed `Widget.:7`.
+
+`FailureBreakdownRenderer.slack(...)` now escapes `&`, `<` and `>` to their HTML entities (`&amp;`, `&lt;`, `&gt;`), folding in the existing backtick-to-`'` handling.
+
+- The escaping is applied **after** the fixed-width padding, so the monospaced columns still line up. Each entity renders as a single glyph in Slack, so the visible table is unchanged.
+- The same escaping is applied to the `_+K more causes in the full report_` line.
+- `html(breakdown)` is unchanged; it already escaped via `HtmlReport.escape`.
+
+Previously consumers worked around this by escaping teswiz's Slack block themselves; they can now call `FailureBreakdownRenderer.slack(...)` directly.
+
+## ✅ Tests
+
+New `FailureBreakdownSlackLayoutTest` cases cover:
+
+- a constructor-frame place (`Widget.<init>:7`) keeping its `<init>` as `Widget.&lt;init&gt;:7`,
+- `&` and `>` in an exception type being escaped,
+- alignment holding after escaping (padding happens on the raw text, so an escaped row lines up with a plain row),
+- the `+K more causes` line being escaped too.
+
+## 📝 Docs
+
+- `docs/subsystems/run-notifications.md`: the "Rendered for Slack" section now explains that `&`, `<` and `>` are escaped to entities and why, using the constructor-frame case as the example.
+
+## 🛠️ Changed Files Summary
+
+- `src/main/java/com/znsio/teswiz/reporting/notify/failure/FailureBreakdownRenderer.java`
+- `src/test/java/com/znsio/teswiz/reporting/notify/failure/FailureBreakdownSlackLayoutTest.java`
+- `docs/subsystems/run-notifications.md`
+- `Changelog.MD`
+- `build.gradle` (version 1.0.52)
+
 ## 1.0.52-SNAPSHOT
 # Release Notes - teswiz v1.0.52
 
