@@ -73,41 +73,6 @@ The Slack text has changed. In 1.0.50 it was `*Why did things fail? (N)*` follow
 - `.github/actions/run-and-collect-tests-README.md`
 - `Changelog.MD`
 
-## 1.0.51-SNAPSHOT (unreleased)
-# Release Notes - teswiz v1.0.51-SNAPSHOT (unreleased)
-
-_Previous release: v1.0.50_
-
-## 🚀 Enhancements
-
-### 📊 Slack failure breakdown is an aligned table, capped at the top causes
-
-`FailureBreakdownRenderer.slack(...)` now renders the "why did things fail?" block so it reads as a table in Slack:
-
-- **Heading with counts:** `*Why did things fail?*  8 failures · 3 causes`, singular for one (`1 failure · 1 cause`).
-- **Aligned rows in a code block:** count (right-aligned), exception type (padded to the longest type shown) and place, biggest cause first. The code block makes Slack show it monospaced, so the columns line up.
-- **Top causes only:** lists at most `DEFAULT_MAX_CAUSES` (10) causes, then `_+K more causes in the full report_`. A new `slack(breakdown, maxCauses)` overload changes the limit.
-- **Safe output:** a backtick in a type or place is printed as `'`, so it can't close the code block early.
-- `html(breakdown)` is unchanged.
-
-```text
-*Why did things fail?*  8 failures · 3 causes
-6  IndexOutOfBoundsException     RewardsBL.awardFreeSpins:113
-1  AssertJMultipleFailuresError  BalanceTracking.assertReduced:111
-1  TargetClosedError             GamePlayScreenPlaywrightJava.spin:396
-```
-(The three rows are wrapped in a code block in the actual message.)
-
-**Upgrading from 1.0.50:** the Slack text changed from `*Why did things fail? (N)*` plus `Type @ Place  count` lines listing every cause. If a composer or its tests match the old text, update them, or pass a larger limit with `slack(breakdown, maxCauses)`.
-
-Covered by a new `FailureBreakdownSlackLayoutTest`. `FailureBreakdownRendererTest` now covers only the HTML table and empty output; its old Slack-layout test was removed because the new class pins the new layout.
-
-## 📝 Docs
-
-- `docs/subsystems/run-notifications.md`: new Slack example and behaviour, an upgrade note for the layout change, and the flow diagram now shows the top-N Slack rendering.
-- `docs/architecture-and-internals/architecture-notes.md`: `reporting.notify.failure` package described.
-- `.github/actions/run-and-collect-tests-README.md`: new "Job Permissions" section (`contents: read`, plus `actions: write` only with `cleanup-branch-artifacts`).
-
 ## 1.0.50
 # Release Notes - teswiz v1.0.50
 
