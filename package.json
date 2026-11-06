@@ -77,7 +77,7 @@
   "author": "Anand Bagmar",
   "license": "ISC",
   "devDependencies": {
-    "@applitools/eyes-playwright": "1.51.4",
+    "@applitools/eyes-playwright": "1.51.5",
     "playwright": "1.64.1"
   }
 }
