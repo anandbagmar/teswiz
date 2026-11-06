@@ -37,13 +37,15 @@ class FailureBreakdownRendererTest {
         String html = FailureBreakdownRenderer.html(breakdown, FRIENDLY);
 
         assertThat(html).contains("<h3>Failure breakdown</h3>");
-        assertThat(html).contains("<tr><th>Failure</th><th>Where</th><th>Failing step</th><th>Count</th></tr>");
+        assertThat(html).contains("<table class=\"breakdown\">");
+        assertThat(html)
+                .contains("<tr><th>Failure</th><th>Where</th><th>Failing step</th><th class=\"count\">Count</th></tr>");
         assertThat(html).contains("<tr><td>IndexOutOfBoundsException</td><td>RewardsBL.awardFreeSpins:113 "
-                + "(IndexOutOfBoundsException)</td><td></td><td>\u00d72</td></tr>");
+                + "(IndexOutOfBoundsException)</td><td></td><td class=\"count\">\u00d72</td></tr>");
         assertThat(html)
                 .contains("<tr><td>No test user available</td><td>UserPool.lease:9 (PoolExhaustedException)</td>"
-                        + "<td></td><td>\u00d71</td></tr>");
-        assertThat(html).contains("<tr><th colspan=\"3\">Total failed</th><td>3</td></tr>");
+                        + "<td></td><td class=\"count\">\u00d71</td></tr>");
+        assertThat(html).contains("<tr><th colspan=\"3\">Total failed</th><td class=\"count\">3</td></tr>");
         assertThat(html).doesNotContain("java.lang").doesNotContain("com.x");
     }
 
@@ -58,12 +60,12 @@ class FailureBreakdownRendererTest {
 
         // One group header (subtotal 3) at the shared location, then a nested row per distinct step with its count.
         assertThat(html).contains("<tr><td>AssertJMultipleFailuresError</td><td>BalanceTracking.assertDelta:182 "
-                + "(AssertJMultipleFailuresError)</td><td></td><td>\u00d73</td></tr>");
-        assertThat(html)
-                .contains("<tr><td></td><td></td><td>Then the balance is reduced by 1.0</td><td>\u00d72</td></tr>");
-        assertThat(html)
-                .contains("<tr><td></td><td></td><td>Then the balance is increased by 5.0</td><td>\u00d71</td></tr>");
-        assertThat(html).contains("<tr><th colspan=\"3\">Total failed</th><td>3</td></tr>");
+                + "(AssertJMultipleFailuresError)</td><td></td><td class=\"count\">\u00d73</td></tr>");
+        assertThat(html).contains(
+                "<tr><td></td><td></td><td>Then the balance is reduced by 1.0</td><td class=\"count\">\u00d72</td></tr>");
+        assertThat(html).contains("<tr><td></td><td></td><td>Then the balance is increased by 5.0</td>"
+                + "<td class=\"count\">\u00d71</td></tr>");
+        assertThat(html).contains("<tr><th colspan=\"3\">Total failed</th><td class=\"count\">3</td></tr>");
     }
 
     @Test

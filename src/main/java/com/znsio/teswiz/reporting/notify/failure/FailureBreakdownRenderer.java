@@ -113,13 +113,13 @@ public final class FailureBreakdownRenderer {
             return "";
         }
         StringBuilder html = new StringBuilder();
-        html.append("<h3>").append(HTML_HEADING).append("</h3><table>")
-                .append("<tr><th>Failure</th><th>Where</th><th>Failing step</th><th>Count</th></tr>");
+        html.append("<h3>").append(HTML_HEADING).append("</h3><table class=\"breakdown\">")
+                .append("<tr><th>Failure</th><th>Where</th><th>Failing step</th><th class=\"count\">Count</th></tr>");
         for (Group group : groups(breakdown)) {
             html.append(htmlGroup(group, label));
         }
-        html.append("<tr><th colspan=\"3\">Total failed</th><td>").append(breakdown.total()).append("</td></tr>")
-                .append("</table>");
+        html.append("<tr><th colspan=\"3\">Total failed</th><td class=\"count\">").append(breakdown.total())
+                .append("</td></tr>").append("</table>");
         return html.toString();
     }
 
@@ -180,10 +180,10 @@ public final class FailureBreakdownRenderer {
     private static String htmlGroup(Group group, Function<String, String> label) {
         StringBuilder rows = new StringBuilder();
         rows.append("<tr><td>").append(HtmlReport.escape(label.apply(group.type()))).append("</td><td>")
-                .append(HtmlReport.escape(group.locationAndType())).append("</td><td></td><td>").append(COUNT_MARK)
-                .append(group.count()).append("</td></tr>");
+                .append(HtmlReport.escape(group.locationAndType())).append("</td><td></td><td class=\"count\">")
+                .append(COUNT_MARK).append(group.count()).append("</td></tr>");
         group.steps().forEach((step, count) -> rows.append("<tr><td></td><td></td><td>").append(HtmlReport.escape(step))
-                .append("</td><td>").append(COUNT_MARK).append(count).append("</td></tr>"));
+                .append("</td><td class=\"count\">").append(COUNT_MARK).append(count).append("</td></tr>"));
         return rows.toString();
     }
 

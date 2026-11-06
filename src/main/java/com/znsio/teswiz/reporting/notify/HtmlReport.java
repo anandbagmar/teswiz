@@ -29,6 +29,15 @@ public final class HtmlReport {
             + "table.scenarios td.status,table.scenarios th.status{width:64px;text-align:center}"
             + "table.scenarios td.time,table.scenarios th.time{width:64px;text-align:right;color:#666;"
             + "white-space:nowrap}"
+            // The failure breakdown is a multi-column table (Failure, Where, Failing step, Count); the generic
+            // th{width:40%} rule above is for two-column key/value tables and must not apply here, or the first column
+            // eats 40% and the long "Where"/"Failing step" values overflow the card. Fix the layout and wrap long
+            // tokens (a Class.method:line place, a Gherkin step) so nothing is clipped and no horizontal scroll is
+            // needed. Count stays narrow and never wraps.
+            + "table.breakdown{table-layout:fixed}" + "table.breakdown th{width:auto}"
+            + "table.breakdown td,table.breakdown th{word-break:break-word;overflow-wrap:anywhere}"
+            + "table.breakdown td.count,table.breakdown th.count{width:56px;text-align:right;"
+            + "white-space:nowrap;word-break:normal}"
             + ".pill{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;"
             + "color:#fff}"
             + ".pill.pass{background:#2e7d32}.pill.fail{background:#b00020}.pill.skip{background:#9e9e9e}"
@@ -192,7 +201,7 @@ public final class HtmlReport {
      * Renders the full per-scenario breakdown as HTML — one {@code
      *
     <h3>} heading and a {@code status / scenario /
-       * time} table per feature, in document order. A failed scenario shows its reason under the name; a scenario with
+        * time} table per feature, in document order. A failed scenario shows its reason under the name; a scenario with
      * no recorded time shows an em dash. Returns an empty string when there are no scenarios.
      *
      * @param scenariosByFeature every scenario grouped by feature (from {@link JUnitResults#scenariosByFeature()})
