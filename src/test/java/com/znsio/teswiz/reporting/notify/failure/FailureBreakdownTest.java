@@ -32,10 +32,10 @@ class FailureBreakdownTest {
     @Test
     @DisplayName("scenarios failing at the same place are one cause with a count")
     void sameCauseIsOneEntry() {
-        FailureBreakdown breakdown = FailureBreakdown.of(List.of(feature("F",
-                failedAt("a", "java.lang.IndexOutOfBoundsException", "RewardsBL", "awardFreeSpins", 113),
-                failedAt("b", "java.lang.IndexOutOfBoundsException", "RewardsBL", "awardFreeSpins", 113),
-                failedAt("c", "java.lang.IndexOutOfBoundsException", "RewardsBL", "awardFreeSpins", 113))));
+        FailureBreakdown breakdown = FailureBreakdown.of(List.of(
+                feature("F", failedAt("a", "java.lang.IndexOutOfBoundsException", "RewardsBL", "awardFreeSpins", 113),
+                        failedAt("b", "java.lang.IndexOutOfBoundsException", "RewardsBL", "awardFreeSpins", 113),
+                        failedAt("c", "java.lang.IndexOutOfBoundsException", "RewardsBL", "awardFreeSpins", 113))));
 
         assertThat(breakdown.causes()).containsExactly(entry(INDEX_CAUSE, 3));
         assertThat(breakdown.total()).isEqualTo(3);
@@ -44,9 +44,9 @@ class FailureBreakdownTest {
     @Test
     @DisplayName("the same exception type at different places stays separate causes")
     void differentPlacesAreDifferentCauses() {
-        FailureBreakdown breakdown = FailureBreakdown.of(List.of(feature("F",
-                failedAt("a", "java.lang.IndexOutOfBoundsException", "RewardsBL", "awardFreeSpins", 113),
-                failedAt("b", "java.lang.IndexOutOfBoundsException", "WalletBL", "refund", 40))));
+        FailureBreakdown breakdown = FailureBreakdown.of(List.of(
+                feature("F", failedAt("a", "java.lang.IndexOutOfBoundsException", "RewardsBL", "awardFreeSpins", 113),
+                        failedAt("b", "java.lang.IndexOutOfBoundsException", "WalletBL", "refund", 40))));
 
         assertThat(breakdown.causes()).hasSize(2);
         assertThat(breakdown.byType()).containsExactly(entry("IndexOutOfBoundsException", 2));
@@ -56,20 +56,18 @@ class FailureBreakdownTest {
     @DisplayName("causes are ordered biggest first, then by type, then by place, so the output is stable")
     void orderedBiggestFirstThenByName() {
         FailureBreakdown breakdown = FailureBreakdown.of(List.of(feature("F",
-                failedAt("a", "com.x.ZebraException", "Z", "z", 1),
-                failedAt("b", "com.x.AlphaException", "A", "a", 2),
-                failedAt("c", "com.x.BigException", "B", "b", 3),
-                failedAt("d", "com.x.BigException", "B", "b", 3))));
+                failedAt("a", "com.x.ZebraException", "Z", "z", 1), failedAt("b", "com.x.AlphaException", "A", "a", 2),
+                failedAt("c", "com.x.BigException", "B", "b", 3), failedAt("d", "com.x.BigException", "B", "b", 3))));
 
-        assertThat(breakdown.causes().keySet()).extracting(FailureCause::type)
-                .containsExactly("BigException", "AlphaException", "ZebraException");
+        assertThat(breakdown.causes().keySet()).extracting(FailureCause::type).containsExactly("BigException",
+                "AlphaException", "ZebraException");
     }
 
     @Test
     @DisplayName("a failure with no type is counted as Unclassified, never dropped")
     void unclassifiedIsStillCounted() {
-        FailureBreakdown breakdown = FailureBreakdown.of(List.of(feature("F",
-                new Scenario("weird", ScenarioStatus.FAILED, "expected true", 0.1))));
+        FailureBreakdown breakdown = FailureBreakdown
+                .of(List.of(feature("F", new Scenario("weird", ScenarioStatus.FAILED, "expected true", 0.1))));
 
         assertThat(breakdown.total()).isEqualTo(1);
         assertThat(breakdown.byType()).containsExactly(entry(FailureClassifier.UNCLASSIFIED, 1));
@@ -79,8 +77,7 @@ class FailureBreakdownTest {
     @DisplayName("errored scenarios count as failures; passed and skipped ones do not")
     void onlyFailedAndErroredCount() {
         FailureBreakdown breakdown = FailureBreakdown.of(List.of(feature("F",
-                new Scenario("p", ScenarioStatus.PASSED, "", 0.1),
-                new Scenario("s", ScenarioStatus.SKIPPED, "", 0.1),
+                new Scenario("p", ScenarioStatus.PASSED, "", 0.1), new Scenario("s", ScenarioStatus.SKIPPED, "", 0.1),
                 new Scenario("e", ScenarioStatus.ERRORED, "boom", 0.1, "com.x.BoomError", ""))));
 
         assertThat(breakdown.total()).isEqualTo(1);
@@ -90,8 +87,8 @@ class FailureBreakdownTest {
     @Test
     @DisplayName("no failures means an empty breakdown")
     void noFailuresIsEmpty() {
-        FailureBreakdown breakdown = FailureBreakdown.of(List.of(feature("F",
-                new Scenario("p", ScenarioStatus.PASSED, "", 0.1))));
+        FailureBreakdown breakdown = FailureBreakdown
+                .of(List.of(feature("F", new Scenario("p", ScenarioStatus.PASSED, "", 0.1))));
 
         assertThat(breakdown.isEmpty()).isTrue();
         assertThat(breakdown.total()).isZero();
@@ -102,9 +99,9 @@ class FailureBreakdownTest {
     @Test
     @DisplayName("two breakdowns add up, merging shared causes — the aggregate across jobs")
     void breakdownsAddUp() {
-        FailureBreakdown one = FailureBreakdown.of(List.of(feature("F",
-                failedAt("a", "java.lang.IndexOutOfBoundsException", "RewardsBL", "awardFreeSpins", 113),
-                failedAt("b", "com.x.OtherException", "O", "o", 1))));
+        FailureBreakdown one = FailureBreakdown.of(List.of(
+                feature("F", failedAt("a", "java.lang.IndexOutOfBoundsException", "RewardsBL", "awardFreeSpins", 113),
+                        failedAt("b", "com.x.OtherException", "O", "o", 1))));
         FailureBreakdown two = FailureBreakdown.of(List.of(feature("G",
                 failedAt("c", "java.lang.IndexOutOfBoundsException", "RewardsBL", "awardFreeSpins", 113))));
 
@@ -133,16 +130,20 @@ class FailureBreakdownTest {
         FailureBreakdown breakdown = results.failureBreakdown();
 
         assertThat(breakdown.total()).isEqualTo(results.failed() + results.errors());
-        assertThat(breakdown.causes()).containsExactly(
-                entry(INDEX_CAUSE, 2),
-                entry(new FailureCause("Unclassified", ""), 2),
-                entry(new FailureCause("AssertJMultipleFailuresError", "BalanceTracking.assertReduced:111"), 1),
-                entry(new FailureCause("TargetClosedError", "GamePlayScreenPlaywrightJava.spin:396"), 1));
-        assertThat(breakdown.byType()).containsExactly(
-                entry("IndexOutOfBoundsException", 2),
-                entry("Unclassified", 2),
-                entry("AssertJMultipleFailuresError", 1),
-                entry("TargetClosedError", 1));
+        // The two IndexOutOfBoundsException scenarios differ on the failing step: one trace carries the Cucumber
+        // "✽.the player is awarded free spins" line, the other's trace is truncated and carries no step — so they are
+        // two distinct causes (same type and place, different step), not one. The soft-assertion failure carries the
+        // step from its "[step 4: ...]" message marker. All five causes have count 1 except Unclassified (2).
+        assertThat(breakdown.causes()).containsOnlyKeys(new FailureCause("Unclassified", ""),
+                new FailureCause("AssertJMultipleFailuresError", "BalanceTracking.assertReduced:111",
+                        "And the player's balance is reduced"),
+                new FailureCause("IndexOutOfBoundsException", "RewardsBL.awardFreeSpins:113"),
+                new FailureCause("IndexOutOfBoundsException", "RewardsBL.awardFreeSpins:113",
+                        "the player is awarded free spins"),
+                new FailureCause("TargetClosedError", "GamePlayScreenPlaywrightJava.spin:396"));
+        assertThat(breakdown.causes()).containsEntry(new FailureCause("Unclassified", ""), 2);
+        assertThat(breakdown.byType()).containsExactly(entry("IndexOutOfBoundsException", 2), entry("Unclassified", 2),
+                entry("AssertJMultipleFailuresError", 1), entry("TargetClosedError", 1));
     }
 
     private static FeatureScenarios feature(String name, Scenario... scenarios) {

@@ -32,6 +32,14 @@ public final class FailureClassifier {
     private static final String CAUSED_BY = "Caused by:";
     private static final String SUPPRESSED = "Suppressed:";
 
+    // The Gherkin step a soft-assertion message tags each failure with, written by CurrentStep.describe as
+    // "[step 4: And the player's balance is reduced]". Group 1 is the step text without the "step N:" prefix.
+    private static final Pattern SOFT_ASSERTION_STEP = Pattern.compile("\\[step\\s+\\d+:\\s*(.*?)\\s*\\]");
+
+    // Cucumber writes the running step into the stack trace as a pseudo-frame "at ✽.<step text>(file:///...feature:n)".
+    // Group 1 is the step text. The star (U+273D) is how Cucumber marks the Gherkin step line.
+    private static final Pattern CUCUMBER_STEP_FRAME = Pattern.compile("\\bat\\s+\u273d\\.(.*?)\\(file:");
+
     // Packages whose frames are infrastructure, not the code under test. A frame from one of these is skipped when
     // looking for the place a failure came from.
     private static final List<String> LIBRARY_PACKAGES = List.of("java.", "javax.", "jdk.", "sun.", "com.sun.",
@@ -56,7 +64,7 @@ public final class FailureClassifier {
      * @return its cause; never null
      */
     public static FailureCause classify(Scenario scenario) {
-        return new FailureCause(typeOf(scenario.type()), locationOf(scenario));
+        return new FailureCause(typeOf(scenario.type()), locationOf(scenario), stepOf(scenario));
     }
 
     private static String typeOf(String fullyQualifiedType) {
@@ -82,6 +90,24 @@ public final class FailureClassifier {
         }
         List<Frame> frames = framesOf(outerSection(scenario.trace()));
         return firstApplicationFrame(frames).map(Frame::label).orElse("");
+    }
+
+    // The Gherkin step running when the scenario failed, read from whichever source carries it: a soft-assertion
+    // message tags it as "[step N: ...]"; an ordinary failure's trace carries Cucumber's "at ✽.<step>(file:...)"
+    // pseudo-frame. When neither is present (a truncated trace, an error with no step line, an unclassified failure)
+    // the step is unknown and the empty string, so the cause degrades to grouping by type and place alone.
+    private static String stepOf(Scenario scenario) {
+        return firstMatch(SOFT_ASSERTION_STEP, scenario.reason())
+                .or(() -> firstMatch(CUCUMBER_STEP_FRAME, scenario.trace())).orElse("");
+    }
+
+    // The first capturing-group-1 match of the pattern in the text, trimmed; empty when the text is null or no match.
+    private static Optional<String> firstMatch(Pattern pattern, String text) {
+        if (text == null || text.isBlank()) {
+            return Optional.empty();
+        }
+        Matcher matcher = pattern.matcher(text);
+        return matcher.find() ? Optional.of(matcher.group(1).trim()).filter(step -> !step.isEmpty()) : Optional.empty();
     }
 
     // The trace up to the first "Caused by:" / "Suppressed:" line — the outer exception's own frames.

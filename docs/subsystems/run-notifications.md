@@ -223,43 +223,65 @@ failure it was and `trace` for where it came from.
 ### Failure breakdown — "why did things fail?"
 
 `com.znsio.teswiz.reporting.notify.failure` turns failing scenarios into causes. A cause is the simple exception class
-name plus the place it came from: the first stack frame of the code under test, with JDK and well-known library frames
-skipped. For an AssertJ soft-assertion wrapper (`AssertJMultipleFailuresError`, thrown from the after-scenario hook),
-the place is the assertion's own origin line from the message instead. Scenarios failing on the same line are one cause,
-so eight failures from one bug read as one line, not eight.
+name, the place it came from, and the Gherkin step it failed on:
+- **type + place** — the place is the first stack frame of the code under test, with JDK and well-known library frames
+  skipped. For an AssertJ soft-assertion wrapper (`AssertJMultipleFailuresError`, thrown from the after-scenario hook),
+  the place is the assertion's own origin line from the message instead.
+- **step** — the Gherkin step running when the scenario failed, read from the `[step N: ...]` marker a soft-assertion
+  message carries, or from the Cucumber `at ✽.<step>(file:...feature:n)` pseudo-frame in an ordinary failure's trace.
+  When neither carries it, the step is blank and the cause degrades to grouping by type and place alone (backward
+  compatible).
+
+Scenarios failing on the same line **and the same step** are one cause, so eight failures from one bug read as one
+line. One code location reached by several different steps splits into one cause per step, each with its own count — a
+shared balance assertion hit by "reduced", "increased" and "restored" is three causes, not one.
 
 | Type | Use |
 | :--- | :--- |
 | `FailureBreakdown` | `JUnitResults.failureBreakdown()` or `FailureBreakdown.of(scenariosByFeature)`. `causes()` is the per-cause count, biggest first; `byType()` merges places; `total()` always equals `failed() + errors()` (an unclassifiable failure is counted as `Unclassified`, never dropped); `plus(other)` merges several runs |
-| `FailureClassifier` | `classify(scenario)` → `FailureCause(type, location)` for one failed scenario |
-| `FailureBreakdownRenderer` | `slack(breakdown)` (top `DEFAULT_MAX_CAUSES` = 10 causes), `slack(breakdown, maxCauses)` and `html(breakdown)`; all return `""` for an empty breakdown |
+| `FailureClassifier` | `classify(scenario)` → `FailureCause(type, location, step)` for one failed scenario |
+| `FailureBreakdownRenderer` | `slack(breakdown)` / `slack(breakdown, maxCauses)` / `slack(breakdown, maxCauses, label)` (top `DEFAULT_MAX_CAUSES` = 10 cause groups) and `html(breakdown)` / `html(breakdown, label)`; all return `""` for an empty breakdown. `label` is a `Function<String,String>` from the simple exception class name to a friendly label; the overloads without it use `SIMPLE_TYPE` (the class name unchanged) |
 
-Rendered for Slack: a bold heading with the failure and cause counts, then one row per cause in a code block so Slack
-shows it monospaced. Each row is the count (right-aligned), the type (padded to the longest type shown) and the place.
+**Friendly label.** A consumer passes a `label` function to name its own exceptions for the reader
+(`PoolExhaustedException` → "No test user available"); unmapped types fall back to their simple class name. The raw
+class name is always shown next to the place, so an engineer still has the exact type to search for.
+
+Rendered for Slack: a bold heading with the failure and cause counts, then the top cause groups in a code block so
+Slack shows it monospaced. Each group is a two-line header — `×count` and the friendly label, then the place with the
+raw class name beside it — followed by one nested `└ step  ×count` row per failing step. Splitting the place and class
+onto their own line keeps each line short so a narrow Slack client does not wrap and misalign the block.
 
 ~~~~text
-*Why did things fail?*  8 failures · 3 causes
+*Why did things fail?*  10 failures · 2 causes
 ```
-6  IndexOutOfBoundsException     RewardsBL.awardFreeSpins:113
-1  AssertJMultipleFailuresError  BalanceTracking.assertReduced:111
-1  TargetClosedError             GamePlayScreenPlaywrightJava.spin:396
+×7  No test user available
+    SessionBL.leaseUser:88 (PoolExhaustedException)
+    └ Given the player is authenticated  ×7
+×3  Assertion failed (multiple checks)
+    BalanceTracking.assertDelta:182 (AssertJMultipleFailuresError)
+    └ Then the balance is reduced by 1.0    ×2
+    └ Then the balance is increased by 5.0  ×1
 ```
 ~~~~
 
-If there are more causes than `maxCauses`, one line after the code block counts the rest, e.g.
+If there are more cause groups than `maxCauses`, one line after the code block counts the rest, e.g.
 `_+4 more causes in the full report_`. The wording is singular for one (`1 failure · 1 cause`, `+1 more cause`). Slack
-markup in a type or place is neutralised: `&`, `<` and `>` become their HTML entities (`&amp;`, `&lt;`, `&gt;`) and a
-backtick is printed as `'`. Slack reads `&`, `<` and `>` as markup even inside a code block, so without this a
+markup in a label, place or step is neutralised: `&`, `<` and `>` become their HTML entities (`&amp;`, `&lt;`, `&gt;`)
+and a backtick is printed as `'`. Slack reads `&`, `<` and `>` as markup even inside a code block, so without this a
 constructor-frame place like `Widget.<init>:7` would have its `<init>` read as a mention and dropped. The entities each
 render as a single glyph, so the rendered table looks unchanged and the columns stay aligned (escaping happens after
 the fixed-width padding).
 
-The HTML block is a three-column table (`Exception type`, `Where`, `Count`) with a `Total failed` row.
+The HTML block is a four-column table (`Failure` = the friendly label, `Where` = the place with the raw class beside
+it, `Failing step`, `Count`) grouped the same way: a group header row carries the label, the place and the `×count`
+subtotal, and each failing step is a nested row with its own `×count`. A `Total failed` row ends the table with a plain
+number.
 
-> **Upgrading from 1.0.50:** the Slack text changed. 1.0.50 rendered `*Why did things fail? (N)*` followed by one
-> `Type @ Place  count` line per cause, with every cause listed. It now renders the heading and aligned rows shown
-> above, listing at most `DEFAULT_MAX_CAUSES` (10) causes. If your composer or its tests match the old text, update
-> them, or pass a larger limit with `slack(breakdown, maxCauses)`. `html(breakdown)` is unchanged.
+> **Upgrading from 1.0.52:** `FailureCause` gained a third component, `step`, so `new FailureCause(type, location)` is
+> still valid (step defaults to blank) but `causes()` keys may now differ when a location is reached by several steps.
+> The Slack and HTML output changed shape (grouped, two-line Slack header, four-column HTML, `×N` counts, friendly
+> label). If your composer or its tests match the old flat text, update them; pass a `label` function to name your own
+> exceptions. The no-label overloads keep working with the class name as the label.
 
 ### `HtmlReport` — render it
 

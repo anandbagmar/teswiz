@@ -75,8 +75,8 @@ class FailureClassifierTest {
     @Test
     @DisplayName("the place is the first frame of the code under test, skipping JDK frames and the module prefix")
     void placeIsTheFirstApplicationFrame() {
-        FailureCause cause = FailureClassifier.classify(failed("java.lang.IndexOutOfBoundsException", "m",
-                INDEX_TRACE));
+        FailureCause cause = FailureClassifier
+                .classify(failed("java.lang.IndexOutOfBoundsException", "m", INDEX_TRACE));
 
         assertThat(cause.location()).isEqualTo("RewardsBL.awardFreeSpins:113");
     }
@@ -91,8 +91,8 @@ class FailureClassifierTest {
                 \tat com.entain.casino.screen.GamePlayScreen.spin(GamePlayScreen.java:396)
                 """;
 
-        FailureCause cause = FailureClassifier.classify(failed("com.microsoft.playwright.impl.TargetClosedError",
-                "closed", trace));
+        FailureCause cause = FailureClassifier
+                .classify(failed("com.microsoft.playwright.impl.TargetClosedError", "closed", trace));
 
         assertThat(cause.location()).isEqualTo("GamePlayScreen.spin:396");
     }
@@ -114,8 +114,8 @@ class FailureClassifierTest {
     @Test
     @DisplayName("a soft-assertion wrapper takes its place from the assertion's own origin line, not the hook frames")
     void softAssertionWrapperUsesTheMessageOrigin() {
-        FailureCause cause = FailureClassifier.classify(failed("org.assertj.core.error.AssertJMultipleFailuresError",
-                ASSERTJ_MESSAGE, ASSERTJ_TRACE));
+        FailureCause cause = FailureClassifier.classify(
+                failed("org.assertj.core.error.AssertJMultipleFailuresError", ASSERTJ_MESSAGE, ASSERTJ_TRACE));
 
         assertThat(cause.type()).isEqualTo("AssertJMultipleFailuresError");
         assertThat(cause.location()).isEqualTo("BalanceTracking.assertReduced:111");
@@ -175,11 +175,41 @@ class FailureClassifierTest {
     }
 
     @Test
-    @DisplayName("the label joins type and place, or is just the type when there is no place")
-    void labelJoinsTypeAndPlace() {
+    @DisplayName("the label joins type, place and step, dropping whichever parts are absent")
+    void labelJoinsTypePlaceAndStep() {
         assertThat(new FailureCause("IndexOutOfBoundsException", "RewardsBL.awardFreeSpins:113").label())
                 .isEqualTo("IndexOutOfBoundsException @ RewardsBL.awardFreeSpins:113");
         assertThat(new FailureCause("Unclassified", "").label()).isEqualTo("Unclassified");
+        assertThat(new FailureCause("AssertJMultipleFailuresError", "BalanceTracking.assertReduced:111",
+                "And the player's balance is reduced").label())
+                        .isEqualTo("AssertJMultipleFailuresError @ BalanceTracking.assertReduced:111 "
+                                + "\u2014 And the player's balance is reduced");
+    }
+
+    @Test
+    @DisplayName("the step of a soft-assertion failure is read from the [step N: ...] marker in its message")
+    void stepFromSoftAssertionMessage() {
+        FailureCause cause = FailureClassifier.classify(
+                failed("org.assertj.core.error.AssertJMultipleFailuresError", ASSERTJ_MESSAGE, ASSERTJ_TRACE));
+
+        assertThat(cause.step()).isEqualTo("And the player's balance is reduced");
+    }
+
+    @Test
+    @DisplayName("the step of an ordinary failure is read from the Cucumber step line in its trace")
+    void stepFromCucumberTraceFrame() {
+        FailureCause cause = FailureClassifier
+                .classify(failed("java.lang.IndexOutOfBoundsException", "m", INDEX_TRACE));
+
+        assertThat(cause.step()).isEqualTo("the player is awarded free spins");
+    }
+
+    @Test
+    @DisplayName("a failure whose trace has no Cucumber step line and no step marker has no step")
+    void noStepWhenNeitherSourceCarriesIt() {
+        String trace = "com.x.E: x\n\tat com.app.WalletBL.refund(WalletBL.java:40)\n";
+
+        assertThat(FailureClassifier.classify(failed("com.x.E", "x", trace)).step()).isEmpty();
     }
 
     private static Scenario failed(String type, String reason, String trace) {

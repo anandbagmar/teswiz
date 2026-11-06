@@ -23,8 +23,8 @@ public final class FailureBreakdown {
 
     private static final FailureBreakdown EMPTY = new FailureBreakdown(Map.of());
 
-    private static final Comparator<FailureCause> BY_TYPE_THEN_LOCATION = Comparator
-            .comparing(FailureCause::type).thenComparing(FailureCause::location);
+    private static final Comparator<FailureCause> BY_TYPE_THEN_LOCATION_THEN_STEP = Comparator
+            .comparing(FailureCause::type).thenComparing(FailureCause::location).thenComparing(FailureCause::step);
 
     // Insertion-ordered and unmodifiable: ordered biggest-first when built, and callers render it in that order.
     private final Map<FailureCause, Integer> causes;
@@ -101,7 +101,7 @@ public final class FailureBreakdown {
     }
 
     private static FailureBreakdown fromTally(Map<FailureCause, Integer> tally) {
-        return tally.isEmpty() ? EMPTY : new FailureBreakdown(biggestFirst(tally, BY_TYPE_THEN_LOCATION));
+        return tally.isEmpty() ? EMPTY : new FailureBreakdown(biggestFirst(tally, BY_TYPE_THEN_LOCATION_THEN_STEP));
     }
 
     // Re-orders a tally by descending count, ties by the given key order, into an insertion-ordered map wrapped
