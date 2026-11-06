@@ -33,7 +33,7 @@ flowchart TD
     COMP -.->|reads| JUR
     COMP -.->|renders with| HTMLR["HtmlReport\n(document, scenarioTable,\nslackScenarios, formatDuration,\nfooter / slackFooter, reproduceCommand)"]
     JUR -.-> HTMLR
-    JUR -.->|failureBreakdown| FB["failure.FailureBreakdown\n(causes, byType, plus)\n+ FailureBreakdownRenderer\n(slack: top N causes, html)"]
+    JUR -.->|failureBreakdown| FB["failure.FailureBreakdown\n(causes by type/location/step, byType, plus)\n+ FailureBreakdownRenderer\n(slack / html, grouped, top N, friendly label)"]
     COMP -.->|renders with| FB
     COMP -->|compose RunResult -> List&lt;Notification&gt;| NTF["Notifier"]
     NTF -->|gate: notify.enabled + notify.branches| GATE{"gates open?"}

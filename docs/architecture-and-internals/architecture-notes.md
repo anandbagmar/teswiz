@@ -484,10 +484,14 @@ swallowed, so a notifier problem never changes a run's result.
   a shell-safe reproduce command from caller-supplied inputs (`reproduceCommand(Map)`) that the consumer passes to
   `footer(env, cmd)` / `slackFooter(env, cmd)`. `LlmUsageLog` reads teswiz's LLM-vision usage summary
 * `reporting.notify.failure` — the "why did things fail?" breakdown. `FailureClassifier` turns a failed scenario
-  (its JUnit exception `type` and `trace`) into a `FailureCause`: the simple exception name plus the first stack frame
-  in the code under test, skipping JDK and well-known library frames. `FailureBreakdown` counts causes biggest first,
-  with a total that always equals failed + errored. `FailureBreakdownRenderer` renders it as a Slack code-block table
-  (top `DEFAULT_MAX_CAUSES` causes, configurable) and as an HTML table
+  (its JUnit exception `type` and `trace`) into a `FailureCause` of three parts: the simple exception name, the first
+  stack frame in the code under test (JDK and well-known library frames skipped), and the Gherkin `step` it failed on
+  (from a soft-assertion `[step N: ...]` marker or the Cucumber `✽.<step>` trace frame; blank when neither, which
+  degrades to grouping by type and place alone). `FailureBreakdown` counts causes biggest first, splitting one location
+  reached by several steps into a cause per step, with a total that always equals failed + errored.
+  `FailureBreakdownRenderer` groups by (type, location) and renders a Slack code-block table (top `DEFAULT_MAX_CAUSES`
+  groups, two-line header plus nested per-step rows) and an HTML table (four columns, grouped the same way); both take
+  an optional `Function<String,String>` to map an exception class name to a friendly label
 
 See [Run Notifications](../subsystems/run-notifications.md) for the configuration guide.
 
