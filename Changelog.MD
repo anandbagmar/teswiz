@@ -1,3 +1,31 @@
+## 1.0.54
+# Release Notes - teswiz v1.0.54
+
+_Previous release: v1.0.53_
+
+This release fixes the layout of the failure-breakdown table in the notification email so its columns no longer get clipped.
+
+## 🐛 Fixes
+
+### Email failure-breakdown table is responsive (no truncation)
+
+In the end-of-run notification email, the failure-breakdown table (Failure, Where, Failing step, Count) could clip the "Where" and "Failing step" columns, because the generic two-column `th{width:40%}` rule — meant for key/value tables — also applied to it. The first column took 40% and the long values overflowed the 680px card.
+
+- `HtmlReport` now carries a dedicated `table.breakdown` rule set: `table-layout:fixed` with `word-break` / `overflow-wrap` so a long place (`Class.method:line`) or Gherkin step wraps instead of overflowing, and a narrow, non-wrapping `Count` column. The table fits the card with no horizontal scroll.
+- `FailureBreakdownRenderer` tags the table `class="breakdown"` and the count cells `class="count"` so those rules apply.
+
+The Slack rendering and the content of the breakdown are unchanged; this is email styling only.
+
+## ✅ Tests
+
+- `FailureBreakdownRendererTest` updated for the new markup (the `breakdown` table class and `count` cell class).
+
+## 🛠 Changed Files Summary
+
+- `src/main/java/com/znsio/teswiz/reporting/notify/HtmlReport.java`
+- `src/main/java/com/znsio/teswiz/reporting/notify/failure/FailureBreakdownRenderer.java`
+- `src/test/java/com/znsio/teswiz/reporting/notify/failure/FailureBreakdownRendererTest.java`
+
 ## 1.0.53
 # Release Notes - teswiz v1.0.53
 
