@@ -23,10 +23,12 @@ class FailureBreakdownSlackLayoutTest {
 
     private static final String FENCE = "```";
 
-    // A consumer's friendly label: name PoolExhaustedException, let everything else fall back to its simple class name.
+    // A consumer's friendly label, composed the way a real consumer does: override PoolExhaustedException explicitly,
+    // and fall back to the teswiz humaniser for everything else (so IndexOutOfBoundsException reads "Index out of
+    // bounds", not the raw class name).
     private static final Function<String, String> FRIENDLY = type -> "PoolExhaustedException".equals(type)
             ? "No test user available"
-            : type;
+            : FailureBreakdownRenderer.HUMANIZED_TYPE.apply(type);
 
     @Test
     @DisplayName("slack shows a counted heading, then a two-line group header with the location and raw class")
@@ -39,9 +41,11 @@ class FailureBreakdownSlackLayoutTest {
         String slack = FailureBreakdownRenderer.slack(breakdown, FailureBreakdownRenderer.DEFAULT_MAX_CAUSES, FRIENDLY);
 
         assertThat(slack).startsWith("*Why did things fail?*  3 failures \u00b7 2 causes\n" + FENCE + "\n");
-        assertThat(slack).contains("\u00d72  IndexOutOfBoundsException\n    RewardsBL.awardFreeSpins:113 "
-                + "(IndexOutOfBoundsException)\n");
-        assertThat(slack).contains("\u00d71  No test user available\n    UserPool.lease:9 (PoolExhaustedException)\n");
+        // The group header's first line is the count and the humanised label; the second line is the location then the
+        // raw class, with no parentheses.
+        assertThat(slack).contains(
+                "\u00d72  Index out of bounds\n    RewardsBL.awardFreeSpins:113 " + "IndexOutOfBoundsException\n");
+        assertThat(slack).contains("\u00d71  No test user available\n    UserPool.lease:9 PoolExhaustedException\n");
     }
 
     @Test
@@ -53,8 +57,8 @@ class FailureBreakdownSlackLayoutTest {
         String slack = FailureBreakdownRenderer.slack(breakdown);
 
         assertThat(slack).startsWith("*Why did things fail?*  3 failures \u00b7 1 cause\n");
-        assertThat(slack).contains("\u00d73  AssertJMultipleFailuresError\n"
-                + "    BalanceTracking.assertDelta:182 (AssertJMultipleFailuresError)\n"
+        assertThat(slack).contains("\u00d73  Assert j multiple failures\n"
+                + "    BalanceTracking.assertDelta:182 AssertJMultipleFailuresError\n"
                 + "    \u2514 Then the balance is reduced by 1.0    \u00d72\n"
                 + "    \u2514 Then the balance is increased by 5.0  \u00d71\n");
     }

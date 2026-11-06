@@ -1,3 +1,24 @@
+## 1.0.55
+# Release Notes - teswiz v1.0.55
+
+_Previous release: v1.0.54_
+
+This release makes the failure-breakdown "Failure" column read as plain English for every exception, renders the email table responsively in every mail client (including Outlook), and drops the parentheses around the raw class name.
+
+## ✨ Improvements
+
+### Failure column is humanised by default
+`FailureBreakdownRenderer` gains `HUMANIZED_TYPE` and makes it the default label for the no-argument `slack(...)` / `html(...)` overloads (the old pass-through is still available as `SIMPLE_TYPE`). A clean `CamelCase` class name has a trailing `Exception`/`Error` dropped, is split into words and sentence-cased, so `FreeSpinNotAwardedException` reads `Free spin not awarded` instead of showing the raw class name. A name that is not a plain letters-only identifier (it carries a digit or any of `& < >` or a backtick), a blank type and the `Unclassified` marker are all left untouched. A consumer still passes its own `Function<String,String>` to override specific types, composing it over `HUMANIZED_TYPE`.
+
+### Responsive email table in every client (Outlook included)
+The HTML failure-breakdown table now declares its full width and fixed layout **inline** on the `<table>` (`width="100%" style="width:100%;table-layout:fixed"`) with a `<colgroup>` of percentage column widths (22% / 33% / 33% / 12%), because Outlook's Word engine ignores `<style>`-block table and column widths and would otherwise shrink the table to its content. The percentages scale the table with the email card at any viewport. The `<style>` rules are reduced to progressive enhancement (word-break, count alignment) for clients that honour them.
+
+### Raw class moves under the location, no parentheses
+In the "Where" column the raw exception class is no longer wrapped in parentheses beside the location. In the email it sits on its own line below the location (`RewardsBL.awardFreeSpins:113` then `IndexOutOfBoundsException`); in Slack it follows the location on the same line without parentheses.
+
+## ✅ Tests
+- `FailureBreakdownRendererTest` / `FailureBreakdownSlackLayoutTest` updated to the humanised label, the inline full-width table + colgroup, and the no-parentheses two-line "Where"; new cases pin the humaniser (suffix strip, CamelCase split, blank/`Unclassified`/non-identifier left as-is) and the inline responsive-table markup. Full `com.znsio.teswiz.reporting.notify.*` suite green.
+
 ## 1.0.54
 # Release Notes - teswiz v1.0.54
 

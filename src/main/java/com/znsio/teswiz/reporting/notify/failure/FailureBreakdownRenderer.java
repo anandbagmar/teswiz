@@ -14,17 +14,30 @@ import com.znsio.teswiz.reporting.notify.HtmlReport;
  * first. An empty breakdown renders an empty string, so a green run carries no block at all.
  * <p>
  * The exception type is shown through a <b>friendly label</b> — a {@link Function} from the simple class name to a
- * human-readable phrase ({@code PoolExhaustedException} &rarr; {@code No test user available}). A consumer passes its
- * own function to name its own exceptions; the overloads without one show the simple class name unchanged. The raw
- * class name is always shown too, next to the code location, so an engineer still has the exact type to search for.
+ * human-readable phrase ({@code PoolExhaustedException} &rarr; {@code No test user available}). The overloads without
+ * one default to {@link #HUMANIZED_TYPE}, which turns a {@code CamelCase} class name into words and drops a trailing
+ * {@code Exception}/{@code Error} ({@code FreeSpinNotAwardedException} &rarr; {@code Free spin not awarded}); a
+ * consumer passes its own function to override specific types. The raw class name is always shown too — below the code
+ * location in the HTML "Where" cell, and after it on the Slack location line — so an engineer still has the exact type
+ * to search for.
  */
 public final class FailureBreakdownRenderer {
 
     /** How many cause groups the Slack block lists when no limit is given; the rest are summarised in one line. */
     public static final int DEFAULT_MAX_CAUSES = 10;
 
-    /** The default friendly label: the simple exception class name unchanged. */
+    /** The simple exception class name unchanged — the raw label, kept for a consumer that wants no humanising. */
     public static final Function<String, String> SIMPLE_TYPE = type -> type;
+
+    /**
+     * The default friendly label: a humanised exception class name. A clean {@code CamelCase} class name has a trailing
+     * {@code Exception}/{@code Error} dropped, is split into words and sentence-cased, so
+     * {@code FreeSpinNotAwardedException} reads {@code Free spin not awarded}. A name that does not look like a plain
+     * class identifier (it carries a digit, or a {@code &}, {@code <}, {@code >}, backtick or other non-letter) is left
+     * exactly as-is — humanising it would be guesswork and could disturb escaping — as are a blank type and
+     * {@code Unclassified}. A consumer overrides specific types by composing its own function on top of this one.
+     */
+    public static final Function<String, String> HUMANIZED_TYPE = FailureBreakdownRenderer::humanize;
 
     private static final String SLACK_HEADING = "Why did things fail?";
     private static final String HTML_HEADING = "Failure breakdown";
@@ -36,6 +49,13 @@ public final class FailureBreakdownRenderer {
     // Labels a count ("×3") in both channels, so a trailing number on a step row cannot be read as part of the step
     // text and a count reads unmistakably as a count. The HTML "Total failed" row keeps a plain number.
     private static final String COUNT_MARK = "\u00d7";
+    // Opens the breakdown table full-width with a fixed layout declared INLINE (not only via the <style> class),
+    // because Outlook's Word engine ignores <style>-block table widths and would otherwise shrink the table to its
+    // content. The colgroup pins the four columns as percentages (not pixels), so they fill the email card and scale
+    // with the viewport: Failure 22%, Where 33%, Failing step 33%, a narrow Count 12%.
+    private static final String BREAKDOWN_TABLE_OPEN = "<table class=\"breakdown\" width=\"100%\" "
+            + "style=\"width:100%;table-layout:fixed\"><colgroup><col style=\"width:22%\"><col style=\"width:33%\">"
+            + "<col style=\"width:33%\"><col style=\"width:12%\"></colgroup>";
 
     private FailureBreakdownRenderer() {
     }
@@ -48,7 +68,7 @@ public final class FailureBreakdownRenderer {
      * @return the Slack text block, or an empty string when there are no failures
      */
     public static String slack(FailureBreakdown breakdown) {
-        return slack(breakdown, DEFAULT_MAX_CAUSES, SIMPLE_TYPE);
+        return slack(breakdown, DEFAULT_MAX_CAUSES, HUMANIZED_TYPE);
     }
 
     /**
@@ -59,7 +79,7 @@ public final class FailureBreakdownRenderer {
      * @return the Slack text block, or an empty string when there are no failures
      */
     public static String slack(FailureBreakdown breakdown, int maxCauses) {
-        return slack(breakdown, maxCauses, SIMPLE_TYPE);
+        return slack(breakdown, maxCauses, HUMANIZED_TYPE);
     }
 
     /**
@@ -94,7 +114,7 @@ public final class FailureBreakdownRenderer {
      * @return the HTML block, or an empty string when there are no failures
      */
     public static String html(FailureBreakdown breakdown) {
-        return html(breakdown, SIMPLE_TYPE);
+        return html(breakdown, HUMANIZED_TYPE);
     }
 
     /**
@@ -113,7 +133,7 @@ public final class FailureBreakdownRenderer {
             return "";
         }
         StringBuilder html = new StringBuilder();
-        html.append("<h3>").append(HTML_HEADING).append("</h3><table class=\"breakdown\">")
+        html.append("<h3>").append(HTML_HEADING).append("</h3>").append(BREAKDOWN_TABLE_OPEN)
                 .append("<tr><th>Failure</th><th>Where</th><th>Failing step</th><th class=\"count\">Count</th></tr>");
         for (Group group : groups(breakdown)) {
             html.append(htmlGroup(group, label));
@@ -177,11 +197,30 @@ public final class FailureBreakdownRenderer {
         return text + " ".repeat(Math.max(0, width - text.length()));
     }
 
+    // Turns a clean CamelCase exception class name into a human phrase: drop a trailing Exception/Error, split on the
+    // CamelCase boundaries, and sentence-case the result, so FreeSpinNotAwardedException reads "Free spin not awarded".
+    // A name that is not a plain letters-only identifier (it carries a digit or any non-letter such as & < > or a
+    // backtick) is left exactly as-is — humanising it would be guesswork and could disturb the channel escaping — and
+    // so are a blank type and the special "Unclassified" marker.
+    private static String humanize(String type) {
+        if (type == null || type.isEmpty() || "Unclassified".equals(type)
+                || !type.chars().allMatch(Character::isLetter)) {
+            return type;
+        }
+        String core = type.replaceAll("(Exception|Error)$", "");
+        if (core.isEmpty()) {
+            return type;
+        }
+        String spaced = core.replaceAll("(?<=[a-z])(?=[A-Z])", " ").replaceAll("(?<=[A-Z])(?=[A-Z][a-z])", " ");
+        String lower = spaced.toLowerCase();
+        return Character.toUpperCase(lower.charAt(0)) + lower.substring(1);
+    }
+
     private static String htmlGroup(Group group, Function<String, String> label) {
         StringBuilder rows = new StringBuilder();
         rows.append("<tr><td>").append(HtmlReport.escape(label.apply(group.type()))).append("</td><td>")
-                .append(HtmlReport.escape(group.locationAndType())).append("</td><td></td><td class=\"count\">")
-                .append(COUNT_MARK).append(group.count()).append("</td></tr>");
+                .append(group.whereHtml()).append("</td><td></td><td class=\"count\">").append(COUNT_MARK)
+                .append(group.count()).append("</td></tr>");
         group.steps().forEach((step, count) -> rows.append("<tr><td></td><td></td><td>").append(HtmlReport.escape(step))
                 .append("</td><td class=\"count\">").append(COUNT_MARK).append(count).append("</td></tr>"));
         return rows.toString();
@@ -217,13 +256,25 @@ public final class FailureBreakdownRenderer {
             return steps;
         }
 
-        // The code location with the raw class name beside it; just the location when the type is blank, and only the
-        // type when there is no location.
+        // The "Where" as one Slack line: the location then the raw class name (no parentheses); just the location when
+        // the type is blank, and only the type when there is no location.
         private String locationAndType() {
             if (location.isEmpty()) {
                 return type;
             }
-            return type.isEmpty() ? location : location + " (" + type + ")";
+            return type.isEmpty() ? location : location + " " + type;
+        }
+
+        // The "Where" as an escaped HTML cell: the location on the first line and the raw class on the second (a <br>),
+        // no parentheses; just the location when the type is blank, and only the type when there is no location.
+        private String whereHtml() {
+            if (location.isEmpty()) {
+                return HtmlReport.escape(type);
+            }
+            if (type.isEmpty()) {
+                return HtmlReport.escape(location);
+            }
+            return HtmlReport.escape(location) + "<br>" + HtmlReport.escape(type);
         }
     }
 }

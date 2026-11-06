@@ -240,25 +240,27 @@ shared balance assertion hit by "reduced", "increased" and "restored" is three c
 | :--- | :--- |
 | `FailureBreakdown` | `JUnitResults.failureBreakdown()` or `FailureBreakdown.of(scenariosByFeature)`. `causes()` is the per-cause count, biggest first; `byType()` merges places; `total()` always equals `failed() + errors()` (an unclassifiable failure is counted as `Unclassified`, never dropped); `plus(other)` merges several runs |
 | `FailureClassifier` | `classify(scenario)` → `FailureCause(type, location, step)` for one failed scenario |
-| `FailureBreakdownRenderer` | `slack(breakdown)` / `slack(breakdown, maxCauses)` / `slack(breakdown, maxCauses, label)` (top `DEFAULT_MAX_CAUSES` = 10 cause groups) and `html(breakdown)` / `html(breakdown, label)`; all return `""` for an empty breakdown. `label` is a `Function<String,String>` from the simple exception class name to a friendly label; the overloads without it use `SIMPLE_TYPE` (the class name unchanged) |
+| `FailureBreakdownRenderer` | `slack(breakdown)` / `slack(breakdown, maxCauses)` / `slack(breakdown, maxCauses, label)` (top `DEFAULT_MAX_CAUSES` = 10 cause groups) and `html(breakdown)` / `html(breakdown, label)`; all return `""` for an empty breakdown. `label` is a `Function<String,String>` from the simple exception class name to a friendly label; the overloads without it use `HUMANIZED_TYPE` (the default — a clean CamelCase class name is split into words with a trailing `Exception`/`Error` dropped, e.g. `FreeSpinNotAwardedException` → "Free spin not awarded"). `SIMPLE_TYPE` (the class name unchanged) is still available for a consumer that wants no humanising |
 
-**Friendly label.** A consumer passes a `label` function to name its own exceptions for the reader
-(`PoolExhaustedException` → "No test user available"); unmapped types fall back to their simple class name. The raw
-class name is always shown next to the place, so an engineer still has the exact type to search for.
+**Friendly label.** The default label humanises the exception class name (`FreeSpinNotAwardedException` → "Free spin
+not awarded"). A consumer passes a `label` function to override specific types for the reader
+(`PoolExhaustedException` → "No test user available"), composing it over `HUMANIZED_TYPE` so unmapped types still read
+as words. The raw class name is always shown with the place — on its own line below the location in the HTML email,
+and after the location on the Slack line — so an engineer still has the exact type to search for.
 
 Rendered for Slack: a bold heading with the failure and cause counts, then the top cause groups in a code block so
-Slack shows it monospaced. Each group is a two-line header — `×count` and the friendly label, then the place with the
-raw class name beside it — followed by one nested `└ step  ×count` row per failing step. Splitting the place and class
-onto their own line keeps each line short so a narrow Slack client does not wrap and misalign the block.
+Slack shows it monospaced. Each group is a two-line header — `×count` and the friendly label, then the place followed
+by the raw class name (no parentheses) — followed by one nested `└ step  ×count` row per failing step. Splitting the
+place and class onto their own line keeps each line short so a narrow Slack client does not wrap and misalign the block.
 
 ~~~~text
 *Why did things fail?*  10 failures · 2 causes
 ```
 ×7  No test user available
-    SessionBL.leaseUser:88 (PoolExhaustedException)
+    SessionBL.leaseUser:88 PoolExhaustedException
     └ Given the player is authenticated  ×7
-×3  Assertion failed (multiple checks)
-    BalanceTracking.assertDelta:182 (AssertJMultipleFailuresError)
+×3  Assertion failed
+    BalanceTracking.assertDelta:182 AssertJMultipleFailuresError
     └ Then the balance is reduced by 1.0    ×2
     └ Then the balance is increased by 5.0  ×1
 ```
@@ -272,10 +274,11 @@ constructor-frame place like `Widget.<init>:7` would have its `<init>` read as a
 render as a single glyph, so the rendered table looks unchanged and the columns stay aligned (escaping happens after
 the fixed-width padding).
 
-The HTML block is a four-column table (`Failure` = the friendly label, `Where` = the place with the raw class beside
-it, `Failing step`, `Count`) grouped the same way: a group header row carries the label, the place and the `×count`
-subtotal, and each failing step is a nested row with its own `×count`. A `Total failed` row ends the table with a plain
-number.
+The HTML block is a four-column table (`Failure` = the friendly label, `Where` = the location with the raw class on the
+line below it, `Failing step`, `Count`) grouped the same way: a group header row carries the label, the place and the
+`×count` subtotal, and each failing step is a nested row with its own `×count`. A `Total failed` row ends the table
+with a plain number. The table is full-width and fixed-layout **inline** (`width="100%"` + a percentage `<colgroup>`),
+so it renders responsively in every mail client including Outlook, whose Word engine ignores `<style>`-block widths.
 
 > **Upgrading from 1.0.52:** `FailureCause` gained a third component, `step`, so `new FailureCause(type, location)` is
 > still valid (step defaults to blank) but `causes()` keys may now differ when a location is reached by several steps.
