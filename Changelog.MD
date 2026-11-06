@@ -1,5 +1,72 @@
 ## 1.0.53
 # Release Notes - teswiz v1.0.53
+
+_Previous release: v1.0.52_
+
+This release adds the **failing Gherkin step** to the failure breakdown and shows exception types through a **friendly label**, so the "why did things fail?" block reads for both testers and engineers (GAMC-20840). It also picks up the latest Applitools SDK versions.
+
+## ✨ Added
+
+### Failing step as a third grouping dimension
+
+`FailureCause` now carries a third component, `step`, alongside `type` and `location`. `FailureClassifier` reads the Gherkin step that was running when a scenario failed:
+
+- from the `[step N: ...]` marker a soft-assertion (`AssertJMultipleFailuresError`) message carries, or
+- from the Cucumber `at ✽.<step>(file:...feature:n)` pseudo-frame in an ordinary failure's stack trace.
+
+When neither source carries the step (a truncated trace, an error with no step line, an unclassified failure), the step is the empty string and the cause degrades to the previous `(type, location)` grouping, so the change is backward compatible. The breakdown tally key widens to `(type, location, step)`, so one code location reached by several steps splits into one row per step with its own count, and the per-step counts still sum to `total()`.
+
+### Friendly exception label (consumer-supplied)
+
+`FailureBreakdownRenderer.html` and `.slack` take an optional `Function<String,String>` that maps an exception's simple class name to a human-readable label (for example `PoolExhaustedException` → "No test user available"). The overloads without it default to `SIMPLE_TYPE` (the class name unchanged), so existing callers are unaffected. The raw class name is always shown next to the code location, so an engineer still has the exact type to search for.
+
+### Grouped, labelled rendering
+
+The breakdown now renders grouped by `(type, location)`:
+
+- **Slack**: a two-line group header (`×N` count and friendly label, then `location · RawClass`), with one nested `└ step  ×N` row per failing step. Splitting the location and class onto their own line keeps each line short so a narrow Slack client does not wrap and misalign the block.
+- **Email**: a four-column table — Failure (friendly label), Where (location with the raw class beside it), Failing step, Count — with a group header row and a nested row per step.
+- Counts are labelled `×N` in both channels; the HTML "Total failed" row keeps a plain number.
+
+## ⬆️ Dependency Updates
+
+Applitools SDK bumps:
+
+| Dependency | From | To |
+| :--- | :--- | :--- |
+| `com.applitools:eyes-images-java5` | 5.83.15 | 5.83.16 |
+| `com.applitools:eyes-appium-java5` | 5.79.57 | 5.79.58 |
+| `@applitools/eyes-playwright` | 1.51.4 | 1.51.5 |
+
+## ✅ Tests
+
+- `FailureClassifierTest`: step read from a soft-assertion message marker, from a Cucumber trace frame, and absent when neither is present; `label()` joins type, place and step.
+- `FailureBreakdownRendererTest` / `FailureBreakdownSlackLayoutTest`: grouped rendering, the nested per-step rows and counts, the friendly label, the `×N` count mark in both channels, and the existing escaping and alignment guarantees still hold.
+- `FailureBreakdownTest`: two failures at the same `(type, location)` on different steps are two causes; a blank step degrades to the old single-row behaviour.
+
+## 📝 Docs
+
+- `docs/subsystems/run-notifications.md`: the failure breakdown section documents the `step` component, the `FailureCause(type, location, step)` shape, the `slack`/`html` friendly-label overloads, the grouped two-line Slack and four-column HTML output, and an upgrade note from 1.0.52. The flow diagram node reflects the new grouping and label.
+- `docs/architecture-and-internals/architecture-notes.md`: the `reporting.notify.failure` package description now covers the step component, per-step cause splitting, the grouped Slack/HTML rendering, and the optional friendly-label function.
+
+## 🛠 Changed Files Summary
+
+- `src/main/java/com/znsio/teswiz/reporting/notify/failure/FailureCause.java`
+- `src/main/java/com/znsio/teswiz/reporting/notify/failure/FailureClassifier.java`
+- `src/main/java/com/znsio/teswiz/reporting/notify/failure/FailureBreakdown.java`
+- `src/main/java/com/znsio/teswiz/reporting/notify/failure/FailureBreakdownRenderer.java`
+- `src/test/java/com/znsio/teswiz/reporting/notify/failure/FailureClassifierTest.java`
+- `src/test/java/com/znsio/teswiz/reporting/notify/failure/FailureBreakdownTest.java`
+- `src/test/java/com/znsio/teswiz/reporting/notify/failure/FailureBreakdownRendererTest.java`
+- `src/test/java/com/znsio/teswiz/reporting/notify/failure/FailureBreakdownSlackLayoutTest.java`
+- `docs/subsystems/run-notifications.md`
+- `docs/architecture-and-internals/architecture-notes.md`
+- `build.gradle` (Applitools bumps, version 1.0.53)
+- `package.json` / `package-lock.json` (Applitools Playwright bump)
+- `Changelog.MD`
+
+## 1.0.53
+# Release Notes - teswiz v1.0.53
 _Previous release: v1.0.52_
 
 This release adds the **failing Gherkin step** to the failure breakdown and shows exception types through a **friendly label**, so the "why did things fail?" block reads for both testers and engineers (GAMC-20840).
