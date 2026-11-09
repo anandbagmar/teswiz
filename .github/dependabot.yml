@@ -6,6 +6,16 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
+    ignore:
+      # Appium driver majors (uiautomator2 9.x, xcuitest 13.x) require Appium 4 (peer
+      # dependency appium ^4.0.0-beta.6). teswiz is on Appium 3.x, so only accept minor
+      # and patch updates until the Appium 4 migration. Remove these rules when upgrading.
+      - dependency-name: "appium-uiautomator2-driver"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "appium-xcuitest-driver"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "appium"
+        update-types: ["version-update:semver-major"]
 
   # Enable version updates for Gradle dependencies
   - package-ecosystem: "gradle"
