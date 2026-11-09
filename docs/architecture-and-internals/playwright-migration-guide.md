@@ -163,21 +163,33 @@ export async function searchForTheProduct(screen: ScreenContext, productName: st
 
 ## 🧪 6. Verifying Screen Parity and Compliance
 
-Teswiz's own build defines a `verifyScreenContracts` Gradle task (see `build.gradle`) that checks teswiz's own
-screen contracts under `src/test/java/com/znsio/teswiz/screen` for missing classes, missing TypeScript modules,
-or method mismatches. It is not a task the teswiz JAR publishes for consumers to use automatically.
+The `verifyScreenContracts` Gradle task checks screen contracts for missing implementation classes, missing
+TypeScript modules, or method mismatches. Teswiz's own `build.gradle` runs it against
+`src/test/java/com/znsio/teswiz/screen`.
 
-To get the same check in your own project, register an equivalent task pointing at your own screen source root
-(`com.znsio.teswiz.screen.ScreenContractSanityChecker` takes the source root as its first argument):
+`build.gradle.sample` ships the same task for your project. Point it at your own screen source root in
+`gradle.properties`, then run `./gradlew verifyScreenContracts`:
 
-```groovy
-tasks.register('verifyScreenContracts', JavaExec) {
-    group = "verification"
-    classpath = sourceSets.test.runtimeClasspath
-    mainClass = "com.znsio.teswiz.screen.ScreenContractSanityChecker"
-    args "src/test/java/com/acme/tests/screen"
-}
+```properties
+teswizScreenContractsRoot=src/test/java/com/acme/tests/screen
 ```
+
+## 6a. Running Playwright-TS outside the teswiz repository
+
+The playwright-ts engine drives the browser through a Node worker (`playwright/worker.mjs`). The teswiz jar
+bundles it. When your project has no `playwright/worker.mjs` of its own, teswiz extracts the bundled worker to
+`build/teswiz/playwright/` in your project at run time. A project copy of `playwright/worker.mjs`, if present, is
+used instead.
+
+The worker imports its npm packages from your project, so install them once in the project root:
+
+```bash
+npm install playwright @applitools/eyes-playwright
+npx playwright install
+```
+
+The worker runs with `node --experimental-strip-types`, which needs Node.js 22.6 or newer. If the worker exits
+early (for example because a package is missing), the error now includes the worker's stderr.
 
 ---
 

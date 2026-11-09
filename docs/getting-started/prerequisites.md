@@ -13,7 +13,7 @@ Ensure your development environment meets the required dependencies before runni
 | Requirement | Minimum Version | Required Setup & Environment Variables | Installation Link |
 | :--- | :--- | :--- | :--- |
 | **Java Development Kit (JDK)** | JDK 17+ | Set `JAVA_HOME` pointing to JDK 17 installation directory | [Eclipse Adoptium (JDK 17)](https://adoptium.net/) |
-| **Node.js & npm** | Node.js 18+ | Required for Playwright TS worker, Appium 2, and CLI dependencies | [Node.js Official Download](https://nodejs.org) |
+| **Node.js & npm** | Node.js 18+ (22.6+ for `WEB_ENGINE=playwright-ts`, whose worker runs with `--experimental-strip-types`) | Required for Playwright TS worker, Appium 2, and CLI dependencies | [Node.js Official Download](https://nodejs.org) |
 | **Android SDK** | Android SDK 33+ | Set `ANDROID_HOME` pointing to Android SDK path | [Android Studio / Command-Line Tools](https://developer.android.com/studio#command-tools) |
 | **Appium 2** | Appium 2.x | Installed automatically via project `package.json` | Running `npm install` |
 

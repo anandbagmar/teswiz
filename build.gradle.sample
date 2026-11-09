@@ -159,6 +159,26 @@ static def getCurrentTimestamp() {
 
 def logDir = "./target/" + getMonth() + "/" + getCurrentDatestamp() + "/" + getCurrentTimestamp()
 
+// Project layout. Override any of these in gradle.properties instead of editing this file:
+//   teswizStepsPackagePath=com/acme/tests/steps
+//   teswizFeaturesDir=./src/test/resources/com/acme/tests/features
+//   teswizScreenContractsRoot=src/test/java/com/acme/tests/screen
+def teswizStepsPackagePath = findProperty("teswizStepsPackagePath") ?: "com/znsio/teswiz/steps"
+def teswizFeaturesDir = findProperty("teswizFeaturesDir") ?: "./src/test/resources/com/znsio/teswiz/features"
+def teswizScreenContractsRoot = findProperty("teswizScreenContractsRoot") ?: "src/test/java/com/znsio/teswiz/screen"
+
+// Checks every screen implementation (Selenium, Playwright Java, Playwright TS modules, Android,
+// iOS, ...) against its abstract screen contract: missing classes, modules and method mismatches.
+tasks.register('verifyScreenContracts', JavaExec) {
+    group = "verification"
+    description = "Validate screen implementations against their shared screen contracts."
+    dependsOn compileTestJava
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "com.znsio.teswiz.screen.ScreenContractSanityChecker"
+    args teswizScreenContractsRoot
+    systemProperty "LOG_DIR", "${logDir}"
+}
+
 def copyRpPropertiesIfMissing() {
     def rpFile = file('src/test/resources/reportportal.properties')
     def rpTemplateFile = file('src/test/resources/reportportal.properties.template')
@@ -207,7 +227,8 @@ tasks.register('run', JavaExec) {
             environment "REMOTE_WEBDRIVER_GRID_HOST_NAME", "$ipAddress"
         }
 
-        def configFile = System.getenv("CONFIG")
+        // CONFIG wins; otherwise a project default can be set as teswizConfig in gradle.properties.
+        def configFile = System.getenv("CONFIG") ?: findProperty("teswizConfig")
         if (null == configFile || !file(configFile).exists()) {
             println("CONFIG file not provided, or does not exist")
             println("Run the test by providing the CONFIG file not provided, or does not exist")
@@ -226,8 +247,8 @@ tasks.register('run', JavaExec) {
         systemProperties = System.properties as Map<String, ?>
         def runnerArgs = [
                 "${configFile}",
-                "com/znsio/teswiz/steps",
-                "./src/test/resources/com/znsio/teswiz/features"
+                teswizStepsPackagePath,
+                teswizFeaturesDir
         ]
         args = runnerArgs
 
