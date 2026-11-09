@@ -6,6 +6,17 @@ import org.openqa.selenium.WebDriver;
 import com.znsio.teswiz.exceptions.InvalidTestDataException;
 import com.znsio.teswiz.runner.Driver;
 
+/**
+ * Manual adapter for calling a playwright-ts screen action from a hand-written Java screen.
+ *
+ * @deprecated Not used by teswiz itself. With {@code WEB_ENGINE=playwright-ts}, {@code ScreenRegistry}
+ *     now proxies every abstract screen contract method to the matching {@code *.screen.ts} module
+ *     (see {@link com.znsio.teswiz.web.playwright.screen.PlaywrightTsScreenBridgeFactory}), so no Java
+ *     implementation class is needed. Note that it shares its simple name with
+ *     {@link com.znsio.teswiz.web.playwright.screen.PlaywrightTsScreenActionExecutor}, which is the
+ *     executor the bridge uses.
+ */
+@Deprecated(forRemoval = true)
 public class PlaywrightTsScreenActionExecutor {
     private final Driver driver;
 
