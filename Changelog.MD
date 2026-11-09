@@ -1,3 +1,97 @@
+## 1.0.56
+# Release Notes - teswiz v1.0.56
+
+_Previous release: v1.0.55_
+
+This release makes the `playwright-ts` engine and the configuration file work in consumer projects (outside the teswiz repository), moves the build to Gradle 9.8.2, and picks up the latest Selenium, Playwright, Applitools and AspectJ versions.
+
+## ⚠️ Behaviour Changes
+
+### `HEADLESS`, `IS_FAILING_TEST_SUITE` and `SET_HARD_GATE` are now read from the config file
+
+These three are active properties in the canonical template, but `Setup` only read them from environment variables and system properties, so a value set in the config file was silently ignored. They now fall back to the config file value. Environment variables and system properties still override the file.
+
+If a config file sets one of these to a value you were relying on being ignored (for example `HEADLESS=false` while you expected headless runs), the file value now takes effect. Check your `configs/**/*.properties` before upgrading.
+
+### Deprecated: `web.playwright.PlaywrightTsScreenActionExecutor`
+
+The manual executor in `com.znsio.teswiz.web.playwright` is marked deprecated for removal. Nothing in teswiz uses it: `ScreenRegistry` bridges screen contracts to `*.screen.ts` modules through the executor in `web.playwright.screen`. It also shared its simple name with that executor, which made imports error-prone.
+
+## ✨ Improvements
+
+### `playwright-ts` runs in consumer projects
+
+- **Worker bundled in the jar.** `playwright/worker.mjs` and `worker-provider.mjs` are now packaged under `teswiz/playwright/` in the published jar. Before this, the jar had no worker, so `playwright-ts` could not run outside the teswiz repository.
+- **Worker resolution.** The new `PlaywrightWorkerScriptResolver` uses the project's own `playwright/worker.mjs` when present. Otherwise it extracts the bundled worker to `build/teswiz/playwright/`, so Node resolves npm packages from the consumer project's `node_modules`.
+- **Readable worker failures.** `PlaywrightWorkerClient` drains the worker's stderr through the new `WorkerStderrTail` (an unread pipe can block the worker). When the worker dies, the error now includes the stderr tail and an install hint instead of only "closed unexpectedly".
+- **Consumer screen contracts.** `PlaywrightTsScreenActionExecutor` (in `web.playwright.screen`) treats abstract return types in any package with a `screen` segment as screen contracts, matching `ScreenPackageConvention`. Fluent chains on consumer-namespace contracts no longer return `null`.
+
+### Configurable consumer layout in `build.gradle.sample`
+
+`teswizConfig`, `teswizStepsPackagePath`, `teswizFeaturesDir` and `teswizScreenContractsRoot` can now be set in `gradle.properties`. The defaults keep the `com/znsio/teswiz` layout, and `CONFIG` still overrides `teswizConfig`. The sample also adds a consumer `verifyScreenContracts` task.
+
+### `BROWSER_CONFIG_FILE` added to the canonical template
+
+`BROWSER_CONFIG_FILE` is read by `Setup` but was missing from `teswiz_config.properties.template`. It is now listed (commented) after `WEB_ENGINE`. In `configs/**/*.properties`, existing `BROWSER_CONFIG_FILE` lines moved to their template position with values unchanged, and files that had none got a commented default.
+
+## 📦 Dependency Updates
+
+| Dependency | From | To |
+|---|---|---|
+| Gradle wrapper | 9.8.1 | 9.8.2 |
+| `io.freefair.aspectj.post-compile-weaving` (plugin) | 9.8.2 | 9.8.3 |
+| `io.github.ben-manes.versions` (plugin) | 0.66.0 | 0.67.0 |
+| `org.aspectj:aspectjrt` | 1.9.25.1 | 1.9.27 |
+| `org.seleniumhq.selenium:selenium-java` | 4.51.0 | 4.52.0 |
+| `com.microsoft.playwright:playwright` | 1.63.0 | 1.64.0 |
+| `com.applitools:eyes-playwright-java5` | 5.86.13 | 5.87.0 |
+| `com.applitools:eyes-appium-java5` | 5.79.58 | 5.80.0 |
+| `net.bytebuddy:byte-buddy` | 1.18.16 | 1.18.17 |
+
+Notes:
+
+- **Gradle 9.8.2** adds one fix on top of 9.8.1 (a false "graph wasn't stable enough" warning when aligning versions with a virtual platform). If the first `./gradlew` run after upgrading hangs with no output, an earlier 9.8.2 download was probably interrupted. Delete `~/.gradle/wrapper/dists/gradle-9.8.2-bin` and run again.
+- **Applitools Eyes 5.80.0 / 5.87.0** declare older Selenium, Appium `java-client` and Playwright versions. teswiz excludes or pins these, so Selenium 4.52.0, `java-client` 11.0.0 and Playwright 1.64.0 are what resolve.
+
+### Not upgraded: Appium driver majors
+
+`appium-uiautomator2-driver` 9.x and `appium-xcuitest-driver` 13.x need `appium ^4.0.0-beta.6`. teswiz is on Appium 3.9.0, so they stay at 8.7.3 and 12.22.8. `.github/dependabot.yml` now ignores semver-major updates for `appium`, `appium-uiautomator2-driver` and `appium-xcuitest-driver` until the Appium 4 migration. Minor and patch updates still come through.
+
+## ✅ Tests
+
+- `PlaywrightTsScreenActionExecutorTest`: covers framework contracts, consumer contracts, and non-screen types next to or outside a `screen` package. Uses new `com.example.consumer` fixtures (`CheckoutScreen`, `CheckoutSummary`, `OrderLine`).
+- `SetupConfigFileBooleansTest`: config file value, default, and env/system-property override for `HEADLESS`, `IS_FAILING_TEST_SUITE` and `SET_HARD_GATE`.
+- `PlaywrightWorkerScriptResolverTest`: covers resolver precedence, extraction, refresh, and the missing-bundle error.
+- `PlaywrightWorkerClientDiagnosticsTest`: worker stderr is included in the failure message.
+- `BuildGradleSampleTest`: pins the `gradle.properties` layout properties, their defaults, and the `verifyScreenContracts` task.
+- `./gradlew build` passes on Gradle 9.8.2 with the updated dependencies, including `validateConfigurationTemplates`.
+
+## 📝 Docs
+
+- `docs/getting-started/getting-started-guide.md`, `docs/getting-started/prerequisites.md`: the `gradle.properties` layout, and Node 22.6+ for `playwright-ts`.
+- `docs/architecture-and-internals/playwright-migration-guide.md`: consumer `verifyScreenContracts`, plus a new section on running `playwright-ts` outside the teswiz repository.
+- `docs/configuration/configuration-parameters.md`: `HEADLESS` precedence (env / system property over config file).
+- `docs/architecture-and-internals/breaking-changes.md`: new 1.0.47–1.0.55 run-notifications section (footer signature change, Slack/email output changes, humanised labels) and a 1.0.49 API section (null fields sent, no double URL encoding).
+- `docs/architecture-and-internals/architecture-notes.md`: `reporting.notify.failure` reflects the `HUMANIZED_TYPE` default label, the `SIMPLE_TYPE` opt-out, and the Outlook-safe HTML breakdown table.
+
+## 🛠 Changed Files Summary
+
+- `src/main/java/com/znsio/teswiz/runner/Setup.java`
+- `src/main/java/com/znsio/teswiz/web/playwright/PlaywrightTsScreenActionExecutor.java`
+- `src/main/java/com/znsio/teswiz/web/playwright/PlaywrightWorkerClient.java`
+- `src/main/java/com/znsio/teswiz/web/playwright/PlaywrightWorkerScriptResolver.java` (new)
+- `src/main/java/com/znsio/teswiz/web/playwright/WorkerStderrTail.java` (new)
+- `src/main/java/com/znsio/teswiz/web/playwright/screen/PlaywrightTsScreenActionExecutor.java`
+- `src/test/java/com/example/consumer/**` (new fixtures)
+- `src/test/java/.../BuildGradleSampleTest.java`, `SetupConfigFileBooleansTest.java`, `PlaywrightWorkerClientDiagnosticsTest.java`, `PlaywrightWorkerScriptResolverTest.java`, `PlaywrightTsScreenActionExecutorTest.java` (new)
+- `configs/teswiz/teswiz_config.properties.template` and `configs/**/*.properties` (`BROWSER_CONFIG_FILE`)
+- `build.gradle` (dependency and plugin versions, bundled worker, `wrapper` 9.8.2, version 1.0.56)
+- `build.gradle.sample`
+- `gradle/wrapper/gradle-wrapper.properties`, `gradle/wrapper/gradle-wrapper.jar`
+- `.github/dependabot.yml`
+- `docs/**` (see Docs above)
+- `Changelog.MD`
+
 ## 1.0.55
 ## 1.0.55
 # Release Notes - teswiz v1.0.55
