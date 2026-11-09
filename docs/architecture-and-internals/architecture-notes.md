@@ -490,8 +490,10 @@ swallowed, so a notifier problem never changes a run's result.
   degrades to grouping by type and place alone). `FailureBreakdown` counts causes biggest first, splitting one location
   reached by several steps into a cause per step, with a total that always equals failed + errored.
   `FailureBreakdownRenderer` groups by (type, location) and renders a Slack code-block table (top `DEFAULT_MAX_CAUSES`
-  groups, two-line header plus nested per-step rows) and an HTML table (four columns, grouped the same way); both take
-  an optional `Function<String,String>` to map an exception class name to a friendly label
+  groups, two-line header plus nested per-step rows) and a full-width, inline-sized HTML table (four columns, grouped
+  the same way, responsive in Outlook); the exception type is shown through a friendly label that defaults to
+  `HUMANIZED_TYPE` (splits a CamelCase class name into words, drops a trailing Exception/Error), with `SIMPLE_TYPE` for
+  the raw name or a consumer-supplied `Function<String,String>` to override specific types
 
 See [Run Notifications](../subsystems/run-notifications.md) for the configuration guide.
 
