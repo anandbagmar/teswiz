@@ -19,7 +19,7 @@ runs:
   using: composite
   steps:
     - name: Delete older artifacts for this workflow and branch
-      uses: actions/github-script@v8
+      uses: actions/github-script@v9
       env:
         INPUT_WORKFLOW_FILE: ${{ inputs.workflow-file }}
         INPUT_BRANCH_NAME: ${{ inputs.branch-name }}

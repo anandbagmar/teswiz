@@ -16,10 +16,25 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "appium"
         update-types: ["version-update:semver-major"]
+      # npm playwright must stay on the same minor as com.microsoft.playwright:playwright
+      # (Gradle) so both share one browser build in the Playwright cache; otherwise each
+      # `playwright install` garbage-collects the other's Chromium. Bump both together when
+      # the Java release for the new minor is published, then update this rule.
+      - dependency-name: "playwright"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
 
   # Enable version updates for Gradle dependencies
   - package-ecosystem: "gradle"
     directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+
+  # Enable version updates for GitHub Actions used in workflows and composite actions
+  - package-ecosystem: "github-actions"
+    directories:
+      - "/"
+      - "/.github/actions/*"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10

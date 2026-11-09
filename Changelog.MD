@@ -1,3 +1,76 @@
+## 1.0.57
+# Release Notes - teswiz v1.0.57
+
+_Previous release: v1.0.56_
+
+This release picks up the latest Jackson, Applitools, cucumber-reporting and Google Auth versions, moves CI off the deprecated `gradle/gradle-build-action`, brings every GitHub Action to its latest major version, and stops the unit-test workflow from printing token fragments to the run log.
+
+## 🔒 Security
+
+### Token fragments no longer printed in CI logs
+
+`Build_And_Run_Unit_Tests_CI.yml` had two debug steps that echoed the first and last 15 characters (and the first 4) of `TESWIZ_REPO_DISPATCH_TOKEN` and `TESWIZ_PAT`. GitHub masks only the full secret value, so these fragments appeared in plain text in every run log. Both steps are removed. The secrets are still used, unchanged, by the README update and repository-dispatch steps.
+
+Treat both tokens as exposed: rotate `TESWIZ_REPO_DISPATCH_TOKEN` and `TESWIZ_PAT`, then update the repository secrets.
+
+## 🛠 CI / GitHub Actions
+
+### `gradle/gradle-build-action` replaced by `gradle/actions/setup-gradle`
+
+The unit-test workflow used `gradle/gradle-build-action@v3` and ran Gradle through its `arguments` input. Both are deprecated (the action was replaced by `gradle/actions/setup-gradle`, and `arguments` was removed in v4). The workflow now runs `gradle/actions/setup-gradle@v6`, then calls the wrapper directly with `./gradlew clean build --refresh-dependencies`. This clears both deprecation warnings.
+
+### Actions on their latest major versions
+
+| Action | From | To |
+|---|---|---|
+| `actions/setup-node` | v5 | v7 |
+| `actions/setup-java` | v5 | v6 |
+| `actions/github-script` (`cleanup-branch-artifacts`) | v8 | v9 |
+| `gradle/gradle-build-action` → `gradle/actions/setup-gradle` | v3 | v6 |
+
+`actions/checkout@v7`, `actions/upload-artifact@v7`, `github/codeql-action@v4` and `peter-evans/repository-dispatch@v4` were already current. None of the breaking changes affect these workflows: they run on GitHub-hosted runners and already set `cache: "npm"` explicitly, and the artifact-cleanup script uses only the injected `github`, `context` and `core`.
+
+### Dependabot
+
+- **GitHub Actions tracked.** A `github-actions` ecosystem now covers `.github/workflows` and the composite actions under `.github/actions/*`, so action versions get update PRs like npm and Gradle dependencies.
+- **npm `playwright` held to the Java minor.** Minor and major updates of npm `playwright` are ignored, because it must stay on the same minor as `com.microsoft.playwright:playwright`. Both must use the same browser build: with npm 1.65 (Chromium 1254) next to Java 1.64 (Chromium 1248), each `playwright install` removes the other's Chromium and Playwright-Java tests fail with "Executable doesn't exist". Bump both together once the Java release for the new minor ships, then relax the rule.
+
+## 📦 Dependency Updates
+
+| Dependency | From | To |
+|---|---|---|
+| `com.fasterxml.jackson.core:jackson-databind` | 2.22.4 | 2.23.0 |
+| `com.fasterxml.jackson.dataformat:jackson-dataformat-yaml` | 2.22.4 | 2.23.0 |
+| `com.fasterxml.jackson.datatype:jackson-datatype-jdk8` | 2.22.4 | 2.23.0 |
+| `com.applitools:eyes-images-java5` | 5.83.18 | 5.83.20 |
+| `net.masterthought:cucumber-reporting` | 5.12.0 | 5.12.1 |
+| `com.google.auth:google-auth-library-oauth2-http` (optional, `compileOnly` / test) | 1.55.0 | 1.57.0 |
+| npm `@applitools/eyes-playwright` | 1.51.7 | 1.52.0 |
+
+Notes:
+
+- **Jackson 2.23.0** still targets Java 8 bytecode, so it is compatible with the Java 17 baseline.
+- **`npm audit`** is unchanged: 0 critical, 0 high, 36 moderate, 1 low.
+
+### Not upgraded
+
+- **npm `playwright` 1.65.0:** held at 1.64.1 to match Playwright Java 1.64.0, the latest Java release (see Dependabot above).
+- **`net.sourceforge.tess4j:tess4j` 5.21.0:** stays pinned at 5.11.0 to avoid the `libtesseract` missing-symbol error (`pixBackgroundNormTo1MinMax`) on Linux runners.
+- **`log4j-core` 3.0.0-beta3, `assertj-core` 4.0.0-M1:** pre-releases. The dynamic `2+` / `3+` declarations keep resolving the latest stable 2.x / 3.x.
+- **Gradle 9.9.0:** release candidate only. The wrapper stays on 9.8.2.
+- **Appium driver majors:** `appium-uiautomator2-driver` 8.7.3 and `appium-xcuitest-driver` 12.22.8 are the latest releases that support Appium 3 (9.x / 13.x need Appium 4). Appium 3.9.0 is the latest stable.
+- Gradle plugins (`org.sonarqube`, `com.gradleup.shadow`, `io.freefair.aspectj.post-compile-weaving`, `io.github.ben-manes.versions`) were already on their latest releases.
+
+## 🛠 Changed Files Summary
+
+- `build.gradle` (dependency versions)
+- `package.json`, `package-lock.json`
+- `.github/workflows/Build_And_Run_Unit_Tests_CI.yml` (setup-gradle, debug steps removed)
+- `.github/workflows/*.yml` (setup-node v7, setup-java v6)
+- `.github/actions/cleanup-branch-artifacts/action.yml` (github-script v9)
+- `.github/dependabot.yml`
+- `Changelog.MD`
+
 ## 1.0.56
 # Release Notes - teswiz v1.0.56
 
