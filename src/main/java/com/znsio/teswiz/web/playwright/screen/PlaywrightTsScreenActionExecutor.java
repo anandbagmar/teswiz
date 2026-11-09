@@ -8,9 +8,13 @@ import com.znsio.teswiz.runner.Visual;
 import com.znsio.teswiz.web.playwright.PlaywrightWebDriver;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.List;
 
 public final class PlaywrightTsScreenActionExecutor {
+    private static final String FRAMEWORK_SCREEN_PACKAGE = "com.znsio.teswiz.screen";
+    private static final String SCREEN_PACKAGE_SEGMENT = "screen";
     private static final String SCREEN_ROUTE = "teswizScreenRoute";
     private static final String CURRENT_SCREEN = "current";
     private static final String NO_SCREEN = "none";
@@ -113,8 +117,29 @@ public final class PlaywrightTsScreenActionExecutor {
         return resolveScreen(returnType);
     }
 
-    private boolean isScreenContract(Class<?> returnType) {
-        return returnType.getPackageName().startsWith("com.znsio.teswiz.screen");
+    /**
+     * A return type is a screen contract when it is a framework screen type, or an abstract type in a
+     * consumer package that {@link ScreenPackageConvention} accepts (one containing a {@code screen}
+     * segment). Consumer contracts must be recognised too, otherwise a playwright-ts action that
+     * returns the next screen in a fluent chain returns the raw worker result (usually null) instead.
+     */
+    static boolean isScreenContract(Class<?> returnType) {
+        return isFrameworkScreenType(returnType) || isConsumerScreenContract(returnType);
+    }
+
+    private static boolean isFrameworkScreenType(Class<?> returnType) {
+        return returnType.getPackageName().startsWith(FRAMEWORK_SCREEN_PACKAGE);
+    }
+
+    private static boolean isConsumerScreenContract(Class<?> returnType) {
+        return Modifier.isAbstract(returnType.getModifiers())
+                && !returnType.isPrimitive()
+                && !returnType.isArray()
+                && hasScreenPackageSegment(returnType.getPackageName());
+    }
+
+    private static boolean hasScreenPackageSegment(String packageName) {
+        return Arrays.asList(packageName.split("\\.")).contains(SCREEN_PACKAGE_SEGMENT);
     }
 
     private Object resolveScreen(Class<?> returnType) {

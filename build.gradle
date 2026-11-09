@@ -302,6 +302,15 @@ artifacts {
     archives sourcesJar
 }
 
+// Ship the playwright-ts Node worker inside the jar. Consumer projects have no playwright/ folder,
+// so PlaywrightWorkerScriptResolver extracts these into the project's build/ directory at runtime.
+tasks.named('processResources', ProcessResources) {
+    from('playwright') {
+        include 'worker.mjs', 'worker-provider.mjs'
+        into 'teswiz/playwright'
+    }
+}
+
 wrapper {
     gradleVersion = "9.8.1"
 }

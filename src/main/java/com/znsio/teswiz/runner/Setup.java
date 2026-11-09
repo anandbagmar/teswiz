@@ -428,9 +428,14 @@ public class Setup {
         configs.put(RP_DESCRIPTION, getOverriddenStringValue(RP_DESCRIPTION, getStringValueFromPropertiesIfAvailable(RP_DESCRIPTION, RP_DEFAULT_DESCRIPTION)));
         configs.put(APP_VERSION, NOT_SET);
         configs.put(HOST_NAME, getHostMachineName());
-        configsBoolean.put(IS_FAILING_TEST_SUITE, getOverriddenBooleanValue(IS_FAILING_TEST_SUITE, false));
-        configsBoolean.put(SET_HARD_GATE, getOverriddenBooleanValue(SET_HARD_GATE, false));
-        configsBoolean.put(HEADLESS, getOverriddenBooleanValue(HEADLESS, false));
+        // Active properties in the canonical template, so the config file value applies; an
+        // environment variable or system property still overrides it.
+        configsBoolean.put(IS_FAILING_TEST_SUITE, getOverriddenBooleanValue(IS_FAILING_TEST_SUITE,
+                getBooleanValueFromPropertiesIfAvailable(IS_FAILING_TEST_SUITE, false)));
+        configsBoolean.put(SET_HARD_GATE, getOverriddenBooleanValue(SET_HARD_GATE,
+                getBooleanValueFromPropertiesIfAvailable(SET_HARD_GATE, false)));
+        configsBoolean.put(HEADLESS, getOverriddenBooleanValue(HEADLESS,
+                getBooleanValueFromPropertiesIfAvailable(HEADLESS, false)));
         configsBoolean.put(SHOW_SENSITIVE_DATA, getOverriddenBooleanValue(
                 SHOW_SENSITIVE_DATA,
                 getBooleanValueFromPropertiesIfAvailable(SHOW_SENSITIVE_DATA, false)));

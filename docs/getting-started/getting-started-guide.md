@@ -10,7 +10,7 @@ Follow this step-by-step guide to integrate **teswiz** into a new or existing Ja
 
 ## 🛠️ Step 1: Install Prerequisites & Setup Project
 
-1. Verify environment setup against [Prerequisites Guide](prerequisites.md) (JDK 17+, Node.js 18+).
+1. Verify environment setup against [Prerequisites Guide](prerequisites.md) (JDK 17+, Node.js 18+; Node.js 22.6+ for `WEB_ENGINE=playwright-ts`).
 2. Create a new Java-Gradle project in your IDE (e.g., IntelliJ IDEA).
 3. Copy `build.gradle.sample` to your project root, rename it to `build.gradle`, and verify the `teswiz` dependency version:
    ```groovy
@@ -18,7 +18,16 @@ Follow this step-by-step guide to integrate **teswiz** into a new or existing Ja
        implementation 'com.github.anandbagmar:teswiz:1.0.55'
    }
    ```
-4. Run `npm install` in your project root to install Node dependencies for Appium 2 and Playwright TS.
+4. Describe your project layout in `gradle.properties` instead of editing `build.gradle` (each value below defaults to the teswiz sample layout under `com/znsio/teswiz`):
+   ```properties
+   teswizVersion=1.0.55
+   teswizConfig=./configs/acme/acme_local_web_config.properties
+   teswizStepsPackagePath=com/acme/tests/steps
+   teswizFeaturesDir=./src/test/resources/com/acme/tests/features
+   teswizScreenContractsRoot=src/test/java/com/acme/tests/screen
+   ```
+   The `CONFIG` environment variable still overrides `teswizConfig`.
+5. Run `npm install` in your project root to install Node dependencies for Appium 2 and Playwright TS. For `WEB_ENGINE=playwright-ts`, the worker needs `playwright` and `@applitools/eyes-playwright` (see [Running Playwright-TS outside the teswiz repository](../architecture-and-internals/playwright-migration-guide.md#6a-running-playwright-ts-outside-the-teswiz-repository)).
 
 ---
 

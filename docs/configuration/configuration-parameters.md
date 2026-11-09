@@ -80,7 +80,7 @@ For the complete property list and all available defaults, use the
     FAIL_TEST_ON_VISUAL_DIFFERENCE=true -> 
         If visual testing is enabled, and this is set to true, then the test will fail if there are any visual differences found
         If this is set to false, then a message will be logged about the visual differences, and the test will not fail for this reason 
-    HEADLESS=false -> If set, run web/electron app tests in HEADLESS mode (overrides the headless value in browser_config.json)
+    HEADLESS=false -> If set, run web/electron app tests in HEADLESS mode (overrides the headless value in browser_config.json). Read from the config file; a HEADLESS environment variable or system property overrides it
     LOG_DIR=target -> Where should logs be created?
     LOG_PROPERTIES_FILE=./src/test/resources/log4j2.properties -> log4j configuration file
     TESWIZ_METHOD_LOG_LEVEL=WARN -> Optional JVM system property. Set to DEBUG to enable concise framework method tracing.

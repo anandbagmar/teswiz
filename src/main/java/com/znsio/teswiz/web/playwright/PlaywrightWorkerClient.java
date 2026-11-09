@@ -32,14 +32,19 @@ import com.znsio.teswiz.visual.PlaywrightVisualResults;
 public class PlaywrightWorkerClient implements AutoCloseable {
     private static final Logger LOGGER = LogManager.getLogger(PlaywrightWorkerClient.class.getName());
     private static final String NODE_EXECUTABLE = "node";
+    private static final Duration STDERR_CAPTURE_WAIT = Duration.ofSeconds(2);
+    private static final String WORKER_DEPENDENCY_HINT =
+            "The playwright-ts worker needs Node.js 22.6+ and, in the project root, "
+                    + "`npm install playwright @applitools/eyes-playwright` followed by `npx playwright install`.";
 
     private final Path workerScriptPath;
     private Process process;
     private BufferedWriter requestWriter;
     private BufferedReader responseReader;
+    private WorkerStderrTail stderrTail;
 
     public PlaywrightWorkerClient() {
-        this(Paths.get("playwright", "worker.mjs").toAbsolutePath());
+        this(new PlaywrightWorkerScriptResolver().resolve(Paths.get("").toAbsolutePath()));
     }
 
     public PlaywrightWorkerClient(Path workerScriptPath) {
@@ -63,6 +68,7 @@ public class PlaywrightWorkerClient implements AutoCloseable {
             process = processBuilder.start();
             requestWriter = process.outputWriter();
             responseReader = process.inputReader();
+            stderrTail = WorkerStderrTail.start(process.getErrorStream());
         } catch (IOException e) {
             throw new CommandLineExecutorException("Unable to start Playwright worker", e);
         }
@@ -415,7 +421,8 @@ public class PlaywrightWorkerClient implements AutoCloseable {
 
     private PlaywrightWorkerResponse sendCommand(String action, JSONObject payload) {
         if (!isRunning()) {
-            throw new InvalidTestDataException("Playwright worker is not running");
+            throw new InvalidTestDataException(withWorkerDiagnostics(
+                    String.format("Playwright worker is not running (action '%s')", action)));
         }
 
         String requestId = UUID.randomUUID().toString();
@@ -430,8 +437,8 @@ public class PlaywrightWorkerClient implements AutoCloseable {
 
             String line = responseReader.readLine();
             if (null == line) {
-                throw new InvalidTestDataException(
-                        String.format("Playwright worker closed unexpectedly while handling '%s'", action));
+                throw new InvalidTestDataException(withWorkerDiagnostics(
+                        String.format("Playwright worker closed unexpectedly while handling '%s'", action)));
             }
             JSONObject responseJson = new JSONObject(line);
             PlaywrightWorkerResponse response = new PlaywrightWorkerResponse(
@@ -445,9 +452,20 @@ public class PlaywrightWorkerClient implements AutoCloseable {
             }
             return response;
         } catch (IOException e) {
-            throw new CommandLineExecutorException(
-                    String.format("Unable to communicate with Playwright worker for action '%s'", action), e);
+            throw new CommandLineExecutorException(withWorkerDiagnostics(
+                    String.format("Unable to communicate with Playwright worker for action '%s'", action)), e);
         }
+    }
+
+    /** Appends the worker's recent stderr and the usual fix, so a dead worker explains itself. */
+    private String withWorkerDiagnostics(String message) {
+        String stderr = null == stderrTail ? "" : stderrTail.recentOutput(STDERR_CAPTURE_WAIT);
+        StringBuilder detail = new StringBuilder(message);
+        if (!stderr.isBlank()) {
+            detail.append(System.lineSeparator()).append("Worker stderr:").append(System.lineSeparator()).append(stderr);
+        }
+        detail.append(System.lineSeparator()).append(WORKER_DEPENDENCY_HINT);
+        return detail.toString();
     }
 
     private JSONObject toJson(org.openqa.selenium.Cookie cookie, String currentUrl) {
