@@ -14,6 +14,9 @@ FRAMEWORK=cucumber
 BROWSER=chrome
 #BROWSER_NAME=safari # Legacy alias used by older sample configurations
 WEB_ENGINE=selenium
+# Browser launch options (headless, arguments, viewport) per browser. Unset uses the default
+# browser config bundled in the teswiz jar.
+#BROWSER_CONFIG_FILE=./configs/browser_config.json
 #PLATFORM=android
 
 # Test data and environment
