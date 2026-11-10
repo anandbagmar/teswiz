@@ -18,6 +18,7 @@ import com.znsio.teswiz.tools.OsUtils;
 import com.znsio.teswiz.tools.SensitiveDataMasker;
 import com.znsio.teswiz.tools.cmd.CommandLineExecutor;
 import com.znsio.teswiz.tools.cmd.CommandLineResponse;
+import com.znsio.teswiz.visual.ApplitoolsConfigValues;
 import io.restassured.RestAssured;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
@@ -712,39 +713,26 @@ public class Setup {
     }
 
     private static String getServerUrl() {
-        return String.valueOf(applitoolsConfiguration.get(APPLITOOLS.SERVER_URL));
+        return ApplitoolsConfigValues.serverUrl(applitoolsConfiguration);
     }
 
     static MatchLevel getMatchLevel() {
-        MatchLevel matchLevel;
-        try {
-            matchLevel = MatchLevel.valueOf(String.valueOf(applitoolsConfiguration.get(APPLITOOLS.DEFAULT_MATCH_LEVEL)));
-        } catch (IllegalArgumentException | NullPointerException e) {
-            matchLevel = MatchLevel.STRICT;
-        }
-        return matchLevel;
+        return ApplitoolsConfigValues.matchLevel(applitoolsConfiguration);
     }
 
     @NotNull
     static RectangleSize getViewportSize() {
-        RectangleSize viewportSize = new RectangleSize(
+        return ApplitoolsConfigValues.viewportSize(applitoolsConfiguration,
                 TeswizRuntimeConfiguration.getInt(TeswizRuntimeConfiguration.DRIVER_VIEWPORT_WIDTH),
                 TeswizRuntimeConfiguration.getInt(TeswizRuntimeConfiguration.DRIVER_VIEWPORT_HEIGHT));
-        try {
-            String[] viewP = ((String) applitoolsConfiguration.get(APPLITOOLS.VIEWPORT_SIZE)).split("x");
-            viewportSize = new RectangleSize(Integer.parseInt(viewP[0]), Integer.parseInt(viewP[1]));
-        } catch (NullPointerException e) {
-            LOGGER.info("Unable to get viewport size from Applitools configuration. Using runtime defaults.");
-        }
-        return viewportSize;
     }
 
     static boolean isBenchmarkingEnabled() {
-        return Boolean.parseBoolean(String.valueOf(applitoolsConfiguration.get(APPLITOOLS.ENABLE_BENCHMARK_PER_VALIDATION)));
+        return ApplitoolsConfigValues.isBenchmarkingEnabled(applitoolsConfiguration);
     }
 
     static boolean isDisableBrowserFetching() {
-        return Boolean.parseBoolean(String.valueOf(applitoolsConfiguration.get(APPLITOOLS.DISABLE_BROWSER_FETCHING)));
+        return ApplitoolsConfigValues.isDisableBrowserFetching(applitoolsConfiguration);
     }
 
     static void cleanUpExecutionEnvironment() {
