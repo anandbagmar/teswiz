@@ -23,8 +23,13 @@ import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import static com.znsio.teswiz.runner.Runner.DEFAULT;
@@ -38,6 +43,9 @@ public class Drivers {
     private static final WebExecutionProviderResolver WEB_EXECUTION_PROVIDER_RESOLVER =
             new WebExecutionProviderResolver();
     private static final WebSessionMetadataBuilder WEB_SESSION_METADATA_BUILDER = new WebSessionMetadataBuilder();
+    private static final Map<Platform, PlatformDriverCreator> PLATFORM_DRIVER_CREATORS =
+            createPlatformDriverCreators();
+    private static final Map<String, BiConsumer<String, Driver>> DRIVER_CLOSERS = createDriverClosers();
 
     private Drivers() {
         LOGGER.debug("Drivers - private constructor");
@@ -109,31 +117,53 @@ public class Drivers {
     }
 
     @NotNull
-    private static DriverAssignment createDriverForPlatform(String userPersona, String browserName, Platform forPlatform,
+    static DriverAssignment createDriverForPlatform(String userPersona, String browserName, Platform forPlatform,
             TestExecutionContext context) {
-        Driver currentDriver;
-        switch (forPlatform) {
-            case android:
-                currentDriver = AppiumDriverManager.createAndroidDriverForUser(userPersona, forPlatform, context);
-                return new DriverAssignment(currentDriver,
-                        buildSessionHandle(userPersona, browserName, forPlatform, context, currentDriver));
-            case iOS:
-                currentDriver = AppiumDriverManager.createIOSDriverForUser(userPersona, forPlatform, context);
-                return new DriverAssignment(currentDriver,
-                        buildSessionHandle(userPersona, browserName, forPlatform, context, currentDriver));
-            case windows:
-                currentDriver = AppiumDriverManager.createWindowsDriverForUser(userPersona, forPlatform, context);
-                return new DriverAssignment(currentDriver,
-                        buildSessionHandle(userPersona, browserName, forPlatform, context, currentDriver));
-            case web:
-                return createWebDriverAssignment(userPersona, browserName, forPlatform, context);
-            case electron:
-                currentDriver = BrowserDriverManager.createElectronDriverForUser(userPersona, browserName, forPlatform, context);
-                return new DriverAssignment(currentDriver,
-                        buildSessionHandle(userPersona, browserName, forPlatform, context, currentDriver));
-            default:
-                throw new InvalidTestDataException(String.format("Unexpected platform value: '%s' provided to assign Driver for user: '%s': ", forPlatform, userPersona));
+        PlatformDriverCreator creator = PLATFORM_DRIVER_CREATORS.get(Objects.requireNonNull(forPlatform));
+        if (null == creator) {
+            throw new InvalidTestDataException(String.format("Unexpected platform value: '%s' provided to assign Driver for user: '%s': ", forPlatform, userPersona));
         }
+        return creator.create(userPersona, browserName, forPlatform, context);
+    }
+
+    /** Creates the driver for one platform and pairs it with its session handle. */
+    @FunctionalInterface
+    private interface PlatformDriverCreator {
+        DriverAssignment create(String userPersona, String browserName, Platform forPlatform,
+                TestExecutionContext context);
+    }
+
+    // Lambdas, not method references, so an engine manager class is loaded only when its platform is used.
+    private static Map<Platform, PlatformDriverCreator> createPlatformDriverCreators() {
+        Map<Platform, PlatformDriverCreator> creators = new EnumMap<>(Platform.class);
+        creators.put(Platform.android, (persona, browser, platform, context) -> assignDriver(persona, browser,
+                platform, context, AppiumDriverManager.createAndroidDriverForUser(persona, platform, context)));
+        creators.put(Platform.iOS, (persona, browser, platform, context) -> assignDriver(persona, browser, platform,
+                context, AppiumDriverManager.createIOSDriverForUser(persona, platform, context)));
+        creators.put(Platform.windows, (persona, browser, platform, context) -> assignDriver(persona, browser,
+                platform, context, AppiumDriverManager.createWindowsDriverForUser(persona, platform, context)));
+        creators.put(Platform.web, (persona, browser, platform, context) -> createWebDriverAssignment(persona,
+                browser, platform, context));
+        creators.put(Platform.electron, (persona, browser, platform, context) -> assignDriver(persona, browser,
+                platform, context, BrowserDriverManager.createElectronDriverForUser(persona, browser, platform,
+                        context)));
+        return Collections.unmodifiableMap(creators);
+    }
+
+    private static DriverAssignment assignDriver(String userPersona, String browserName, Platform forPlatform,
+            TestExecutionContext context, Driver currentDriver) {
+        return new DriverAssignment(currentDriver,
+                buildSessionHandle(userPersona, browserName, forPlatform, context, currentDriver));
+    }
+
+    // PDF drivers have nothing to close.
+    private static Map<String, BiConsumer<String, Driver>> createDriverClosers() {
+        Map<String, BiConsumer<String, Driver>> closers = new HashMap<>();
+        closers.put(Driver.WEB_DRIVER, (persona, driver) -> BrowserDriverManager.closeWebDriver(persona, driver));
+        closers.put(Driver.APPIUM_DRIVER, (persona, driver) -> AppiumDriverManager.closeAppiumDriver(persona, driver));
+        closers.put(Driver.PDF_DRIVER, (persona, driver) -> {
+        });
+        return Collections.unmodifiableMap(closers);
     }
 
     public static String getCapabilityFor(org.openqa.selenium.Capabilities capabilities, String name) {
@@ -276,24 +306,17 @@ public class Drivers {
         driver.getVisual().handleTestResults(userPersona, driver.getType());
     }
 
-    private static void attachLogsAndCloseDriver(String userPersona, Driver driver) {
+    static void attachLogsAndCloseDriver(String userPersona, Driver driver) {
         String driverName = Driver.PDF_DRIVER;
         if (!driver.getType().equalsIgnoreCase(Driver.PDF_DRIVER)) {
             driverName = driver.getInnerDriver().getClass().getSimpleName();
         }
         LOGGER.info("attachLogsAndCloseDriver: {} - {} - {}", userPersona, driver.getType(), driverName);
-        switch (driver.getType()) {
-            case Driver.WEB_DRIVER:
-                BrowserDriverManager.closeWebDriver(userPersona, driver);
-                break;
-            case Driver.APPIUM_DRIVER:
-                AppiumDriverManager.closeAppiumDriver(userPersona, driver);
-                break;
-            case Driver.PDF_DRIVER:
-                break;
-            default:
-                throw new InvalidTestDataException(String.format("Unexpected driver type: '%s'", driver.getType()));
+        BiConsumer<String, Driver> closer = DRIVER_CLOSERS.get(driver.getType());
+        if (null == closer) {
+            throw new InvalidTestDataException(String.format("Unexpected driver type: '%s'", driver.getType()));
         }
+        closer.accept(userPersona, driver);
     }
 
     public static Set<String> getAvailableUserPersonas() {
@@ -399,6 +422,6 @@ public class Drivers {
         return WEB_SESSION_METADATA_BUILDER.build(browserName, currentDriver.getInnerDriver());
     }
 
-    private record DriverAssignment(Driver driver, SessionHandle sessionHandle) {
+    record DriverAssignment(Driver driver, SessionHandle sessionHandle) {
     }
 }
