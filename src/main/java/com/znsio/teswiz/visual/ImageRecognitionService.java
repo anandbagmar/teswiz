@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -55,56 +56,27 @@ public class ImageRecognitionService {
     }
 
     public static VisualElement findTemplateMatch(byte[] screenshotBytes, List<String> templatePaths, double confidenceThreshold, com.znsio.teswiz.entities.VisualRegion region, Driver driverFacade) {
-        if (!isOpenCvAvailable() || screenshotBytes == null || templatePaths == null || templatePaths.isEmpty()) {
+        if (!isSearchable(screenshotBytes, templatePaths)) {
             return null;
         }
-
-        BufferedImage bufferedImage = parseScreenshot(screenshotBytes);
-        if (bufferedImage == null) {
-            return null;
-        }
-
-        // scaleFactor MUST be computed from the FULL screenshot width (before cropping), so it stays
-        // correct on Retina/HiDPI regardless of the region crop size.
-        double scaleFactor = (driverFacade != null) ? driverFacade.getViewportScaleFactor(bufferedImage.getWidth())
-                : 1.0;
-
-        int offsetX = 0;
-        int offsetY = 0;
-        if (region != null) {
-            VisualRegionScaler.PixelRegion crop = VisualRegionScaler.scaleRegionToPixels(
-                    region, bufferedImage.getWidth(), bufferedImage.getHeight(), scaleFactor);
-            offsetX = crop.x();
-            offsetY = crop.y();
-            bufferedImage = bufferedImage.getSubimage(crop.x(), crop.y(), crop.width(), crop.height());
-        }
-
-        Mat sceneMat = bufferedImageToMat(bufferedImage);
-        if (sceneMat == null) {
+        Scene scene = prepareScene(screenshotBytes, region, driverFacade);
+        if (scene == null) {
             return null;
         }
 
         try {
             for (String templatePath : templatePaths) {
-                Mat templateMat = loadTemplateMat(templatePath);
-                if (templateMat == null) {
-                    continue;
-                }
-
-                try {
-                    String templateName = new File(templatePath).getName();
-                    VisualElement match = matchMultiScale(sceneMat, templateMat, templateName, confidenceThreshold,
-                            offsetX, offsetY, scaleFactor, driverFacade);
-                    if (match != null) {
-                        LOGGER.info("Successfully matched visual template '{}' at bounds {}", templateName, match);
-                        return match;
-                    }
-                } finally {
-                    templateMat.release();
+                String templateName = new File(templatePath).getName();
+                VisualElement match = withTemplate(templatePath, templateMat -> matchMultiScale(scene.mat(),
+                        templateMat, templateName, confidenceThreshold, scene.offsetX(), scene.offsetY(),
+                        scene.scaleFactor(), driverFacade));
+                if (match != null) {
+                    LOGGER.info("Successfully matched visual template '{}' at bounds {}", templateName, match);
+                    return match;
                 }
             }
         } finally {
-            sceneMat.release();
+            scene.mat().release();
         }
 
         return null;
@@ -115,16 +87,47 @@ public class ImageRecognitionService {
     }
 
     public static List<VisualElement> findAllTemplateMatches(byte[] screenshotBytes, List<String> templatePaths, double confidenceThreshold, com.znsio.teswiz.entities.VisualRegion region, Driver driverFacade) {
-        if (!isOpenCvAvailable() || screenshotBytes == null || templatePaths == null || templatePaths.isEmpty()) {
+        if (!isSearchable(screenshotBytes, templatePaths)) {
+            return Collections.emptyList();
+        }
+        Scene scene = prepareScene(screenshotBytes, region, driverFacade);
+        if (scene == null) {
             return Collections.emptyList();
         }
 
+        List<VisualElement> matches = new ArrayList<>();
+        try {
+            for (String templatePath : templatePaths) {
+                String templateName = new File(templatePath).getName();
+                List<VisualElement> templateMatches = withTemplate(templatePath, templateMat -> matchAllMultiScale(
+                        scene.mat(), templateMat, templateName, confidenceThreshold, scene.offsetX(),
+                        scene.offsetY(), scene.scaleFactor(), driverFacade));
+                if (templateMatches != null) {
+                    matches.addAll(templateMatches);
+                }
+            }
+        } finally {
+            scene.mat().release();
+        }
+
+        return applyNonMaximumSuppression(matches);
+    }
+
+    private static boolean isSearchable(byte[] screenshotBytes, List<String> templatePaths) {
+        return isOpenCvAvailable() && screenshotBytes != null && templatePaths != null && !templatePaths.isEmpty();
+    }
+
+    /**
+     * Decodes the screenshot, crops it to the optional region and converts it to an OpenCV matrix. The scale factor
+     * MUST come from the FULL screenshot width (before cropping), so it stays correct on Retina/HiDPI regardless of the
+     * region crop size. Returns {@code null} when the bytes are not a usable image; the caller releases the matrix.
+     */
+    private static Scene prepareScene(byte[] screenshotBytes, com.znsio.teswiz.entities.VisualRegion region,
+            Driver driverFacade) {
         BufferedImage bufferedImage = parseScreenshot(screenshotBytes);
         if (bufferedImage == null) {
-            return Collections.emptyList();
+            return null;
         }
-
-        // scaleFactor MUST be computed from the FULL screenshot width (before cropping).
         double scaleFactor = (driverFacade != null) ? driverFacade.getViewportScaleFactor(bufferedImage.getWidth())
                 : 1.0;
 
@@ -139,31 +142,24 @@ public class ImageRecognitionService {
         }
 
         Mat sceneMat = bufferedImageToMat(bufferedImage);
-        if (sceneMat == null) {
-            return Collections.emptyList();
-        }
+        return sceneMat == null ? null : new Scene(sceneMat, offsetX, offsetY, scaleFactor);
+    }
 
-        List<VisualElement> matches = new ArrayList<>();
+    /** Loads a template, applies the matcher and releases the template; {@code null} if the template is unusable. */
+    private static <T> T withTemplate(String templatePath, Function<Mat, T> matcher) {
+        Mat templateMat = loadTemplateMat(templatePath);
+        if (templateMat == null) {
+            return null;
+        }
         try {
-            for (String templatePath : templatePaths) {
-                Mat templateMat = loadTemplateMat(templatePath);
-                if (templateMat == null) {
-                    continue;
-                }
-
-                try {
-                    String templateName = new File(templatePath).getName();
-                    matches.addAll(matchAllMultiScale(sceneMat, templateMat, templateName, confidenceThreshold,
-                            offsetX, offsetY, scaleFactor, driverFacade));
-                } finally {
-                    templateMat.release();
-                }
-            }
+            return matcher.apply(templateMat);
         } finally {
-            sceneMat.release();
+            templateMat.release();
         }
+    }
 
-        return applyNonMaximumSuppression(matches);
+    /** The scene being searched (crop-relative), the crop's offset in the full screenshot, and the scale factor. */
+    private record Scene(Mat mat, int offsetX, int offsetY, double scaleFactor) {
     }
 
     private static BufferedImage parseScreenshot(byte[] screenshotBytes) {
@@ -217,36 +213,19 @@ public class ImageRecognitionService {
         Point bestLoc = null;
         int bestW = 0;
         int bestH = 0;
-        int sceneWidth = scene.cols();
-        int sceneHeight = scene.rows();
 
         for (double scale : DEFAULT_SCALE_FACTORS) {
             int scaledW = (int) (template.cols() * scale);
             int scaledH = (int) (template.rows() * scale);
-
-            if (isInvalidScaleDimensions(scaledW, scaledH, sceneWidth, sceneHeight)) {
+            if (isInvalidScaleDimensions(scaledW, scaledH, scene.cols(), scene.rows())) {
                 continue;
             }
-
-            Mat scaledTemplate = new Mat();
-            try {
-                Imgproc.resize(template, scaledTemplate, new Size(scaledW, scaledH));
-                Mat result = new Mat();
-                try {
-                    Imgproc.matchTemplate(scene, scaledTemplate, result, Imgproc.TM_CCOEFF_NORMED);
-                    Core.MinMaxLocResult mmr = Core.minMaxLoc(result);
-
-                    if (mmr.maxVal > bestVal) {
-                        bestVal = mmr.maxVal;
-                        bestLoc = mmr.maxLoc;
-                        bestW = scaledW;
-                        bestH = scaledH;
-                    }
-                } finally {
-                    result.release();
-                }
-            } finally {
-                scaledTemplate.release();
+            Core.MinMaxLocResult mmr = bestMatchAtScale(scene, template, scaledW, scaledH);
+            if (mmr.maxVal > bestVal) {
+                bestVal = mmr.maxVal;
+                bestLoc = mmr.maxLoc;
+                bestW = scaledW;
+                bestH = scaledH;
             }
         }
 
@@ -261,47 +240,64 @@ public class ImageRecognitionService {
         return null;
     }
 
+    private static Core.MinMaxLocResult bestMatchAtScale(Mat scene, Mat template, int scaledW, int scaledH) {
+        return withMatchResult(scene, template, scaledW, scaledH, Core::minMaxLoc);
+    }
+
     private static List<VisualElement> matchAllMultiScale(Mat scene, Mat template, String templateName, double threshold,
             int offsetX, int offsetY, double scaleFactor, Driver driverFacade) {
         List<VisualElement> results = new ArrayList<>();
-        int sceneWidth = scene.cols();
-        int sceneHeight = scene.rows();
-
         for (double scale : DEFAULT_SCALE_FACTORS) {
             int scaledW = (int) (template.cols() * scale);
             int scaledH = (int) (template.rows() * scale);
-
-            if (isInvalidScaleDimensions(scaledW, scaledH, sceneWidth, sceneHeight)) {
+            if (isInvalidScaleDimensions(scaledW, scaledH, scene.cols(), scene.rows())) {
                 continue;
             }
-
-            Mat scaledTemplate = new Mat();
-            try {
-                Imgproc.resize(template, scaledTemplate, new Size(scaledW, scaledH));
-                Mat resultMat = new Mat();
-                try {
-                    Imgproc.matchTemplate(scene, scaledTemplate, resultMat, Imgproc.TM_CCOEFF_NORMED);
-
-                    for (int y = 0; y < resultMat.rows(); y++) {
-                        for (int x = 0; x < resultMat.cols(); x++) {
-                            double matchVal = resultMat.get(y, x)[0];
-                            if (matchVal >= threshold) {
-                                // Add the crop offset (physical px) then convert to logical/viewport px.
-                                VisualRegionScaler.PixelRegion logical = VisualRegionScaler.toLogicalRegion(
-                                        x, y, scaledW, scaledH, offsetX, offsetY, scaleFactor);
-                                results.add(new VisualElement(logical.x(), logical.y(), logical.width(),
-                                        logical.height(), templateName, driverFacade));
-                            }
-                        }
-                    }
-                } finally {
-                    resultMat.release();
-                }
-            } finally {
-                scaledTemplate.release();
-            }
+            withMatchResult(scene, template, scaledW, scaledH, resultMat -> {
+                collectMatchesAboveThreshold(resultMat, threshold, scaledW, scaledH, templateName, offsetX, offsetY,
+                        scaleFactor, driverFacade, results);
+                return null;
+            });
         }
         return results;
+    }
+
+    /**
+     * Resizes the template to the given size, matches it against the scene, and hands the score matrix to
+     * {@code onResult}; both temporary matrices are always released.
+     */
+    private static <T> T withMatchResult(Mat scene, Mat template, int scaledW, int scaledH,
+            Function<Mat, T> onResult) {
+        Mat scaledTemplate = new Mat();
+        try {
+            Imgproc.resize(template, scaledTemplate, new Size(scaledW, scaledH));
+            Mat resultMat = new Mat();
+            try {
+                Imgproc.matchTemplate(scene, scaledTemplate, resultMat, Imgproc.TM_CCOEFF_NORMED);
+                return onResult.apply(resultMat);
+            } finally {
+                resultMat.release();
+            }
+        } finally {
+            scaledTemplate.release();
+        }
+    }
+
+    // Every score at or above the threshold becomes a match; duplicates are removed later by non-maximum suppression.
+    private static void collectMatchesAboveThreshold(Mat resultMat, double threshold, int scaledW, int scaledH,
+            String templateName, int offsetX, int offsetY, double scaleFactor, Driver driverFacade,
+            List<VisualElement> results) {
+        for (int y = 0; y < resultMat.rows(); y++) {
+            for (int x = 0; x < resultMat.cols(); x++) {
+                if (resultMat.get(y, x)[0] >= threshold) {
+                    // Add the crop offset (physical px) then convert to logical/viewport px.
+                    VisualRegionScaler.PixelRegion logical = VisualRegionScaler.toLogicalRegion(
+                            x, y, scaledW, scaledH, offsetX, offsetY, scaleFactor);
+                    results.add(new VisualElement(logical.x(), logical.y(), logical.width(),
+                            logical.height(), templateName, driverFacade));
+                }
+            }
+        }
     }
 
     private static boolean isInvalidScaleDimensions(int scaledW, int scaledH, int sceneWidth, int sceneHeight) {
