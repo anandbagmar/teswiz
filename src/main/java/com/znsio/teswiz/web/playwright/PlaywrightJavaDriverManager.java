@@ -186,54 +186,7 @@ public final class PlaywrightJavaDriverManager implements WebEngineDriverManager
 
         private static Browser.NewContextOptions buildContextOptions(PlaywrightBrowserConfig browserConfig,
                 Path harFile) {
-            Browser.NewContextOptions options = new Browser.NewContextOptions();
-            Map<String, Object> contextOptions = browserConfig.contextOptions();
-            if (contextOptions.containsKey("ignoreHTTPSErrors")) {
-                options.setIgnoreHTTPSErrors(Boolean.TRUE.equals(contextOptions.get("ignoreHTTPSErrors")));
-            }
-            if (contextOptions.containsKey("baseURL") && contextOptions.get("baseURL") instanceof String baseUrl
-                    && !baseUrl.isBlank()) {
-                options.setBaseURL(baseUrl);
-            }
-            if (contextOptions.containsKey("viewport")) {
-                Object viewportObj = contextOptions.get("viewport");
-                if (viewportObj instanceof Map<?, ?> viewportMap) {
-                    Object w = viewportMap.get("width");
-                    Object h = viewportMap.get("height");
-                    if (null != w && null != h) {
-                        options.setViewportSize(Integer.parseInt(String.valueOf(w)),
-                                Integer.parseInt(String.valueOf(h)));
-                    } else {
-                        options.setViewportSize((com.microsoft.playwright.options.ViewportSize) null);
-                    }
-                } else if (null == viewportObj) {
-                    options.setViewportSize((com.microsoft.playwright.options.ViewportSize) null);
-                }
-            }
-            if (contextOptions.containsKey("locale") && contextOptions.get("locale") instanceof String locale
-                    && !locale.isBlank()) {
-                options.setLocale(locale);
-            }
-            if (contextOptions.containsKey("timezoneId")
-                    && contextOptions.get("timezoneId") instanceof String timezoneId && !timezoneId.isBlank()) {
-                options.setTimezoneId(timezoneId);
-            }
-            if (contextOptions.containsKey("userAgent") && contextOptions.get("userAgent") instanceof String userAgent
-                    && !userAgent.isBlank()) {
-                options.setUserAgent(userAgent);
-            }
-            if (contextOptions.containsKey("deviceScaleFactor") && null != contextOptions.get("deviceScaleFactor")) {
-                options.setDeviceScaleFactor(
-                        Double.parseDouble(String.valueOf(contextOptions.get("deviceScaleFactor"))));
-            }
-            if (contextOptions.containsKey("extraHTTPHeaders")
-                    && contextOptions.get("extraHTTPHeaders") instanceof Map<?, ?> rawHeaders) {
-                Map<String, String> headers = new java.util.LinkedHashMap<>();
-                rawHeaders.forEach((k, v) -> headers.put(String.valueOf(k), String.valueOf(v)));
-                options.setExtraHTTPHeaders(headers);
-            }
-            options.setRecordHarPath(harFile);
-            return options;
+            return PlaywrightContextOptionsMapper.toNewContextOptions(browserConfig.contextOptions(), harFile);
         }
 
         private static Proxy toProxy(Map<?, ?> proxyMap) {

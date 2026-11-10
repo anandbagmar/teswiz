@@ -15,7 +15,35 @@ import com.znsio.teswiz.exceptions.InvalidTestDataException;
 import com.znsio.teswiz.runner.Runner;
 
 public final class PlaywrightBrowserConfigResolver {
+    private static final String START_MAXIMIZED = "--start-maximized";
+    private static final String HEADLESS = "headless";
+    private static final String VIEWPORT = "viewport";
+    private static final String IGNORE_HTTPS_ERRORS = "ignoreHTTPSErrors";
+    private static final String CHANNEL = "channel";
+    private static final String EXECUTABLE_PATH = "executablePath";
+
     public PlaywrightBrowserConfig resolve(String browserName, TestExecutionContext context) {
+        JSONObject browserConfigForBrowserType = loadBrowserConfigFor(browserName, context);
+        JSONObject playwrightLaunchOptions = playwrightSection(browserConfigForBrowserType, "launchOptions");
+        JSONObject playwrightContextOptions = playwrightSection(browserConfigForBrowserType, "contextOptions");
+        JSONObject legacyHeadlessOptions = browserConfigForBrowserType.optJSONObject("headlessOptions");
+
+        boolean headless = resolveHeadless(legacyHeadlessOptions, playwrightLaunchOptions);
+        Set<String> launchArgs = resolveLaunchArgs(browserConfigForBrowserType, legacyHeadlessOptions,
+                playwrightLaunchOptions, headless);
+        boolean isMaximized = isMaximized(browserConfigForBrowserType, launchArgs);
+        if (isMaximized) {
+            launchArgs.add(START_MAXIMIZED);
+        }
+
+        return new PlaywrightBrowserConfig(browserName, headless, new ArrayList<>(launchArgs),
+                resolveChannel(playwrightLaunchOptions),
+                resolveExecutablePath(browserConfigForBrowserType, playwrightLaunchOptions),
+                resolveContextOptions(browserConfigForBrowserType, playwrightContextOptions, isMaximized),
+                resolveLaunchOptions(browserConfigForBrowserType, playwrightLaunchOptions));
+    }
+
+    private JSONObject loadBrowserConfigFor(String browserName, TestExecutionContext context) {
         JSONObject browserConfig = BrowserConfigLoader.load(context);
         maybeRegisterMigrationArtifact(context, browserConfig);
         String browserKey = browserName.toLowerCase();
@@ -23,21 +51,24 @@ public final class PlaywrightBrowserConfigResolver {
             throw new InvalidTestDataException(
                     String.format("Browser: '%s' is NOT supported for Playwright configuration", browserName));
         }
+        return browserConfig.getJSONObject(browserKey);
+    }
 
-        JSONObject browserConfigForBrowserType = browserConfig.getJSONObject(browserKey);
+    // No "playwright" section -> empty options; a section without this key -> null (key not configured).
+    private JSONObject playwrightSection(JSONObject browserConfigForBrowserType, String key) {
         JSONObject playwrightConfig = browserConfigForBrowserType.optJSONObject("playwright");
-        JSONObject playwrightLaunchOptions = null == playwrightConfig ? new JSONObject()
-                : playwrightConfig.optJSONObject("launchOptions");
-        JSONObject playwrightContextOptions = null == playwrightConfig ? new JSONObject()
-                : playwrightConfig.optJSONObject("contextOptions");
+        return null == playwrightConfig ? new JSONObject() : playwrightConfig.optJSONObject(key);
+    }
 
-        JSONObject legacyHeadlessOptions = browserConfigForBrowserType.optJSONObject("headlessOptions");
-        boolean headless = (null != legacyHeadlessOptions && legacyHeadlessOptions.optBoolean("headless", false))
-                || Runner.isRunningInHeadlessMode();
-        if (null != playwrightLaunchOptions && playwrightLaunchOptions.has("headless")) {
-            headless = playwrightLaunchOptions.getBoolean("headless") || Runner.isRunningInHeadlessMode();
-        }
+    private boolean resolveHeadless(JSONObject legacyHeadlessOptions, JSONObject playwrightLaunchOptions) {
+        boolean configuredHeadless = (null != playwrightLaunchOptions && playwrightLaunchOptions.has(HEADLESS))
+                ? playwrightLaunchOptions.getBoolean(HEADLESS)
+                : null != legacyHeadlessOptions && legacyHeadlessOptions.optBoolean(HEADLESS, false);
+        return configuredHeadless || Runner.isRunningInHeadlessMode();
+    }
 
+    private Set<String> resolveLaunchArgs(JSONObject browserConfigForBrowserType, JSONObject legacyHeadlessOptions,
+            JSONObject playwrightLaunchOptions, boolean headless) {
         Set<String> launchArgs = new LinkedHashSet<>();
         addNormalizedArguments(browserConfigForBrowserType.optJSONArray("arguments"), launchArgs);
         if (headless && null != legacyHeadlessOptions) {
@@ -46,62 +77,80 @@ public final class PlaywrightBrowserConfigResolver {
         if (null != playwrightLaunchOptions) {
             addNormalizedArguments(playwrightLaunchOptions.optJSONArray("args"), launchArgs);
         }
+        return launchArgs;
+    }
 
-        boolean isMaximized = browserConfigForBrowserType.optBoolean("maximize", false);
-        if (launchArgs.stream().anyMatch(arg -> arg.contains("start-maximized"))) {
-            isMaximized = true;
-        }
-        if (isMaximized) {
-            launchArgs.add("--start-maximized");
-        }
+    private boolean isMaximized(JSONObject browserConfigForBrowserType, Set<String> launchArgs) {
+        return browserConfigForBrowserType.optBoolean("maximize", false)
+                || launchArgs.stream().anyMatch(arg -> arg.contains("start-maximized"));
+    }
 
+    private Map<String, Object> resolveContextOptions(JSONObject browserConfigForBrowserType,
+            JSONObject playwrightContextOptions, boolean isMaximized) {
         Map<String, Object> contextOptions = new LinkedHashMap<>();
         if (null != playwrightContextOptions) {
             contextOptions.putAll(playwrightContextOptions.toMap());
         }
-        if (!contextOptions.containsKey("viewport")) {
-            if (isMaximized) {
-                contextOptions.put("viewport", null);
-            } else {
-                Map<String, Object> viewport = new LinkedHashMap<>();
-                viewport.put("width", WindowSizingResolver.defaultWidth());
-                viewport.put("height", WindowSizingResolver.defaultHeight());
-                contextOptions.put("viewport", viewport);
-            }
+        if (!contextOptions.containsKey(VIEWPORT)) {
+            contextOptions.put(VIEWPORT, defaultViewport(isMaximized));
         }
-        boolean ignoreHttpErrors = browserConfigForBrowserType.optBoolean("acceptInsecureCerts", false);
-        if (null != playwrightContextOptions && playwrightContextOptions.has("ignoreHTTPSErrors")) {
-            ignoreHttpErrors = playwrightContextOptions.getBoolean("ignoreHTTPSErrors");
-        }
-        contextOptions.put("ignoreHTTPSErrors", ignoreHttpErrors);
+        contextOptions.put(IGNORE_HTTPS_ERRORS, resolveIgnoreHttpsErrors(browserConfigForBrowserType,
+                playwrightContextOptions));
+        return contextOptions;
+    }
 
-        String proxyUrl = Runner.getProxyURL();
+    // A maximized window must not get a fixed viewport, or it would override --start-maximized.
+    private Map<String, Object> defaultViewport(boolean isMaximized) {
+        if (isMaximized) {
+            return null;
+        }
+        Map<String, Object> viewport = new LinkedHashMap<>();
+        viewport.put("width", WindowSizingResolver.defaultWidth());
+        viewport.put("height", WindowSizingResolver.defaultHeight());
+        return viewport;
+    }
+
+    private boolean resolveIgnoreHttpsErrors(JSONObject browserConfigForBrowserType,
+            JSONObject playwrightContextOptions) {
+        if (null != playwrightContextOptions && playwrightContextOptions.has(IGNORE_HTTPS_ERRORS)) {
+            return playwrightContextOptions.getBoolean(IGNORE_HTTPS_ERRORS);
+        }
+        return browserConfigForBrowserType.optBoolean("acceptInsecureCerts", false);
+    }
+
+    private Map<String, Object> resolveLaunchOptions(JSONObject browserConfigForBrowserType,
+            JSONObject playwrightLaunchOptions) {
         Map<String, Object> launchOptions = new LinkedHashMap<>();
         if (null != playwrightLaunchOptions) {
-            Map<String, Object> configuredLaunchOptions = playwrightLaunchOptions.toMap();
-            configuredLaunchOptions.remove("headless");
-            configuredLaunchOptions.remove("args");
-            configuredLaunchOptions.remove("channel");
-            configuredLaunchOptions.remove("executablePath");
-            launchOptions.putAll(configuredLaunchOptions);
+            launchOptions.putAll(withoutResolvedLaunchKeys(playwrightLaunchOptions.toMap()));
         }
+        String proxyUrl = Runner.getProxyURL();
         if (null != proxyUrl && !proxyUrl.isBlank()) {
-            Map<String, Object> proxy = new LinkedHashMap<>();
-            proxy.put("server", proxyUrl);
-            if (browserConfigForBrowserType.has("noProxy")) {
-                proxy.put("bypass", browserConfigForBrowserType.getString("noProxy"));
-            }
-            launchOptions.put("proxy", proxy);
+            launchOptions.put("proxy", buildProxy(browserConfigForBrowserType, proxyUrl));
         }
+        return launchOptions;
+    }
 
-        String channel = null;
-        String executablePath = resolveExecutablePath(browserConfigForBrowserType, playwrightLaunchOptions);
-        if (null != playwrightLaunchOptions) {
-            channel = playwrightLaunchOptions.optString("channel", null);
+    // These launch options are resolved into their own PlaywrightBrowserConfig fields.
+    private Map<String, Object> withoutResolvedLaunchKeys(Map<String, Object> configuredLaunchOptions) {
+        configuredLaunchOptions.remove(HEADLESS);
+        configuredLaunchOptions.remove("args");
+        configuredLaunchOptions.remove(CHANNEL);
+        configuredLaunchOptions.remove(EXECUTABLE_PATH);
+        return configuredLaunchOptions;
+    }
+
+    private Map<String, Object> buildProxy(JSONObject browserConfigForBrowserType, String proxyUrl) {
+        Map<String, Object> proxy = new LinkedHashMap<>();
+        proxy.put("server", proxyUrl);
+        if (browserConfigForBrowserType.has("noProxy")) {
+            proxy.put("bypass", browserConfigForBrowserType.getString("noProxy"));
         }
+        return proxy;
+    }
 
-        return new PlaywrightBrowserConfig(browserName, headless, new ArrayList<>(launchArgs), channel, executablePath,
-                contextOptions, launchOptions);
+    private String resolveChannel(JSONObject playwrightLaunchOptions) {
+        return null == playwrightLaunchOptions ? null : playwrightLaunchOptions.optString(CHANNEL, null);
     }
 
     private void maybeRegisterMigrationArtifact(TestExecutionContext context, JSONObject browserConfig) {
