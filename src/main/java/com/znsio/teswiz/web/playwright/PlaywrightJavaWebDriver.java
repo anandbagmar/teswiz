@@ -4,7 +4,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.Duration;
 import java.util.Collections;
-import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -172,290 +171,296 @@ public final class PlaywrightJavaWebDriver implements WebDriver, org.openqa.sele
 
     @Override
     public TargetLocator switchTo() {
-        return new TargetLocator() {
-            @Override
-            public WebDriver frame(int index) {
-                List<com.microsoft.playwright.Frame> frames = session.page().frames();
-                if (index < 0 || (index + 1) >= frames.size()) {
-                    throw new org.openqa.selenium.NoSuchFrameException("No frame found for index: " + index);
-                }
-                currentSearchRoot = new PlaywrightSearchRoot.FrameSearchRoot(frames.get(index + 1));
-                return PlaywrightJavaWebDriver.this;
-            }
-
-            @Override
-            public WebDriver frame(String nameOrId) {
-                com.microsoft.playwright.Frame frame = session.page().frame(nameOrId);
-                if (null != frame) {
-                    currentSearchRoot = new PlaywrightSearchRoot.FrameSearchRoot(frame);
-                } else {
-                    String selector = String.format("iframe[name='%s'], iframe#%s, frame[name='%s'], frame#%s",
-                            nameOrId, nameOrId, nameOrId, nameOrId);
-                    currentSearchRoot = new PlaywrightSearchRoot.FrameLocatorSearchRoot(
-                            session.page().frameLocator(selector));
-                }
-                return PlaywrightJavaWebDriver.this;
-            }
-
-            @Override
-            public WebDriver frame(WebElement frameElement) {
-                if (frameElement instanceof PlaywrightJavaWebElement playwrightElement) {
-                    currentSearchRoot = new PlaywrightSearchRoot.FrameLocatorSearchRoot(
-                            playwrightElement.locator().contentFrame());
-                } else {
-                    currentSearchRoot = new PlaywrightSearchRoot.FrameLocatorSearchRoot(
-                            session.page().frameLocator("iframe, frame"));
-                }
-                return PlaywrightJavaWebDriver.this;
-            }
-
-            @Override
-            public WebDriver parentFrame() {
-                if (currentSearchRoot instanceof PlaywrightSearchRoot.FrameSearchRoot frameRoot) {
-                    com.microsoft.playwright.Frame parent = frameRoot.frame().parentFrame();
-                    if (null != parent) {
-                        currentSearchRoot = new PlaywrightSearchRoot.FrameSearchRoot(parent);
-                    } else {
-                        currentSearchRoot = new PlaywrightSearchRoot.PageSearchRoot(session.page());
-                    }
-                } else {
-                    currentSearchRoot = new PlaywrightSearchRoot.PageSearchRoot(session.page());
-                }
-                return PlaywrightJavaWebDriver.this;
-            }
-
-            @Override
-            public WebDriver window(String nameOrHandle) {
-                if (!getWindowHandle().equals(nameOrHandle)) {
-                    throw unsupported(com.znsio.teswiz.web.WebCapability.MULTIPLE_WINDOWS, "window(String)");
-                }
-                return PlaywrightJavaWebDriver.this;
-            }
-
-            @Override
-            public WebDriver defaultContent() {
-                currentSearchRoot = new PlaywrightSearchRoot.PageSearchRoot(session.page());
-                return PlaywrightJavaWebDriver.this;
-            }
-
-            @Override
-            public WebElement activeElement() {
-                return new PlaywrightJavaWebElement(session.page().locator(":focus"), implicitWaitTimeout);
-            }
-
-            @Override
-            public org.openqa.selenium.Alert alert() {
-                throw new org.openqa.selenium.NoAlertPresentException(com.znsio.teswiz.web.WebEngineCapabilities
-                        .formatDiagnosticMessage(com.znsio.teswiz.web.WebEngine.PLAYWRIGHT_JAVA,
-                                com.znsio.teswiz.web.WebCapability.ALERTS, "switchTo().alert()"));
-            }
-
-            @Override
-            public WebDriver newWindow(org.openqa.selenium.WindowType typeHint) {
-                throw unsupported(com.znsio.teswiz.web.WebCapability.MULTIPLE_WINDOWS, "newWindow(WindowType)");
-            }
-        };
+        return new PlaywrightJavaTargetLocator();
     }
 
     @Override
     public Navigation navigate() {
-        return new Navigation() {
-            @Override
-            public void back() {
-                session.page().goBack();
-            }
-
-            @Override
-            public void forward() {
-                session.page().goForward();
-            }
-
-            @Override
-            public void to(String url) {
-                get(url);
-            }
-
-            @Override
-            public void to(java.net.URL url) {
-                get(url.toString());
-            }
-
-            @Override
-            public void refresh() {
-                session.page().reload();
-            }
-        };
+        return new PlaywrightJavaNavigation();
     }
 
     @Override
     public Options manage() {
-        return new Options() {
-            @Override
-            public void addCookie(Cookie cookie) {
-                com.microsoft.playwright.options.Cookie pwCookie = new com.microsoft.playwright.options.Cookie(
-                        cookie.getName(), cookie.getValue());
-                if (null != cookie.getDomain()) {
-                    pwCookie.setDomain(cookie.getDomain());
+        return new PlaywrightJavaOptions();
+    }
+
+    private WebDriver useSearchRoot(PlaywrightSearchRoot searchRoot) {
+        currentSearchRoot = searchRoot;
+        return this;
+    }
+
+    private PlaywrightSearchRoot pageSearchRoot() {
+        return new PlaywrightSearchRoot.PageSearchRoot(session.page());
+    }
+
+    /** Reads a width/height pair through JavaScript; empty when the browser reports either as missing. */
+    private java.util.Optional<Dimension> evaluateDimension(String widthScript, String heightScript) {
+        Object width = session.page().evaluate(widthScript);
+        Object height = session.page().evaluate(heightScript);
+        if (null == width || null == height) {
+            return java.util.Optional.empty();
+        }
+        return java.util.Optional.of(new Dimension(Integer.parseInt(String.valueOf(width)),
+                Integer.parseInt(String.valueOf(height))));
+    }
+
+    /** Selenium {@code switchTo()} for one page: frames switch the search root; one window, no alerts. */
+    private final class PlaywrightJavaTargetLocator implements TargetLocator {
+        @Override
+        public WebDriver frame(int index) {
+            List<com.microsoft.playwright.Frame> frames = session.page().frames();
+            // frames.get(0) is the main frame, so frame index N is frames.get(N + 1).
+            if (index < 0 || (index + 1) >= frames.size()) {
+                throw new org.openqa.selenium.NoSuchFrameException("No frame found for index: " + index);
+            }
+            return useSearchRoot(new PlaywrightSearchRoot.FrameSearchRoot(frames.get(index + 1)));
+        }
+
+        @Override
+        public WebDriver frame(String nameOrId) {
+            com.microsoft.playwright.Frame frame = session.page().frame(nameOrId);
+            if (null != frame) {
+                return useSearchRoot(new PlaywrightSearchRoot.FrameSearchRoot(frame));
+            }
+            String selector = String.format("iframe[name='%s'], iframe#%s, frame[name='%s'], frame#%s", nameOrId,
+                    nameOrId, nameOrId, nameOrId);
+            return useSearchRoot(new PlaywrightSearchRoot.FrameLocatorSearchRoot(
+                    session.page().frameLocator(selector)));
+        }
+
+        @Override
+        public WebDriver frame(WebElement frameElement) {
+            if (frameElement instanceof PlaywrightJavaWebElement playwrightElement) {
+                return useSearchRoot(new PlaywrightSearchRoot.FrameLocatorSearchRoot(
+                        playwrightElement.locator().contentFrame()));
+            }
+            return useSearchRoot(new PlaywrightSearchRoot.FrameLocatorSearchRoot(
+                    session.page().frameLocator("iframe, frame")));
+        }
+
+        @Override
+        public WebDriver parentFrame() {
+            if (currentSearchRoot instanceof PlaywrightSearchRoot.FrameSearchRoot frameRoot) {
+                com.microsoft.playwright.Frame parent = frameRoot.frame().parentFrame();
+                if (null != parent) {
+                    return useSearchRoot(new PlaywrightSearchRoot.FrameSearchRoot(parent));
                 }
-                if (null != cookie.getPath()) {
-                    pwCookie.setPath(cookie.getPath());
-                }
-                if (null != cookie.getExpiry()) {
-                    pwCookie.setExpires((double) cookie.getExpiry().getTime() / 1000);
-                }
-                pwCookie.setSecure(cookie.isSecure());
-                pwCookie.setHttpOnly(cookie.isHttpOnly());
-                session.browserContext().addCookies(List.of(pwCookie));
             }
+            return useSearchRoot(pageSearchRoot());
+        }
 
-            @Override
-            public void deleteCookieNamed(String name) {
-                List<com.microsoft.playwright.options.Cookie> remaining = session.browserContext().cookies().stream()
-                        .filter(c -> !c.name.equals(name)).toList();
-                session.browserContext().clearCookies();
-                if (!remaining.isEmpty()) {
-                    session.browserContext().addCookies(remaining);
-                }
+        @Override
+        public WebDriver window(String nameOrHandle) {
+            if (!getWindowHandle().equals(nameOrHandle)) {
+                throw unsupported(com.znsio.teswiz.web.WebCapability.MULTIPLE_WINDOWS, "window(String)");
             }
+            return PlaywrightJavaWebDriver.this;
+        }
 
-            @Override
-            public void deleteCookie(Cookie cookie) {
-                deleteCookieNamed(cookie.getName());
+        @Override
+        public WebDriver defaultContent() {
+            return useSearchRoot(pageSearchRoot());
+        }
+
+        @Override
+        public WebElement activeElement() {
+            return new PlaywrightJavaWebElement(session.page().locator(":focus"), implicitWaitTimeout);
+        }
+
+        @Override
+        public org.openqa.selenium.Alert alert() {
+            throw new org.openqa.selenium.NoAlertPresentException(com.znsio.teswiz.web.WebEngineCapabilities
+                    .formatDiagnosticMessage(com.znsio.teswiz.web.WebEngine.PLAYWRIGHT_JAVA,
+                            com.znsio.teswiz.web.WebCapability.ALERTS, "switchTo().alert()"));
+        }
+
+        @Override
+        public WebDriver newWindow(org.openqa.selenium.WindowType typeHint) {
+            throw unsupported(com.znsio.teswiz.web.WebCapability.MULTIPLE_WINDOWS, "newWindow(WindowType)");
+        }
+    }
+
+    private final class PlaywrightJavaNavigation implements Navigation {
+        @Override
+        public void back() {
+            session.page().goBack();
+        }
+
+        @Override
+        public void forward() {
+            session.page().goForward();
+        }
+
+        @Override
+        public void to(String url) {
+            get(url);
+        }
+
+        @Override
+        public void to(java.net.URL url) {
+            get(url.toString());
+        }
+
+        @Override
+        public void refresh() {
+            session.page().reload();
+        }
+    }
+
+    /** Selenium {@code manage()}: cookies live on the browser context; window and timeouts on this driver. */
+    private final class PlaywrightJavaOptions implements Options {
+        @Override
+        public void addCookie(Cookie cookie) {
+            session.browserContext().addCookies(List.of(PlaywrightJavaCookieMapper.toPlaywrightCookie(cookie)));
+        }
+
+        // Playwright cannot delete a single cookie: clear them all, then restore the others.
+        @Override
+        public void deleteCookieNamed(String name) {
+            List<com.microsoft.playwright.options.Cookie> remaining = session.browserContext().cookies().stream()
+                    .filter(c -> !c.name.equals(name)).toList();
+            session.browserContext().clearCookies();
+            if (!remaining.isEmpty()) {
+                session.browserContext().addCookies(remaining);
             }
+        }
 
-            @Override
-            public void deleteAllCookies() {
-                session.browserContext().clearCookies();
+        @Override
+        public void deleteCookie(Cookie cookie) {
+            deleteCookieNamed(cookie.getName());
+        }
+
+        @Override
+        public void deleteAllCookies() {
+            session.browserContext().clearCookies();
+        }
+
+        @Override
+        public Set<Cookie> getCookies() {
+            return session.browserContext().cookies().stream().map(PlaywrightJavaCookieMapper::toSeleniumCookie)
+                    .collect(java.util.stream.Collectors.toSet());
+        }
+
+        @Override
+        public Cookie getCookieNamed(String name) {
+            return getCookies().stream().filter(c -> c.getName().equals(name)).findFirst().orElse(null);
+        }
+
+        @Override
+        public Timeouts timeouts() {
+            return new PlaywrightJavaTimeouts();
+        }
+
+        @Override
+        public Window window() {
+            return new PlaywrightJavaWindow();
+        }
+
+        @Override
+        public Logs logs() {
+            return new PlaywrightJavaLogs();
+        }
+    }
+
+    private final class PlaywrightJavaTimeouts implements Timeouts {
+        @Override
+        public Timeouts implicitlyWait(Duration duration) {
+            implicitWaitTimeout = duration;
+            return this;
+        }
+
+        @Override
+        public Timeouts scriptTimeout(Duration duration) {
+            scriptTimeout = duration;
+            return this;
+        }
+
+        @Override
+        public Timeouts pageLoadTimeout(Duration duration) {
+            pageLoadTimeout = duration;
+            return this;
+        }
+
+        @Override
+        public Duration getImplicitWaitTimeout() {
+            return implicitWaitTimeout;
+        }
+
+        @Override
+        public Duration getScriptTimeout() {
+            return scriptTimeout;
+        }
+
+        @Override
+        public Duration getPageLoadTimeout() {
+            return pageLoadTimeout;
+        }
+    }
+
+    /** The window is the page viewport: no position, and minimize/fullscreen are no-ops. */
+    private final class PlaywrightJavaWindow implements Window {
+        private static final Dimension DEFAULT_WINDOW_SIZE = new Dimension(1280, 960);
+
+        @Override
+        public void setSize(Dimension targetSize) {
+            session.page().setViewportSize(targetSize.getWidth(), targetSize.getHeight());
+        }
+
+        @Override
+        public void setPosition(Point targetPosition) {
+            throw unsupported(com.znsio.teswiz.web.WebCapability.WINDOW_POSITION, "manage().window().setPosition");
+        }
+
+        // Without a fixed viewport (maximized windows) the size comes from the browser window itself.
+        @Override
+        public Dimension getSize() {
+            com.microsoft.playwright.options.ViewportSize size = session.page().viewportSize();
+            if (null != size) {
+                return new Dimension(size.width, size.height);
             }
-
-            @Override
-            public Set<Cookie> getCookies() {
-                return session.browserContext().cookies().stream()
-                        .map(c -> new Cookie.Builder(c.name, c.value).domain(c.domain).path(c.path)
-                                .expiresOn(null != c.expires ? new Date((long) (c.expires * 1000)) : null)
-                                .isSecure(Boolean.TRUE.equals(c.secure)).isHttpOnly(Boolean.TRUE.equals(c.httpOnly))
-                                .build())
-                        .collect(java.util.stream.Collectors.toSet());
+            try {
+                return evaluateDimension("() => window.innerWidth", "() => window.innerHeight")
+                        .orElse(DEFAULT_WINDOW_SIZE);
+            } catch (Exception ignored) {
+                return DEFAULT_WINDOW_SIZE;
             }
+        }
 
-            @Override
-            public Cookie getCookieNamed(String name) {
-                return getCookies().stream().filter(c -> c.getName().equals(name)).findFirst().orElse(null);
+        @Override
+        public Point getPosition() {
+            return new Point(0, 0);
+        }
+
+        @Override
+        public void maximize() {
+            try {
+                evaluateDimension("() => window.screen.availWidth", "() => window.screen.availHeight")
+                        .ifPresent(screen -> session.page().setViewportSize(screen.getWidth(), screen.getHeight()));
+            } catch (Exception ignored) {
+                // best effort: leave the viewport unchanged
             }
+        }
 
-            @Override
-            public Timeouts timeouts() {
-                return new Timeouts() {
-                    @Override
-                    public Timeouts implicitlyWait(Duration duration) {
-                        implicitWaitTimeout = duration;
-                        return this;
-                    }
+        @Override
+        public void minimize() {
+        }
 
-                    @Override
-                    public Timeouts scriptTimeout(Duration duration) {
-                        scriptTimeout = duration;
-                        return this;
-                    }
+        @Override
+        public void fullscreen() {
+        }
+    }
 
-                    @Override
-                    public Timeouts pageLoadTimeout(Duration duration) {
-                        pageLoadTimeout = duration;
-                        return this;
-                    }
+    /** Console messages are collected by the session and written on close; none are exposed here. */
+    private static final class PlaywrightJavaLogs implements Logs {
+        @Override
+        public LogEntries get(String logType) {
+            return new LogEntries(Collections.emptyList());
+        }
 
-                    @Override
-                    public Duration getImplicitWaitTimeout() {
-                        return implicitWaitTimeout;
-                    }
-
-                    @Override
-                    public Duration getScriptTimeout() {
-                        return scriptTimeout;
-                    }
-
-                    @Override
-                    public Duration getPageLoadTimeout() {
-                        return pageLoadTimeout;
-                    }
-                };
-            }
-
-            @Override
-            public Window window() {
-                return new Window() {
-                    @Override
-                    public void setSize(Dimension targetSize) {
-                        session.page().setViewportSize(targetSize.getWidth(), targetSize.getHeight());
-                    }
-
-                    @Override
-                    public void setPosition(Point targetPosition) {
-                        throw unsupported(com.znsio.teswiz.web.WebCapability.WINDOW_POSITION,
-                                "manage().window().setPosition");
-                    }
-
-                    @Override
-                    public Dimension getSize() {
-                        com.microsoft.playwright.options.ViewportSize size = session.page().viewportSize();
-                        if (null != size) {
-                            return new Dimension(size.width, size.height);
-                        }
-                        try {
-                            Object widthObj = session.page().evaluate("() => window.innerWidth");
-                            Object heightObj = session.page().evaluate("() => window.innerHeight");
-                            if (null != widthObj && null != heightObj) {
-                                return new Dimension(Integer.parseInt(String.valueOf(widthObj)),
-                                        Integer.parseInt(String.valueOf(heightObj)));
-                            }
-                        } catch (Exception ignored) {
-                        }
-                        return new Dimension(1280, 960);
-                    }
-
-                    @Override
-                    public Point getPosition() {
-                        return new Point(0, 0);
-                    }
-
-                    @Override
-                    public void maximize() {
-                        try {
-                            Object widthObj = session.page().evaluate("() => window.screen.availWidth");
-                            Object heightObj = session.page().evaluate("() => window.screen.availHeight");
-                            if (null != widthObj && null != heightObj) {
-                                session.page().setViewportSize(Integer.parseInt(String.valueOf(widthObj)),
-                                        Integer.parseInt(String.valueOf(heightObj)));
-                            }
-                        } catch (Exception ignored) {
-                        }
-                    }
-
-                    @Override
-                    public void minimize() {
-                    }
-
-                    @Override
-                    public void fullscreen() {
-                    }
-                };
-            }
-
-            @Override
-            public Logs logs() {
-                return new Logs() {
-                    @Override
-                    public LogEntries get(String logType) {
-                        return new LogEntries(Collections.emptyList());
-                    }
-
-                    @Override
-                    public Set<String> getAvailableLogTypes() {
-                        return Collections.singleton(LogType.BROWSER);
-                    }
-                };
-            }
-        };
+        @Override
+        public Set<String> getAvailableLogTypes() {
+            return Collections.singleton(LogType.BROWSER);
+        }
     }
 
     @Override
