@@ -78,7 +78,7 @@ Moving internal-only classes out of `runner` was considered and skipped. The pac
 - **One CodeQL workflow.** `codeql-analysis.yml` duplicated `codeql.yml` ("CodeQL Advanced") on every push and pull request. It is removed; `codeql.yml` scans Java and the GitHub Actions workflows, and the README badge points to it.
 - **`build.gradle.sample`** wrapper `gradleVersion` moves from 9.7.1 to 9.9.0, matching the build.
 - **`package.json`** gets a plain-text description instead of four `znsio/teswiz` badge links, and drops `"main": "index.js"`, which pointed to a file that does not exist. The lockfile is unchanged.
-- **Changelog.** Removed sections that were fully duplicated: the second 1.0.55 copy and its stray heading, an earlier draft of 1.0.53, `1.0.52-SNAPSHOT`, and repeated 1.0.35 and 1.0.34 copies. The 1.0.44, 1.0.46, 1.0.48 and 1.0.49 SNAPSHOT sections are kept because they hold notes their release sections do not.
+- **Changelog.** Removed sections that were fully duplicated: the second 1.0.55 copy and its stray heading, an earlier draft of 1.0.53, `1.0.52-SNAPSHOT`, and repeated 1.0.35 and 1.0.34 copies. The 1.0.44, 1.0.46, 1.0.48 and 1.0.49 SNAPSHOT drafts, an `Unreleased` draft and a stray `1.0.4305` section are gone too. The few notes only they held are now in the matching release (the 1.0.43 self-clearing gestures and their breaking change, two 1.0.44 tests, and 1.0.46 notification details). The 1.0.42 section was titled v1.0.41 and repeated the 1.0.41 notes. It now lists only what changed between the two tags. Unclosed code fences in the 1.0.41 and 1.0.42 install snippets, which turned the rest of the file into a code block, are closed. Old headings now drop the `v` prefix, and a stray mid-file `# Changelog` heading is removed.
 
 ## 🛠 CI / GitHub Actions
 
@@ -625,29 +625,6 @@ A space in a `queryParams` value may go out as `+` (Playwright) or `%20` (RestAs
 - `README.md`
 - `Changelog.MD`
 
-## 1.0.49-SNAPSHOT (unreleased)
-# Release Notes - teswiz v1.0.49-SNAPSHOT (unreleased)
-
-_Previous release: v1.0.48_
-
-This release makes the RestAssured and Playwright API engines send the same request, so switching `API_ENGINE` no longer changes what goes on the wire.
-
-## 🐞 Fixes
-
-### 🔁 Identical requests on both API engines
-
-- **Request bodies.** A `Map` or `Collection` body is now written by one shared Jackson serialiser (`JsonRequestBody`) on both engines. Explicit `null` fields and `null` list elements are kept (org.json dropped them on the Playwright path), decimals stay decimals (`1.0`, not `1`), and key order is preserved. Nested `JSONObject`, `JSONArray` and `JSONObject.NULL` values are written as the JSON they hold. A body that cannot be written as JSON fails fast with `InvalidTestDataException`.
-- **URLs on RestAssured.** A valid `%XX` escape in a URL is no longer encoded a second time (`%3A` used to become `%253A`). Only characters that are illegal in a URL (a space, a non-ASCII character, a stray `%`) are percent-encoded (`RequestUrl`). `queryParams` map values are encoded once, and a `null` value is skipped, as on Playwright.
-- **Behaviour change to check.** If a test relied on the Playwright engine omitting a `null` field, that field is now sent. Remove the key from the map to leave it out.
-- Covered by a new `ApiEngineRequestContractTest`: 9 request contracts run against `rest-assured`, `playwright-java` and `playwright-ts` using a local recording server. `playwright-ts` is routed to the same Playwright Java client as `playwright-java`, so the test pins that it sends the same request.
-
-## 📝 Docs
-
-- `docs/engines/running-api-tests.md`: new "What goes on the wire" section with the rules above.
-- Corrected the description of `API_ENGINE=playwright-ts` in `README.md`, `running-api-tests.md`, `architecture-notes.md`, `configuration-parameters.md`, `configuring-test-execution.md` and `api-example.md`. It uses the same Playwright Java `APIRequestContext` client as `playwright-java`; there is no separate TypeScript API worker.
-- `docs/architecture-and-internals/architecture-notes.md`: new `com.znsio.teswiz.api` package section with a diagram, and a package rule for shared request shaping.
-- `docs/architecture-and-internals/playwright-migration-guide.md`: note on the identical-request behaviour for teams moving off direct RestAssured calls.
-
 ## 1.0.48
 # Release Notes - teswiz v1.0.48
 
@@ -711,31 +688,7 @@ The value is never below 1 (`Runner.getApiMaxRetries()`). Consumers whose API ca
 - `docs/architecture-and-internals/architecture-notes.md`
 - `docs/getting-started/getting-started-guide.md`
 - `Changelog.MD`
-- `build.gradle` (version 1.0.48-SNAPSHOT)
-
-## 1.0.48-SNAPSHOT
-# Release Notes - teswiz v1.0.48-SNAPSHOT
-
-_Previous release: v1.0.47_
-
-This release adds engine-agnostic body accessors to `TeswizApiResponse` so API consumers can map a response body without reaching for a specific HTTP engine's types.
-
-## 🚀 Enhancements
-
-### 🧩 Typed JSON mapping and XML reading on `TeswizApiResponse`
-
-`TeswizApiResponse` previously exposed only `asJsonObject()` / `asJsonArray()` (org.json). Four additive accessors now cover the common "map the body to my own type" and "read an XML supplier" needs, all working off the raw response-body string so they are independent of the RestAssured or Playwright engine that produced the response:
-
-- **`as(Class<T>)`** — map the JSON body to a caller-supplied type via Jackson.
-- **`as(TypeReference<T>)`** — map the JSON body to a generic type such as `List<Foo>`.
-- **`asXmlDocument()`** — parse the body as an XXE-safe `org.w3c.dom.Document` (external entity resolution and DOCTYPE disabled; the body is untrusted server data).
-- **`xmlString(xpath)`** — evaluate an XPath against the XML body, returning the matched text or an empty string when the path matches nothing.
-
-A malformed body fails fast with `InvalidTestDataException` naming the target type / XPath. Purely additive: no existing method, engine, or consumer changes. Covered by a new `TeswizApiResponseTest`.
-
-### 🔁 `API_MAX_RETRIES` can now be set in the config file
-
-The Playwright API engine retries each call up to `API_MAX_RETRIES` times (default 3), but until now the key was only read from an environment variable or `-D` system property, so a value in `config.properties` was silently ignored (although the docs and config template listed it as a config key). It now resolves like the other numeric keys: environment variable / system property first, then the config file, then the default of 3, and never below 1 (`Runner.getApiMaxRetries()`). Consumers whose API calls are not safe to resend (for example wallet bet/win/void POSTs) can pin `API_MAX_RETRIES=1` in their config to fail fast on the first 502/503/504 or exception, matching the RestAssured engine. Default behaviour is unchanged. Covered by a new `ApiMaxRetriesConfigTest`.
+- `build.gradle` (version 1.0.48)
 
 ## 1.0.47
 # Release Notes - teswiz v1.0.47
@@ -791,7 +744,7 @@ The notification content model now exposes the complete per-scenario detail of a
 - `src/test/java/com/znsio/teswiz/reporting/notify/RunEnvironmentTest.java`
 - `src/test/resources/notify/cucumber-junit-mixed.xml`
 - `docs/subsystems/run-notifications.md`
-- `build.gradle` (version bump to 1.0.47-SNAPSHOT)
+- `build.gradle` (version bump to 1.0.47)
 
 ## 1.0.46
 # Release Notes - teswiz v1.0.46
@@ -810,9 +763,9 @@ teswiz now owns the entire test-run notification runtime — Slack + email chann
 - **`Notifier`** — applies the master switch (`notify.enabled`) + branch allowlist (`notify.branches`) gate, then sends each `Notification` to the channels whose destination is present; returns a per-target `NotificationOutcome` map and never throws.
 - **`SlackSender`** — POSTs `{"text":...}` to an incoming webhook; **`EmailSender`** sends self-contained HTML over SMTP via `jakarta.mail` with bounded 15s timeouts and an unauthenticated-relay path. Both never throw.
 - **Content helpers** — `JUnitResults` (parse JUnit XML → counts + failures-by-feature), `HtmlReport` (status card / footer / links / Slack separator / escape), `LlmUsageLog` (fail-soft parse of teswiz's end-of-run "LLM Vision Usage Summary"), `RunEnvironment` (run provenance). `BranchGate` + `NotificationChannel` + `NotificationOutcome` round out the model; `com.znsio.teswiz.exceptions.NotificationException` surfaces a broken config.
-- **CI-provider-agnostic run provenance** — a new `CiProvider` detects the CI system from its signature environment variable (GitLab, GitHub Actions, Jenkins, CircleCI, Bitbucket Pipelines, Azure Pipelines) and maps that provider's native variable names onto teswiz's common fields (pipeline/job id + URL, short commit, who triggered it, runner); an unrecognised environment resolves as a local run (host + user). `CiProvider` is the single source of truth for CI detection: `RunTelemetry.detectCiProvider()` delegates to `CiProvider.telemetryLabel(...)`.
-- **Opt-in fail-fast (`notify.fail.on.error`, default `false`)** — notifications stay best-effort by default (a transient Slack/SMTP failure, a missing destination for an enabled channel, or a broken composer is logged and swallowed). Set `notify.fail.on.error=true` to make a run that wanted to notify but could not fail fast with a `NotificationException` naming the channel.
-- **Configurable via `NOTIFICATIONS_CONFIG_FILE`** — the notifications file is resolved from the new `NOTIFICATIONS_CONFIG_FILE` key in `config.properties` (added to the canonical template and all example configs in template order), not a hardcoded classpath resource. A ready-made **disabled** `configs/teswiz/notifications.properties` ships in the repo (guarded by `SampleNotificationsPropertiesTest`).
+- **CI-provider-agnostic run provenance** — a new `CiProvider` detects the CI system from its signature environment variable (GitLab, GitHub Actions, Jenkins, CircleCI, Bitbucket Pipelines, Azure Pipelines) and maps that provider's native variable names onto teswiz's common fields (pipeline/job id + URL, short commit, who triggered it, runner); an unrecognised environment resolves as a local run (host + user). `RunEnvironment` also carries the detected provider name. `CiProvider` is the single source of truth for CI detection: `RunTelemetry.detectCiProvider()` delegates to `CiProvider.telemetryLabel(...)`, keeping its stable snake_case labels and the `RUN_IN_CI` generic-CI fallback.
+- **Opt-in fail-fast (`notify.fail.on.error`, default `false`)** — notifications stay best-effort by default (a transient Slack/SMTP failure, a missing destination for an enabled channel, or a broken composer is logged and swallowed). Set `notify.fail.on.error=true` to make a run that wanted to notify but could not fail fast with a `NotificationException` naming the channel, so a misconfiguration (e.g. `notify.slack.enabled=true` with an unset or invalid webhook) is caught immediately.
+- **Configurable via `NOTIFICATIONS_CONFIG_FILE`** — the notifications file is resolved from the new `NOTIFICATIONS_CONFIG_FILE` key in `config.properties` (added to the canonical template and all 54 example configs in template order), not a hardcoded classpath resource. A ready-made **disabled** `configs/teswiz/notifications.properties` ships in the repo (guarded by `SampleNotificationsPropertiesTest`), and the execution-config validator (`ConfigurationFilesConsistencyTest`) ignores `*notifications.properties` so the file can live under `configs/`.
 - **Example config + docs** — added the canonical `configs/teswiz/notifications.properties.template` (lower-case `notify.*` keys, every key OFF by default), a `docs/subsystems/run-notifications.md` guide (with a Mermaid flow diagram), and wired it into the docs index, README, and architecture notes.
 - All delivery-safe and unit-tested under `com.znsio.teswiz.reporting.notify` (including `CiProviderTest`, `RunEnvironmentGenericCiTest`, `BranchGateTest`, `NotifierTest`, `SlackSenderTest`, `EmailSenderTest`, and `RunNotificationsFailFastTest`).
 
@@ -834,29 +787,6 @@ Corrected the route anchor handling in the `transportnsw_ocr` example so a rever
 - `appium-xcuitest-driver` 12.19.1 → 12.20.0
 - Updated transitive dependencies (`@appium/base-driver`, `@appium/support`, `@appium/types`, `asyncbox`, `body-parser`, `@appium/docutils`, `lilconfig`, `yargs`) and regenerated `package-lock.json`.
 - Maintains compatibility with Node.js 20.19.0+, 22.12.0+, and 24.0.0+.
-
-## 1.0.46-SNAPSHOT
-# Release Notes - teswiz v1.0.46-SNAPSHOT
-
-_Previous release: v1.0.45_
-
-## 🚀 Key Highlights & Enhancements
-### 🔔 New: generic end-of-run notification engine (`com.znsio.teswiz.reporting.notify`)
-teswiz now owns the entire test-run notification runtime — Slack + email channels, delivery, gating, and the **end-of-run trigger** — so any consumer gets run-notifications by supplying only the message content. teswiz's `Runner` fires it itself after the cucumber report is written; a consumer configures a composer and never wires a Gradle task. Migrated and generalised from the casino integration-test framework (GAMC-19572).
-- **`RunNotifications.fireIfConfigured(...)`** — the entry point teswiz's `Runner` calls after `cucumber-junit-report.xml` is complete and before JVM exit. Loads the notifications file named by the `NOTIFICATIONS_CONFIG_FILE` config key (the same file-path convention teswiz uses for `ENVIRONMENT_CONFIG_FILE` / `TEST_DATA_FILE`; unset = notifications off, no classpath fallback), resolves the consumer's composer by the `notify.composer.class` key, builds a `RunResult` (JUnit XML from `LOG_DIR/reports/`, counts, run environment), and delivers via `Notifier`. A no-op when no composer is configured; every failure is logged and swallowed so a notifier problem never changes a run's result. The run branch is resolved from `CI_COMMIT_REF_NAME` else teswiz's already-resolved `Setup.BRANCH_NAME` (CI/property else git) — branch resolution stays in one place, not re-run here.
-- **`RunNotificationComposer` (SPI) + `Notification` / `RunResult`** — the consumer implements `compose(RunResult) → List<Notification>`; a `Notification` carries a free-form type key, subject, Slack text, HTML body, and the resolved per-channel destinations. teswiz never branches on the type key.
-- **`NotificationSettings`** — generic loader: reads a `.properties` resource and layers an environment override on every key (env wins; blank/absent env falls through to the file), mapping `notify.enabled` → `NOTIFY_ENABLED`. Secrets are read from the environment only, never the file.
-- **`Notifier`** — applies the master switch (`notify.enabled`) + branch allowlist (`notify.branches`) gate, then sends each `Notification` to the channels whose destination is present; returns a per-target `NotificationOutcome` map and never throws.
-- **`SlackSender`** — POSTs `{"text":...}` to an incoming webhook (the webhook URL is the channel + the secret); **`EmailSender`** sends self-contained HTML over SMTP via `jakarta.mail` with bounded 15s timeouts and an unauthenticated-relay path. Both never throw.
-- **Content helpers** — `JUnitResults` (parse the JUnit XML → counts + failures-by-feature), `HtmlReport` (status-banner card / footer / links / Slack separator / escape), `LlmUsageLog` (tolerant, fail-soft parse of teswiz's end-of-run "LLM Vision Usage Summary"), `RunEnvironment` (run provenance). `BranchGate` + `NotificationChannel` + `NotificationOutcome` round out the model; `com.znsio.teswiz.exceptions.NotificationException` surfaces a broken config.
-- **CI-provider-agnostic run provenance** — the run-context footer is no longer GitLab-specific. A new `CiProvider` detects the CI system from its signature environment variable (GitLab, GitHub Actions, Jenkins, CircleCI, Bitbucket Pipelines, Azure Pipelines) and maps that provider's native variable names onto teswiz's common fields (pipeline/job id + URL, short commit, who triggered it, runner); an unrecognised environment resolves as a local run (host + user). `RunEnvironment` now also carries the detected provider name. `CiProvider` is the **single source of truth** for CI detection: `RunTelemetry.detectCiProvider()` now delegates to `CiProvider.telemetryLabel(...)` (keeping its stable snake_case labels + the `RUN_IN_CI` generic-CI fallback) instead of carrying a second copy of the provider list.
-- **Opt-in fail-fast (`notify.fail.on.error`, default `false`)** — notifications stay best-effort by default (a transient Slack/SMTP failure, a missing destination for an enabled channel, or a broken composer is logged and swallowed, never flipping a green run red). Set `notify.fail.on.error=true` to make a run that wanted to notify but could not fail fast with a `NotificationException` naming the channel — so misconfiguration (e.g. `notify.slack.enabled=true` with an unset/invalid webhook) is caught immediately instead of silently never notifying.
-- **Configurable via `NOTIFICATIONS_CONFIG_FILE`** — the notifications file is resolved from the new `NOTIFICATIONS_CONFIG_FILE` key in `config.properties` (added to the canonical template and all 54 example configs in template order), not a hardcoded classpath resource — consistent with every other teswiz external config file. A ready-made **disabled** `configs/teswiz/notifications.properties` ships in the repo (the path the example configs point at, so the samples are a complete no-op out of the box, guarded by `SampleNotificationsPropertiesTest`). The execution-config validator (`ConfigurationFilesConsistencyTest`) now ignores `*notifications.properties`, so the file can legitimately live under `configs/`.
-- **Example config + docs** — added the canonical `configs/teswiz/notifications.properties.template` (lower-case `notify.*` keys in their own file, separate from the teswiz execution config, with every key OFF by default), a `docs/subsystems/run-notifications.md` guide (with a Mermaid flow diagram), and wired it into the docs index, README, and architecture notes.
-- All delivery-safe: a notification problem is recorded as an outcome and swallowed, never failing a run. Unit-tested under `com.znsio.teswiz.reporting.notify` (including `CiProviderTest` + `RunEnvironmentGenericCiTest`).
-
-### 🐞 Fixed: Playwright-Java browser teardown no longer crashes Chromium on a headful run
-On a headful run (e.g. macOS), the bundled Chromium ("Chrome for Testing") sometimes died with an OS "quit unexpectedly" crash dialog at the end of a run. Cause: `PlaywrightJavaWebDriver.closeSession()` closed the browser and then **immediately** stopped the Playwright node driver, while `browser().close()` was wrapped in a silent swallow and `playwright().close()` was unguarded — so the node driver was torn down while the Chromium process it launched was still exiting, orphaning it. Fix: a new `closeBrowserThenDriver(...)` closes the browser, **settles briefly** (`BROWSER_CLOSE_SETTLE_MILLIS`) so Chromium finishes exiting, then stops the node driver — both steps guarded and logged (at `debug`) rather than silently swallowed, so a teardown problem never propagates out of the after-scenario hook. No API change.
 
 ## 1.0.45
 # Release Notes - teswiz v1.0.45
@@ -940,7 +870,7 @@ Added to `configs/teswiz/teswiz_config.properties.template` (and all example con
 - **Playwright browser binaries:** this release bumps Playwright to `1.64.1`. After upgrading, run `./node_modules/.bin/playwright install` (or `npx playwright install`) so the matching browser binaries are present, otherwise Playwright-engine tests fail to launch a browser.
 
 ## 1.0.44
-# Release Notes — teswiz v1.0.44
+# Release Notes - teswiz v1.0.44
 
 _Previous release: v1.0.43_
 
@@ -975,6 +905,7 @@ _Previous release: v1.0.43_
 ## 🧪 Tests
 
 - Added `ElementWaiterTest` (6), `WindowSizingResolverTest` (3), and `PlaywrightJavaWaitTest` (6, native Playwright waits).
+- Added `PlaywrightHighlighterTest` and `HighlightingLocatorTest` for universal element highlighting.
 - `PlaywrightLocatorTest` removed with the `By` bridge.
 - `PlaywrightWebDriverTest` reworked to assert the native pw-ts contract (surviving native driver ops + unsupported-signal guards for the removed `By` surface).
 - `GeneratedScreenParityTest` pw-java leg now runs a real native Playwright Java driver (`PlaywrightJavaWebDriverFixture`).
@@ -985,38 +916,6 @@ _Previous release: v1.0.43_
 - **No action needed for Selenium or Appium users** — behaviour and public API are unchanged.
 - **Playwright screen authors:** if any pw-java/pw-ts screen still called `driver.findElement(By...)` or a `By`-based wait, migrate it to native authoring (pw-java: `context.page().locator(...)` / `getByText(...)`; pw-ts: `.screen.ts`). Those calls now throw a structured capability error on Playwright engines.
 
-## 1.0.44-SNAPSHOT (unreleased)
-# Release Notes - teswiz v1.0.44-SNAPSHOT
-_Previous release: v1.0.43_
-
-## 🚀 Key Highlights & Enhancements
-
-### 🧭 Engine-native Playwright locators — Selenium `By` bridge removed from Playwright (Phase 7)
-* **Playwright is now authored natively, and the Playwright↔Selenium-`By` translation bridge is deleted.** pw-java screens use `context.page().locator(...)/getByText(...)` from `PlaywrightJavaScreenContext`; pw-ts screens use their `.screen.ts` modules. `By` is now the locator currency for **Selenium and Appium only**.
-* **Selenium and Appium are completely unchanged** — zero behaviour or public-API change (verified before any deletion: `ElementWaiter`, the `Driver` `By`-methods and `ElementFinder` call the Selenium `WebDriver` interface and are engine-neutral; the `By` coupling lived only in the `web.playwright` package).
-* **`findElement(By)` / `findElements(By)` and `By`-based waits now fail fast on the Playwright engines** with a structured `WebEngineCapabilities` diagnostic (new `WebCapability.ELEMENT_LOCATION_BY_SELENIUM_LOCATOR`) that points authors at native Playwright authoring, instead of silently translating.
-* **Removed** (Playwright-only, no external users): `PlaywrightBy`, `PlaywrightJavaBy`, `PlaywrightLocator`, `PlaywrightLocatorReference`, the pw-ts `PlaywrightWebElement` + `PlaywrightShadowRootSearchContext`, and the `worker.mjs` locator protocol (`createLocator`/`elementAction`/`countElements`). The native `screenAction` worker path is retained. `PlaywrightJavaWebElement` is retained as the native `Locator` adapter.
-* **New native bounded waits** on `PlaywrightJavaWait` (`untilVisible`/`untilPresent`/`untilHidden`) so Playwright loses no wait capability when the `By`-waits stop routing through it.
-
-### 🧭 Cross-engine bounded element waits (`ElementWaiter`)
-* **New `ElementWaiter` in `com.znsio.teswiz.runner`**, surfaced through three delegating methods on the `Driver` facade: `isElementVisible(By, int)`, `isElementPresentWithin(By, int)` and `waitTillTextIsPresent(By, String, int)`. Each waits up to a bounded number of seconds and **returns `false` on timeout instead of throwing** — the missing "is it there within N seconds?" boolean that every existing `waitTill*` lacked (they all throw on timeout). Additive and non-breaking: no existing signature changed. On Selenium/Appium, `By` is the locator currency for these waits; Playwright screens use native waits (`PlaywrightJavaWait`).
-
-### 🔌 Web-engine capability parity signalling
-* **`WebCapability` gained `SHADOW_DOM` and `ALERTS`.** On `playwright-java`, `getShadowRoot()` and `switchTo().alert()` now throw a structured `WebEngineCapabilities` diagnostic naming the capability and the Playwright-native alternative, instead of a bare/absent failure — same pattern already used for windows/positioning.
-
-### 📐 Consistent default window/viewport sizing (`WindowSizingResolver`)
-* **New `WindowSizingResolver` is the single source of truth for the default viewport.** Selenium's hard-coded `1920x1080` headless fallback and the Playwright context-options viewport default now both resolve from it (`TESWIZ_DRIVER_VIEWPORT_WIDTH`/`HEIGHT`, default `1280x960`), so a sizing override applies consistently across engines. No config schema change.
-
-### 🖍️ Universal element highlighting (all engines)
-* **Element highlighting is now universal, not just for OCR/`WebElement` actions.** Previously a Screen driving the raw Playwright API (`page().locator(sel).click()`) got no highlight, because the highlight lived only inside teswiz's `WebElement` adapter. A new transparent `HighlightingPage`/`HighlightingLocator`/`HighlightingFrameLocator` (JDK dynamic proxies over Playwright's `Page`/`Locator`/`FrameLocator` interfaces) is installed at the single `Page`-creation point, so every action (`click`, `fill`, `press`, `check`, `selectOption`, …) highlights the element first — with **no change to the calling test and no `org.openqa.selenium` types**. Chained/`frameLocator` results are re-wrapped so highlighting survives locator chaining; unknown future Playwright methods forward verbatim.
-* **The Playwright highlight JS is extracted into one `PlaywrightHighlighter`** reused by both the `WebElement` adapter and the new proxies (was duplicated). Gated on `HIGHLIGHT_ELEMENTS`; never throws (a highlight must never block the action it precedes).
-* **Closed two Selenium highlight bypasses**: `Driver.allowPermission` and `Driver.uploadFileInBrowser` now resolve elements through the decorating `findElement(...)` facade, so their click/sendKeys highlight like every other Selenium action. pw-ts and Appium already highlighted via their `WebElement`/`VisualElement` paths.
-* Tests: `PlaywrightHighlighterTest`, `HighlightingLocatorTest`.
-
-## 🧪 Tests
-* `ElementWaiterTest` (6), `WindowSizingResolverTest` (3), `PlaywrightJavaWaitTest` (6, native Playwright waits) added. `PlaywrightLocatorTest` removed with the `By` bridge; `PlaywrightWebDriverTest` reworked to assert the native pw-ts contract (surviving native driver ops + unsupported-signal guards for the removed `By` surface); `GeneratedScreenParityTest` pw-java leg now runs a real native Playwright Java driver (`PlaywrightJavaWebDriverFixture`). Full `clean test` green (634 tests, 0 failures, 15 skipped).
-
----
 ## 1.0.43
 # Release Notes - teswiz v1.0.43
 
@@ -1040,6 +939,12 @@ _Previous release: v1.0.42_
 
 * **Migrated the last four Log4j 1.x files to Log4j2** (`SessionContext`, `TestExecutionContext`, `CucumberScenarioListener`, `CucumberScenarioReporterListener`) and removed the `log4j1.compatibility` shim. No source now imports `org.apache.log4j.*`.
 
+### 👁️ Visual Subsystem — self-clearing gestures and diagnostic captures
+
+* **Visual gestures now clean up their own highlight overlay.** `VisualElement.click()`, `doubleClick()`, `hover()`, `longPress()`, `sendKeys()`, `swipe()` and `dragAndDropTo()` now clear the highlight they draw, via a `try/finally` around the gesture body (each body extracted into a `performX()` helper). Previously the highlight was removed only by the `VisualOcrScreen.clickVisualElementBy*` ritual, so any caller that located an element and acted on it directly (e.g. `findVisualElementByImage(...).click()`) left the orange highlight box painted on the page. On a canvas with the SPIN control at the same position across screens, that leftover overlay was then captured in the next locate screenshot and masked the template, breaking the subsequent match. The cleanup is driver-agnostic — `Driver.clearHighlight()` already no-ops safely on Appium — so Selenium, `playwright-java`, `playwright-ts` and Appium all benefit.
+* **Before/After visual captures are now plain diagnostic screenshots, not Applitools baseline checks.** Across all four `VisualOcrScreen` implementations (web, playwright-java, iOS, Android) the per-action `visually.checkWindow(...)` Before/After calls are replaced with `visually.takeScreenshot(...)`, and the now-redundant explicit `driver.clearHighlight()` lines are removed (the gesture self-clears). These captures were always meant as "what did the action do" evidence, not product visual-regression assertions; routing them through `takeScreenshot` keeps the framework-injected highlight out of consumers' Applitools baselines and stops incidental per-action pixel changes raising false visual diffs.
+* **Breaking change for visual-regression users:** the ~60 per-action `checkWindow` checkpoints across the four Screen classes are gone. Consumers who relied on those as regression gates will no longer get an Applitools comparison on each visual action; add explicit `checkWindow` calls where a product-UI baseline is genuinely wanted.
+
 ---
 
 ## 🛠️ Changed Files Summary
@@ -1055,86 +960,48 @@ _Previous release: v1.0.42_
 * Log4j2 migration — `SessionContext`, `TestExecutionContext`, `CucumberScenarioListener`, `CucumberScenarioReporterListener`; removed the Log4j 1.x compatibility shim.
 * Tests — `VisualElementForwardingTest`, `VisualElementHighlightTest`, `VisualGestureDispatcherTest` added.
 
-## Unreleased
-# Release Notes - teswiz (unreleased)
-## 🚀 Key Highlights & Enhancements
-### 👁️ Visual Subsystem — wait-until-visible and screen-layer consolidation
-* **New `waitUntilVisualElementIsVisible*` methods on `VisualOcrBL`.** Four locator variants - by OCR text, by image template, by fallback text-or-image, and by fallback image-or-text - each with a default-budget overload and an overload taking an explicit maximum wait in seconds. They poll the existing engine-agnostic finders until the element is located on screen (non-null = visible) or the budget elapses, then assert visibility. The default budget derives from `VISUAL_ELEMENT_RETRY_ATTEMPTS x VISUAL_ELEMENT_RETRY_DELAY_SECONDS`; the inter-poll sleep is `VISUAL_ELEMENT_RETRY_DELAY_SECONDS`. Paired Gherkin steps (default and `within {int} seconds`) are added for all four variants. Works for Selenium, `playwright-java`, `playwright-ts` and Appium with no new TypeScript worker primitive, because the polling lives in the business layer and drives the already-abstract find operations.
-* **The four `VisualOcrScreen` platform classes are consolidated behind a shared template.** `VisualOcrScreen` is now a pure abstract contract; a new `AbstractVisualOcrScreen` owns the single find → assert → highlight → screenshot(before) → act → wait → screenshot(after) choreography plus `parsePositionIndex`. The Android/iOS/web/playwright-java classes reduce to a constructor (Android/iOS additionally override an `afterTextEntry()` hook to dismiss the keyboard), removing roughly 1,400 lines of duplication. The contract stays abstract with a no-arg constructor so the dynamically generated `playwright-ts` bridge continues to work unchanged.
-
-### 🖥️ Visual Subsystem — HiDPI/Retina coordinate accuracy for region-scoped locates
-* **Region-scoped visual locates now click the right place on Retina/HiDPI displays.** A new pure helper, `VisualRegionScaler`, centralises every conversion between logical/CSS pixels (what the DOM and Selenium/Appium report) and physical/screenshot pixels (what a capture contains): `scaleRegionToPixels` maps a logical `VisualRegion` to the physical crop rectangle, `clampBoxToImage` keeps a located box inside the searched image (tolerating a box flush to the edge), and `toLogicalRegion` converts a located box back to absolute logical coordinates by adding the crop's physical offset **before** dividing by the runtime scale factor. The scale factor is computed at runtime from the real screenshot width versus viewport width, never hard-coded per OS, so it adapts to macOS Retina/non-Retina, external monitors, Windows, Linux, and headless.
-* **All three vision engines now share this one conversion.** `ImageRecognitionService`, `OcrService`, and the LLM locate were each doing crop-offset/scale handling their own way; OCR in particular added the crop offset in physical pixels to an already-scaled logical coordinate, which mislocated by the scale factor on a Retina display when a region crop was in play. They now all route through `VisualRegionScaler.toLogicalRegion`, so a region-scoped find lands correctly regardless of display. Covered by `VisualRegionScalerTest` and `OcrCoordinateMappingTest`.
-
-### 🧱 Visual Subsystem — encapsulation and SOLID clean-up
-* **Gesture dispatch moved out of `VisualElement` into the `Driver` facade.** `VisualElement` is now a pure immutable value object (bounds + label) that forwards each gesture to the facade with its own centre/geometry; the engine-specific "how" lives in a new `VisualGestureDispatcher` (Appium touch → native coordinate input → Selenium `Actions` → synthesised DOM events). This removes the driver-type `instanceof` ladders and the `getInnerDriver()`/`getType()` coupling from the element.
-* **`VisualElement`'s `WebElement` adapter extracted** into `VisualElementWebElementAdapter`, so the value object no longer also carries the Selenium-proxy responsibility.
-* **`VisualOcrScreen` contract segregated** into role interfaces `VisualElementFinder`, `VisualElementActions`, and `VisualElementInspector`; the class remains the aggregate so callers and the `playwright-ts` bridge are unaffected.
-* **Unsupported gestures now throw `UnsupportedVisualGestureException`** instead of logging and continuing. A swipe/long-press on a plain Selenium web driver (no touch, no native coordinate input) and `zoom`/`pinch` on any engine fail loudly rather than passing against an unchanged app. **Parity note:** `click`/`doubleClick`/`hover`/`sendKeys` work on all engines; `swipe`/`longPress` require touch (Appium) or native coordinate input (Playwright), so parity is intentionally not provided on a mouse-only Selenium web driver.
-* **Migrated the last four Log4j 1.x files to Log4j2** (`SessionContext`, `TestExecutionContext`, `CucumberScenarioListener`, `CucumberScenarioReporterListener`) and removed the `log4j1.compatibility` shim. No source now imports `org.apache.log4j.*`.
-
-## 1.0.4305
-# Release Notes - teswiz v1.0.4305
-## 🚀 Key Highlights & Enhancements
-### 👁️ Visual Subsystem — self-clearing gestures and diagnostic captures
-* **Visual gestures now clean up their own highlight overlay.** `VisualElement.click()`, `doubleClick()`, `hover()`, `longPress()`, `sendKeys()`, `swipe()` and `dragAndDropTo()` now clear the highlight they draw, via a `try/finally` around the gesture body (each body extracted into a `performX()` helper). Previously the highlight was removed only by the `VisualOcrScreen.clickVisualElementBy*` ritual, so any caller that located an element and acted on it directly (e.g. `findVisualElementByImage(...).click()`) left the orange highlight box painted on the page. On a canvas with the SPIN control at the same position across screens, that leftover overlay was then captured in the next locate screenshot and masked the template, breaking the subsequent match. The cleanup is driver-agnostic — `Driver.clearHighlight()` already no-ops safely on Appium — so Selenium, `playwright-java`, `playwright-ts` and Appium all benefit.
-* **Before/After visual captures are now plain diagnostic screenshots, not Applitools baseline checks.** Across all four `VisualOcrScreen` implementations (web, playwright-java, iOS, Android) the per-action `visually.checkWindow(...)` Before/After calls are replaced with `visually.takeScreenshot(...)`, and the now-redundant explicit `driver.clearHighlight()` lines are removed (the gesture self-clears). These captures were always meant as "what did the action do" evidence, not product visual-regression assertions; routing them through `takeScreenshot` keeps the framework-injected highlight out of consumers' Applitools baselines and stops incidental per-action pixel changes raising false visual diffs.
-* **Breaking change for visual-regression users:** the ~60 per-action `checkWindow` checkpoints across the four Screen classes are gone. Consumers who relied on those as regression gates will no longer get an Applitools comparison on each visual action; add explicit `checkWindow` calls where a product-UI baseline is genuinely wanted.
-
 ## 1.0.42
-# Release Notes - teswiz v1.0.41
+# Release Notes - teswiz v1.0.42
+
+_Previous release: v1.0.41_
 
 ## 🚀 Key Highlights & Enhancements
 
 ### 🌐 Playwright Engine (`playwright-java` & `playwright-ts`)
 * **Maximized Window Mode Parity**: Fixed viewport resolution in `PlaywrightBrowserConfigResolver` to omit fixed viewport size (`1280x960`) when `"maximize": true` or `--start-maximized` is configured. This allows Playwright Java and TS engines to honor full-screen maximized windows without fixed viewport emulation overriding `--start-maximized`.
 * **Dynamic Window Controls**: Updated `PlaywrightJavaWebDriver.manage().window().maximize()` to expand viewport to screen available size (`window.screen.availWidth` x `availHeight`), and `getSize()` to evaluate actual inner window dimensions when viewport is `null`.
-* **Navigation & Timeout Resiliency**: Added automatic fallback to `COMMIT` navigation in `PlaywrightJavaWebDriver` and Node worker script (`worker.mjs`) when slow third-party scripts cause `DOMCONTENTLOADED` timeouts.
-* **Synchronized Page Transitions**: Wrapped link clicks with `page.waitForNavigation()` in Playwright Java screen handlers to ensure smooth navigation transitions.
-* **Visual Testing Parity**: Disabled CSS animations during screenshot capture and aligned navigation wait strategies to eliminate visual check flakes.
 
 ### 👁️ Visual Subsystem & OCR Logging
 * **OCR Region Log Formatting**: Improved logger output in `Visual.java` to display `[entire screen]` instead of raw Java `null` when performing OCR or image template detection without an explicit bounding box crop.
 
-### 📡 API Subsystem & Telemetry
-* **Unified Engine Resolution**: Refactored `ApiService` and `RunTelemetry` to consume API engine settings uniformly via `Runner.getApiEngine()` (`rest-assured`, `playwright-java`, `playwright-ts`).
-* **API Policy Compliance**: Passed explicit `User-Agent` headers in `WeatherAPIBL` to satisfy OpenStreetMap/Nominatim policy requirements and eliminate HTTP `403 Forbidden` errors.
-
 ### 🧹 Configuration & Repository Cleanups
 * **Configuration Normalization**: Removed redundant `# Historical properties...` and `# Project/provider-specific properties...` comment lines across all `configs/**/*.properties` files.
 * **Gradle Plugin Modernization**: Updated deprecated `com.github.ben-manes.versions` to `io.github.ben-manes.versions` in `build.gradle`.
-* **Publish Script Fix**: Resolved bash single-quote syntax errors on line 320 in `publishRelease.sh`.
-* **Cucumber Deprecation Cleanup**: Removed deprecated `AbstractTestNGCucumberTests` inheritance from Cucumber runners (`RunCukes` and `RunTestCukes`).
-
-### 📦 Dependencies & Compatibility
-* **ReportPortal Cucumber 8 Support**: Upgraded `agent-java-cucumber7` to `5.4.10` for full Cucumber 8 and TestNG compatibility.
-* **Linux CI Tesseract Support**: Pinned `tess4j` to `5.11.0` to prevent `libtesseract` missing symbol errors (`pixBackgroundNormTo1MinMax`) on Linux runners.
 
 ---
 
 ## 🛠️ Changed Files Summary
 
-* `build.gradle` — Version bump to `1.0.41`, plugin ID update, and dependency upgrades.
+* `build.gradle` — Version bump to `1.0.42` and plugin ID update.
 * `src/main/java/com/znsio/teswiz/config/browser/PlaywrightBrowserConfigResolver.java` — Maximized viewport resolution logic.
 * `src/main/java/com/znsio/teswiz/web/playwright/PlaywrightJavaDriverManager.java` — Handled `null` viewport size in context options.
-* `src/main/java/com/znsio/teswiz/web/playwright/PlaywrightJavaWebDriver.java` — `maximize()`, `getSize()`, and navigation fallback to `COMMIT`.
-* `playwright/worker.mjs` — Maximized viewport support and navigation fallback in Node worker.
+* `src/main/java/com/znsio/teswiz/web/playwright/PlaywrightJavaWebDriver.java` — `maximize()` and `getSize()`.
 * `src/main/java/com/znsio/teswiz/runner/Visual.java` — Formatted `null` OCR region logging output as `[entire screen]`.
-* `src/main/java/com/znsio/teswiz/services/ApiService.java` & `src/main/java/com/znsio/teswiz/runner/Runner.java` — Refactored API engine lookup.
-* `src/test/java/com/znsio/teswiz/businessLayer/weatherAPI/WeatherAPIBL.java` — Added `User-Agent` header for Nominatim API endpoints.
-* `publishRelease.sh` — Fixed quote escaping syntax error.
+* `src/test/java/com/znsio/teswiz/config/browser/PlaywrightBrowserConfigResolverTest.java` — Maximized viewport cases.
 * `configs/**/*.properties` — Cleaned up redundant comment headers.
+* `package.json`, `package-lock.json`, `docs/getting-started/getting-started-guide.md` — Version bump to `1.0.42`.
 
 ---
 
 ## 📋 Installation & Upgrade
 
-To use version `1.0.41` in your Gradle project:
+To use version `1.0.42` in your Gradle project:
 
 ```groovy
 dependencies {
-    implementation 'com.github.anandbagmar:teswiz:1.0.41'
+    implementation 'com.github.anandbagmar:teswiz:1.0.42'
 }
+```
 
 ## 1.0.41
 # Release Notes - teswiz v1.0.41
@@ -1181,6 +1048,7 @@ Update `build.gradle` in your project:
 dependencies {
     implementation 'com.github.anandbagmar:teswiz:1.0.41'
 }
+```
 
 ## 1.0.40
 - Update publishRelease.sh, AGENTS.md, and Changelog
@@ -1364,7 +1232,7 @@ dependencies {
 - feat: add native playwright-java screen context and convert theapp screens
 - fix: use plain version tags in publishRelease
 
-## v1.0.27
+## 1.0.27
 - refactor: prompt for unit-test execution in publishRelease
 - docs: remove outdated repository notice from README
 - feat: add skip-unit-tests flag to publishRelease script
@@ -1385,9 +1253,7 @@ dependencies {
 - fix(deps): reduce vulnerability backlog in teswiz
 - fix(deps): reduce high and critical npm vulnerabilities in teswiz
 
-# Changelog
-
-## v1.0.26
+## 1.0.26
 
 ### Driver enhancements
 
@@ -1399,7 +1265,7 @@ dependencies {
 
 - Updated the TheApp invalid-login scenario to execute the second login attempt again so the web flow covers the reusable invalid-login path.
 
-## v1.0.25
+## 1.0.25
 
 ### Runner
 
@@ -1415,7 +1281,7 @@ dependencies {
 - Updated UFG device emulation to iPhone 15 Pro in the UFG configuration.
 - Removed unused driver imports and driver creation call in the Figma step.
 
-## v1.0.24
+## 1.0.24
 
 ### Driver enhancements
 
@@ -1429,7 +1295,7 @@ dependencies {
 - Updated GitHub Actions to v7.
 - Refreshed npm/node packages.
 
-## v1.0.23
+## 1.0.23
 
 ### Build and dependency updates
 
@@ -1438,7 +1304,7 @@ dependencies {
 - Updated the README guidance to document the Gradle property-based override.
 - Kept `build.gradle.sample` aligned with the new default and override flow.
 
-## v1.0.22
+## 1.0.22
 
 ### Build and dependency updates
 
@@ -1447,7 +1313,7 @@ dependencies {
 - Refreshed npm dependencies in `package.json` and regenerated `package-lock.json`.
 - Updated Gradle plugin and dependency versions in `build.gradle`.
 
-## v1.0.21
+## 1.0.21
 
 ### Visual testing
 
@@ -1455,7 +1321,7 @@ dependencies {
 - Scoped Applitools mobile capability injection to runs where both `IS_VISUAL=true` and `useNML=true`.
 - Simplified proxy settings initialization in `Visual.addMobileCapabilitiesToTestContextForVisualTesting`.
 
-## v1.0.20
+## 1.0.20
 
 ### Visual testing
 
