@@ -35,12 +35,24 @@ The unit-test workflow updates the README release badge with the regex `release-
 
 ### PMD complexity report (report-only)
 
-The build now runs PMD 7.29.0 with `config/pmd/teswiz-complexity-ruleset.xml`, whose thresholds mirror the code-quality rules in `AGENTS.md`: cyclomatic complexity (10 per method), cognitive complexity (15), NPath complexity (200), statement count (30 per method), `if` nesting (3), and god classes. It is report-only (`ignoreFailures = true`): it runs with `check` and `build` on main sources, writes `build/reports/pmd/main.html`, and never fails the build. The unit-test workflow uploads the report with the test results. The starting baseline is 92 findings in 40 files. Run `./gradlew pmdMain` for a report on its own.
+The build now runs PMD 7.29.0 with `config/pmd/teswiz-complexity-ruleset.xml`, whose thresholds mirror the code-quality rules in `AGENTS.md`: cyclomatic complexity (10 per method), cognitive complexity (15), NPath complexity (200), statement count (30 per method), `if` nesting (3), and god classes. It is report-only (`ignoreFailures = true`): it runs with `check` and `build` on main sources, writes `build/reports/pmd/main.html`, and never fails the build. The unit-test workflow uploads the report with the test results. The starting baseline was 92 findings in 40 files; after the refactors below it is 65 findings in 36 files. Run `./gradlew pmdMain` for a report on its own.
 
 ### Lower complexity in Playwright browser configuration
 
 - **`PlaywrightJavaDriverManager.buildContextOptions`** (cyclomatic complexity 27, the highest in the codebase) now delegates to the new package-private `PlaywrightContextOptionsMapper`, which maps each context option in its own small helper. Behaviour is unchanged and pinned by the new `PlaywrightContextOptionsMapperTest` (12 cases, including blank strings, partial and `null` viewports, and non-map headers).
 - **`PlaywrightBrowserConfigResolver.resolve`** (complexity 24, 88 lines) is split into helpers for headless mode, launch arguments, maximized windows, context options, the default viewport, HTTPS errors, launch options, proxy and channel. Behaviour is unchanged and covered by the existing `PlaywrightBrowserConfigResolverTest`.
+
+### Behaviour-preserving complexity refactors
+
+Each refactor below started with characterization tests that passed against the original code, kept them green through the change, and left the public and protected API of every class unchanged. A `javap` comparison of all compiled main classes shows no removed or changed members and no new public types. PMD findings drop from 92 to 65, and none of these methods is flagged any more.
+
+- **One position-index parser.** `VisualOcrBL.parsePositionIndex` and `AbstractVisualOcrScreen.parsePositionIndex` had identical copies of the "first / last / 3rd / 2" parsing. Both keep their signatures (`public` and `protected final`) and delegate to the new `com.znsio.teswiz.visual.PositionIndexParser`. Pinned by `PositionIndexParserTest` (28 cases).
+- **`CommandLineExecutor`.** `execCommandInternal` (complexity 16, 89 lines) is split into process creation, exit-status and timeout handling, logging, output artifact and stream closing. Pinned by the new `CommandLineExecutorTest` (9 cases with real processes: shell pipes, trimmed output, exit codes and stderr, timeout kill, no-shell list form, invalid input, missing tool).
+- **`PlaywrightJavaWebDriver`.** The anonymous Selenium `TargetLocator`, `Navigation`, `Options`, `Timeouts`, `Window` and `Logs` implementations are now named private classes, and cookie conversion lives in the package-private `PlaywrightJavaCookieMapper`. `manage()` (cognitive complexity 28) and `switchTo()` (18) are no longer flagged. Pinned by the new `PlaywrightJavaWebDriverSeleniumApiTest` (34 cases: frame switching by index, name, element and parent, windows, alerts, navigation, cookies in both directions, timeouts, window-size fallbacks, logs).
+- **`OcrService`.** `findTextMatch`, `findAllTextMatches` and `readText` share screenshot preparation (parse, scale factor, region crop) and Tesseract set-up instead of repeating them; the find fallback chain and the duplicated word-matching loop are their own methods. Each method keeps its own error handling. Pinned by the new `OcrServiceBehaviourTest` (13 cases using real Tesseract on rendered text).
+- **`ImageRecognitionService`.** The two template finders share scene preparation and template loading, and the multi-scale matching loops use small helpers; every OpenCV matrix is still released in a `finally`. Pinned by the new `ImageRecognitionServiceBehaviourTest` (9 cases using real OpenCV on a generated scene).
+
+The OCR and image-matching tests skip themselves (instead of failing) on a machine without the native Tesseract or OpenCV libraries; the other cases in those classes still run.
 
 ### CodeQL quality queries
 
@@ -128,6 +140,11 @@ Notes:
 - `src/main/java/com/znsio/teswiz/runner/Runner.java`, `src/test/java/com/znsio/teswiz/runner/RunnerMainArgumentsTest.java` (new)
 - `src/main/java/com/znsio/teswiz/web/playwright/PlaywrightContextOptionsMapper.java` (new), `PlaywrightJavaDriverManager.java`, `src/test/java/com/znsio/teswiz/web/playwright/PlaywrightContextOptionsMapperTest.java` (new)
 - `src/main/java/com/znsio/teswiz/config/browser/PlaywrightBrowserConfigResolver.java`
+- `src/main/java/com/znsio/teswiz/visual/PositionIndexParser.java` (new), `businessLayer/visualocr/VisualOcrBL.java`, `screen/visualocr/AbstractVisualOcrScreen.java`
+- `src/main/java/com/znsio/teswiz/tools/cmd/CommandLineExecutor.java`
+- `src/main/java/com/znsio/teswiz/web/playwright/PlaywrightJavaWebDriver.java`, `PlaywrightJavaCookieMapper.java` (new)
+- `src/main/java/com/znsio/teswiz/visual/OcrService.java`, `ImageRecognitionService.java`
+- `src/test/java/com/znsio/teswiz/{visual/PositionIndexParserTest, tools/cmd/CommandLineExecutorTest, web/playwright/PlaywrightJavaWebDriverSeleniumApiTest, visual/OcrServiceBehaviourTest, visual/ImageRecognitionServiceBehaviourTest}.java` (new)
 - `config/pmd/teswiz-complexity-ruleset.xml` (new), `build.gradle` (`pmd` plugin)
 - `.github/workflows/*.yml` (`ubuntu-24.04`; `codeql.yml` `security-and-quality`; unit-test artifact includes the PMD report), `.github/actions/run-and-collect-tests-README.md`
 - `docs/index.md`, `docs/getting-started/writing-first-test.md`, `docs/architecture-and-internals/{faqs,ideas-backlog,ocr-and-image-recognition-plan,testng-execution-mode-plan}.md`, `docs/todos/*.md`
