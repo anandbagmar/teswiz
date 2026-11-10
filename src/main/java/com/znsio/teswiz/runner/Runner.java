@@ -338,16 +338,27 @@ public class Runner {
     }
 
     public static void main(String[] args) {
-        String logDir = System.getProperty("LOG_DIR");
-        System.setProperty("OUTPUT_DIRECTORY", logDir);
         LOGGER.info("teswiz Runner");
         LOGGER.info("Provided parameters:");
         LOGGER.info("{}", SensitiveDataMasker.mask(JsonPrettyPrinter.prettyPrint(args)));
-        if (args.length != 3) {
-            throw new InvalidTestDataException("Expected following parameters: 'String configFilePath, String "
-                    + "stepDefDirName, String " + "featuresDirName");
-        }
+        validateMainArguments(args);
+        useLogDirAsOutputDirectory();
         new Runner(args[0], args[1], args[2]);
+    }
+
+    private static void validateMainArguments(String[] args) {
+        if (null == args || args.length != 3) {
+            throw new InvalidTestDataException("Expected following parameters: 'String configFilePath, String "
+                    + "stepDefDirName, String featuresDirName'");
+        }
+    }
+
+    // OUTPUT_DIRECTORY falls back to "target" (see FileLocations) when LOG_DIR is not provided.
+    private static void useLogDirAsOutputDirectory() {
+        String logDir = System.getProperty("LOG_DIR");
+        if (null != logDir && !logDir.isBlank()) {
+            System.setProperty("OUTPUT_DIRECTORY", logDir);
+        }
     }
 
     public static TestExecutionContext getTestExecutionContext(long threadId) {
