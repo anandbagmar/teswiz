@@ -597,6 +597,14 @@ When adding new code for the dual-engine architecture:
 * prefer shared capability lookup and capability-file persistence under `config.capability`
 * prefer browser-config evolution code under `config.browser`
 * prefer visual-engine adaptation code under `visual`
+* in library packages, read execution configuration through `com.znsio.teswiz.config.TeswizConfig.reader()`
+  (a `TeswizConfigReader`) instead of `runner.Setup`'s static getters
+
+`RunnerDependencyRulesTest` (ArchUnit) enforces the direction of these dependencies. Library packages (everything
+except `runner`, `steps`, `testng`, `screen`, `listener` and `businessLayer`) must not gain new dependencies on
+`runner`. Existing ones are frozen in `src/test/resources/archunit_store`, and the store shrinks as they are removed.
+`mobile.session` must not depend on `runner` at all. If the rule fails, remove the new `runner` dependency rather than
+adding it to the store.
 
 ## Consumer compatibility intent
 

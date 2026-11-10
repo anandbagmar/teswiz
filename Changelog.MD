@@ -58,6 +58,18 @@ The OCR and image-matching tests skip themselves (instead of failing) on a machi
 
 `codeql.yml` now runs the `security-and-quality` query suite, which adds maintainability and reliability queries to the default security queries. Findings appear under Security → Code scanning.
 
+## 🏗 Design Improvements (non-breaking)
+
+These changes loosen the coupling between the library packages and `com.znsio.teswiz.runner` without breaking any public API. A `javap` comparison of all compiled main classes shows no removed or changed public or protected members. The only additions are the public types listed below.
+
+- **Architecture rules (ArchUnit).** The new `RunnerDependencyRulesTest` freezes the existing dependencies from library packages (everything except `runner`, `steps`, `testng`, `screen`, `listener` and `businessLayer`) on `runner`. Existing violations are recorded in `src/test/resources/archunit_store`. A new dependency on `runner` fails the build, and fixed ones drop out of the store. A second, strict rule keeps `mobile.session` independent of `runner`.
+- **Off the deprecated Appium server shim.** `AppiumDriverManager` and `PluginCliRequest` now use `AppiumServerController` directly instead of the deprecated `AppiumServerManager`. The public field `CucumberScenarioReporterListener.appiumServerManager` is still initialised, and is now marked `@Deprecated`.
+- **Read-only configuration interface.** The new `com.znsio.teswiz.config.TeswizConfigReader` interface and `TeswizConfig.reader()` give library code read access to the execution configuration without depending on `runner.Setup`. `reader()` returns a live view, so a reader obtained before `Setup` is initialised sees the values later. `TeswizConfiguration` implements the interface, and all 91 library calls to `Setup`'s config getters now go through it. Frozen `runner` dependencies drop from 440 to 349. `Setup`'s getters are unchanged for callers.
+- **Platform dispatch in `Drivers`.** The `switch` statements over `Platform` that created and closed drivers are replaced by a per-platform registry. Driver managers still load lazily, and a `null` platform still throws a `NullPointerException`. Pinned by the new `DriversPlatformDispatchTest` (13 cases).
+- **Applitools configuration values.** The new `com.znsio.teswiz.visual.ApplitoolsConfigValues` reads the server URL, default match level, viewport size and the benchmarking and browser-fetching flags from the loaded Applitools configuration. These are pure functions, so they can be tested without loading teswiz. `Setup` delegates to it with unchanged fallbacks: an unknown match level becomes `STRICT`, a missing viewport uses the runtime defaults, and a malformed viewport still fails. Pinned by the new `ApplitoolsConfigValuesTest` (10 cases).
+
+Moving internal-only classes out of `runner` was considered and skipped. The package-private classes (`MobileGestures`, `ElementFinder`, `ElementHighlighter`, `VisualElementWebElementAdapter`, `ConfigFileManager`) would have to become public to move, which widens the API. The public ones (for example `ElementWaiter` and `CucumberArgsBuilder`) are pinned to `runner` by existing tests. Both are better left for a major release.
+
 ## 🧹 Build and Repository Cleanup
 
 - **Reproducible versions.** The dynamic `org.assertj:assertj-core:3+` and `org.apache.logging.log4j:log4j-core:2+` are pinned to the versions they resolved to, 3.27.7 and 2.26.1.
