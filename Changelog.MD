@@ -23,9 +23,28 @@ The `shadowJar` manifest declared `Main-Class: com.znsio.e2e.runner.Runner`, a c
 
 The unit-test workflow updates the README release badge with the regex `release-[^-]+-blue\.svg\)`, but the badge URL ended in `-blue.svg?style=flat)`, so the regex never matched and the badge stayed at 1.0.40. The badge now ends in `-blue.svg)` (flat is the shields.io default) and shows the current release.
 
+### `Runner.main` reports bad arguments instead of a `NullPointerException`
+
+`Runner.main` copied the `LOG_DIR` system property into `OUTPUT_DIRECTORY` before checking its arguments. Without `LOG_DIR` (for example `java -jar teswiz-<version>-all.jar` with no arguments) that threw a `NullPointerException`, and with bad arguments it overwrote `OUTPUT_DIRECTORY` before failing. It now validates the three arguments first and fails with the usage message (`configFilePath`, `stepDefDirName`, `featuresDirName`), and sets `OUTPUT_DIRECTORY` only when `LOG_DIR` is provided (otherwise the existing `target` default applies). Covered by the new `RunnerMainArgumentsTest`.
+
 ### Sample step definitions log the message, not a stream
 
 21 log calls across 11 sample step files used `LOGGER.info(System.out.printf(...))`. `printf` prints to stdout and returns the `PrintStream`, so the log line held a stream reference instead of the message. They now use `String.format(...)`.
+
+## 🧮 Code Quality
+
+### PMD complexity report (report-only)
+
+The build now runs PMD 7.29.0 with `config/pmd/teswiz-complexity-ruleset.xml`, whose thresholds mirror the code-quality rules in `AGENTS.md`: cyclomatic complexity (10 per method), cognitive complexity (15), NPath complexity (200), statement count (30 per method), `if` nesting (3), and god classes. It is report-only (`ignoreFailures = true`): it runs with `check` and `build` on main sources, writes `build/reports/pmd/main.html`, and never fails the build. The unit-test workflow uploads the report with the test results. The starting baseline is 92 findings in 40 files. Run `./gradlew pmdMain` for a report on its own.
+
+### Lower complexity in Playwright browser configuration
+
+- **`PlaywrightJavaDriverManager.buildContextOptions`** (cyclomatic complexity 27, the highest in the codebase) now delegates to the new package-private `PlaywrightContextOptionsMapper`, which maps each context option in its own small helper. Behaviour is unchanged and pinned by the new `PlaywrightContextOptionsMapperTest` (12 cases, including blank strings, partial and `null` viewports, and non-map headers).
+- **`PlaywrightBrowserConfigResolver.resolve`** (complexity 24, 88 lines) is split into helpers for headless mode, launch arguments, maximized windows, context options, the default viewport, HTTPS errors, launch options, proxy and channel. Behaviour is unchanged and covered by the existing `PlaywrightBrowserConfigResolverTest`.
+
+### CodeQL quality queries
+
+`codeql.yml` now runs the `security-and-quality` query suite, which adds maintainability and reliability queries to the default security queries. Findings appear under Security → Code scanning.
 
 ## 🧹 Build and Repository Cleanup
 
@@ -38,6 +57,10 @@ The unit-test workflow updates the README release badge with the regex `release-
 - **Changelog.** Removed sections that were fully duplicated: the second 1.0.55 copy and its stray heading, an earlier draft of 1.0.53, `1.0.52-SNAPSHOT`, and repeated 1.0.35 and 1.0.34 copies. The 1.0.44, 1.0.46, 1.0.48 and 1.0.49 SNAPSHOT sections are kept because they hold notes their release sections do not.
 
 ## 🛠 CI / GitHub Actions
+
+### Linux runners pinned to `ubuntu-24.04`
+
+GitHub is moving the `ubuntu-latest` label to Ubuntu 26.04 between October 19 and November 19, 2026 ([actions/runner-images#14748](https://github.com/actions/runner-images/issues/14748)), and every workflow showed a migration warning. All Linux jobs, including the CodeQL matrix, now run on `ubuntu-24.04` explicitly, so the image cannot change underneath the build. The Playwright `--with-deps` install and the Tesseract native libraries behind the `tess4j` 5.11.0 pin are the parts most likely to differ on 26.04. Move to `ubuntu-26.04` deliberately, one workflow at a time, once it is verified.
 
 ### `gradle/gradle-build-action` replaced by `gradle/actions/setup-gradle`
 
@@ -92,6 +115,8 @@ Notes:
 - **Appium 3, not Appium 2.** `prerequisites.md`, `getting-started-guide.md`, `docs/engines/mobile-appium-setup.md`, `docs/index.md` and `README.md` now say Appium 3, and the Appium documentation links point to `appium.io/docs/en/latest/`. `prerequisites.md` notes that the drivers stay on their Appium 3 lines.
 - **Pin npm `playwright` in consumer projects.** `docs/architecture-and-internals/playwright-migration-guide.md` (section 6a) now installs `playwright@1.64` with `--save-exact` instead of an unpinned `playwright`, and explains why npm `playwright` must stay on the same minor as teswiz's Playwright Java (shared browser cache, `Executable doesn't exist` on mismatch).
 - **Agent rules.** `CLAUDE.md`, `ANTIGRAVITY.md` and `.codex/skills/teswiz-project/SKILL.md` add a rule to keep npm `playwright` and Playwright Java on the same minor and bump them together. They now point to `AGENTS.md` for the TDD, test-architecture and complexity rules, list it among the files to keep aligned, and use the current doc paths: the old `docs/internals/…`, `docs/features/…` and `docs/guides/…` paths no longer existed. `SKILL.md` names the repository `anandbagmar/teswiz` and separates the framework-shipped steps in `src/main` from the sample steps in `src/test`.
+- **Driver creation convention.** `docs/getting-started/writing-first-test.md` said the business layer creates the persona's driver, but every sample does it in the step definition and no BL does. The guide, its layer table, diagram and tutorial now show the step definition calling `Drivers.createDriverFor(persona, platform, context)` and the BL only orchestrating screens. The tutorial's old BL snippet also used a `createDriverFor` signature that does not exist.
+- **Plans, backlog and history.** `docs/index.md` links the 11 previously unlinked plan, backlog and troubleshooting docs (including all of `docs/todos/`) in a new section with their status, and `faqs.md` links the jitpack download troubleshooting page. Each plan has an accurate status header. The Playwright API engine plan's 13 `file:///Users/...` links are relative links now, and the TestNG execution-mode plan no longer points to the old `docs/features/`, `docs/internals/` and `docs/guides/` paths.
 - **Appium setup.** `prerequisites.md` and `mobile-appium-setup.md` no longer mention the `appium-dashboard` plugin, which is not installed; the manual start command keeps `relaxed-caps` and `device-farm`. Installed components are listed with `npx appium driver list --installed` and `npx appium plugin list --installed`.
 
 ## 🛠 Changed Files Summary
@@ -100,6 +125,12 @@ Notes:
 - `build.gradle.sample` (`wrapper` 9.9.0)
 - `renovate.json` (removed), `.github/workflows/codeql-analysis.yml` (removed)
 - `src/test/java/com/znsio/teswiz/steps/*Steps.java` (11 files, `String.format` logging)
+- `src/main/java/com/znsio/teswiz/runner/Runner.java`, `src/test/java/com/znsio/teswiz/runner/RunnerMainArgumentsTest.java` (new)
+- `src/main/java/com/znsio/teswiz/web/playwright/PlaywrightContextOptionsMapper.java` (new), `PlaywrightJavaDriverManager.java`, `src/test/java/com/znsio/teswiz/web/playwright/PlaywrightContextOptionsMapperTest.java` (new)
+- `src/main/java/com/znsio/teswiz/config/browser/PlaywrightBrowserConfigResolver.java`
+- `config/pmd/teswiz-complexity-ruleset.xml` (new), `build.gradle` (`pmd` plugin)
+- `.github/workflows/*.yml` (`ubuntu-24.04`; `codeql.yml` `security-and-quality`; unit-test artifact includes the PMD report), `.github/actions/run-and-collect-tests-README.md`
+- `docs/index.md`, `docs/getting-started/writing-first-test.md`, `docs/architecture-and-internals/{faqs,ideas-backlog,ocr-and-image-recognition-plan,testng-execution-mode-plan}.md`, `docs/todos/*.md`
 - `.codex/skills/teswiz-project/SKILL.md`
 - `gradle/wrapper/gradle-wrapper.properties`, `gradle/wrapper/gradle-wrapper.jar`
 - `package.json`, `package-lock.json`
