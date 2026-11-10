@@ -11,7 +11,8 @@ env:
 
 jobs:
   HardGate_CI:
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest moves to Ubuntu 26.04 (actions/runner-images#14748); switch deliberately once verified.
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       actions: write

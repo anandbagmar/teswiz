@@ -72,7 +72,7 @@ Declare a `permissions:` block on every job instead of relying on the repository
 ```yaml
 jobs:
   my_tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       actions: write   # only if the job uses cleanup-branch-artifacts
