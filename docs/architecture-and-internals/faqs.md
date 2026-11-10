@@ -6,6 +6,8 @@
 
 If you are trying to figure out why a specific test failed, start with [debugging-tests.md](debugging-tests.md).
 
+If your build cannot download teswiz from jitpack.io, see [teswiz-download-issue.md](teswiz-download-issue.md).
+
 ### Setting Environment Variables:
 
 You can set environment variables

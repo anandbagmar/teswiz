@@ -1,6 +1,6 @@
 # teswiz SOLID/OOP Refactoring Plan (TODO)
 
-> Status: **Not started** — captured for later pickup.
+> Status: **Mostly done** — Phases 0–4.1, 5.1/5.4/5.5 and 6.1/6.2 are implemented. The remaining items (2.x Appium DriverManager, 3.2 ConfigLoader, 4.2 VisualEngine, 5.2/5.3/5.6 unified `browser_config` schema) are **Deferred**; 6.3 was **Skipped**. See the [Implementation Plan](./SOLID-OOP-Refactoring-Implementation-Plan.md) for the tracking checklist. Kept for history.
 > Source: codebase-wide SOLID/OOP review. Ordered lowest-risk / highest-value first.
 
 A sequenced, low-risk plan to pay down the SOLID/OOP debt found in the codebase review. Ordered **lowest-risk / highest-value first**, so each step is independently shippable and the risky God-class work comes only after the cheap wins and safety nets are in place.
@@ -194,7 +194,7 @@ Phases 1, 2, 3 are largely independent and can be interleaved. **Phase 4 should 
 
 ## Phase 5 — Unify & clean up `browser_config` across engines (🟡→🔴)
 
-> Status: **Not started** — captured for later pickup.
+> Status: **Partly done** — 5.1, 5.4 and 5.5 (shared default viewport) are implemented; 5.2, 5.3 and 5.6 (unified schema + migration) are **Deferred** because they change the config contract.
 > Source: `browser_config` sizing/consistency review (Selenium, Playwright-Java, Playwright-TS).
 
 Independent of Phases 0–4. Benefits from Phase 3 (`TeswizConfiguration`) being in place for the viewport runtime config, but does not require it. **This is a schema contract change**, so it carries a user-facing migration — treat it like Phase 4.1's public-API change: its own review, its own release note.

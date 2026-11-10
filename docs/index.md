@@ -48,6 +48,11 @@ flowchart TD
     ARCH --> ARCH2["Feature Coverage"]
     ARCH --> ARCH3["Migration Guides"]
     ARCH --> ARCH4["Debugging & FAQs"]
+
+    INDEX --> PLANS["🗂️ Plans, Backlog & History"]
+    PLANS --> PLANS1["Implementation Plans"]
+    PLANS --> PLANS2["Proposed Work"]
+    PLANS --> PLANS3["Ideas Backlog"]
 ```
 
 ---
@@ -119,3 +124,23 @@ flowchart TD
 - 🚨 **[Breaking Changes Log](architecture-and-internals/breaking-changes.md)**: Historical upgrade notes and breaking change log.
 - 🐞 **[Debugging Tests](architecture-and-internals/debugging-tests.md)**: Troubleshooting log files, command outputs, and visual diff artifacts.
 - ❓ **[Frequently Asked Questions (FAQs)](architecture-and-internals/faqs.md)**: Common framework questions and resolutions.
+- 📦 **[Trouble Downloading teswiz from jitpack.io](architecture-and-internals/teswiz-download-issue.md)**: Fixing JitPack dependency download and multi-release JAR errors in your `build.gradle`.
+
+---
+
+## 🗂️ Plans, Backlog & History
+
+Design plans and backlog items, kept for reference. Status reflects the state of each document.
+
+| Guide | Description | Status |
+| :--- | :--- | :--- |
+| 🔌 **[Playwright API Engine Plan](todos/Playwright-API-Engine-Implementation-And-Migration-Plan.md)** | `API_ENGINE` implementation plan and RestAssured to Playwright migration steps | Done |
+| 🎭 **[Phase 7: Engine-Native Playwright Locators](todos/Phase-7-Engine-Native-Playwright-Locators.md)** | Removing the Selenium `By` bridge from Playwright engines | Done |
+| 🧱 **[SOLID/OOP Refactoring Plan](todos/SOLID-OOP-Refactoring-Plan.md)** | Sequenced plan to pay down SOLID/OOP debt in the God classes | Mostly done (remaining items Deferred) |
+| 🛠️ **[SOLID/OOP Refactoring Implementation Plan](todos/SOLID-OOP-Refactoring-Implementation-Plan.md)** | Step-by-step playbook and tracking checklist for the refactoring plan | Mostly done (remaining items Deferred) |
+| 🧪 **[TestNG-only Execution Mode Plan](architecture-and-internals/testng-execution-mode-plan.md)** | Implementation plan and checklist for `FRAMEWORK=testng` | In progress (iOS, Windows, Electron pilots open) |
+| 👁️ **[OCR & Image Recognition Plan](architecture-and-internals/ocr-and-image-recognition-plan.md)** | Architecture and roadmap behind the OCR / image recognition subsystem | Done |
+| 🎥 **[Session Video Recording Plan](todos/Session-Video-Recording-Plan.md)** | Video capture of UI sessions across all engines, head and headless | Proposed |
+| 🌐 **[Web API Traffic Capture Plan](todos/Web-API-Traffic-Capture-Plan.md)** | Capturing front-end API traffic from the browser for `PLATFORM=web` | Proposed |
+| 🔗 **[Socket Communication Testing Plan](todos/Socket-Communication-Testing-Plan.md)** | Testing socket-based communication from browser, Android and iOS | Proposed |
+| 💭 **[Ideas Backlog](architecture-and-internals/ideas-backlog.md)** | Unscoped ideas such as usage analytics and offline-first foundations | Proposed |

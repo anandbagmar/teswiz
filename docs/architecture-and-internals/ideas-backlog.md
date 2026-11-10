@@ -1,6 +1,8 @@
 # Ideas Backlog
 [📚 Documentation Index](../index.md) • [🏠 Main README](../../README.md)
 
+> **Status: Proposed** - unscoped ideas (usage analytics, offline-first foundations). OCR and image recognition from this list has shipped.
+
 ---
 
 

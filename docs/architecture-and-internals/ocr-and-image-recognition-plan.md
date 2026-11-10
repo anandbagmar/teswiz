@@ -1,6 +1,8 @@
 # Detailed Architectural & Usage Plan: OCR and Image Recognition in teswiz
 [📚 Documentation Index](../index.md) • [🏠 Main README](../../README.md)
 
+> **Status: Done** - all roadmap phases (1-9) are marked complete in [section 7](#7-implementation-roadmap--status). Kept for history; the current user guide is [ocr-and-image-recognition.md](../subsystems/ocr-and-image-recognition.md).
+
 ---
 
 

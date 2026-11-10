@@ -1,5 +1,7 @@
 # Playwright API Testing Engine (`API_ENGINE`) Implementation & Migration Plan
 
+> **Status: Done** - shipped in 1.0.39. Kept for history. Two planned helper classes (`PlaywrightEnvironmentIssueInterceptor`, `PlaywrightApiTrafficLogger`) were folded into `PlaywrightApiEngineClient` and the shared `ApiTrafficRecorder` rather than created as separate classes.
+
 This document outlines the implementation plan for introducing Playwright API testing capability to **teswiz** as a configurable engine (`API_ENGINE`) alongside the existing `RestAssured` engine, as well as migration guidelines and Cucumber `@pw-api` sample scenarios.
 
 ---
@@ -18,15 +20,15 @@ This document outlines the implementation plan for introducing Playwright API te
 
 ### Phase 1: Configuration & Canonical Contract (`API_ENGINE`)
 
-- **[MODIFY] [Setup.java](file:///Users/anand.bagmar/projects/znsio/teswiz/src/main/java/com/znsio/teswiz/runner/Setup.java)**
+- **[MODIFY] [Setup.java](../../src/main/java/com/znsio/teswiz/runner/Setup.java)**
   - Define `public static final String API_ENGINE = "API_ENGINE";`
   - Add logic to load and validate `API_ENGINE` configuration.
 
-- **[NEW] `com.znsio.teswiz.api.ApiEngine`** ([ApiEngine.java](file:///Users/anand.bagmar/projects/znsio/teswiz/src/main/java/com/znsio/teswiz/api/ApiEngine.java))
+- **[NEW] `com.znsio.teswiz.api.ApiEngine`** ([ApiEngine.java](../../src/main/java/com/znsio/teswiz/api/ApiEngine.java))
   - Enum values: `REST_ASSURED("rest-assured")`, `PLAYWRIGHT_JAVA("playwright-java")`.
   - Parses and validates raw configuration strings.
 
-- **[MODIFY] [teswiz_config.properties.template](file:///Users/anand.bagmar/projects/znsio/teswiz/configs/teswiz/teswiz_config.properties.template)**
+- **[MODIFY] [teswiz_config.properties.template](../../configs/teswiz/teswiz_config.properties.template)**
   - Add `# API_ENGINE=rest-assured` to the template.
 
 - **[MODIFY] `configs/**/*.properties`**
@@ -36,7 +38,7 @@ This document outlines the implementation plan for introducing Playwright API te
 
 ### Phase 2: Core Abstraction & Playwright Engine Implementation
 
-- **[NEW] `com.znsio.teswiz.api.TeswizApiResponse`** ([TeswizApiResponse.java](file:///Users/anand.bagmar/projects/znsio/teswiz/src/main/java/com/znsio/teswiz/api/TeswizApiResponse.java))
+- **[NEW] `com.znsio.teswiz.api.TeswizApiResponse`** ([TeswizApiResponse.java](../../src/main/java/com/znsio/teswiz/api/TeswizApiResponse.java))
   - Engine-agnostic response wrapper hiding internal response implementation:
     - `int getStatusCode()`
     - `String getResponseBody()`
@@ -44,37 +46,37 @@ This document outlines the implementation plan for introducing Playwright API te
     - `Map<String, String> getHeaders()`
     - Convenience methods for JSON processing (`asJsonObject()`, `asJsonArray()`).
 
-- **[NEW] `com.znsio.teswiz.api.ApiEngineClient`** ([ApiEngineClient.java](file:///Users/anand.bagmar/projects/znsio/teswiz/src/main/java/com/znsio/teswiz/api/ApiEngineClient.java))
+- **[NEW] `com.znsio.teswiz.api.ApiEngineClient`** ([ApiEngineClient.java](../../src/main/java/com/znsio/teswiz/api/ApiEngineClient.java))
   - Common HTTP client interface for all standard HTTP methods: `get`, `post`, `put`, `patch`, `delete`, `head`, `options`.
 
-- **[NEW] `com.znsio.teswiz.api.RestAssuredApiEngineClient`** ([RestAssuredApiEngineClient.java](file:///Users/anand.bagmar/projects/znsio/teswiz/src/main/java/com/znsio/teswiz/api/RestAssuredApiEngineClient.java))
+- **[NEW] `com.znsio.teswiz.api.RestAssuredApiEngineClient`** ([RestAssuredApiEngineClient.java](../../src/main/java/com/znsio/teswiz/api/RestAssuredApiEngineClient.java))
   - Implements `ApiEngineClient` delegating to RestAssured.
 
-- **[NEW] `com.znsio.teswiz.api.PlaywrightApiEngineClient`** ([PlaywrightApiEngineClient.java](file:///Users/anand.bagmar/projects/znsio/teswiz/src/main/java/com/znsio/teswiz/api/PlaywrightApiEngineClient.java))
+- **[NEW] `com.znsio.teswiz.api.PlaywrightApiEngineClient`** ([PlaywrightApiEngineClient.java](../../src/main/java/com/znsio/teswiz/api/PlaywrightApiEngineClient.java))
   - Implements `ApiEngineClient` delegating to `com.microsoft.playwright.APIRequestContext`.
 
-- **[NEW] `com.znsio.teswiz.api.PlaywrightApiManager`** ([PlaywrightApiManager.java](file:///Users/anand.bagmar/projects/znsio/teswiz/src/main/java/com/znsio/teswiz/api/PlaywrightApiManager.java))
+- **[NEW] `com.znsio.teswiz.api.PlaywrightApiManager`** ([PlaywrightApiManager.java](../../src/main/java/com/znsio/teswiz/api/PlaywrightApiManager.java))
   - Manages `ThreadLocal<Playwright>` and `ThreadLocal<APIRequestContext>`.
   - Handles base URL, SSL validation settings, proxy parameters (`PROXY_URL`), and extra headers.
   - Implements `closeContextForCurrentThread()` for teardown.
 
-- **[NEW] `com.znsio.teswiz.services.ApiService`** ([ApiService.java](file:///Users/anand.bagmar/projects/znsio/teswiz/src/main/java/com/znsio/teswiz/services/ApiService.java))
+- **[NEW] `com.znsio.teswiz.services.ApiService`** ([ApiService.java](../../src/main/java/com/znsio/teswiz/services/ApiService.java))
   - Unified entry point for API calls in Business Layer code, dynamically dispatching to the configured `ApiEngineClient`.
 
-- **[MODIFY] [RestAssuredService.java](file:///Users/anand.bagmar/projects/znsio/teswiz/src/main/java/com/znsio/teswiz/services/RestAssuredService.java)**
+- **[MODIFY] [RestAssuredService.java](../../src/main/java/com/znsio/teswiz/services/RestAssuredService.java)**
   - Preserved for backwards compatibility.
 
 ---
 
 ### Phase 3: Cross-Cutting Concerns Parity & Cucumber Playwright API Tests
 
-- **[MODIFY] [CucumberScenarioListener.java](file:///Users/anand.bagmar/projects/znsio/teswiz/src/main/java/com/znsio/teswiz/listener/CucumberScenarioListener.java)**
+- **[MODIFY] [CucumberScenarioListener.java](../../src/main/java/com/znsio/teswiz/listener/CucumberScenarioListener.java)**
   - Invokes `PlaywrightApiManager.closeContextForCurrentThread()` at scenario finish.
 
-- **[NEW] `com.znsio.teswiz.filters.PlaywrightEnvironmentIssueInterceptor`** ([PlaywrightEnvironmentIssueInterceptor.java](file:///Users/anand.bagmar/projects/znsio/teswiz/src/main/java/com/znsio/teswiz/filters/PlaywrightEnvironmentIssueInterceptor.java))
+- **[NEW] `com.znsio.teswiz.filters.PlaywrightEnvironmentIssueInterceptor`** (`PlaywrightEnvironmentIssueInterceptor.java`; as built, this logic lives in `checkEnvironmentIssue` inside [PlaywrightApiEngineClient.java](../../src/main/java/com/znsio/teswiz/api/PlaywrightApiEngineClient.java))
   - Intercepts Playwright API responses for status codes `502`, `503`, `504` and throws `EnvironmentSetupException` when `DISABLE_ENVIRONMENT_ISSUE_FILTER=false`.
 
-- **[NEW] `com.znsio.teswiz.filters.apitraffic.PlaywrightApiTrafficLogger`** ([PlaywrightApiTrafficLogger.java](file:///Users/anand.bagmar/projects/znsio/teswiz/src/main/java/com/znsio/teswiz/filters/apitraffic/PlaywrightApiTrafficLogger.java))
+- **[NEW] `com.znsio.teswiz.filters.apitraffic.PlaywrightApiTrafficLogger`** (`PlaywrightApiTrafficLogger.java`; as built, traffic is recorded through the shared [ApiTrafficRecorder.java](../../src/main/java/com/znsio/teswiz/filters/apitraffic/ApiTrafficRecorder.java))
   - Formats Playwright requests/responses and logs them via `ApiTrafficRecorder` and `SensitiveDataMasker` to `target/.../api-traffic/*.log` when `API_TRAFFIC_LOGGING=true`.
 
 - **[NEW] Cucumber Feature & Sample Test Suite for Playwright & RestAssured API Engine (`@api`, `@pw-api`, `@restassured-api`)**

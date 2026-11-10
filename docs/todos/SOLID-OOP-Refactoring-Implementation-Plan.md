@@ -1,5 +1,7 @@
 # teswiz SOLID/OOP Refactoring — Implementation Plan
 
+> **Status: Mostly done** — 25 checklist items are complete; the 6 open items are deliberately **Deferred** (see the tracking checklist at the bottom). Kept for history.
+>
 > Companion to [`SOLID-OOP-Refactoring-Plan.md`](./SOLID-OOP-Refactoring-Plan.md).
 > That document is the *what & why* (sequencing, risk, design). This document is the
 > *how*: a concrete, execution-ready playbook — branch strategy, per-step file lists,
