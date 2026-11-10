@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    teswiz complexity and size rules, mirroring the "Code Quality & Method Decomposition" rules in
+    AGENTS.md (small single-responsibility methods, low cyclomatic complexity, no deep nesting).
+
+    Report-only: build.gradle sets ignoreFailures = true, so violations are reported in
+    build/reports/pmd/main.html and never fail the build. Tighten by lowering the thresholds below
+    or switching ignoreFailures off once the existing violations are worked down.
+-->
+<ruleset name="teswiz complexity"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+
+    <description>Method size, branching complexity, nesting and god-class checks for teswiz.</description>
+
+    <!-- Decision points per method (if, loops, case, catch, &&, ||, ?:). AGENTS.md: low complexity. -->
+    <rule ref="category/java/design.xml/CyclomaticComplexity">
+        <properties>
+            <property name="methodReportLevel" value="10"/>
+            <property name="classReportLevel" value="80"/>
+        </properties>
+    </rule>
+
+    <!-- How hard a method is to read: penalises nesting more than flat branching. -->
+    <rule ref="category/java/design.xml/CognitiveComplexity">
+        <properties>
+            <property name="reportLevel" value="15"/>
+        </properties>
+    </rule>
+
+    <!-- Number of acyclic execution paths; flags methods that need too many tests to cover. -->
+    <rule ref="category/java/design.xml/NPathComplexity">
+        <properties>
+            <property name="reportLevel" value="200"/>
+        </properties>
+    </rule>
+
+    <!-- Non-commenting source statements. AGENTS.md: prefer methods under 25-30 lines. -->
+    <rule ref="category/java/design.xml/NcssCount">
+        <properties>
+            <property name="methodReportLevel" value="30"/>
+            <property name="classReportLevel" value="1500"/>
+        </properties>
+    </rule>
+
+    <!-- AGENTS.md: decompose multi-nested conditionals into helper methods. -->
+    <rule ref="category/java/design.xml/AvoidDeeplyNestedIfStmts">
+        <properties>
+            <property name="problemDepth" value="3"/>
+        </properties>
+    </rule>
+
+    <!-- Classes that are large, complex and touch many other classes' data. -->
+    <rule ref="category/java/design.xml/GodClass"/>
+</ruleset>

@@ -18,6 +18,7 @@ plugins {
     id "maven-publish"
     id "io.freefair.aspectj.post-compile-weaving" version "9.8.3"
     id "io.github.ben-manes.versions" version "0.67.0"
+    id "pmd"
 }
 
 def teswizVersion = "1.0.56"
@@ -489,6 +490,18 @@ tasks.register('validateConfigurationTemplates', Test) {
 
 tasks.named('test') {
     dependsOn tasks.named('validateConfigurationTemplates')
+}
+
+// Complexity and size checks matching the AGENTS.md code-quality rules. Report-only for now:
+// violations are written to build/reports/pmd/main.html and never fail the build. Runs with
+// `check` (and so `build`) on main sources only; run `./gradlew pmdMain` on its own for a report.
+pmd {
+    toolVersion = "7.29.0"
+    ignoreFailures = true
+    consoleOutput = false
+    sourceSets = [sourceSets.main]
+    ruleSets = []
+    ruleSetFiles = files("config/pmd/teswiz-complexity-ruleset.xml")
 }
 
 tasks.named('check') {
