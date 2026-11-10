@@ -1,5 +1,6 @@
 package com.znsio.teswiz.mobile.device;
 
+import com.znsio.teswiz.config.TeswizConfig;
 import static com.znsio.teswiz.runner.Setup.EXECUTED_ON;
 import static com.znsio.teswiz.runner.Setup.PARALLEL;
 
@@ -35,7 +36,7 @@ public final class LocalMobileDeviceSetup {
 
     public static void setupLocalExecution() {
         int numberOfDevicesForParallelExecution = setupLocalDevices().size();
-        Integer providedParallelCount = Setup.getIntegerValueFromConfigs(PARALLEL);
+        Integer providedParallelCount = TeswizConfig.reader().getInteger(PARALLEL);
         validateAndroidParallelAvailability(numberOfDevicesForParallelExecution, providedParallelCount);
         Setup.addIntegerValueToConfigs(PARALLEL, providedParallelCount);
         Setup.addToConfigs(EXECUTED_ON, "Local Devices");
@@ -44,7 +45,7 @@ public final class LocalMobileDeviceSetup {
     public static void setupLocalIOSExecution() {
         int numberOfRealDevicesForParallelExecution = getConnectedIOSDevices();
         int numberOfSimulatorsForParallelExecution = getBootedIOSSimulators();
-        Integer providedParallelCount = Setup.getIntegerValueFromConfigs(PARALLEL);
+        Integer providedParallelCount = TeswizConfig.reader().getInteger(PARALLEL);
         validateIosParallelAvailability(numberOfRealDevicesForParallelExecution, numberOfSimulatorsForParallelExecution,
                 providedParallelCount);
         Setup.addIntegerValueToConfigs(PARALLEL, providedParallelCount);

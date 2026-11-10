@@ -1,5 +1,6 @@
 package com.znsio.teswiz.visual;
 
+import com.znsio.teswiz.config.TeswizConfig;
 import static net.sourceforge.tess4j.ITessAPI.TessPageIteratorLevel.RIL_TEXTLINE;
 import static net.sourceforge.tess4j.ITessAPI.TessPageIteratorLevel.RIL_WORD;
 
@@ -23,7 +24,6 @@ import javax.imageio.ImageIO;
 
 import com.znsio.teswiz.exceptions.VisualSubsystemDisabledException;
 import com.znsio.teswiz.runner.Driver;
-import com.znsio.teswiz.runner.Setup;
 import com.znsio.teswiz.runner.VisualElement;
 
 import net.sourceforge.tess4j.Tesseract;
@@ -370,7 +370,7 @@ public class OcrService {
     }
 
     private static void applyCustomJnaLibraryPath() {
-        String customLibPath = Setup.getFromConfigs("TESWIZ_TESSERACT_LIB_PATH");
+        String customLibPath = TeswizConfig.reader().getString("TESWIZ_TESSERACT_LIB_PATH");
         if (customLibPath != null && !customLibPath.isBlank() && new File(customLibPath).exists()) {
             String currentJnaPath = System.getProperty("jna.library.path", "");
             if (!currentJnaPath.contains(customLibPath)) {
@@ -741,7 +741,7 @@ public class OcrService {
     }
 
     private static String checkConfiguredTessDataPath() {
-        String configuredPath = Setup.getFromConfigs("TESWIZ_TESSERACT_DATA_PATH");
+        String configuredPath = TeswizConfig.reader().getString("TESWIZ_TESSERACT_DATA_PATH");
         if (configuredPath != null && !configuredPath.isBlank()) {
             File confFile = new File(configuredPath);
             if (confFile.isDirectory() && new File(confFile, "eng.traineddata").exists()) {

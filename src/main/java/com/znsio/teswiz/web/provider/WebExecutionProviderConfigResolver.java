@@ -1,5 +1,6 @@
 package com.znsio.teswiz.web.provider;
 
+import com.znsio.teswiz.config.TeswizConfig;
 import static com.znsio.teswiz.runner.Runner.NOT_SET;
 
 import java.util.LinkedHashMap;
@@ -30,7 +31,7 @@ public final class WebExecutionProviderConfigResolver {
     }
 
     public WebExecutionProviderConfig resolve() {
-        String capabilityFile = Setup.getFromConfigs(Setup.CAPS);
+        String capabilityFile = TeswizConfig.reader().getString(Setup.CAPS);
         Map<String, Map> loadedCapabilities = Setup.getLoadedCapabilities();
         if (null == capabilityFile || capabilityFile.isBlank() || NOT_SET.equalsIgnoreCase(capabilityFile)
                 || null == loadedCapabilities || loadedCapabilities.isEmpty()) {
@@ -44,8 +45,8 @@ public final class WebExecutionProviderConfigResolver {
 
         String remoteUrl = readValue(capabilityFile, loadedCapabilities, CLOUD_URL_PATH);
         String apiUrl = readValue(capabilityFile, loadedCapabilities, CLOUD_API_URL_PATH);
-        String username = normalize(Setup.getFromConfigs(Setup.CLOUD_USERNAME));
-        String accessKey = normalize(Setup.getFromConfigs(Setup.CLOUD_KEY));
+        String username = normalize(TeswizConfig.reader().getString(Setup.CLOUD_USERNAME));
+        String accessKey = normalize(TeswizConfig.reader().getString(Setup.CLOUD_KEY));
         Map<String, Object> webCapabilities = extractWebCapabilities(loadedCapabilities);
 
         return new WebExecutionProviderConfig(providerName, remoteUrl, apiUrl, username, accessKey, webCapabilities);

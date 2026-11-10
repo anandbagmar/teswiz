@@ -1,5 +1,6 @@
 package com.znsio.teswiz.mobile.provider;
 
+import com.znsio.teswiz.config.TeswizConfig;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Map;
@@ -20,10 +21,10 @@ public class LambdaTestMobileSetup {
     }
 
     public static void updateLambdaTestCapabilities(String apiUrl) {
-        String authenticationUser = Setup.getFromConfigs(Setup.CLOUD_USERNAME);
-        String authenticationKey = Setup.getFromConfigs(Setup.CLOUD_KEY);
+        String authenticationUser = TeswizConfig.reader().getString(Setup.CLOUD_USERNAME);
+        String authenticationKey = TeswizConfig.reader().getString(Setup.CLOUD_KEY);
         String platformName = Setup.getPlatform().name();
-        String capabilityFile = Setup.getFromConfigs(Setup.CAPS);
+        String capabilityFile = TeswizConfig.reader().getString(Setup.CAPS);
 
         Map<String, Map> loadedCapabilityFile = JsonFile.loadJsonFile(capabilityFile);
         Map loadedPlatformCapability = loadedCapabilityFile.get(platformName);
@@ -34,10 +35,10 @@ public class LambdaTestMobileSetup {
                 loadedPlatformCapability,
                 authenticationUser,
                 authenticationKey,
-                Setup.getFromConfigs(Setup.APP_NAME),
-                Setup.getFromConfigs(Setup.LAUNCH_NAME),
-                Setup.getFromConfigs(Setup.LOG_DIR),
-                Setup.getBooleanValueFromConfigs(Setup.CLOUD_USE_LOCAL_TESTING));
+                TeswizConfig.reader().getString(Setup.APP_NAME),
+                TeswizConfig.reader().getString(Setup.LAUNCH_NAME),
+                TeswizConfig.reader().getString(Setup.LOG_DIR),
+                TeswizConfig.reader().getBoolean(Setup.CLOUD_USE_LOCAL_TESTING));
 
         com.znsio.teswiz.runner.DeviceSetup.saveNewCapabilitiesFile(platformName, capabilityFile, loadedCapabilityFile,
                 getExistingCloudDevices(loadedCapabilityFile));
@@ -52,8 +53,8 @@ public class LambdaTestMobileSetup {
             return;
         }
 
-        if (Setup.getBooleanValueFromConfigs(Setup.CLOUD_UPLOAD_APP)) {
-            String appPath = new File(Setup.getFromConfigs(Setup.APP_PATH)).getAbsolutePath();
+        if (TeswizConfig.reader().getBoolean(Setup.CLOUD_UPLOAD_APP)) {
+            String appPath = new File(TeswizConfig.reader().getString(Setup.APP_PATH)).getAbsolutePath();
             String appIdFromLambdaTest = uploadAppToLambdaTest(authenticationUser, authenticationKey,
                     appPath, apiUrl);
             LOGGER.info("App uploaded to LambdaTest with app url: {}", appIdFromLambdaTest);
@@ -67,7 +68,7 @@ public class LambdaTestMobileSetup {
 
     private static String getLambdaTestAppReference(Map loadedPlatformCapability) {
         return LambdaTestMobileCapabilitySetup.resolveAppReference(loadedPlatformCapability,
-                Setup.getFromConfigs(Setup.APP_PATH));
+                TeswizConfig.reader().getString(Setup.APP_PATH));
     }
 
     private static String uploadAppToLambdaTest(String authenticationUser,

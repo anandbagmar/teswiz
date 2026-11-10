@@ -16,7 +16,7 @@ import java.util.Map;
  * {@link #integers()} so {@link Setup}'s existing internal map references continue to work during
  * the incremental extraction.
  */
-public class TeswizConfiguration {
+public class TeswizConfiguration implements com.znsio.teswiz.config.TeswizConfigReader {
 
     private final Map<String, String> strings = new HashMap<>();
     private final Map<String, Boolean> booleans = new HashMap<>();

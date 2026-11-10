@@ -1,5 +1,6 @@
 package com.znsio.teswiz.mobile.provider;
 
+import com.znsio.teswiz.config.TeswizConfig;
 import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
@@ -38,10 +39,10 @@ public class BrowserStackMobileSetup {
     }
 
     public static void updateBrowserStackCapabilities(String deviceLabURL) {
-        String authenticationUser = Setup.getFromConfigs(Setup.CLOUD_USERNAME);
-        String authenticationKey = Setup.getFromConfigs(Setup.CLOUD_KEY);
+        String authenticationUser = TeswizConfig.reader().getString(Setup.CLOUD_USERNAME);
+        String authenticationKey = TeswizConfig.reader().getString(Setup.CLOUD_KEY);
         String platformName = Setup.getPlatform().name();
-        String capabilityFile = Setup.getFromConfigs(Setup.CAPS);
+        String capabilityFile = TeswizConfig.reader().getString(Setup.CAPS);
 
         Map<String, Map> loadedCapabilityFile = JsonFile.loadJsonFile(capabilityFile);
         Map<String, Object> loadedPlatformCapability = loadedCapabilityFile.get(platformName);
@@ -49,7 +50,7 @@ public class BrowserStackMobileSetup {
         addAppOrBrowserNameToBrowserStackCapabilities(deviceLabURL, loadedPlatformCapability,
                                                       authenticationUser, authenticationKey);
         Object appiumVersion = loadedPlatformCapability.get("browserstack.appiumVersion");
-        boolean useLocalTesting = Setup.getBooleanValueFromConfigs(Setup.CLOUD_USE_LOCAL_TESTING);
+        boolean useLocalTesting = TeswizConfig.reader().getBoolean(Setup.CLOUD_USE_LOCAL_TESTING);
         if (useLocalTesting) {
             LOGGER.info("CLOUD_USE_LOCAL_TESTING=true. Setting up BrowserStackLocal testing using identified: '{}'", BROWSERSTACK_LOCAL_IDENTIFIER);
             startBrowserStackLocal(authenticationKey, BROWSERSTACK_LOCAL_IDENTIFIER);
@@ -58,9 +59,9 @@ public class BrowserStackMobileSetup {
                 loadedPlatformCapability,
                 authenticationUser,
                 authenticationKey,
-                Setup.getFromConfigs(Setup.APP_NAME),
-                Setup.getFromConfigs(Setup.LAUNCH_NAME),
-                Setup.getFromConfigs(Setup.LOG_DIR),
+                TeswizConfig.reader().getString(Setup.APP_NAME),
+                TeswizConfig.reader().getString(Setup.LAUNCH_NAME),
+                TeswizConfig.reader().getString(Setup.LOG_DIR),
                 getSessionName(),
                 appiumVersion,
                 useLocalTesting,
@@ -78,7 +79,7 @@ public class BrowserStackMobileSetup {
             LOGGER.info("app Id retrieved from browser stack is: {}", browserName);
             loadedPlatformCapability.put("browserstack.browserName", browserName);
         } else {
-            String appPath = new File(Setup.getFromConfigs(Setup.APP_PATH)).getAbsolutePath();
+            String appPath = new File(TeswizConfig.reader().getString(Setup.APP_PATH)).getAbsolutePath();
             String appIdFromBrowserStack = getAppIdFromBrowserStack(authenticationUser,
                     authenticationKey, appPath, deviceLabURL);
             LOGGER.info("app Id retrieved from browser stack is: {}", appIdFromBrowserStack);
@@ -90,7 +91,7 @@ public class BrowserStackMobileSetup {
         try {
             return Runner.getTestExecutionContext(Thread.currentThread().getId()).getTestName();
         } catch (RuntimeException e) {
-            String fallbackSessionName = Setup.getFromConfigs(Setup.LAUNCH_NAME);
+            String fallbackSessionName = TeswizConfig.reader().getString(Setup.LAUNCH_NAME);
             LOGGER.warn("Unable to resolve test context name. Falling back to launch name for sessionName: '{}'", fallbackSessionName);
             return fallbackSessionName;
         }
@@ -101,7 +102,7 @@ public class BrowserStackMobileSetup {
                                                    String apiUrl) {
         LOGGER.info("getAppIdFromBrowserStack: for {}", appPath);
         String appIdFromBrowserStack;
-        if(Setup.getBooleanValueFromConfigs(Setup.CLOUD_UPLOAD_APP)) {
+        if(TeswizConfig.reader().getBoolean(Setup.CLOUD_UPLOAD_APP)) {
             appIdFromBrowserStack = uploadToBrowserStack(
                     authenticationUser + ":" + authenticationKey, appPath, apiUrl);
         } else {
@@ -125,8 +126,8 @@ public class BrowserStackMobileSetup {
         bsLocalArgs.put("force", "true");
         try {
             LOGGER.info("Is BrowserStackLocal running? - " + bsLocal.isRunning());
-            if(Setup.getBooleanValueFromConfigs(Setup.CLOUD_USE_PROXY)) {
-                String proxyUrl = Setup.getFromConfigs(Setup.PROXY_URL);
+            if(TeswizConfig.reader().getBoolean(Setup.CLOUD_USE_PROXY)) {
+                String proxyUrl = TeswizConfig.reader().getString(Setup.PROXY_URL);
                 URL url = new URL(proxyUrl);
                 String host = url.getHost();
                 int port = url.getPort() == -1 ? url.getDefaultPort() : url.getPort();
@@ -147,7 +148,7 @@ public class BrowserStackMobileSetup {
     private static void updateBrowserStackDevicesInCapabilities(String authenticationUser,
                                                                 String authenticationKey,
                                                                 Map<String, Map> loadedCapabilityFile) {
-        String capabilityFile = Setup.getFromConfigs(Setup.CAPS);
+        String capabilityFile = TeswizConfig.reader().getString(Setup.CAPS);
         String platformName = Setup.getPlatform().name();
         ArrayList<Map<String, String>> listOfDevices = new ArrayList<>();
 
@@ -165,9 +166,9 @@ public class BrowserStackMobileSetup {
 
         List<BrowserStackDevice> availableDevices = BrowserStackDeviceFilter.getFilteredDevices(
                 authenticationUser, authenticationKey, filters,
-                Setup.getFromConfigs(Setup.LOG_DIR));
+                TeswizConfig.reader().getString(Setup.LOG_DIR));
 
-        int deviceCount = Math.min(availableDevices.size(), Setup.getIntegerValueFromConfigs(
+        int deviceCount = Math.min(availableDevices.size(), TeswizConfig.reader().getInteger(
                 Setup.MAX_NUMBER_OF_APPIUM_DRIVERS));
         LOGGER.info("Adding '{}' available devices for executing on BrowserStack", deviceCount);
         for(int numDevices = 0; numDevices < deviceCount; numDevices++) {
@@ -290,8 +291,8 @@ public class BrowserStackMobileSetup {
     }
 
     private static void stopBrowserStackLocal() {
-        LOGGER.info("stopBrowserStackLocal: CLOUD_USE_LOCAL_TESTING={}", Setup.getBooleanValueFromConfigs(Setup.CLOUD_USE_LOCAL_TESTING));
-        if(Setup.getBooleanValueFromConfigs(Setup.CLOUD_USE_LOCAL_TESTING)) {
+        LOGGER.info("stopBrowserStackLocal: CLOUD_USE_LOCAL_TESTING={}", TeswizConfig.reader().getBoolean(Setup.CLOUD_USE_LOCAL_TESTING));
+        if(TeswizConfig.reader().getBoolean(Setup.CLOUD_USE_LOCAL_TESTING)) {
             try {
                 LOGGER.info("Is BrowserStackLocal running? - {}", bsLocal.isRunning());
                 if(bsLocal.isRunning()) {

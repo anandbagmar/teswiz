@@ -1,5 +1,6 @@
 package com.znsio.teswiz.analytics;
 
+import com.znsio.teswiz.config.TeswizConfig;
 import com.znsio.teswiz.reporting.notify.CiProvider;
 import com.znsio.teswiz.runner.Runner;
 import com.znsio.teswiz.runner.Setup;
@@ -45,13 +46,13 @@ public class RunTelemetry {
         }
 
         JSONObject executionConfig = new JSONObject();
-        executionConfig.put("framework", Setup.getStringValueFromConfigs(Setup.FRAMEWORK, "cucumber"));
+        executionConfig.put("framework", TeswizConfig.reader().getStringOrDefault(Setup.FRAMEWORK, "cucumber"));
         executionConfig.put("platform", Setup.getPlatform() != null ? Setup.getPlatform().name().toLowerCase() : "unknown");
-        executionConfig.put("web_engine", Setup.getStringValueFromConfigs(Setup.WEB_ENGINE, "selenium"));
-        executionConfig.put("api_engine", Setup.getStringValueFromConfigs(Setup.API_ENGINE, "rest-assured"));
-        executionConfig.put("browser", Setup.getStringValueFromConfigs(Setup.BROWSER, "chrome"));
-        executionConfig.put("parallel_count", Setup.getIntegerValueAsStringFromConfigs(Setup.PARALLEL));
-        executionConfig.put("headless", Setup.getBooleanValueFromConfigs(Setup.HEADLESS));
+        executionConfig.put("web_engine", TeswizConfig.reader().getStringOrDefault(Setup.WEB_ENGINE, "selenium"));
+        executionConfig.put("api_engine", TeswizConfig.reader().getStringOrDefault(Setup.API_ENGINE, "rest-assured"));
+        executionConfig.put("browser", TeswizConfig.reader().getStringOrDefault(Setup.BROWSER, "chrome"));
+        executionConfig.put("parallel_count", TeswizConfig.reader().getIntegerAsString(Setup.PARALLEL));
+        executionConfig.put("headless", TeswizConfig.reader().getBoolean(Setup.HEADLESS));
         props.put("execution_config", executionConfig);
 
         JSONObject runEnvironment = new JSONObject();
@@ -92,11 +93,11 @@ public class RunTelemetry {
             props.put("org_identifier", orgName);
         }
 
-        props.put("framework", Setup.getStringValueFromConfigs(Setup.FRAMEWORK, "cucumber"));
+        props.put("framework", TeswizConfig.reader().getStringOrDefault(Setup.FRAMEWORK, "cucumber"));
         props.put("platform", Setup.getPlatform() != null ? Setup.getPlatform().name().toLowerCase() : "unknown");
-        props.put("web_engine", Setup.getStringValueFromConfigs(Setup.WEB_ENGINE, "selenium"));
-        props.put("api_engine", Setup.getStringValueFromConfigs(Setup.API_ENGINE, "rest-assured"));
-        props.put("is_ci", Setup.getBooleanValueFromConfigs(Setup.RUN_IN_CI));
+        props.put("web_engine", TeswizConfig.reader().getStringOrDefault(Setup.WEB_ENGINE, "selenium"));
+        props.put("api_engine", TeswizConfig.reader().getStringOrDefault(Setup.API_ENGINE, "rest-assured"));
+        props.put("is_ci", TeswizConfig.reader().getBoolean(Setup.RUN_IN_CI));
 
         JSONObject runMetrics = new JSONObject();
         runMetrics.put("total_scenarios", totalScenarios);

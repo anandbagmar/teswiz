@@ -1,5 +1,6 @@
 package com.znsio.teswiz.web.playwright;
 
+import com.znsio.teswiz.config.TeswizConfig;
 import com.microsoft.playwright.Locator;
 import com.znsio.teswiz.runner.Setup;
 
@@ -22,12 +23,12 @@ final class PlaywrightHighlighter {
     }
 
     static void highlight(Locator locator) {
-        if (!Setup.getBooleanValueFromConfigs(Setup.HIGHLIGHT_ELEMENTS)) {
+        if (!TeswizConfig.reader().getBoolean(Setup.HIGHLIGHT_ELEMENTS)) {
             return;
         }
         try {
-            String color = Setup.getStringValueFromConfigs(Setup.HIGHLIGHT_COLOR, DEFAULT_COLOR);
-            String borderWidth = Setup.getStringValueFromConfigs(Setup.HIGHLIGHT_BORDER_WIDTH, DEFAULT_BORDER_WIDTH);
+            String color = TeswizConfig.reader().getStringOrDefault(Setup.HIGHLIGHT_COLOR, DEFAULT_COLOR);
+            String borderWidth = TeswizConfig.reader().getStringOrDefault(Setup.HIGHLIGHT_BORDER_WIDTH, DEFAULT_BORDER_WIDTH);
             locator.evaluate(highlightScript(color, borderWidth));
         } catch (RuntimeException ignored) {
             // A highlight is cosmetic; never let it block or fail the action it precedes.

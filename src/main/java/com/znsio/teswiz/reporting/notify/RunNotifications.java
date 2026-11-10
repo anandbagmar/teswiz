@@ -1,5 +1,6 @@
 package com.znsio.teswiz.reporting.notify;
 
+import com.znsio.teswiz.config.TeswizConfig;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
@@ -209,7 +210,7 @@ public final class RunNotifications {
      */
     private static String branchFromSetup() {
         try {
-            String branch = com.znsio.teswiz.runner.Setup.getFromConfigs(com.znsio.teswiz.runner.Setup.BRANCH_NAME);
+            String branch = TeswizConfig.reader().getString(com.znsio.teswiz.runner.Setup.BRANCH_NAME);
             if (branch == null || branch.isBlank() || NOT_SET.equalsIgnoreCase(branch.trim())) {
                 return "";
             }

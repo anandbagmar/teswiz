@@ -1,5 +1,6 @@
 package com.znsio.teswiz.mobile.provider;
 
+import com.znsio.teswiz.config.TeswizConfig;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.znsio.teswiz.exceptions.InvalidTestDataException;
@@ -27,10 +28,10 @@ public class HeadSpinMobileSetup {
     }
 
     public static void updateHeadspinCapabilities(String deviceLabURL) {
-        String authenticationKey = Setup.getFromConfigs(Setup.CLOUD_KEY);
+        String authenticationKey = TeswizConfig.reader().getString(Setup.CLOUD_KEY);
         String platformName = Setup.getPlatform().name();
-        String capabilityFile = Setup.getFromConfigs(Setup.CAPS);
-        String appPath = Setup.getFromConfigs(Setup.APP_PATH);
+        String capabilityFile = TeswizConfig.reader().getString(Setup.CAPS);
+        String appPath = TeswizConfig.reader().getString(Setup.APP_PATH);
 
         Map<String, Map> loadedCapabilityFile = JsonFile.loadJsonFile(capabilityFile);
         Map<String, Map> serverConfig = (Map<String, Map>) loadedCapabilityFile.get("serverConfig").get("server");
@@ -41,12 +42,12 @@ public class HeadSpinMobileSetup {
 
         Map loadedPlatformCapability = loadedCapabilityFile.get(platformName);
         String appIdFromHeadspin;
-        if (Setup.getBooleanValueFromConfigs(Setup.CLOUD_UPLOAD_APP)) {
+        if (TeswizConfig.reader().getBoolean(Setup.CLOUD_UPLOAD_APP)) {
             appIdFromHeadspin = uploadAPKToHeadspin(authenticationKey, appPath, deviceLabURL);
         } else {
             LOGGER.info("Skip uploading the apk to Device Farm");
             appIdFromHeadspin = getAppIdFromHeadspin(authenticationKey,
-                    Setup.getFromConfigs(Setup.APP_PACKAGE_NAME),
+                    TeswizConfig.reader().getString(Setup.APP_PACKAGE_NAME),
                     deviceLabURL);
         }
         LOGGER.info("Using appId: " + appIdFromHeadspin);
@@ -55,7 +56,7 @@ public class HeadSpinMobileSetup {
                         loadedPlatformCapability,
                         platformName,
                         appIdFromHeadspin,
-                        Setup.getIntegerValueFromConfigs(Setup.MAX_NUMBER_OF_APPIUM_DRIVERS));
+                        TeswizConfig.reader().getInteger(Setup.MAX_NUMBER_OF_APPIUM_DRIVERS));
         updateCapabilities(loadedCapabilityFile, preparedCapabilities.devices());
     }
 
@@ -110,7 +111,7 @@ public class HeadSpinMobileSetup {
     }
 
     static void updateCapabilities(Map<String, Map> loadedCapabilityFile, ArrayList<Map<String, String>> devices) {
-        String capabilityFile = Setup.getFromConfigs(Setup.CAPS);
+        String capabilityFile = TeswizConfig.reader().getString(Setup.CAPS);
         String platformName = Setup.getPlatform().name();
         com.znsio.teswiz.runner.DeviceSetup.saveNewCapabilitiesFile(platformName, capabilityFile, loadedCapabilityFile,
                 devices);

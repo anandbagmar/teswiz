@@ -1,5 +1,6 @@
 package com.znsio.teswiz.tools;
 
+import com.znsio.teswiz.config.TeswizConfig;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -25,7 +26,7 @@ public final class ImageCanvasHighlighter {
         if (screenshotFile == null || !screenshotFile.exists()) {
             return screenshotFile;
         }
-        if (!Setup.getBooleanValueFromConfigs(Setup.HIGHLIGHT_ELEMENTS)) {
+        if (!TeswizConfig.reader().getBoolean(Setup.HIGHLIGHT_ELEMENTS)) {
             return screenshotFile;
         }
         try {
@@ -44,7 +45,7 @@ public final class ImageCanvasHighlighter {
         if (imageBytes == null || imageBytes.length == 0) {
             return imageBytes;
         }
-        if (!Setup.getBooleanValueFromConfigs(Setup.HIGHLIGHT_ELEMENTS)) {
+        if (!TeswizConfig.reader().getBoolean(Setup.HIGHLIGHT_ELEMENTS)) {
             return imageBytes;
         }
         try {
@@ -63,8 +64,8 @@ public final class ImageCanvasHighlighter {
 
     public static BufferedImage annotateBufferedImage(BufferedImage image, int x, int y, int width, int height) {
         if (image == null) return null;
-        String colorHex = Setup.getStringValueFromConfigs(Setup.HIGHLIGHT_COLOR, "#FF4500");
-        String borderWidthStr = Setup.getStringValueFromConfigs(Setup.HIGHLIGHT_BORDER_WIDTH, "3px");
+        String colorHex = TeswizConfig.reader().getStringOrDefault(Setup.HIGHLIGHT_COLOR, "#FF4500");
+        String borderWidthStr = TeswizConfig.reader().getStringOrDefault(Setup.HIGHLIGHT_BORDER_WIDTH, "3px");
         int borderWidth = parseBorderWidth(borderWidthStr);
 
         Graphics2D g2d = image.createGraphics();

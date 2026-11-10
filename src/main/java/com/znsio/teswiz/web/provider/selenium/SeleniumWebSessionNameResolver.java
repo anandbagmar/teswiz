@@ -1,5 +1,6 @@
 package com.znsio.teswiz.web.provider.selenium;
 
+import com.znsio.teswiz.config.TeswizConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -13,7 +14,7 @@ final class SeleniumWebSessionNameResolver {
         try {
             return Runner.getTestExecutionContext(Thread.currentThread().getId()).getTestName();
         } catch (RuntimeException e) {
-            String fallbackSessionName = Setup.getFromConfigs(Setup.LAUNCH_NAME);
+            String fallbackSessionName = TeswizConfig.reader().getString(Setup.LAUNCH_NAME);
             LOGGER.warn("Unable to resolve test context name. Falling back to launch name for sessionName: '{}'", fallbackSessionName);
             return fallbackSessionName;
         }

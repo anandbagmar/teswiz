@@ -117,6 +117,12 @@ public class Setup {
     private static final Map<String, String> configs = CONFIGURATION.strings();
     private static final Map<String, Boolean> configsBoolean = CONFIGURATION.booleans();
     private static final Map<String, Integer> configsInteger = CONFIGURATION.integers();
+
+    // Publish the configuration to library packages, which read it via TeswizConfig.reader()
+    // instead of depending on runner.Setup.
+    static {
+        com.znsio.teswiz.config.TeswizConfig.register(CONFIGURATION);
+    }
     private static final String RP_DESCRIPTION = "RP_DESCRIPTION";
     private static final String RP_DEFAULT_DESCRIPTION = "End-2-End scenarios";
     private static Map<String, Map> loadedCapabilityFile;
