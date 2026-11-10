@@ -1,0 +1,3 @@
+#
+#Tue Nov 10 11:20:39 IST 2026
+no\ classes\ that\ reside\ outside\ of\ packages\ ['com.znsio.teswiz.runner',\ 'com.znsio.teswiz.steps..',\ 'com.znsio.teswiz.testng..',\ 'com.znsio.teswiz.screen..',\ 'com.znsio.teswiz.listener..',\ 'com.znsio.teswiz.businessLayer..']\ should\ depend\ on\ classes\ that\ reside\ in\ a\ package\ 'com.znsio.teswiz.runner',\ because\ runner\ orchestrates\ the\ libraries;\ a\ library\ depending\ on\ runner\ creates\ a\ cycle=33f96777-c927-4301-bdb0-2ac5588667c9
