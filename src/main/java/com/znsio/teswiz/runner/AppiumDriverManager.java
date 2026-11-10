@@ -29,6 +29,7 @@ import com.znsio.teswiz.mobile.session.AppiumDeviceSessionRegistry;
 import com.znsio.teswiz.mobile.session.MobileDriverSession;
 import com.znsio.teswiz.mobile.provider.MobileExecutionProvider;
 import com.znsio.teswiz.mobile.provider.MobileExecutionProviderResolver;
+import com.znsio.teswiz.mobile.server.AppiumServerController;
 import com.znsio.teswiz.context.SessionContext;
 import com.znsio.teswiz.context.TestExecutionContext;
 import com.znsio.teswiz.entities.Platform;
@@ -58,7 +59,7 @@ public class AppiumDriverManager {
     private static final String CAPABILITIES = "CAPABILITIES: ";
     private static int numberOfAppiumDriversUsed = 0;
     private static final ThreadLocal<AppiumDriver> appiumDriver = new ThreadLocal<>();
-    private static AppiumServerManager appiumServerManager = null;
+    private static AppiumServerController appiumServerController = null;
     private static AppiumDriverManager appiumDriverManager = null;
     private static final MobileExecutionProviderResolver MOBILE_EXECUTION_PROVIDER_RESOLVER =
             new MobileExecutionProviderResolver();
@@ -199,13 +200,13 @@ public class AppiumDriverManager {
             TestExecutionContext testExecutionContext, String appName) {
         Driver currentDriver;
 
-        if (null == appiumServerManager) {
+        if (null == appiumServerController) {
             CustomCapabilities.getInstance();
             writeServiceConfig();
-            appiumServerManager = new AppiumServerManager();
+            appiumServerController = newAppiumServerController();
             appiumDriverManager = new AppiumDriverManager();
             if (Runner.getCloudName() == NOT_SET) {
-                appiumServerManager.startAppiumServer("127.0.0.1"); // Needs to be removed
+                appiumServerController.startAppiumServer("127.0.0.1"); // Needs to be removed
             } else {
                 LOGGER.info("Cloud execution on: {}. No need to start Appium Server", Runner.getCloudName());
             }
@@ -525,12 +526,16 @@ public class AppiumDriverManager {
         appiumDriver.set(driver);
     }
 
+    // Same wiring as the deprecated AppiumServerManager(), without depending on that shim.
+    static AppiumServerController newAppiumServerController() {
+        return new AppiumServerController(DeviceSetup::getCloudUrlFromCapabilities);
+    }
+
     private static AppiumDriver initialiseDriver(DesiredCapabilities desiredCapabilities) {
         LOGGER.info("Initialise Driver with Capabilities: {}",
                 SensitiveDataMasker.mask(
                         JsonPrettyPrinter.prettyPrint(desiredCapabilities.asMap())));
-        AppiumServerManager appiumServerManager = new AppiumServerManager();
-        String remoteWDHubIP = appiumServerManager.getRemoteWDHubIP();
+        String remoteWDHubIP = newAppiumServerController().getRemoteWDHubIP();
         return createAppiumDriver(desiredCapabilities, remoteWDHubIP);
     }
 

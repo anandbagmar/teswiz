@@ -13,6 +13,12 @@ public class CucumberScenarioReporterListener extends ScenarioReporter {
 
     private static final Logger LOGGER = LogManager.getLogger(
             CucumberScenarioReporterListener.class.getName());
+    /**
+     * @deprecated Not used by teswiz. Kept, and still initialised, only for binary compatibility with
+     *     consumers that read it. Use {@link com.znsio.teswiz.mobile.server.AppiumServerController} for
+     *     Appium server lifecycle instead. Planned for removal in the next major release.
+     */
+    @Deprecated
     public AppiumServerManager appiumServerManager;
 
     private static final Map<String, String> MIME_TYPES_EXTENSIONS =

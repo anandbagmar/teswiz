@@ -12,8 +12,7 @@ public class PluginCliRequest {
     private static final Logger LOGGER = LogManager.getLogger(PluginCliRequest.class.getName());
 
     public static PluginCli getCliArgs() {
-        AppiumServerManager appiumServerManager = new AppiumServerManager();
-        String remoteWDHubIP = appiumServerManager.getRemoteWDHubIP();
+        String remoteWDHubIP = AppiumDriverManager.newAppiumServerController().getRemoteWDHubIP();
         URL url = null;
         try {
             url = new URL(remoteWDHubIP);
