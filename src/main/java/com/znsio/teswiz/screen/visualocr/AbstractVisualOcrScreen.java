@@ -16,6 +16,7 @@ import com.znsio.teswiz.runner.Setup;
 import com.znsio.teswiz.runner.Visual;
 import com.znsio.teswiz.runner.VisualElement;
 import com.znsio.teswiz.tools.Wait;
+import com.znsio.teswiz.visual.PositionIndexParser;
 
 /**
  * Shared implementation of {@link VisualOcrScreen} for the convention-resolved platform screens. Owns the single,
@@ -359,38 +360,7 @@ public abstract class AbstractVisualOcrScreen extends VisualOcrScreen {
     }
 
     protected final int parsePositionIndex(String positionText, int listSize) {
-        if (positionText == null || positionText.isBlank()) {
-            return 0;
-        }
-        String normalized = positionText.trim().toLowerCase();
-        if ("first".equals(normalized) || "1st".equals(normalized)) {
-            return 0;
-        }
-        if ("last".equals(normalized)) {
-            return Math.max(0, listSize - 1);
-        }
-        if ("second".equals(normalized) || "2nd".equals(normalized)) {
-            return 1;
-        }
-        if ("third".equals(normalized) || "3rd".equals(normalized)) {
-            return 2;
-        }
-        if (isOrdinalWord(normalized)) {
-            String digits = normalized.replaceAll("[^0-9]", "");
-            if (!digits.isEmpty()) {
-                return Integer.parseInt(digits) - 1;
-            }
-        }
-        try {
-            return Integer.parseInt(normalized);
-        } catch (NumberFormatException e) {
-            return 0;
-        }
-    }
-
-    private static boolean isOrdinalWord(String normalized) {
-        return normalized.endsWith("st") || normalized.endsWith("nd")
-                || normalized.endsWith("rd") || normalized.endsWith("th");
+        return PositionIndexParser.toIndex(positionText, listSize);
     }
 
     private static String byOcrText(String elementName, String ocrText) {
