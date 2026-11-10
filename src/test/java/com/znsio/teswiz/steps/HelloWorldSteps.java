@@ -21,7 +21,7 @@ public class HelloWorldSteps {
 
     @Given("I make the number random {string} times")
     public void randomNumberGenerator(String numberOfTimes) {
-        LOGGER.info(System.out.printf("randomNumberGenerator:'%s' - Persona:'%s'", numberOfTimes, SAMPLE_TEST_CONTEXT.ME));
+        LOGGER.info(String.format("randomNumberGenerator:'%s' - Persona:'%s'", numberOfTimes, SAMPLE_TEST_CONTEXT.ME));
         Drivers.createDriverFor(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform(), context);
         new HelloWorldBL().randomNumberGenerator(numberOfTimes);
     }

@@ -2,9 +2,9 @@
 
 **Enterprise Multi-Platform Test Automation Framework for Web, Mobile, API, Desktop, Visual AI, & OCR**
 
-[![Release](https://img.shields.io/badge/release-1.0.40-blue.svg?style=flat)](https://jitpack.io/#anandbagmar/teswiz)
+[![Release](https://img.shields.io/badge/release-1.0.56-blue.svg)](https://jitpack.io/#anandbagmar/teswiz)
 [![CI](https://github.com/anandbagmar/teswiz/actions/workflows/Build_And_Run_Unit_Tests_CI.yml/badge.svg?style=flat)](https://github.com/anandbagmar/teswiz/actions/workflows/Build_And_Run_Unit_Tests_CI.yml)
-[![CodeQL](https://github.com/anandbagmar/teswiz/actions/workflows/codeql-analysis.yml/badge.svg?style=flat)](https://github.com/anandbagmar/teswiz/actions/workflows/codeql-analysis.yml)
+[![CodeQL](https://github.com/anandbagmar/teswiz/actions/workflows/codeql.yml/badge.svg?style=flat)](https://github.com/anandbagmar/teswiz/actions/workflows/codeql.yml)
 [![Open Source](https://badges.frapsoft.com/os/v3/open-source.svg?v=103)](https://github.com/anandbagmar/teswiz)
 
 [📚 Documentation Hub](docs/index.md) • [🚀 Getting Started](#-getting-started) • [⚙️ Engine Selection](#%EF%B8%8F-engine-selection) • [🏗️ Architecture](#%EF%B8%8F-architecture) • [📊 Reporting](#-visual-testing--reporting)

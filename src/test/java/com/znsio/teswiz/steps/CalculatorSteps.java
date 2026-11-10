@@ -57,7 +57,7 @@ public class CalculatorSteps {
     @Given("I start the calculator")
     public void iStartTheCalculator() {
         LOGGER.info(
-                System.out.printf("iStartTheCalculator - Persona:'%s'", SAMPLE_TEST_CONTEXT.ME));
+                String.format("iStartTheCalculator - Persona:'%s'", SAMPLE_TEST_CONTEXT.ME));
         Drivers.createDriverFor(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform(), context);
         new CalculatorBL(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform()).startCalculator();
     }
@@ -65,7 +65,7 @@ public class CalculatorSteps {
     @Given("I start the new calculator")
     public void iStartTheNewCalculator() {
         LOGGER.info(
-                System.out.printf("iStartTheCalculator - Persona:'%s'", SAMPLE_TEST_CONTEXT.ME));
+                String.format("iStartTheCalculator - Persona:'%s'", SAMPLE_TEST_CONTEXT.ME));
         Drivers.createDriverFor(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform(), context);
         new CalculatorBL(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform()).startNewCalculator();
     }

@@ -21,7 +21,7 @@ public class ConfEngineSteps {
 
     @Given("I see the list of conferences")
     public void iSeeTheListOfConferences() {
-        LOGGER.info(System.out.printf("iSeeTheListOfConferences - Persona:'%s'",
+        LOGGER.info(String.format("iSeeTheListOfConferences - Persona:'%s'",
                                       SAMPLE_TEST_CONTEXT.ME));
         Drivers.createDriverFor(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform(), context);
         new ConfEngineBL(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform()).seeListOfConferences();

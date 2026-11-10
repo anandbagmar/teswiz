@@ -22,14 +22,14 @@ public class DineoutSteps {
 
     @Given("I am in {string}")
     public void iAmIn(String city) {
-        LOGGER.info(System.out.printf("iAmIn - Persona:'%s'", SAMPLE_TEST_CONTEXT.ME));
+        LOGGER.info(String.format("iAmIn - Persona:'%s'", SAMPLE_TEST_CONTEXT.ME));
         Drivers.createDriverFor(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform(), context);
         new DineoutSearchBL(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform()).selectCity(city);
     }
 
     @When("I search for {string} cuisine restaurants")
     public void iSearchForCuisineRestaurants(String cusine) {
-        LOGGER.info(System.out.printf("iSearchForCuisineRestaurants - Persona:'%s'",
+        LOGGER.info(String.format("iSearchForCuisineRestaurants - Persona:'%s'",
                                       SAMPLE_TEST_CONTEXT.ME));
         new DineoutSearchBL(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform()).searchForCusine(cusine);
     }

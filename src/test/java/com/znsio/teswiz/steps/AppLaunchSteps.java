@@ -29,7 +29,7 @@ public class AppLaunchSteps {
         appName = appNameParts[0].toLowerCase(Locale.ROOT) + "_" + Runner.getCloudName()
                                                                            .toLowerCase();
         String onPlatform = appNameParts[appNameParts.length - 1].toLowerCase(Locale.ROOT);
-        LOGGER.info(System.out.printf("startOn - Persona:'%s', AppName: '%s', Platform: '%s'",
+        LOGGER.info(String.format("startOn - Persona:'%s', AppName: '%s', Platform: '%s'",
                                       userPersona, appName, onPlatform));
         context.addTestState(userPersona, userPersona);
         Drivers.createDriverFor(userPersona, appName, Platform.valueOf(onPlatform), context);
@@ -41,7 +41,7 @@ public class AppLaunchSteps {
         appName = appNameParts[0].toLowerCase(Locale.ROOT);
         String onPlatform = appNameParts[appNameParts.length - 1].toLowerCase(Locale.ROOT);
         String evaluatedBrowser = this.evaluateBrowserType(browserName);
-        LOGGER.info(System.out.printf(
+        LOGGER.info(String.format(
                 "startOn - Persona:'%s', AppName: '%s', Browser: '%s', Platform: '%s'", userPersona,
                 appName, evaluatedBrowser, onPlatform));
         context.addTestState(userPersona, userPersona);

@@ -58,9 +58,8 @@
     "brace-expansion": "5.0.12"
   },
   "name": "teswiz",
-  "description": "[![0.0.3](https://jitpack.io/v/znsio/teswiz.svg)](https://jitpack.io/#znsio/teswiz) [![0.0.3](https://jitci.com/gh/znsio/teswiz/svg)](https://jitci.com/gh/znsio/teswiz) [![CI](https://github.com/znsio/teswiz/actions/workflows/Build_And_Run_Unit_Tests_CI.yml/badge.svg)](https://github.com/znsio/teswiz/actions/workflows/Build_And_Run_Unit_Tests_CI.yml) [![CodeQL](https://github.com/znsio/teswiz/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/znsio/teswiz/actions/workflows/codeql-analysis.yml)",
+  "description": "Node dependencies (Appium 3, drivers, plugins, Playwright) for teswiz, the multi-platform test automation framework: https://github.com/anandbagmar/teswiz",
   "version": "1.0.56",
-  "main": "index.js",
   "directories": {
     "doc": "docs"
   },

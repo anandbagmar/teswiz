@@ -34,7 +34,7 @@ Add the capability **iosDeviceType** to run testcases on browserstack and set it
 
 To start Appium manually, run the following command:
 
-    appium --relaxed-security --allow-cors --use-plugins="appium-dashboard,relaxed-caps,device-farm" -pa /wd/hub --plugin-device-farm-platform=both
+    appium --relaxed-security --allow-cors --use-plugins="relaxed-caps,device-farm" -pa /wd/hub --plugin-device-farm-platform=both
 
 **Please keep in mind that teswiz will start the Appium 3 server and handle the necessary configurations.**
 

@@ -26,7 +26,7 @@ public class AjioSteps {
 
     @Given("I search for products using {string}")
     public void iSearchForProductsUsing(String searchtype) {
-        LOGGER.info(System.out.printf("iSearchForProductsUsing:'%s' - Persona:'%s'", searchtype,
+        LOGGER.info(String.format("iSearchForProductsUsing:'%s' - Persona:'%s'", searchtype,
                 SAMPLE_TEST_CONTEXT.ME));
         Drivers.createDriverFor(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform(), context);
         new HomeBL().handlePopups();
@@ -35,14 +35,14 @@ public class AjioSteps {
 
     @When("I add the product to the cart")
     public void iAddTheProductToTheCart() {
-        LOGGER.info(System.out.printf("iAddTheProductToTheCart:- Persona:'%s'",
+        LOGGER.info(String.format("iAddTheProductToTheCart:- Persona:'%s'",
                 SAMPLE_TEST_CONTEXT.ME));
         new SearchBL().prepareCart();
     }
 
     @Then("I should see the product in the cart")
     public void iShouldSeeTheProductInTheCart() {
-        LOGGER.info(System.out.printf("iShouldSeeTheProductInTheCart:- Persona:'%s'",
+        LOGGER.info(String.format("iShouldSeeTheProductInTheCart:- Persona:'%s'",
                 SAMPLE_TEST_CONTEXT.ME));
         new SearchBL().verifyCart();
     }
@@ -66,7 +66,7 @@ public class AjioSteps {
 
     @Given("{string} search {string} item on {string}")
     public void searchItemOn(String userPersona, String product, String onPlatform) {
-        LOGGER.info(System.out.printf(
+        LOGGER.info(String.format(
                 "LoginWithValidCredentials - Persona:'%s', Platform: '%s'", userPersona, onPlatform));
         context.addTestState(userPersona, userPersona);
         Drivers.createDriverFor(userPersona, Platform.valueOf(onPlatform), context);

@@ -33,7 +33,7 @@ public class JioMeetSteps {
     @Given("I sign in as a registered {string}")
     public void iSignInAsARegistered(String userSuffix) {
         Map userDetails = Runner.getTestDataAsMap(userSuffix);
-        LOGGER.info(System.out.printf(
+        LOGGER.info(String.format(
                 "iSignInAsARegistered - Persona:'%s', User details: '%s', Platform: '%s'",
                 SAMPLE_TEST_CONTEXT.ME, userDetails, Runner.getPlatform()));
         Drivers.createDriverFor(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform(), context);
@@ -78,7 +78,7 @@ public class JioMeetSteps {
                                                     String platform) {
         appName = appName.toLowerCase(Locale.ROOT);
         Platform onPlatform = Platform.valueOf(platform);
-        LOGGER.info(System.out.printf("startOn - Persona:'%s', AppName: '%s', Platform: '%s'",
+        LOGGER.info(String.format("startOn - Persona:'%s', AppName: '%s', Platform: '%s'",
                                       userPersona, appName, onPlatform.name()));
         context.addTestState(userPersona, userPersona);
         Drivers.createDriverFor(userPersona, appName, onPlatform, context);
@@ -90,7 +90,7 @@ public class JioMeetSteps {
     public void joinsTheMeetingFromOn(String userPersona, String appName, String platform) {
         appName = appName.toLowerCase(Locale.ROOT);
         Platform onPlatform = Platform.valueOf(platform);
-        LOGGER.info(System.out.printf("startOn - Persona:'%s', AppName: '%s', Platform: '%s'",
+        LOGGER.info(String.format("startOn - Persona:'%s', AppName: '%s', Platform: '%s'",
                                       userPersona, appName, onPlatform.name()));
         context.addTestState(userPersona, userPersona);
         switch(onPlatform) {

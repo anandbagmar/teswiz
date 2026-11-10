@@ -1,26 +1,27 @@
 ---
 name: teswiz-project
-description: Use when working in the znsio/teswiz repository to modify framework code, Cucumber/TestNG hooks, Applitools visual testing flows, configs/caps, or related docs/tests. Covers repo-specific file layout, verification commands, and current conventions such as Figma-driven Applitools naming instead of @eyes tags.
+description: Use when working in the anandbagmar/teswiz repository to modify framework code, Cucumber/TestNG hooks, Applitools visual testing flows, configs/caps, or related docs/tests. Covers repo-specific file layout, verification commands, and current conventions such as Figma-driven Applitools naming instead of @eyes tags.
 ---
 
 # Teswiz Project
 
-Use this skill for changes inside the `znsio/teswiz` repo.
+Use this skill for changes inside the `anandbagmar/teswiz` repo.
 
 ## Repo map
 
 - Core framework code: `src/main/java/com/znsio/teswiz`
-- Step definitions used by sample tests: `src/main/java/com/znsio/teswiz/steps`
+- Framework-shipped, reusable step definitions and hooks (`Hooks`, `CommonSteps`, `FigmaSteps`, `VisualOcrSteps`): `src/main/java/com/znsio/teswiz/steps`
+- Step definitions for the sample tests: `src/test/java/com/znsio/teswiz/steps`
 - Unit tests: `src/test/java/com/znsio/teswiz`
 - Feature files: `src/test/resources/com/znsio/teswiz/features`
-- TestNG-only execution mode (alternative to Cucumber, see `FRAMEWORK` config property): `src/main/java/com/znsio/teswiz/testng`, pilot tests in `src/test/java/com/znsio/teswiz/testng`, docs in `docs/guides/ConfiguringTestExecution-README.md`
+- TestNG-only execution mode (alternative to Cucumber, see `FRAMEWORK` config property): `src/main/java/com/znsio/teswiz/testng`, pilot tests in `src/test/java/com/znsio/teswiz/testng`, docs in `docs/getting-started/configuring-test-execution.md`
 - Playwright TS test-owned screen modules: `src/test/resources/playwright/screens`
 - Execution configs: `configs/<app>/...`
 - Canonical execution-config template: `configs/teswiz/teswiz_config.properties.template`
 - Canonical end-of-run notification template (separate `notifications.properties` resource, lower-case `notify.*` keys, OFF by default): `configs/teswiz/notifications.properties.template`; engine lives in `src/main/java/com/znsio/teswiz/reporting/notify`, docs in `docs/subsystems/run-notifications.md`
 - Capability files: `caps/<app>/...`
-- Visual-testing docs: `docs/features/RunningVisualTests-README.md`
-- Architecture notes: `docs/internals/Architecture-README.md`
+- Visual-testing docs: `docs/subsystems/visual-ai-applitools.md`
+- Architecture notes: `docs/architecture-and-internals/architecture-notes.md`
 
 ## Working conventions
 
@@ -32,8 +33,9 @@ Use this skill for changes inside the `znsio/teswiz` repo.
 - Keep encapsulation tight: default to package-private or private unless a wider surface is genuinely required.
 - Avoid broad public APIs for internal refactors; prefer narrow facades, small result objects, or package-private collaborators.
 - Always include a suggested Git commit message at the end of the final response after completing any change or when requested (summary line max 50 chars, blank line, bulleted file descriptions).
-- When authoring TestNG-mode tests (`com.znsio.teswiz.testng`), always use fluent method chaining between business-layer calls wherever the BL API returns a chainable type (e.g. `AuthBL.signIn()` returning `LandingBL`, or a method returning `this`), instead of constructing a new BL instance per call. **Before reusing an already-constructed BL instance instead of re-constructing it, check whether that BL's constructor has side effects** (several call `Runner.setCurrentDriverForUser(...)`, which sets a single thread-scoped "current persona" pointer that screen resolution reads from) — in a multi-persona test, reusing a stale instance after constructing a later persona's BL silently resolves screens against the wrong persona/platform. In that case, reconstruct the BL immediately before each interaction instead (matching what the equivalent Cucumber step-defs already do) rather than holding a reference across other personas' calls. See `docs/internals/Cucumber-To-TestNG-Migration-Guide.md` for worked examples.
+- When authoring TestNG-mode tests (`com.znsio.teswiz.testng`), always use fluent method chaining between business-layer calls wherever the BL API returns a chainable type (e.g. `AuthBL.signIn()` returning `LandingBL`, or a method returning `this`), instead of constructing a new BL instance per call. **Before reusing an already-constructed BL instance instead of re-constructing it, check whether that BL's constructor has side effects** (several call `Runner.setCurrentDriverForUser(...)`, which sets a single thread-scoped "current persona" pointer that screen resolution reads from) — in a multi-persona test, reusing a stale instance after constructing a later persona's BL silently resolves screens against the wrong persona/platform. In that case, reconstruct the BL immediately before each interaction instead (matching what the equivalent Cucumber step-defs already do) rather than holding a reference across other personas' calls. See `docs/architecture-and-internals/cucumber-to-testng-migration-guide.md` for worked examples.
 - Keep the repo instructions aligned across Codex, Claude, and Antigravity entry points:
+  - `AGENTS.md` (TDD, Feature -> Step -> BL -> Screen architecture, method-size and complexity rules)
   - `.codex/skills/teswiz-project/SKILL.md`
   - `CLAUDE.md`
   - `ANTIGRAVITY.md`
@@ -66,7 +68,7 @@ Use this skill for changes inside the `znsio/teswiz` repo.
   - `com.znsio.teswiz.reporting.notify` (opt-in end-of-run Slack/email notifications: teswiz owns the end-of-run trigger `RunNotifications.fireIfConfigured(...)` fired from `Runner`, gating (`notify.enabled` + `notify.branches`), delivery (`SlackSender`/`EmailSender`), and CI-provider-agnostic run provenance (`CiProvider`/`RunEnvironment`); a consumer only implements `RunNotificationComposer` resolved from the `notify.composer.class` key. The notifications file is resolved from the `NOTIFICATIONS_CONFIG_FILE` config key (filesystem path, same convention as `ENVIRONMENT_CONFIG_FILE`/`TEST_DATA_FILE`; unset = off, no classpath fallback); the default example path is `./configs/teswiz/notifications.properties` (ships disabled), and `ConfigurationFilesConsistencyTest` ignores `*notifications.properties` so it can live under `configs/`. Best-effort by default (every failure logged+swallowed so a notifier problem never changes a run result); set `notify.fail.on.error=true` to fail the run fast when it wanted to notify but could not. `CiProvider` is the single source of truth for CI detection — `com.znsio.teswiz.analytics.RunTelemetry.detectCiProvider()` delegates to `CiProvider.telemetryLabel(...)`, so add new CI providers only in `CiProvider`. Keys are lower-case `notify.*` in their own resource, NOT in the teswiz execution config. Docs: `docs/subsystems/run-notifications.md`.)
   - `com.znsio.teswiz.filters` (RestAssured filters registered globally, once, in `Setup.setupExecutionEnvironment()` - not per-request - so they apply to every API call regardless of client: `EnvironmentIssueFilter` (502/503/504 -> `EnvironmentSetupException`, opt out via `DISABLE_ENVIRONMENT_ISSUE_FILTER=true`) and `com.znsio.teswiz.filters.apitraffic` (masked per-call request/response log files under each scenario's `api-traffic/` folder, opt out via `API_TRAFFIC_LOGGING=false`). `ApiTrafficLoggingFilter` is registered before `EnvironmentIssueFilter` so it still records a call even when the latter throws.)
   - `com.znsio.teswiz.visual`
-  - `com.znsio.teswiz.testng` (TestNG-only execution mode support: `TestNgRunner`, `TeswizTestNgListener`, `TestNgTestExecutionContextFactory`, `TestNgTestClassDiscovery`, `TestNgTagExpressionParser`/`TestNgGroupSelection` - keeps `Runner`/`Hooks`/`Setup` as thin, mode-agnostic dispatchers. Reporting: `TestNgTagCoverageReportWriter` (lightweight coverage table) plus `TestNgStepRecorder`/`TestNgCapturedStep`/`TestNgCucumberJsonBuilder`/`TestNgCucumberStyleReportWriter` (rich masterthought-powered report built from synthetic Cucumber JSON assembled from `TestNgStepCaptureAspect`-captured business-layer/screen calls, in real call order with nesting depth). See `docs/internals/TestNG-Execution-Mode-Plan.md` for the full implementation history and remaining feature-parity task list; ReportPortal integration for this mode is deferred, not built - a real upstream `agent-java-testng` dependency incompatibility, not a gap to silently fill in. For porting an existing Cucumber scenario to this mode, see `docs/internals/Cucumber-To-TestNG-Migration-Guide.md`.)
+  - `com.znsio.teswiz.testng` (TestNG-only execution mode support: `TestNgRunner`, `TeswizTestNgListener`, `TestNgTestExecutionContextFactory`, `TestNgTestClassDiscovery`, `TestNgTagExpressionParser`/`TestNgGroupSelection` - keeps `Runner`/`Hooks`/`Setup` as thin, mode-agnostic dispatchers. Reporting: `TestNgTagCoverageReportWriter` (lightweight coverage table) plus `TestNgStepRecorder`/`TestNgCapturedStep`/`TestNgCucumberJsonBuilder`/`TestNgCucumberStyleReportWriter` (rich masterthought-powered report built from synthetic Cucumber JSON assembled from `TestNgStepCaptureAspect`-captured business-layer/screen calls, in real call order with nesting depth). See `docs/architecture-and-internals/testng-execution-mode-plan.md` for the full implementation history and remaining feature-parity task list; ReportPortal integration for this mode is deferred, not built - a real upstream `agent-java-testng` dependency incompatibility, not a gap to silently fill in. For porting an existing Cucumber scenario to this mode, see `docs/architecture-and-internals/cucumber-to-testng-migration-guide.md`.)
 - When adding new Playwright, browser-config, session, or visual-helper code, do not place it in `runner` by default.
 - Shared app-path resolution, version detection, and download handling belongs in `com.znsio.teswiz.config.app`; keep `runner` compatibility wrappers only when they help avoid a breaking change.
 - Shared capability lookup and capability-file persistence belongs in `com.znsio.teswiz.config.capability`; keep `runner` compatibility wrappers only when they help avoid a breaking change.
@@ -80,7 +82,7 @@ Use this skill for changes inside the `znsio/teswiz` repo.
 - Mobile cloud upload/parsing helpers should also prefer `com.znsio.teswiz.mobile.provider` when they can be extracted as pure provider logic.
 - If a change affects these boundaries, update:
   - `README.md`
-  - `docs/internals/Architecture-README.md`
+  - `docs/architecture-and-internals/architecture-notes.md`
   - this skill file
 
 ## Visual testing rules
@@ -128,6 +130,7 @@ Use this skill for changes inside the `znsio/teswiz` repo.
   - run `actions/setup-node` first
   - prefer `npm ci` over `npm install`
   - commit `package.json` and `package-lock.json` together whenever dependencies or `overrides` change
+  - keep npm `playwright` on the same minor version as `com.microsoft.playwright:playwright` in `build.gradle`, and bump both together (each minor uses its own browser build in the shared Playwright cache)
   - install Playwright browsers only in workflows that actually execute Playwright
 - For stricter screen-contract audits that also flag missing target combinations, use:
   `./gradlew verifyScreenContracts -PincludeMissingScreenTargets=true`
@@ -146,10 +149,10 @@ Use this skill for changes inside the `znsio/teswiz` repo.
 
 - If behavior changes for visual testing, update both:
   - `README.md`
-  - `docs/features/RunningVisualTests-README.md`
+  - `docs/subsystems/visual-ai-applitools.md`
 - If architecture boundaries or stable-vs-internal package intent changes, update:
   - `README.md`
-  - `docs/internals/Architecture-README.md`
+  - `docs/architecture-and-internals/architecture-notes.md`
   - `.codex/skills/teswiz-project/SKILL.md`
 - Keep docs aligned with the current supported flow; remove stale references rather than documenting both old and new patterns.
 

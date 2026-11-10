@@ -24,7 +24,7 @@ public class DuckDuckGoSteps {
     @Given("I launch the duckduckgo browser")
     public void iLaunchTheDuckduckgoBrowser() {
         LOGGER.info(
-                System.out.printf("iLaunchTheDuckduckgoBrowser - Persona:'%s'", SAMPLE_TEST_CONTEXT.ME));
+                String.format("iLaunchTheDuckduckgoBrowser - Persona:'%s'", SAMPLE_TEST_CONTEXT.ME));
         Drivers.createDriverFor(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform(), context);
         new DuckDuckGoBL(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform()).launchBrowser();
     }

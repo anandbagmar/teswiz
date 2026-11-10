@@ -23,7 +23,7 @@ public class IndigoSteps {
     @Given("I search for a {string} ticket from {string} to {string} for {string} adult passenger")
     public void iSearchForATicketFromToForPassenger(String journeyType, String from,
                                                     String destination, String numberOfAdults) {
-        LOGGER.info(System.out.printf("iSearchForATicketFromToForPassenger - Persona:'%s'",
+        LOGGER.info(String.format("iSearchForATicketFromToForPassenger - Persona:'%s'",
                                       SAMPLE_TEST_CONTEXT.ME));
         Drivers.createDriverFor(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform(), context);
         new IndigoBL(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform()).searchForTicket(journeyType, from,
@@ -34,7 +34,7 @@ public class IndigoSteps {
     @Given("I want to purchase {string} gift voucher of INR {string}")
     public void iWantToPurchaseGiftVoucherOfINR(String numberOfGiftVouchersToPurchase,
                                                 String denomination) {
-        LOGGER.info(System.out.printf("iWantToPurchaseGiftVoucherOfINR - Persona:'%s'",
+        LOGGER.info(String.format("iWantToPurchaseGiftVoucherOfINR - Persona:'%s'",
                                       SAMPLE_TEST_CONTEXT.ME));
         Drivers.createDriverFor(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform(), context);
         new GiftVoucherBL(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform()).selectGiftVoucher(
@@ -46,7 +46,7 @@ public class IndigoSteps {
     public void iWantToPersonalizeGiftVoucherOfINRForWithMessage(
             String numberOfGiftVouchersToPurchase, String denomination, String forWhom,
             String customMessage) {
-        LOGGER.info(System.out.printf("iWantToPurchaseGiftVoucherOfINR - Persona:'%s'",
+        LOGGER.info(String.format("iWantToPurchaseGiftVoucherOfINR - Persona:'%s'",
                                       SAMPLE_TEST_CONTEXT.ME));
         Drivers.createDriverFor(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform(), context);
         new GiftVoucherBL(SAMPLE_TEST_CONTEXT.ME, Runner.getPlatform()).selectGiftVoucherAndPersonalise(

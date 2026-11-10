@@ -39,7 +39,7 @@ npm install
 
 ## 🧪 Verifying Installation
 
-Verify installed Appium components by running `npx appium doctor` or inspecting `npm list`:
+Verify installed Appium components by running `npx appium driver list --installed` and `npx appium plugin list --installed`, or by inspecting `npm list`:
 
 ### 🔌 Installed Drivers & Plugins
 
@@ -48,7 +48,6 @@ Verify installed Appium components by running `npx appium doctor` or inspecting 
 | **iOS Driver** | `appium-xcuitest-driver` | Automation driver for iOS devices and simulators |
 | **Android Driver** | `appium-uiautomator2-driver` | Automation driver for Android devices and emulators |
 | **Device Farm Plugin** | `appium-device-farm` | Multi-device farm parallel execution plugin |
-| **Dashboard Plugin** | `appium-dashboard` | Real-time device execution dashboard |
 | **Relaxed Caps Plugin** | `@appium/relaxed-caps-plugin` | Relaxes vendor capability prefix constraints |
 
 ### 🛠️ Diagnostics

@@ -3,7 +3,7 @@
 
 _Previous release: v1.0.56_
 
-This release moves the build to Gradle 9.9.0, picks up the latest Jackson, Applitools, cucumber-reporting and Google Auth versions, corrects the documented Node.js minimum, moves CI off the deprecated `gradle/gradle-build-action`, brings every GitHub Action to its latest major version, and stops the unit-test workflow from printing token fragments to the run log.
+This release moves the build to Gradle 9.9.0, fixes the fat jar's `Main-Class`, removes every Gradle 10 deprecation warning, picks up the latest Jackson, Applitools, cucumber-reporting and Google Auth versions, corrects the documented Node.js minimum, moves CI off the deprecated `gradle/gradle-build-action`, brings every GitHub Action to its latest major version, and stops the unit-test workflow from printing token fragments to the run log.
 
 ## 🔒 Security
 
@@ -12,6 +12,30 @@ This release moves the build to Gradle 9.9.0, picks up the latest Jackson, Appli
 `Build_And_Run_Unit_Tests_CI.yml` had two debug steps that echoed the first and last 15 characters (and the first 4) of `TESWIZ_REPO_DISPATCH_TOKEN` and `TESWIZ_PAT`. GitHub masks only the full secret value, so these fragments appeared in plain text in every run log. Both steps are removed. The secrets are still used, unchanged, by the README update and repository-dispatch steps.
 
 Treat both tokens as exposed: rotate `TESWIZ_REPO_DISPATCH_TOKEN` and `TESWIZ_PAT`, then update the repository secrets.
+
+## 🐛 Fixes
+
+### `java -jar` on the fat jar finds the main class
+
+The `shadowJar` manifest declared `Main-Class: com.znsio.e2e.runner.Runner`, a class that does not exist, so `java -jar teswiz-<version>-all.jar` failed with `ClassNotFoundException`. It now points to `com.znsio.teswiz.runner.Runner`, the same class the Gradle `run` task uses.
+
+### README release badge updates again
+
+The unit-test workflow updates the README release badge with the regex `release-[^-]+-blue\.svg\)`, but the badge URL ended in `-blue.svg?style=flat)`, so the regex never matched and the badge stayed at 1.0.40. The badge now ends in `-blue.svg)` (flat is the shields.io default) and shows the current release.
+
+### Sample step definitions log the message, not a stream
+
+21 log calls across 11 sample step files used `LOGGER.info(System.out.printf(...))`. `printf` prints to stdout and returns the `PrintStream`, so the log line held a stream reference instead of the message. They now use `String.format(...)`.
+
+## 🧹 Build and Repository Cleanup
+
+- **Reproducible versions.** The dynamic `org.assertj:assertj-core:3+` and `org.apache.logging.log4j:log4j-core:2+` are pinned to the versions they resolved to, 3.27.7 and 2.26.1.
+- **No Gradle 10 deprecation warnings.** `downloadDependencies` reads the `forceUpdate` project property at configuration time instead of calling `Task.project` inside `doLast`, and the sources jar is built by `assemble` instead of being declared in the deprecated `archives` configuration. The publication still includes it. A build with `--warning-mode=all` now reports no deprecations. The commented-out `com.github.znsio` jitpack entry is removed.
+- **One dependency bot.** `renovate.json` is removed. Dependabot (`.github/dependabot.yml`) is the only update bot, and it carries the Appium and Playwright ignore rules.
+- **One CodeQL workflow.** `codeql-analysis.yml` duplicated `codeql.yml` ("CodeQL Advanced") on every push and pull request. It is removed; `codeql.yml` scans Java and the GitHub Actions workflows, and the README badge points to it.
+- **`build.gradle.sample`** wrapper `gradleVersion` moves from 9.7.1 to 9.9.0, matching the build.
+- **`package.json`** gets a plain-text description instead of four `znsio/teswiz` badge links, and drops `"main": "index.js"`, which pointed to a file that does not exist. The lockfile is unchanged.
+- **Changelog.** Removed sections that were fully duplicated: the second 1.0.55 copy and its stray heading, an earlier draft of 1.0.53, `1.0.52-SNAPSHOT`, and repeated 1.0.35 and 1.0.34 copies. The 1.0.44, 1.0.46, 1.0.48 and 1.0.49 SNAPSHOT sections are kept because they hold notes their release sections do not.
 
 ## 🛠 CI / GitHub Actions
 
@@ -67,11 +91,16 @@ Notes:
 - **Node.js minimum corrected.** `docs/getting-started/prerequisites.md` and `getting-started-guide.md` said Node.js 18+, but Appium 3 and its drivers require `^20.19.0 || ^22.12.0 || >=24.0.0` with npm 10+, and Playwright requires Node.js 20+. The docs now state Node.js 20.19+, 22.12+ or 24+ with npm 10+ (22.12+ or 24+ for `WEB_ENGINE=playwright-ts`).
 - **Appium 3, not Appium 2.** `prerequisites.md`, `getting-started-guide.md`, `docs/engines/mobile-appium-setup.md`, `docs/index.md` and `README.md` now say Appium 3, and the Appium documentation links point to `appium.io/docs/en/latest/`. `prerequisites.md` notes that the drivers stay on their Appium 3 lines.
 - **Pin npm `playwright` in consumer projects.** `docs/architecture-and-internals/playwright-migration-guide.md` (section 6a) now installs `playwright@1.64` with `--save-exact` instead of an unpinned `playwright`, and explains why npm `playwright` must stay on the same minor as teswiz's Playwright Java (shared browser cache, `Executable doesn't exist` on mismatch).
-- **Agent rules.** `CLAUDE.md` and `ANTIGRAVITY.md` add a rule to keep npm `playwright` and Playwright Java on the same minor and bump them together.
+- **Agent rules.** `CLAUDE.md`, `ANTIGRAVITY.md` and `.codex/skills/teswiz-project/SKILL.md` add a rule to keep npm `playwright` and Playwright Java on the same minor and bump them together. They now point to `AGENTS.md` for the TDD, test-architecture and complexity rules, list it among the files to keep aligned, and use the current doc paths: the old `docs/internals/…`, `docs/features/…` and `docs/guides/…` paths no longer existed. `SKILL.md` names the repository `anandbagmar/teswiz` and separates the framework-shipped steps in `src/main` from the sample steps in `src/test`.
+- **Appium setup.** `prerequisites.md` and `mobile-appium-setup.md` no longer mention the `appium-dashboard` plugin, which is not installed; the manual start command keeps `relaxed-caps` and `device-farm`. Installed components are listed with `npx appium driver list --installed` and `npx appium plugin list --installed`.
 
 ## 🛠 Changed Files Summary
 
-- `build.gradle` (dependency versions, `wrapper` 9.9.0)
+- `build.gradle` (dependency versions, pinned `assertj-core`/`log4j-core`, `Main-Class`, Gradle 10 deprecations, `wrapper` 9.9.0)
+- `build.gradle.sample` (`wrapper` 9.9.0)
+- `renovate.json` (removed), `.github/workflows/codeql-analysis.yml` (removed)
+- `src/test/java/com/znsio/teswiz/steps/*Steps.java` (11 files, `String.format` logging)
+- `.codex/skills/teswiz-project/SKILL.md`
 - `gradle/wrapper/gradle-wrapper.properties`, `gradle/wrapper/gradle-wrapper.jar`
 - `package.json`, `package-lock.json`
 - `.github/workflows/Build_And_Run_Unit_Tests_CI.yml` (setup-gradle, debug steps removed)
@@ -177,28 +206,6 @@ Notes:
 - `.github/dependabot.yml`
 - `docs/**` (see Docs above)
 - `Changelog.MD`
-
-## 1.0.55
-## 1.0.55
-# Release Notes - teswiz v1.0.55
-
-_Previous release: v1.0.54_
-
-This release makes the failure-breakdown "Failure" column read as plain English for every exception, renders the email table responsively in every mail client (including Outlook), and drops the parentheses around the raw class name.
-
-## ✨ Improvements
-
-### Failure column is humanised by default
-`FailureBreakdownRenderer` gains `HUMANIZED_TYPE` and makes it the default label for the no-argument `slack(...)` / `html(...)` overloads (the old pass-through is still available as `SIMPLE_TYPE`). A clean `CamelCase` class name has a trailing `Exception`/`Error` dropped, is split into words and sentence-cased, so `FreeSpinNotAwardedException` reads `Free spin not awarded` instead of showing the raw class name. A name that is not a plain letters-only identifier (it carries a digit or any of `& < >` or a backtick), a blank type and the `Unclassified` marker are all left untouched. A consumer still passes its own `Function<String,String>` to override specific types, composing it over `HUMANIZED_TYPE`.
-
-### Responsive email table in every client (Outlook included)
-The HTML failure-breakdown table now declares its full width and fixed layout **inline** on the `<table>` (`width="100%" style="width:100%;table-layout:fixed"`) with a `<colgroup>` of percentage column widths (22% / 33% / 33% / 12%), because Outlook's Word engine ignores `<style>`-block table and column widths and would otherwise shrink the table to its content. The percentages scale the table with the email card at any viewport. The `<style>` rules are reduced to progressive enhancement (word-break, count alignment) for clients that honour them.
-
-### Raw class moves under the location, no parentheses
-In the "Where" column the raw exception class is no longer wrapped in parentheses beside the location. In the email it sits on its own line below the location (`RewardsBL.awardFreeSpins:113` then `IndexOutOfBoundsException`); in Slack it follows the location on the same line without parentheses.
-
-## ✅ Tests
-- `FailureBreakdownRendererTest` / `FailureBreakdownSlackLayoutTest` updated to the humanised label, the inline full-width table + colgroup, and the no-parentheses two-line "Where"; new cases pin the humaniser (suffix strip, CamelCase split, blank/`Unclassified`/non-identifier left as-is) and the inline responsive-table markup. Full `com.znsio.teswiz.reporting.notify.*` suite green.
 
 ## 1.0.55
 # Release Notes - teswiz v1.0.55
@@ -316,47 +323,6 @@ Applitools SDK bumps:
 - `package.json` / `package-lock.json` (Applitools Playwright bump)
 - `Changelog.MD`
 
-## 1.0.53
-# Release Notes - teswiz v1.0.53
-_Previous release: v1.0.52_
-
-This release adds the **failing Gherkin step** to the failure breakdown and shows exception types through a **friendly label**, so the "why did things fail?" block reads for both testers and engineers (GAMC-20840).
-
-## ✨ Added
-
-### Failing step as a third grouping dimension
-`FailureCause` now carries a third component, `step`, alongside `type` and `location`. `FailureClassifier` reads the Gherkin step that was running when a scenario failed:
-- from the `[step N: ...]` marker a soft-assertion (`AssertJMultipleFailuresError`) message carries, or
-- from the Cucumber `at ✽.<step>(file:...feature:n)` pseudo-frame in an ordinary failure's stack trace.
-
-When neither source carries the step (a truncated trace, an error with no step line, an unclassified failure) the step is the empty string and the cause degrades to the previous `(type, location)` grouping — so the change is backward compatible. The breakdown tally key widens to `(type, location, step)`, so one code location reached by several steps splits into one row per step with its own count, and the per-step counts still sum to `total()`.
-
-### Friendly exception label (consumer-supplied)
-`FailureBreakdownRenderer.html` and `.slack` take an optional `Function<String,String>` that maps an exception's simple class name to a human-readable label (e.g. `PoolExhaustedException` → "No test user available"). The overloads without it default to `SIMPLE_TYPE` (the class name unchanged), so existing callers are unaffected. The raw class name is always shown next to the code location, so an engineer still has the exact type to search for.
-
-### Grouped, labelled rendering
-The breakdown now renders grouped by `(type, location)`:
-- **Slack**: a two-line group header (`×N` count + friendly label, then `location · RawClass`), with one nested `└ step  ×N` row per failing step. Splitting the location and class onto their own line keeps each line short so a narrow Slack client does not wrap and misalign the block.
-- **Email**: a four-column table — Failure (friendly label), Where (location with the raw class beside it), Failing step, Count — with a group header row and a nested row per step.
-- Counts are labelled `×N` in both channels; the HTML "Total failed" row keeps a plain number.
-
-## ✅ Tests
-- `FailureClassifierTest`: step read from a soft-assertion message marker, from a Cucumber trace frame, and absent when neither is present; `label()` joins type, place and step.
-- `FailureBreakdownRendererTest` / `FailureBreakdownSlackLayoutTest`: grouped rendering, the nested per-step rows and counts, the friendly label, the `×N` count mark in both channels, and the existing escaping/alignment guarantees still hold.
-- `FailureBreakdownTest`: two failures at the same `(type, location)` on different steps are two causes; a blank step degrades to the old single-row behaviour.
-
-## 🛠 Changed Files Summary
-- `src/main/java/com/znsio/teswiz/reporting/notify/failure/FailureCause.java`
-- `src/main/java/com/znsio/teswiz/reporting/notify/failure/FailureClassifier.java`
-- `src/main/java/com/znsio/teswiz/reporting/notify/failure/FailureBreakdown.java`
-- `src/main/java/com/znsio/teswiz/reporting/notify/failure/FailureBreakdownRenderer.java`
-- `src/test/java/com/znsio/teswiz/reporting/notify/failure/FailureClassifierTest.java`
-- `src/test/java/com/znsio/teswiz/reporting/notify/failure/FailureBreakdownTest.java`
-- `src/test/java/com/znsio/teswiz/reporting/notify/failure/FailureBreakdownRendererTest.java`
-- `src/test/java/com/znsio/teswiz/reporting/notify/failure/FailureBreakdownSlackLayoutTest.java`
-- `docs/subsystems/run-notifications.md`
-- `Changelog.MD`
-
 ## 1.0.52
 # Release Notes - teswiz v1.0.52
 
@@ -398,25 +364,6 @@ New `FailureBreakdownSlackLayoutTest` cases cover:
 - `docs/subsystems/run-notifications.md`
 - `Changelog.MD`
 - `build.gradle` (version 1.0.52)
-
-## 1.0.52-SNAPSHOT
-# Release Notes - teswiz v1.0.52
-
-_Previous release: v1.0.51_
-
-This release makes the Slack "why did things fail?" block survive Slack markup in an exception type or place, so a failure thrown from a constructor keeps its `<init>`.
-
-## 🐛 Fixes
-
-### 🔒 Slack failure breakdown escapes `&`, `<` and `>`
-
-Slack reads `&`, `<` and `>` as markup everywhere in a message, even inside a triple-backtick code block. A failure thrown from a constructor has a place like `Widget.<init>:7`; Slack read `<init>` as a mention and dropped it, so the row showed `Widget.:7`.
-
-`FailureBreakdownRenderer.slack(...)` now escapes `&`, `<` and `>` to their HTML entities (`&amp;`, `&lt;`, `&gt;`), folding in the existing backtick-to-`'` handling. The escaping is applied **after** the fixed-width padding, so the monospaced columns still line up — each entity renders as a single glyph in Slack, so the visible table is unchanged. `html(breakdown)` is unchanged (it already escaped via `HtmlReport.escape`).
-
-Previously consumers worked around this by escaping teswiz's Slack block themselves; they can now call `FailureBreakdownRenderer.slack(...)` directly.
-
----
 
 ## 1.0.51
 # Release Notes - teswiz v1.0.51
@@ -1287,67 +1234,11 @@ dependencies {
 - Add progress-enabled GitHub asset uploads for release jars
 - Improve release note generation and filter README update commits
 
-## 1.0.35
-- Add opt-in per-scenario API traffic logging; make EnvironmentIssueFilter global
-- Fix Playwright TS file upload selector
-- Fix Playwright Java file upload wait
-- Run config consistency checks across Gradle tasks
-- Enforce execution config template consistency
-- Normalize all execution properties to canonical template
-- Enforce consistency across execution configurations
-- Add inline configuration example
-- Make configuration template the documentation source of truth
-- Add complete Teswiz execution configuration template Consolidate Teswiz configuration templates
-- Add canonical runtime configuration template
-- Centralize driver wait and retry defaults Add validated runtime defaults configuration
-- Make app download tests deterministic Set configurable app timeout default to 15 seconds
-- Bound app artifact HTTP requests with timeouts Make app download timeout configurable
-- Reduce noisy test logging and fix rollover granularity
-- Add logging regression tests
-- Improve logging, diagnostics, and execution summaries
-- Add interactive release content review loop with revise and abort cleanup
-- Improve console and test logging readability
-- Add progress-enabled GitHub asset uploads for release jars
-- Improve release note generation and filter README update commits
-
-## 1.0.35
-- Add opt-in per-scenario API traffic logging; make EnvironmentIssueFilter global
-- Fix Playwright TS file upload selector
-- Fix Playwright Java file upload wait
-- Run config consistency checks across Gradle tasks
-- Enforce execution config template consistency
-- Normalize all execution properties to canonical template
-- Enforce consistency across execution configurations
-- Add inline configuration example
-- Make configuration template the documentation source of truth
-- Add complete Teswiz execution configuration template Consolidate Teswiz configuration templates
-- Add canonical runtime configuration template
-- Centralize driver wait and retry defaults Add validated runtime defaults configuration
-- Make app download tests deterministic Set configurable app timeout default to 15 seconds
-- Bound app artifact HTTP requests with timeouts Make app download timeout configurable
-- Reduce noisy test logging and fix rollover granularity
-- Add logging regression tests
-- Improve logging, diagnostics, and execution summaries
-- Add interactive release content review loop with revise and abort cleanup
-- Improve console and test logging readability
-- Add progress-enabled GitHub asset uploads for release jars
-- Improve release note generation and filter README update commits
-
 ## 1.0.34
 - Handle already-set npm version during release reruns
 - Enforce main-branch release and rebase before build
 - Release 1.0.34
 - 🔄 Update README with latest commit ID - e02f3ad
-- fix(masking): mask compound query-string keys without swallowing adjacent params
-- 🔄 Update README with latest commit ID - cd6a7f3
-- 🔄 Update README with latest commit ID - a72d92d
-- docs(readme): document new TestNG-only FRAMEWORK execution mode
-- 🔄 Update README with latest commit ID - d6dcdda
-- feat(masking): allow configuring additional/override sensitive log keys
-- Add TestNG-only execution mode as an alternative to Cucumber-JVM (#4)
-- 🔄 Update README with latest commit ID - 15ab312
-
-## 1.0.34
 - fix(masking): mask compound query-string keys without swallowing adjacent params
 - 🔄 Update README with latest commit ID - cd6a7f3
 - 🔄 Update README with latest commit ID - a72d92d

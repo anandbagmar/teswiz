@@ -164,20 +164,12 @@ def downloadDependency(String name, String type, Map<String, String> params) {
 
 // Define a custom task to download dependencies
 tasks.register('downloadDependencies') {
+    // Read the project property at configuration time: Task.project inside doLast is
+    // deprecated (fails in Gradle 10) and is incompatible with the configuration cache.
+    def forceUpdateDependencies = project.findProperty('forceUpdate')?.toString()?.toBoolean() ?: false
     doLast {
         println "Downloading required dependencies..."
         def dependencies = [
-//                [
-//                        name  : "teswiz",
-//                        type  : "jitpack",
-//                        params: [
-//                                group         : "com.github.znsio",
-//                                artifact      : "teswiz",
-//                                version       : "$teswizVersion",
-//                                fileNameSuffix: "",
-//                                forceUpdate   : false
-//                        ]
-//                ],
                 [
                         name  : "jadb",
                         type  : "jitpack",
@@ -186,7 +178,7 @@ tasks.register('downloadDependencies') {
                                 artifact: "jadb",
                                 version : "$jadbVersion",
                                 fileNameSuffix: "",
-                                forceUpdate: project.findProperty('forceUpdate')?.toString()?.toBoolean() ?: false
+                                forceUpdate: forceUpdateDependencies
                         ]
                 ]
         ]
@@ -238,7 +230,7 @@ dependencies {
     api "org.testng:testng:7.12.0"
     api "org.reflections:reflections:0.10.2"
     api "io.rest-assured:rest-assured:6.3.0"
-    api "org.assertj:assertj-core:3+"
+    api "org.assertj:assertj-core:3.27.7"
     api "org.json:json:20260814"
     api "org.seleniumhq.selenium:selenium-java:4.52.0"
 
@@ -258,7 +250,7 @@ dependencies {
     implementation "net.bytebuddy:byte-buddy:1.18.17"
     implementation "org.apache.commons:commons-lang3:3.21.0"
     implementation "org.apache.commons:commons-rng-simple:1.7"
-    implementation 'org.apache.logging.log4j:log4j-core:2+'
+    implementation 'org.apache.logging.log4j:log4j-core:2.26.1'
     implementation "org.apache.pdfbox:pdfbox:3.0.8"
     implementation "org.aspectj:aspectjrt:$aspectJVersion"
     implementation "org.jetbrains:annotations:26.1.0"
@@ -287,7 +279,7 @@ shadowJar {
     zip64 = true
     manifest {
         attributes "Multi-Release": true
-        attributes "Main-Class": "com.znsio.e2e.runner.Runner"
+        attributes "Main-Class": "com.znsio.teswiz.runner.Runner"
     }
     exclude "**/Log4j2Plugins.dat"
 }
@@ -298,8 +290,10 @@ tasks.register('sourcesJar', Jar) {
     from sourceSets.main.allSource
 }
 
-artifacts {
-    archives sourcesJar
+// Build the sources jar with `assemble`. Declaring it in the `archives` configuration is
+// deprecated (fails in Gradle 10); the publication below adds it to the published artifacts.
+tasks.named('assemble') {
+    dependsOn tasks.named('sourcesJar')
 }
 
 // Ship the playwright-ts Node worker inside the jar. Consumer projects have no playwright/ folder,
