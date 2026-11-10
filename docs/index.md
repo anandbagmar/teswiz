@@ -69,7 +69,7 @@ flowchart TD
 | Engine Reference | Platform | Key Capabilities |
 | :--- | :--- | :--- |
 | 🌐 **[Web Engine Capabilities & Parity](engines/web-engine-capabilities.md)** | Web | Parity matrix across `selenium`, `playwright-java`, and `playwright-ts` |
-| 📱 **[Mobile Execution Setup](engines/mobile-appium-setup.md)** | Mobile | Appium 2 driver configuration for Android & iOS execution |
+| 📱 **[Mobile Execution Setup](engines/mobile-appium-setup.md)** | Mobile | Appium 3 driver configuration for Android & iOS execution |
 | 🔌 **[API Test Execution](engines/running-api-tests.md)** | API | Unified API automation via `rest-assured`, `playwright-java`, and `playwright-ts` |
 
 ---

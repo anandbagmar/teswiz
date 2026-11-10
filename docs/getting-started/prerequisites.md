@@ -13,24 +13,27 @@ Ensure your development environment meets the required dependencies before runni
 | Requirement | Minimum Version | Required Setup & Environment Variables | Installation Link |
 | :--- | :--- | :--- | :--- |
 | **Java Development Kit (JDK)** | JDK 17+ | Set `JAVA_HOME` pointing to JDK 17 installation directory | [Eclipse Adoptium (JDK 17)](https://adoptium.net/) |
-| **Node.js & npm** | Node.js 18+ (22.6+ for `WEB_ENGINE=playwright-ts`, whose worker runs with `--experimental-strip-types`) | Required for Playwright TS worker, Appium 2, and CLI dependencies | [Node.js Official Download](https://nodejs.org) |
+| **Node.js & npm** | Node.js 20.19+, 22.12+ or 24+, with npm 10+ (Node.js 22.12+ or 24+ for `WEB_ENGINE=playwright-ts`, whose worker runs with `--experimental-strip-types`) | Required for Playwright TS worker, Appium 3, and CLI dependencies | [Node.js Official Download](https://nodejs.org) |
 | **Android SDK** | Android SDK 33+ | Set `ANDROID_HOME` pointing to Android SDK path | [Android Studio / Command-Line Tools](https://developer.android.com/studio#command-tools) |
-| **Appium 2** | Appium 2.x | Installed automatically via project `package.json` | Running `npm install` |
+| **Appium 3** | Appium 3.x | Installed automatically via project `package.json` | Running `npm install` |
+
+> [!NOTE]
+> The Node.js minimum comes from Appium 3 and its drivers, which require `^20.19.0 || ^22.12.0 || >=24.0.0` and npm 10+, and from Playwright, which requires Node.js 20+. Node.js 18 is not supported. On the 22.x line, 22.12+ is needed (Appium), which also covers the 22.6+ the `playwright-ts` worker needs.
 
 ---
 
 ## 🚀 ⚡ Quick Setup Instructions
 
-### 1. Install Node.js Dependencies & Appium 2
+### 1. Install Node.js Dependencies & Appium 3
 
-Run `npm install` in the project root to install Appium 2, required Appium drivers, and Playwright dependencies:
+Run `npm install` in the project root to install Appium 3, required Appium drivers, and Playwright dependencies:
 
 ```bash
 npm install
 ```
 
 > [!NOTE]
-> `npm install` installs Appium 2 and the required drivers into `./node_modules`.
+> `npm install` installs Appium 3 and the required drivers into `./node_modules`. The drivers stay on the releases that support Appium 3 (`appium-uiautomator2-driver` 8.x, `appium-xcuitest-driver` 12.x); their newer majors require Appium 4.
 
 ---
 
@@ -80,4 +83,4 @@ Add `appiumServerPath` to your `capabilities.json` file:
 
 To inspect element locators for Android and iOS apps, install the latest [Appium Inspector](https://github.com/appium/appium-inspector/releases).
 
-> 📖 **Reference**: [Appium Capability Guidelines](https://appium.io/docs/en/2.0/guides/caps/)
+> 📖 **Reference**: [Appium Capability Guidelines](https://appium.io/docs/en/latest/guides/caps/)

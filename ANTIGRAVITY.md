@@ -23,6 +23,7 @@ When working in this repository:
 - Prefer global RestAssured filters under `com.znsio.teswiz.filters` (registered once in `Setup.setupExecutionEnvironment()`, not per-request) instead of growing `runner` or `RestAssuredService`. `EnvironmentIssueFilter` and `com.znsio.teswiz.filters.apitraffic.ApiTrafficLoggingFilter` are both on by default and registered in that order (traffic filter first) so a call's traffic file is still written even when the environment-issue filter throws on it.
 - For CI flows that install Node dependencies, run `actions/setup-node` first and prefer `npm ci` over `npm install`.
 - Whenever `package.json` dependencies or `overrides` change, keep the matching `package-lock.json` update in the same change.
+- Keep npm `playwright` on the same minor version as `com.microsoft.playwright:playwright` in `build.gradle`, and bump both together. Each minor uses its own browser build in the shared Playwright cache, so mismatched minors make each `playwright install` remove the other's browsers.
 - In CI, install Playwright browsers only in workflows that actually execute Playwright.
 - Keep only the latest artifact set per workflow per user-created branch, and do not retain artifacts for `dependabot/*` or `renovate/*` branches.
 - For stricter screen-contract audits, use `./gradlew verifyScreenContracts -PincludeMissingScreenTargets=true`.

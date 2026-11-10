@@ -1,4 +1,4 @@
-# Appium 2 – iOS Setup
+# Appium 3 – iOS Setup
 [📚 Documentation Index](../index.md) • [🏠 Main README](../../README.md)
 
 ---
@@ -16,7 +16,7 @@
 
 Refer to the [Prerequisites](../getting-started/prerequisites.md) document for general setup prerequisites.
 
-<span style="font-size: larger;">This guide will walk you through the steps to set up Appium 2 for iOS.</span> 
+<span style="font-size: larger;">This guide will walk you through the steps to set up Appium 3 for iOS.</span> 
 
 Verify XCUITest Driver installation path.
    ![XCUITest-driver-path.png](../images/XCUITest-driver-path.png)
@@ -36,7 +36,7 @@ To start Appium manually, run the following command:
 
     appium --relaxed-security --allow-cors --use-plugins="appium-dashboard,relaxed-caps,device-farm" -pa /wd/hub --plugin-device-farm-platform=both
 
-**Please keep in mind that teswiz will start the Appium 2 server and handle the necessary configurations.**
+**Please keep in mind that teswiz will start the Appium 3 server and handle the necessary configurations.**
 
 ![Launch-Appium-with-installed-plugins.png](../images/Launch-Appium-with-installed-plugins.png)
 
@@ -67,6 +67,6 @@ To start Appium manually, run the following command:
 
 You are now ready to start automating your iOS apps!
 
-For more information on Appium 2, please see the [Appium documentation.](https://appium.io/docs/en/2.0/) 
+For more information on Appium 3, please see the [Appium documentation.](https://appium.io/docs/en/latest/) 
 
  

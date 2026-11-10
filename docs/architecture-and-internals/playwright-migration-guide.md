@@ -181,14 +181,24 @@ bundles it. When your project has no `playwright/worker.mjs` of its own, teswiz 
 `build/teswiz/playwright/` in your project at run time. A project copy of `playwright/worker.mjs`, if present, is
 used instead.
 
-The worker imports its npm packages from your project, so install them once in the project root:
+The worker imports its npm packages from your project, so install them once in the project root. Pin npm
+`playwright` to the same minor version as the Playwright Java (`com.microsoft.playwright:playwright`) that your
+teswiz version ships (currently 1.64; see `com.microsoft.playwright:playwright` in teswiz's `build.gradle`):
 
 ```bash
-npm install playwright @applitools/eyes-playwright
+npm install --save-exact playwright@1.64 @applitools/eyes-playwright
 npx playwright install
 ```
 
-The worker runs with `node --experimental-strip-types`, which needs Node.js 22.6 or newer. If the worker exits
+> [!IMPORTANT]
+> Keep npm `playwright` and Playwright Java on the same minor version. Each Playwright minor uses its own
+> browser build, and both share one browser cache (`~/Library/Caches/ms-playwright` on macOS,
+> `~/.cache/ms-playwright` on Linux). With mismatched minors, each `playwright install` removes the other's
+> browsers, so `playwright-java` (or `playwright-ts`) runs fail with `browserType.launch: Executable doesn't
+> exist`. When you upgrade teswiz, check its Playwright Java version and move npm `playwright` with it.
+
+The worker runs with `node --experimental-strip-types`, which needs Node.js 22.6 or newer (22.12+ or 24+ when the
+project also installs Appium 3, see [Prerequisites](../getting-started/prerequisites.md)). If the worker exits
 early (for example because a package is missing), the error now includes the worker's stderr.
 
 ---

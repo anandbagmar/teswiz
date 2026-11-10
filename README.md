@@ -16,7 +16,7 @@
 | Platform / Subsystem | Supported Technology & Engines | Key Capabilities & Documentation |
 | :--- | :--- | :--- |
 | **🌐 Web Automation** | [`selenium`](docs/examples/web-selenium-example.md) • [`playwright-java`](docs/examples/web-playwright-java-example.md) • [`playwright-ts`](docs/examples/web-playwright-ts-example.md) | Multi-browser, stateful frames, async script execution, grid routing ([Web Engine Docs](docs/engines/web-engine-capabilities.md)) |
-| **📱 Mobile Automation** | Appium 2 ([Android](docs/examples/android-example.md) & [iOS](docs/examples/ios-example.md)) | Native & web context, device cloud integration, gesture automation ([Mobile Docs](docs/engines/mobile-appium-setup.md)) |
+| **📱 Mobile Automation** | Appium 3 ([Android](docs/examples/android-example.md) & [iOS](docs/examples/ios-example.md)) | Native & web context, device cloud integration, gesture automation ([Mobile Docs](docs/engines/mobile-appium-setup.md)) |
 | **🔌 API Testing** | [`rest-assured`](docs/examples/api-example.md) • [`playwright-java`](docs/engines/running-api-tests.md) • [`playwright-ts`](docs/engines/running-api-tests.md) | Data parity, 502/503/504 health filter, masked traffic logging (`api-traffic/`) ([API Docs](docs/engines/running-api-tests.md)) |
 | **🖥️ Desktop & Document** | Electron • Windows AppDriver • Apache PDFBox | Desktop application UI automation & PDF content verification ([PDF Docs](docs/examples/pdf-example.md)) |
 | **👁️ Visual AI** | Applitools Eyes & Ultrafast Grid (UFG) | Cross-browser visual check & AI baseline comparison for Web & Mobile ([Visual AI Docs](docs/subsystems/visual-ai-applitools.md)) |

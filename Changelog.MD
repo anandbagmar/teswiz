@@ -3,7 +3,7 @@
 
 _Previous release: v1.0.56_
 
-This release picks up the latest Jackson, Applitools, cucumber-reporting and Google Auth versions, moves CI off the deprecated `gradle/gradle-build-action`, brings every GitHub Action to its latest major version, and stops the unit-test workflow from printing token fragments to the run log.
+This release moves the build to Gradle 9.9.0, picks up the latest Jackson, Applitools, cucumber-reporting and Google Auth versions, corrects the documented Node.js minimum, moves CI off the deprecated `gradle/gradle-build-action`, brings every GitHub Action to its latest major version, and stops the unit-test workflow from printing token fragments to the run log.
 
 ## 🔒 Security
 
@@ -39,6 +39,7 @@ The unit-test workflow used `gradle/gradle-build-action@v3` and ran Gradle throu
 
 | Dependency | From | To |
 |---|---|---|
+| Gradle wrapper | 9.8.2 | 9.9.0 |
 | `com.fasterxml.jackson.core:jackson-databind` | 2.22.4 | 2.23.0 |
 | `com.fasterxml.jackson.dataformat:jackson-dataformat-yaml` | 2.22.4 | 2.23.0 |
 | `com.fasterxml.jackson.datatype:jackson-datatype-jdk8` | 2.22.4 | 2.23.0 |
@@ -49,6 +50,7 @@ The unit-test workflow used `gradle/gradle-build-action@v3` and ran Gradle throu
 
 Notes:
 
+- **Gradle 9.9.0:** the `wrapper { gradleVersion }` block in `build.gradle` moves with the wrapper files, so `./gradlew wrapper` no longer reverts the upgrade. None of the 9.9.0 breaking changes apply: `build.gradle` throws `GradleException` but does not subclass it. The build still shows two existing deprecation warnings, the same on 9.8.2 and 9.9.0, both failing only in Gradle 10: `Task.project` used at execution time (`project.findProperty('forceUpdate')` inside `downloadDependencies`' `doLast`), and `artifacts { archives sourcesJar }`. If the first `./gradlew` run hangs with no output, delete `~/.gradle/wrapper/dists/gradle-9.9.0-bin` and run again.
 - **Jackson 2.23.0** still targets Java 8 bytecode, so it is compatible with the Java 17 baseline.
 - **`npm audit`** is unchanged: 0 critical, 0 high, 36 moderate, 1 low.
 
@@ -57,18 +59,29 @@ Notes:
 - **npm `playwright` 1.65.0:** held at 1.64.1 to match Playwright Java 1.64.0, the latest Java release (see Dependabot above).
 - **`net.sourceforge.tess4j:tess4j` 5.21.0:** stays pinned at 5.11.0 to avoid the `libtesseract` missing-symbol error (`pixBackgroundNormTo1MinMax`) on Linux runners.
 - **`log4j-core` 3.0.0-beta3, `assertj-core` 4.0.0-M1:** pre-releases. The dynamic `2+` / `3+` declarations keep resolving the latest stable 2.x / 3.x.
-- **Gradle 9.9.0:** release candidate only. The wrapper stays on 9.8.2.
 - **Appium driver majors:** `appium-uiautomator2-driver` 8.7.3 and `appium-xcuitest-driver` 12.22.8 are the latest releases that support Appium 3 (9.x / 13.x need Appium 4). Appium 3.9.0 is the latest stable.
 - Gradle plugins (`org.sonarqube`, `com.gradleup.shadow`, `io.freefair.aspectj.post-compile-weaving`, `io.github.ben-manes.versions`) were already on their latest releases.
 
+## 📝 Docs
+
+- **Node.js minimum corrected.** `docs/getting-started/prerequisites.md` and `getting-started-guide.md` said Node.js 18+, but Appium 3 and its drivers require `^20.19.0 || ^22.12.0 || >=24.0.0` with npm 10+, and Playwright requires Node.js 20+. The docs now state Node.js 20.19+, 22.12+ or 24+ with npm 10+ (22.12+ or 24+ for `WEB_ENGINE=playwright-ts`).
+- **Appium 3, not Appium 2.** `prerequisites.md`, `getting-started-guide.md`, `docs/engines/mobile-appium-setup.md`, `docs/index.md` and `README.md` now say Appium 3, and the Appium documentation links point to `appium.io/docs/en/latest/`. `prerequisites.md` notes that the drivers stay on their Appium 3 lines.
+- **Pin npm `playwright` in consumer projects.** `docs/architecture-and-internals/playwright-migration-guide.md` (section 6a) now installs `playwright@1.64` with `--save-exact` instead of an unpinned `playwright`, and explains why npm `playwright` must stay on the same minor as teswiz's Playwright Java (shared browser cache, `Executable doesn't exist` on mismatch).
+- **Agent rules.** `CLAUDE.md` and `ANTIGRAVITY.md` add a rule to keep npm `playwright` and Playwright Java on the same minor and bump them together.
+
 ## 🛠 Changed Files Summary
 
-- `build.gradle` (dependency versions)
+- `build.gradle` (dependency versions, `wrapper` 9.9.0)
+- `gradle/wrapper/gradle-wrapper.properties`, `gradle/wrapper/gradle-wrapper.jar`
 - `package.json`, `package-lock.json`
 - `.github/workflows/Build_And_Run_Unit_Tests_CI.yml` (setup-gradle, debug steps removed)
-- `.github/workflows/*.yml` (setup-node v7, setup-java v6)
+- `.github/workflows/*.yml` (setup-node v7, setup-java v6; `BrowserStack_PDF_CI.yml` step renamed to Appium 3)
 - `.github/actions/cleanup-branch-artifacts/action.yml` (github-script v9)
 - `.github/dependabot.yml`
+- `docs/getting-started/prerequisites.md`, `docs/getting-started/getting-started-guide.md`
+- `docs/architecture-and-internals/playwright-migration-guide.md`
+- `docs/engines/mobile-appium-setup.md`, `docs/index.md`, `README.md`
+- `CLAUDE.md`, `ANTIGRAVITY.md`
 - `Changelog.MD`
 
 ## 1.0.56

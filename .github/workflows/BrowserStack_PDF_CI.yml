@@ -32,7 +32,7 @@ jobs:
           java-version: "17"
           distribution: temurin
 
-      - name: Install Appium 2.0 and dependencies
+      - name: Install Appium 3 and dependencies
         run: |
           node -v
           npm ci
