@@ -3,6 +3,218 @@
 
 _Previous release: v1.0.56_
 
+This release moves the build to Gradle 9.9.0, fixes the fat jar's `Main-Class` and `Runner.main` argument handling, and removes every Gradle 10 deprecation warning. It adds a report-only PMD complexity report and ArchUnit dependency rules, and lowers complexity in the Playwright, OCR, image-matching and command-line code with no public API changes. Library code can now read configuration through the new `TeswizConfigReader`. CI moves off the deprecated `gradle/gradle-build-action`, every GitHub Action is on its latest major version, Linux runners are pinned to `ubuntu-24.04`, and the unit-test workflow no longer prints token fragments to the run log.
+
+## ⬆️ Upgrade Notes
+
+- **No public API is removed or changed.** A `javap` comparison of all compiled main classes against 1.0.56 shows no removed or changed public or protected members. The new public types are `com.znsio.teswiz.config.TeswizConfigReader`, `com.znsio.teswiz.config.TeswizConfig`, `com.znsio.teswiz.visual.ApplitoolsConfigValues` and `com.znsio.teswiz.visual.PositionIndexParser`.
+- **Newly deprecated:** the public field `CucumberScenarioReporterListener.appiumServerManager`. It still works. Nothing in teswiz reads it any more.
+- **Node.js minimum:** Node.js 20.19+, 22.12+ or 24+ with npm 10+ (22.12+ or 24+ for `WEB_ENGINE=playwright-ts`). Earlier docs said Node.js 18+, which Appium 3 does not support.
+- **npm `playwright` in consumer projects:** keep it on the same minor as teswiz's Playwright Java (1.64). Install it with `npm install --save-exact playwright@1.64`. A different minor downloads a different Chromium build, and Playwright Java fails with "Executable doesn't exist".
+
+## 🔒 Security
+
+### Token fragments no longer printed in CI logs
+
+`Build_And_Run_Unit_Tests_CI.yml` had two debug steps that echoed the first and last 15 characters (and the first 4) of `TESWIZ_REPO_DISPATCH_TOKEN` and `TESWIZ_PAT`. GitHub masks only the full secret value, so these fragments appeared in plain text in every run log. Both steps are removed, and both tokens have been rotated. The secrets are still used, unchanged, by the README update and repository-dispatch steps.
+
+## 🐛 Fixes
+
+### `java -jar` on the fat jar finds the main class
+
+The `shadowJar` manifest declared `Main-Class: com.znsio.e2e.runner.Runner`, a class that does not exist, so `java -jar teswiz-<version>-all.jar` failed with `ClassNotFoundException`. It now points to `com.znsio.teswiz.runner.Runner`, the same class the Gradle `run` task uses.
+
+### `Runner.main` reports bad arguments instead of a `NullPointerException`
+
+`Runner.main` copied the `LOG_DIR` system property into `OUTPUT_DIRECTORY` before checking its arguments. Without `LOG_DIR` (for example `java -jar teswiz-<version>-all.jar` with no arguments) that threw a `NullPointerException`, and with bad arguments it overwrote `OUTPUT_DIRECTORY` before failing. It now checks the three arguments first and fails with the usage message (`configFilePath`, `stepDefDirName`, `featuresDirName`). It sets `OUTPUT_DIRECTORY` only when `LOG_DIR` is provided, and otherwise the existing `target` default applies.
+
+### Sample capability files resolve on Linux
+
+Four sample capability files did not match the case of the name that loads them. They were found on macOS and Windows, where file names are case-insensitive, but would fail on Linux. They are renamed to match:
+
+- `caps/dineout_browserstack_capabilities.json` and `caps/jio/jiomeet_browserstack_capabilities.json`, the names their configs' `CAPS` use.
+- `caps/jio/jiomeetLatest_capabilities.json` and `caps/jio/jiomeetOldVersion_capabilities.json`, which the multi-app JioMeet scenarios load as `<appName>_capabilities.json`.
+
+Two files that nothing referenced are removed: `caps/theapp/myjio_headspin_ios_capabilities.json` and `caps/theapp/theapp_local_capabilities.json`.
+
+### README release badge updates again
+
+The unit-test workflow updates the README release badge with the regex `release-[^-]+-blue\.svg\)`, but the badge URL ended in `-blue.svg?style=flat)`, so the regex never matched and the badge stayed at 1.0.40. The badge now ends in `-blue.svg)` (flat is the shields.io default) and shows the current release.
+
+### Sample step definitions log the message, not a stream
+
+21 log calls across 11 sample step files used `LOGGER.info(System.out.printf(...))`. `printf` prints to stdout and returns the `PrintStream`, so the log line held a stream reference instead of the message. They now use `String.format(...)`.
+
+## 🧮 Code Quality
+
+### PMD complexity report (report-only)
+
+The build now runs PMD 7.29.0 with `config/pmd/teswiz-complexity-ruleset.xml`. Its thresholds mirror the code-quality rules in `AGENTS.md`:
+
+- cyclomatic complexity: 10 per method
+- cognitive complexity: 15
+- NPath complexity: 200
+- statement count: 30 per method
+- `if` nesting: 3
+- god classes
+
+It is report-only (`ignoreFailures = true`). It runs with `check` and `build` on main sources, writes `build/reports/pmd/main.html`, and never fails the build. The unit-test workflow uploads the report with the test results. Run `./gradlew pmdMain` for a report on its own.
+
+The starting baseline was 92 findings in 40 files. After the refactors below it is 65 findings in 36 files.
+
+### Behaviour-preserving complexity refactors
+
+Each refactor started with characterization tests that passed against the original code, and kept them green through the change. No public or protected member changed.
+
+- **Playwright context options.** `PlaywrightJavaDriverManager.buildContextOptions` (cyclomatic complexity 27, the highest in the codebase) delegates to the new package-private `PlaywrightContextOptionsMapper`, which maps each context option in its own helper. Pinned by `PlaywrightContextOptionsMapperTest` (12 cases).
+- **Playwright browser configuration.** `PlaywrightBrowserConfigResolver.resolve` (complexity 24, 88 lines) is split into helpers for headless mode, launch arguments, maximized windows, context options, the default viewport, HTTPS errors, launch options, proxy and channel. Covered by the existing `PlaywrightBrowserConfigResolverTest`.
+- **One position-index parser.** `VisualOcrBL.parsePositionIndex` and `AbstractVisualOcrScreen.parsePositionIndex` had identical copies of the "first / last / 3rd / 2" parsing. Both keep their signatures and delegate to the new `com.znsio.teswiz.visual.PositionIndexParser`. Pinned by `PositionIndexParserTest` (28 cases).
+- **`CommandLineExecutor`.** `execCommandInternal` (complexity 16, 89 lines) is split into process creation, exit-status and timeout handling, logging, the output artifact and stream closing. Pinned by `CommandLineExecutorTest` (9 cases with real processes).
+- **`PlaywrightJavaWebDriver`.** The anonymous Selenium `TargetLocator`, `Navigation`, `Options`, `Timeouts`, `Window` and `Logs` implementations are now named private classes, and cookie conversion lives in the package-private `PlaywrightJavaCookieMapper`. Pinned by `PlaywrightJavaWebDriverSeleniumApiTest` (34 cases).
+- **`OcrService`.** `findTextMatch`, `findAllTextMatches` and `readText` share screenshot preparation and Tesseract set-up instead of repeating them. Each method keeps its own error handling. Pinned by `OcrServiceBehaviourTest` (13 cases using real Tesseract).
+- **`ImageRecognitionService`.** The two template finders share scene preparation and template loading, and the multi-scale matching loops use small helpers. Every OpenCV matrix is still released in a `finally`. Pinned by `ImageRecognitionServiceBehaviourTest` (9 cases using real OpenCV).
+
+The OCR and image-matching tests skip themselves on a machine without the native Tesseract or OpenCV libraries, instead of failing.
+
+### CodeQL quality queries
+
+`codeql.yml` now runs the `security-and-quality` query suite, which adds maintainability and reliability queries to the default security queries. Findings appear under Security → Code scanning.
+
+## 🏗 Design Improvements (non-breaking)
+
+These changes loosen the coupling between the library packages and `com.znsio.teswiz.runner` without breaking any public API.
+
+- **Architecture rules (ArchUnit).** The new `RunnerDependencyRulesTest` freezes the existing dependencies of library packages on `runner`. Library packages are everything except `runner`, `steps`, `testng`, `screen`, `listener` and `businessLayer`. Existing dependencies are recorded in `src/test/resources/archunit_store`. A new one fails the build, and removed ones drop out of the store. A second, strict rule keeps `mobile.session` independent of `runner`.
+- **Read-only configuration interface.** The new `TeswizConfigReader` interface and `TeswizConfig.reader()` give library code read access to the execution configuration without depending on `runner.Setup`. `reader()` returns a live view, so a reader obtained before `Setup` is initialised sees the values later. All 91 library calls to `Setup`'s config getters now go through it, and frozen `runner` dependencies drop from 440 to 349. `Setup`'s getters are unchanged for existing callers.
+- **Off the deprecated Appium server shim.** `AppiumDriverManager` and `PluginCliRequest` use `AppiumServerController` directly instead of the deprecated `AppiumServerManager`. The public field `CucumberScenarioReporterListener.appiumServerManager` is still initialised, and is now marked `@Deprecated`.
+- **Platform dispatch in `Drivers`.** The `switch` statements over `Platform` that created and closed drivers are replaced by a per-platform registry. Driver managers still load lazily, and a `null` platform still throws a `NullPointerException`. Pinned by `DriversPlatformDispatchTest` (13 cases).
+- **Applitools configuration values.** The new `ApplitoolsConfigValues` reads the server URL, default match level, viewport size and the benchmarking and browser-fetching flags from the loaded Applitools configuration, as pure functions. `Setup` delegates to it with unchanged fallbacks: an unknown match level becomes `STRICT`, a missing viewport uses the runtime defaults, and a malformed viewport still fails. Pinned by `ApplitoolsConfigValuesTest` (10 cases).
+
+For contributors: in library packages, read configuration through `TeswizConfig.reader()` rather than `Setup`'s static getters. If `RunnerDependencyRulesTest` fails, remove the new `runner` dependency instead of adding it to the store.
+
+## 🧹 Build and Repository Cleanup
+
+- **Reproducible versions.** The dynamic `org.assertj:assertj-core:3+` and `org.apache.logging.log4j:log4j-core:2+` are pinned to the versions they resolved to, 3.27.7 and 2.26.1.
+- **No Gradle 10 deprecation warnings.** `downloadDependencies` reads the `forceUpdate` project property at configuration time instead of calling `Task.project` inside `doLast`. The sources jar is built by `assemble` instead of being declared in the deprecated `archives` configuration, and the publication still includes it. A build with `--warning-mode=all` reports no deprecations.
+- **One dependency bot.** `renovate.json` is removed. Dependabot is the only update bot.
+- **One CodeQL workflow.** `codeql-analysis.yml` duplicated `codeql.yml` on every push and pull request, so it is removed. `codeql.yml` scans Java and the GitHub Actions workflows, and the README badge points to it.
+- **`build.gradle.sample`** wrapper `gradleVersion` moves from 9.7.1 to 9.9.0, matching the build.
+- **`package.json`** gets a plain-text description instead of four `znsio/teswiz` badge links, and drops `"main": "index.js"`, which pointed to a file that does not exist.
+- **Changelog.** Duplicate releases and unreleased SNAPSHOT drafts are removed, with their unique notes folded into the matching release. The 1.0.42 section is retitled (it said v1.0.41) and lists only its own changes. Unclosed code fences that turned the rest of the file into one code block are closed.
+
+## 🛠 CI / GitHub Actions
+
+### Linux runners pinned to `ubuntu-24.04`
+
+GitHub is moving the `ubuntu-latest` label to Ubuntu 26.04 between October 19 and November 19, 2026 ([actions/runner-images#14748](https://github.com/actions/runner-images/issues/14748)). All Linux jobs, including the CodeQL matrix, now run on `ubuntu-24.04` explicitly, so the image cannot change underneath the build. The Playwright `--with-deps` install and the Tesseract native libraries behind the `tess4j` 5.11.0 pin are the parts most likely to differ on 26.04. Move to `ubuntu-26.04` one workflow at a time, once it is verified.
+
+### `gradle/gradle-build-action` replaced by `gradle/actions/setup-gradle`
+
+The unit-test workflow used `gradle/gradle-build-action@v3` and ran Gradle through its `arguments` input, and both are deprecated. It now runs `gradle/actions/setup-gradle@v6`, then calls the wrapper directly with `./gradlew clean build --refresh-dependencies`.
+
+### Actions on their latest major versions
+
+| Action | From | To |
+|---|---|---|
+| `actions/setup-node` | v5 | v7 |
+| `actions/setup-java` | v5 | v6 |
+| `actions/github-script` (`cleanup-branch-artifacts`) | v8 | v9 |
+| `gradle/gradle-build-action` → `gradle/actions/setup-gradle` | v3 | v6 |
+
+`actions/checkout@v7`, `actions/upload-artifact@v7`, `github/codeql-action@v4` and `peter-evans/repository-dispatch@v4` were already current. None of the breaking changes in these majors affect the teswiz workflows.
+
+### Dependabot
+
+- **GitHub Actions tracked.** A `github-actions` ecosystem now covers `.github/workflows` and the composite actions under `.github/actions/*`.
+- **npm `playwright` held to the Java minor.** Minor and major updates of npm `playwright` are ignored, because it must stay on the same minor as `com.microsoft.playwright:playwright` (see Upgrade Notes). Bump both together once the Java release for the new minor ships.
+
+## 📦 Dependency Updates
+
+| Dependency | From | To |
+|---|---|---|
+| Gradle wrapper | 9.8.2 | 9.9.0 |
+| `com.fasterxml.jackson.core:jackson-databind` | 2.22.4 | 2.23.0 |
+| `com.fasterxml.jackson.dataformat:jackson-dataformat-yaml` | 2.22.4 | 2.23.0 |
+| `com.fasterxml.jackson.datatype:jackson-datatype-jdk8` | 2.22.4 | 2.23.0 |
+| `com.applitools:eyes-images-java5` | 5.83.18 | 5.83.20 |
+| `net.masterthought:cucumber-reporting` | 5.12.0 | 5.12.1 |
+| `com.google.auth:google-auth-library-oauth2-http` (optional, `compileOnly` / test) | 1.55.0 | 1.57.0 |
+| `com.tngtech.archunit:archunit-junit5` (test only) | — | 1.5.1 (new) |
+| PMD (Gradle `pmd` plugin `toolVersion`, build only) | — | 7.29.0 (new) |
+| npm `@applitools/eyes-playwright` | 1.51.7 | 1.52.0 |
+
+Notes:
+
+- **Gradle 9.9.0.** The `wrapper { gradleVersion }` block in `build.gradle` moves with the wrapper files, so `./gradlew wrapper` no longer reverts the upgrade. None of the 9.9.0 breaking changes apply. If the first `./gradlew` run hangs with no output, delete `~/.gradle/wrapper/dists/gradle-9.9.0-bin` and run again.
+- **Jackson 2.23.0** still targets Java 8 bytecode, so it is compatible with the Java 17 baseline.
+- **`npm audit`** is unchanged: 0 critical, 0 high, 36 moderate, 1 low.
+
+### Not upgraded
+
+- **npm `playwright` 1.65.0:** held at 1.64.1 to match Playwright Java 1.64.0, the latest Java release.
+- **`net.sourceforge.tess4j:tess4j` 5.21.0:** stays pinned at 5.11.0 to avoid the `libtesseract` missing-symbol error (`pixBackgroundNormTo1MinMax`) on Linux runners.
+- **`log4j-core` 3.0.0-beta3, `assertj-core` 4.0.0-M1:** pre-releases, not taken.
+- **Appium driver majors:** `appium-uiautomator2-driver` 8.7.3 and `appium-xcuitest-driver` 12.22.8 are the latest releases that support Appium 3. The 9.x and 13.x lines need Appium 4. Appium 3.9.0 is the latest stable.
+- Gradle plugins (`org.sonarqube`, `com.gradleup.shadow`, `io.freefair.aspectj.post-compile-weaving`, `io.github.ben-manes.versions`) were already on their latest releases.
+
+## ✅ Tests
+
+- New: `RunnerMainArgumentsTest`, `PlaywrightContextOptionsMapperTest`, `PositionIndexParserTest`, `CommandLineExecutorTest`, `PlaywrightJavaWebDriverSeleniumApiTest`, `OcrServiceBehaviourTest`, `ImageRecognitionServiceBehaviourTest`, `RunnerDependencyRulesTest`, `DriversPlatformDispatchTest` and `ApplitoolsConfigValuesTest`.
+- No existing test was changed.
+- `./gradlew build` passes: 1,090 tests, 0 failures, 15 skipped (the existing opt-in tests). This includes `validateConfigurationTemplates`.
+- Every CI workflow passes on `main`, including the BrowserStack, Visual OCR, API engine, HardGate, TestNG multi-user and CodeQL workflows.
+
+## 📝 Docs
+
+- **Node.js minimum corrected** in `docs/getting-started/prerequisites.md` and `getting-started-guide.md`: Node.js 20.19+, 22.12+ or 24+ with npm 10+ (22.12+ or 24+ for `WEB_ENGINE=playwright-ts`).
+- **Appium 3, not Appium 2,** in `prerequisites.md`, `getting-started-guide.md`, `docs/engines/mobile-appium-setup.md`, `docs/index.md` and `README.md`. The Appium documentation links point to `appium.io/docs/en/latest/`.
+- **Pin npm `playwright` in consumer projects.** `docs/architecture-and-internals/playwright-migration-guide.md` (section 6a) installs `playwright@1.64` with `--save-exact` and explains why.
+- **Architecture notes.** `docs/architecture-and-internals/architecture-notes.md` adds the `TeswizConfig.reader()` package rule and the ArchUnit dependency rules.
+- **Driver creation convention.** `docs/getting-started/writing-first-test.md` now shows the step definition calling `Drivers.createDriverFor(persona, platform, context)` and the business layer only orchestrating screens, as every sample does. The tutorial's old snippet used a `createDriverFor` signature that does not exist.
+- **Plans, backlog and history.** `docs/index.md` links the 11 previously unlinked plan, backlog and troubleshooting docs, each plan has an accurate status header, and stale `file:///` and old-path links are fixed.
+- **Appium setup.** `prerequisites.md` and `mobile-appium-setup.md` no longer mention the `appium-dashboard` plugin, which is not installed.
+- **Agent rules.** `CLAUDE.md`, `ANTIGRAVITY.md` and `.codex/skills/teswiz-project/SKILL.md` point to `AGENTS.md` for the TDD, test-architecture and complexity rules, add the Playwright minor-version rule, and use the current doc paths.
+
+## 🛠 Changed Files Summary
+
+- `build.gradle` (dependency versions, pinned `assertj-core` / `log4j-core`, `Main-Class`, Gradle 10 deprecations, `wrapper` 9.9.0, `pmd` plugin, ArchUnit, version 1.0.57)
+- `build.gradle.sample` (`wrapper` 9.9.0)
+- `gradle/wrapper/gradle-wrapper.properties`, `gradle/wrapper/gradle-wrapper.jar`
+- `package.json`, `package-lock.json`
+- `renovate.json` (removed), `.github/workflows/codeql-analysis.yml` (removed)
+- `config/pmd/teswiz-complexity-ruleset.xml` (new)
+- `src/main/java/com/znsio/teswiz/runner/Runner.java`
+- `src/main/java/com/znsio/teswiz/runner/{Setup, Drivers, AppiumDriverManager, PluginCliRequest}.java`
+- `src/main/java/com/znsio/teswiz/listener/CucumberScenarioReporterListener.java`
+- `src/main/java/com/znsio/teswiz/config/{TeswizConfig, TeswizConfigReader}.java` (new), `src/main/java/com/znsio/teswiz/runner/TeswizConfiguration.java`
+- `src/main/java/com/znsio/teswiz/visual/{ApplitoolsConfigValues, PositionIndexParser}.java` (new), `OcrService.java`, `ImageRecognitionService.java`
+- `src/main/java/com/znsio/teswiz/web/playwright/{PlaywrightContextOptionsMapper, PlaywrightJavaCookieMapper}.java` (new), `PlaywrightJavaDriverManager.java`, `PlaywrightJavaWebDriver.java`
+- `src/main/java/com/znsio/teswiz/config/browser/PlaywrightBrowserConfigResolver.java`
+- `src/main/java/com/znsio/teswiz/tools/cmd/CommandLineExecutor.java`
+- `src/main/java/com/znsio/teswiz/businessLayer/visualocr/VisualOcrBL.java`, `screen/visualocr/AbstractVisualOcrScreen.java`
+- Library packages (91 call sites): `Setup` config reads replaced by `TeswizConfig.reader()`
+- `src/test/java/**` (the new tests listed under Tests), `src/test/java/com/znsio/teswiz/steps/*Steps.java` (11 files, `String.format` logging)
+- `src/test/resources/archunit.properties`, `src/test/resources/archunit_store/**` (new)
+- `caps/dineout_browserstack_capabilities.json`, `caps/jio/jiomeet_browserstack_capabilities.json`, `caps/jio/jiomeetLatest_capabilities.json`, `caps/jio/jiomeetOldVersion_capabilities.json` (renamed); `caps/theapp/myjio_headspin_ios_capabilities.json`, `caps/theapp/theapp_local_capabilities.json` (removed)
+- `.github/workflows/*.yml` (`ubuntu-24.04`, setup-node v7, setup-java v6, `security-and-quality`, PMD report artifact; `Build_And_Run_Unit_Tests_CI.yml` setup-gradle and debug steps removed)
+- `.github/actions/cleanup-branch-artifacts/action.yml` (github-script v9), `.github/actions/run-and-collect-tests-README.md`
+- `.github/dependabot.yml`
+- `docs/**`, `README.md`, `CLAUDE.md`, `ANTIGRAVITY.md`, `.codex/skills/teswiz-project/SKILL.md`
+- `Changelog.MD`
+
+## 📋 Installation & Upgrade
+
+```groovy
+dependencies {
+    implementation 'com.github.anandbagmar:teswiz:1.0.57'
+}
+```
+
+## 1.0.57
+# Release Notes - teswiz v1.0.57
+
+_Previous release: v1.0.56_
+
 This release moves the build to Gradle 9.9.0, fixes the fat jar's `Main-Class`, removes every Gradle 10 deprecation warning, picks up the latest Jackson, Applitools, cucumber-reporting and Google Auth versions, corrects the documented Node.js minimum, moves CI off the deprecated `gradle/gradle-build-action`, brings every GitHub Action to its latest major version, and stops the unit-test workflow from printing token fragments to the run log.
 
 ## 🔒 Security

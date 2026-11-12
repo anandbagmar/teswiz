@@ -59,7 +59,7 @@
   },
   "name": "teswiz",
   "description": "Node dependencies (Appium 3, drivers, plugins, Playwright) for teswiz, the multi-platform test automation framework: https://github.com/anandbagmar/teswiz",
-  "version": "1.0.56",
+  "version": "1.0.57",
   "directories": {
     "doc": "docs"
   },
