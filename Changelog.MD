@@ -84,6 +84,14 @@ partial file when the transfer fails; `HttpRequest.head(...)` sends a HEAD. Loca
 `notifications.properties`, overridable by `NOTIFY_SLACK_TIMEOUT_SECONDS` / `NOTIFY_SMTP_TIMEOUT_SECONDS`. A blank,
 non-numeric or non-positive value uses the default.
 
+### Playwright API failures show the host's addresses
+
+When a Playwright API engine request fails after all retries, the error log now also lists the IP addresses the
+request's host resolves to (`Host addresses: <host> -> [<ip>, ...]`, or `unresolved (...)`). A request that timed out
+on every attempt can then be matched against blocked or unreachable addresses. Each attempt still waits the full
+`TESWIZ_API_TIMEOUT_SECONDS`; the API Engines CI workflow sets it to 15 so a stalled third-party call fails in about
+50s instead of about 3 minutes.
+
 ## 1.0.57
 # Release Notes - teswiz v1.0.57
 

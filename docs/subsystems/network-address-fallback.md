@@ -82,7 +82,7 @@ the log only.
 | API heartbeat (`HeartBeat`) | yes — `FallbackHttpClient` | yes |
 | App download (`AppPathResolver`) | yes — `FallbackHttpClient` (HEAD via `send`, streamed GET via `download`) | yes (`app-download`) |
 | `Api` (OkHttp) | yes — OkHttp tries every address natively | no |
-| Playwright (browsers and `PlaywrightApiManager`) | yes — Playwright's own connection logic tries every address | no |
+| Playwright (browsers and `PlaywrightApiManager`) | yes — Playwright's own connection logic tries every address | no (after all retries fail, `PlaywrightApiEngineClient` logs the host's resolved addresses) |
 | REST Assured (Apache HttpClient) | yes — tries every address natively | no |
 | Email notification (SMTP, `jakarta.mail`) | no — `jakarta.mail` opens the socket itself | no |
 | Telemetry (`TelemetryCollector`) | no — not migrated (fire-and-forget, 2s budget) | no |
