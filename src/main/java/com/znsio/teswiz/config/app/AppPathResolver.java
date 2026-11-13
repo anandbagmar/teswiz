@@ -2,25 +2,28 @@ package com.znsio.teswiz.config.app;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.text.DecimalFormat;
+import java.time.Duration;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.znsio.teswiz.exceptions.InvalidTestDataException;
 import com.znsio.teswiz.config.TeswizRuntimeConfiguration;
+import com.znsio.teswiz.network.FallbackHttpClient;
+import com.znsio.teswiz.network.HttpRequest;
+import com.znsio.teswiz.network.HttpResponse;
 import com.znsio.teswiz.tools.SensitiveDataMasker;
 
 public final class AppPathResolver {
     private static final Logger LOGGER = LogManager.getLogger(AppPathResolver.class.getName());
     private static final int MILLIS_PER_SECOND = 1_000;
+    private static final int HTTP_OK = 200;
+    private static final String NETWORK_PURPOSE = "app-download";
     private static final String LAMBDATEST_APP_PREFIX = "lt://";
     private static final String BROWSERSTACK_APP_PREFIX = "bs://";
 
@@ -79,14 +82,21 @@ public final class AppPathResolver {
     private static void downloadFile(String url, String filePath, String saveToDirectory) {
         LOGGER.info("Downloading App from url: '{}'", url);
         try {
-            URL fileUrl = new URL(url);
-            HttpURLConnection connection = getHttpURLConnection(fileUrl);
-            downloadFileFromHttpUrl(filePath, saveToDirectory, connection);
+            createDirectoryIfNotExists(saveToDirectory);
+            HttpRequest request = HttpRequest.get(url, appDownloadTimeout()).followingRedirects();
+            HttpResponse response = new FallbackHttpClient(NETWORK_PURPOSE).download(request, Path.of(filePath));
+            failUnlessOk(response.status(), url);
             String formattedSize = getDownloadedAppSize(Path.of(filePath));
             LOGGER.info("App downloaded at path: '{}', having size: '{} MB'", filePath, formattedSize);
         } catch (IOException e) {
+            throw new InvalidTestDataException(String.format("Unable to download file '%s'", url), e);
+        }
+    }
+
+    private static void failUnlessOk(int statusCode, String url) {
+        if (statusCode != HTTP_OK) {
             throw new InvalidTestDataException(
-                    "An error occurred while opening the URL/downloading file: " + e.getMessage());
+                    String.format("Unable to connect to url: '%s'. Got connection error '%d'", url, statusCode));
         }
     }
 
@@ -98,45 +108,6 @@ public final class AppPathResolver {
         } catch (IOException e) {
             throw new InvalidTestDataException("Unable to get downloaded app file size. Download " +
                     "may be corrupt. Check and fix before rerunning the test.", e);
-        }
-    }
-
-    private static void downloadFileFromHttpUrl(String filePath, String saveToDirectory, HttpURLConnection connection) {
-        try (InputStream inputStream = connection.getInputStream()) {
-            createDirectoryIfNotExists(saveToDirectory);
-            Files.copy(inputStream, Path.of(filePath), StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException e) {
-            throw new InvalidTestDataException(
-                    String.format("Unable to download file '%s'", connection.getURL().toString()), e);
-        }
-    }
-
-    private static HttpURLConnection getHttpURLConnection(URL fileUrl) {
-        try {
-            HttpURLConnection connection = (HttpURLConnection) fileUrl.openConnection();
-            connection.setRequestMethod("GET");
-            connection.setInstanceFollowRedirects(true);
-            int timeoutMillis = getAppDownloadTimeoutMillis();
-            connection.setConnectTimeout(timeoutMillis);
-            connection.setReadTimeout(timeoutMillis);
-            int responseCode = connection.getResponseCode();
-
-            if (isRedirect(responseCode)) {
-                String location = connection.getHeaderField("Location");
-                if (location != null && !location.isBlank()) {
-                    LOGGER.info("Following HTTP redirect to: " + location);
-                    return getHttpURLConnection(new URL(location));
-                }
-            }
-
-            if (responseCode != HttpURLConnection.HTTP_OK) {
-                throw new InvalidTestDataException(
-                        String.format("Unable to connect to url: '%s'. Got connection error '%d'", fileUrl,
-                                responseCode));
-            }
-            return connection;
-        } catch (IOException e) {
-            throw new InvalidTestDataException(String.format("Unable to connect to url: '%s'.", fileUrl));
         }
     }
 
@@ -158,25 +129,9 @@ public final class AppPathResolver {
 
     private static void validateAppUrl(String appPathUrl) {
         try {
-            HttpURLConnection connection = (HttpURLConnection) new URL(appPathUrl).openConnection();
-            connection.setRequestMethod("HEAD");
-            connection.setInstanceFollowRedirects(true);
-            int timeoutMillis = getAppDownloadTimeoutMillis();
-            connection.setConnectTimeout(timeoutMillis);
-            connection.setReadTimeout(timeoutMillis);
-            int responseCode = connection.getResponseCode();
-
-            if (isRedirect(responseCode)) {
-                String location = connection.getHeaderField("Location");
-                connection.disconnect();
-                if (location != null && !location.isBlank()) {
-                    validateAppUrl(location);
-                    return;
-                }
-            }
-
-            connection.disconnect();
-            if (responseCode != HttpURLConnection.HTTP_OK) {
+            HttpRequest request = HttpRequest.head(appPathUrl, appDownloadTimeout()).followingRedirects();
+            int responseCode = new FallbackHttpClient(NETWORK_PURPOSE).send(request).status();
+            if (responseCode != HTTP_OK) {
                 LOGGER.info("'{}' is an invalid URL.", appPathUrl);
                 throw new InvalidTestDataException("URL is not accessible: " + appPathUrl);
             }
@@ -187,12 +142,8 @@ public final class AppPathResolver {
         }
     }
 
-    private static boolean isRedirect(int statusCode) {
-        return statusCode == HttpURLConnection.HTTP_MOVED_TEMP
-                || statusCode == HttpURLConnection.HTTP_MOVED_PERM
-                || statusCode == HttpURLConnection.HTTP_SEE_OTHER
-                || statusCode == 307
-                || statusCode == 308;
+    private static Duration appDownloadTimeout() {
+        return Duration.ofMillis(getAppDownloadTimeoutMillis());
     }
 
     static int getAppDownloadTimeoutMillis() {

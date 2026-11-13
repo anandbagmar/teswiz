@@ -60,8 +60,23 @@ WARN RunNetworkNotes - Network notes for this run: 1 host(s) needed address fall
 
 Notes also go to the running scenario (ReportPortal log and `TEST_CONTEXT.NETWORK_NOTES`) and to
 `network-notes.json` in the reports directory. OkHttp (`Api`), Playwright and REST Assured already try every address
-natively and record no notes; SMTP (`jakarta.mail`), app download and telemetry are not covered. See
+natively and record no notes; SMTP (`jakarta.mail`) and telemetry are not covered. See
 `docs/subsystems/network-address-fallback.md`.
+
+### App download uses address fallback ([#82](https://github.com/anandbagmar/teswiz/issues/82))
+
+When `APP_PATH` is a URL, `AppPathResolver` now validates it (HEAD) and downloads it (GET) through
+`FallbackHttpClient`, so a multi-address host (S3, Artifactory, a CDN) with some blocked addresses no longer fails the
+run before any test starts. Skipped addresses are recorded as network notes with purpose `app-download`. The new
+`FallbackHttpClient.download(HttpRequest, Path)` streams the body to a file (never held in memory) and deletes a
+partial file when the transfer fails; `HttpRequest.head(...)` sends a HEAD. Local file paths and cloud references
+(`bs://`, `lt://`) are unchanged.
+
+- **Behaviour change — app download timeout:** `APP_DOWNLOAD_TIMEOUT_SECONDS` still limits the connect and each read
+  (as before). With address fallback on, each address gets `HTTP_CONNECT_TIMEOUT_PER_ADDRESS_SECONDS` to connect.
+- **Behaviour change — download failure message:** a transfer that fails part-way now reports
+  `Unable to download file '<url>'` (with the cause); a non-200 answer still reports
+  `Unable to connect to url: '<url>'. Got connection error '<status>'`.
 
 ### Configurable delivery timeouts
 

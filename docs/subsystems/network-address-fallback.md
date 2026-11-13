@@ -80,11 +80,11 @@ the log only.
 |---|---|---|
 | Slack notification (`SlackSender`) | yes — `FallbackHttpClient` | yes |
 | API heartbeat (`HeartBeat`) | yes — `FallbackHttpClient` | yes |
+| App download (`AppPathResolver`) | yes — `FallbackHttpClient` (HEAD via `send`, streamed GET via `download`) | yes (`app-download`) |
 | `Api` (OkHttp) | yes — OkHttp tries every address natively | no |
 | Playwright (browsers and `PlaywrightApiManager`) | yes — Playwright's own connection logic tries every address | no |
 | REST Assured (Apache HttpClient) | yes — tries every address natively | no |
 | Email notification (SMTP, `jakarta.mail`) | no — `jakarta.mail` opens the socket itself | no |
-| App download (`AppPathResolver`) | no — not migrated yet (streams large files; tracked in [#82](https://github.com/anandbagmar/teswiz/issues/82)) | no |
 | Telemetry (`TelemetryCollector`) | no — not migrated (fire-and-forget, 2s budget) | no |
 
 ## Using it from your own code
@@ -96,3 +96,14 @@ HttpResponse response = client.send(HttpRequest.post(url, "application/json", bo
 
 `send` returns any status (a 4xx or 5xx is an answer, not a failure) and throws `IOException` when no address could be
 connected to or the call failed after connecting. Redirects are followed only with `.followingRedirects()`.
+
+For a large body (for example an app file), stream it to a file instead of holding it in memory:
+
+```java
+HttpResponse response = client.download(HttpRequest.get(url, Duration.ofSeconds(15)).followingRedirects(), target);
+```
+
+`download` uses the same address fallback as `send`. The body is written to `target` only for a 2xx status, and the
+returned `HttpResponse` carries the status and headers with an empty body. If the call fails part-way through the
+body, the partial file is deleted. The timeout limits each connect, read and write, not the whole download, so a
+large file is not cut off while data keeps arriving. `HttpRequest.head(url, timeout)` sends a HEAD.
