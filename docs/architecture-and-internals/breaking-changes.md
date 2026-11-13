@@ -8,6 +8,21 @@ teswiz records notable changes and upgrades in this document as well as in relea
 
 ---
 
+## 🌐 Address fallback, notification timeouts and proxy (1.0.58)
+
+No public API is removed or changed, but these behaviours change. See [Address fallback and network notes](../subsystems/network-address-fallback.md) and [Diagnosing a failed delivery](../subsystems/run-notifications.md#diagnosing-a-failed-delivery).
+
+| Change | Needs action? |
+| :--- | :--- |
+| Two new execution-config keys, `HTTP_ADDRESS_FALLBACK` (default `true`) and `HTTP_CONNECT_TIMEOUT_PER_ADDRESS_SECONDS` (default `5`), after `PROXY_URL` in the template | No. Both are optional, and an absent key uses its default |
+| The Slack POST and `HeartBeat` go through `FallbackHttpClient`: when one address of a host cannot be reached within 5s, the next one is tried | No. Set `HTTP_ADDRESS_FALLBACK=false` to try only the first address |
+| The Slack POST goes through the proxy resolved from `PROXY_KEY` / `PROXY_URL` | Only if a proxy is configured and Slack must bypass it |
+| The default Slack connect and request timeout rises from 10s to 20s | No. Set `notify.slack.timeout.seconds` to change it. The SMTP default stays 15s (`notify.smtp.timeout.seconds`) |
+| Each `HeartBeat` check times out after 30s (before: no timeout) | No |
+| Every run writes `network-notes.json` (`[]` when empty) to the reports directory | Only if a pipeline step expects an exact set of files there |
+
+---
+
 ## 🔔 Run notifications and the failure breakdown (1.0.47 – 1.0.55)
 
 These affect a project that implements a `RunNotificationComposer` or calls the `reporting.notify` helpers directly. See [Run Notifications](../subsystems/run-notifications.md) for the full guide.

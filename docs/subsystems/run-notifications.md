@@ -38,8 +38,10 @@ flowchart TD
     COMP -->|compose RunResult -> List&lt;Notification&gt;| NTF["Notifier"]
     NTF -->|gate: notify.enabled + notify.branches| GATE{"gates open?"}
     GATE -->|no| NOOP["nothing sent"]
-    GATE -->|yes| SLACK["SlackSender\n(incoming webhook)"]
-    GATE -->|yes| EMAIL["EmailSender\n(SMTP / jakarta.mail)"]
+    GATE -->|yes| SLACK["SlackSender\n(incoming webhook,\nnotify.slack.timeout.seconds)"]
+    GATE -->|yes| EMAIL["EmailSender\n(SMTP / jakarta.mail,\nnotify.smtp.timeout.seconds)"]
+    SLACK -->|POST| FHC["network.FallbackHttpClient\n(proxy from PROXY_KEY / PROXY_URL,\neach address once, before sending)"]
+    FHC -.->|address skipped| NOTES["network.NetworkNotes\n(log, scenario, network-notes.json)"]
 
     subgraph TESWIZ_OWNS["teswiz owns"]
         FIRE
@@ -47,6 +49,8 @@ flowchart TD
         NTF
         SLACK
         EMAIL
+        FHC
+        NOTES
         RR
         CFG
         JUR

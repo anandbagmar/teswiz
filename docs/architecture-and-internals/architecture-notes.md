@@ -29,6 +29,7 @@
   - [`com.znsio.teswiz.reporting`](#comznsioteswizreporting)
   - [`com.znsio.teswiz.api`](#comznsioteswizapi)
   - [`com.znsio.teswiz.filters`](#comznsioteswizfilters)
+  - [`com.znsio.teswiz.network`](#comznsioteswiznetwork)
   - [`com.znsio.teswiz.visual`](#comznsioteswizvisual)
   - [`com.znsio.teswiz.testng`](#comznsioteswiztestng)
 - [Package rules](#package-rules)
@@ -466,7 +467,10 @@ swallowed, so a notifier problem never changes a run's result.
 * `NotificationSettings` — generic `.properties` loader with same-named environment overrides (env wins); secrets
   read from the environment only
 * `Notifier` — applies the master switch (`notify.enabled`) + branch allowlist (`notify.branches`) gate, then routes
-  each message to `SlackSender` / `EmailSender` by whether it carries a destination
+  each message to `SlackSender` / `EmailSender` by whether it carries a destination, with the timeouts from
+  `notify.slack.timeout.seconds` / `notify.smtp.timeout.seconds`. `SlackSender` posts through
+  `network.FallbackHttpClient` and the configured proxy; `EmailSender` uses `jakarta.mail`'s own socket. A failed
+  delivery logs the exception type, root cause, host, timeout and proxy, with secrets redacted
 * `CiProvider` / `RunEnvironment` — CI-provider-agnostic run provenance: the provider (GitLab, GitHub Actions,
   Jenkins, CircleCI, Bitbucket, Azure Pipelines, …) is detected from its signature env var and its native variables
   are mapped onto common fields; an unrecognised environment resolves as a local run. `CiProvider` is the single
@@ -548,6 +552,36 @@ Current examples:
 
 Registration order matters: `ApiTrafficLoggingFilter` is registered before `EnvironmentIssueFilter`, so it wraps around it and still records a call's traffic file even when `EnvironmentIssueFilter` throws instead of returning a response.
 
+### `com.znsio.teswiz.network`
+
+Owns teswiz's own outgoing HTTP calls (the Slack notification and `HeartBeat` today) and the diagnostics around them.
+It does not depend on `runner`: settings come from `TeswizConfig.reader()`, with environment variables and system
+properties as the fallback when `Setup` has not run. See
+[Address fallback and network notes](../subsystems/network-address-fallback.md).
+
+* `FallbackHttpClient` — the shared OkHttp-based client. When a host has several addresses and one cannot be connected
+  to, it tries the next one. Each address is tried once, with `HTTP_CONNECT_TIMEOUT_PER_ADDRESS_SECONDS` each, and only
+  before anything is sent, so a request is never sent twice. `HttpRequest` / `HttpResponse` are its value types; any
+  status is an answer, and `IOException` means no address connected or the call failed after connecting
+* `AddressFallback` — the rule itself (try each address once, skip only on a connect failure), independent of the HTTP
+  library. `AddressResolver` looks up a host's addresses (`InetAddress.getAllByName` by default; replaceable in tests)
+* `AddressFallbackSettings` — `HTTP_ADDRESS_FALLBACK` and `HTTP_CONNECT_TIMEOUT_PER_ADDRESS_SECONDS`, read from teswiz's
+  config with an environment fallback; a missing or invalid value uses the default
+* `ProxySettings` — the proxy for these calls, resolved from `PROXY_KEY` / `PROXY_URL` exactly as `Setup` does for the
+  browsers and drivers. With a proxy, the proxy looks up the host and there is nothing to fall back between
+* `NetworkNote` / `NetworkNotes` — one note per connection that needed fallback (unreachable addresses, and the address
+  that connected, if any). Each note is logged when recorded and handed to listeners. Notes never change a result
+* `RunNetworkNotes` — at the end of the run, logs a per-host summary (only when there are notes) and always writes
+  `network-notes.json` to the reports directory (`[]` when empty)
+* `FailureDetail` — turns a delivery failure into one log line (type, message, root cause), with secrets redacted
+
+`listener.ScenarioNetworkNotes` attaches a note to the scenario that was running: a warning in its ReportPortal log, and
+a line in its `TestExecutionContext` under `TEST_CONTEXT.NETWORK_NOTES`. `CucumberScenarioListener` wires it up and
+writes the end-of-run file.
+
+`Api` (OkHttp), Playwright and REST Assured already try every address natively and record no notes. SMTP
+(`jakarta.mail`), app download (`AppPathResolver`, tracked in #82) and telemetry are not covered yet.
+
 ### `com.znsio.teswiz.visual`
 
 Owns engine-specific visual helper implementations that support `runner.Visual`.
@@ -591,6 +625,8 @@ When adding new code for the dual-engine architecture:
 * prefer provider-specific Appium/mobile cloud behavior under `mobile.provider`
 * prefer reporting adaptation code under `reporting`
 * prefer end-of-run notification code (channels, gating, delivery, run provenance) under `reporting.notify`
+* prefer teswiz's own outgoing HTTP calls, proxy resolution and network diagnostics under `network`; send new
+  framework-owned HTTP calls through `FallbackHttpClient` rather than a new client
 * prefer API engine clients and request/response shaping shared across them under `api`; when both engines must send
   the same request, put that logic in one shared helper there rather than in each client
 * prefer shared app-path resolution, version detection, and download handling under `config.app`

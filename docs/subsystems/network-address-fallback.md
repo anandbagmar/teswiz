@@ -20,6 +20,21 @@ For each request:
    a request (for example a POST) is never sent twice.
 5. Whenever an address was skipped, record one network note.
 
+```mermaid
+flowchart TD
+    REQ["FallbackHttpClient.send(request)"] --> PROXY{"proxy configured?\n(PROXY_KEY / PROXY_URL)"}
+    PROXY -->|yes| VIA["send through the proxy\n(the proxy looks up the host)"]
+    PROXY -->|no| LOOKUP["look up every address\n(InetAddress.getAllByName)"]
+    LOOKUP --> TRY["connect to the next address\n(HTTP_CONNECT_TIMEOUT_PER_ADDRESS_SECONDS)"]
+    TRY -->|connected| SEND["send the request\n(no more fallback from here)"]
+    TRY -->|"could not connect,\naddresses left"| TRY
+    TRY -->|"could not connect,\nnone left"| FAIL["IOException\n(the original error)"]
+    SEND --> RESP["HttpResponse\n(any status)"]
+    TRY -.->|"an address was skipped"| NOTE["NetworkNote\n(log, scenario, network-notes.json)"]
+```
+
+With `HTTP_ADDRESS_FALLBACK=false`, only the first address is tried.
+
 ```
 WARN NetworkNotes - Network note: hooks.slack.com:443 (slack): 54.0.0.1 unreachable
      (SocketTimeoutException: connect timed out) -> connected via 54.0.0.2

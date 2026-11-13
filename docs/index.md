@@ -89,6 +89,7 @@ flowchart TD
 | 📝 **AspectJ Logging** | Automated framework and test method execution tracing | [Logging Guide](subsystems/aspectj-logging.md) |
 | 🔒 **BrowserStack Local** | Configuring secure tunnel connections for cloud grid testing | [Local Testing Setup](subsystems/browserstack-local.md) |
 | 🔔 **Run Notifications** | Opt-in end-of-run Slack + email notifications, CI-provider agnostic, OFF by default | [Notifications Guide](subsystems/run-notifications.md) |
+| 🌐 **Address Fallback & Network Notes** | teswiz's own outgoing calls (Slack, heartbeat) try each address of a host once, and record a network note for every unreachable address | [Network Guide](subsystems/network-address-fallback.md) |
 
 ---
 

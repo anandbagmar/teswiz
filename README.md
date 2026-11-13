@@ -168,6 +168,7 @@ If you need a fresh dependency resolution:
 * **Applitools Eyes & Ultrafast Grid (UFG)**: Visual checking for Selenium Web, Playwright-Java Web, Playwright-TS Web, Android, and iOS ([Visual AI Guide](docs/subsystems/visual-ai-applitools.md)).
 * **ReportPortal Integration**: Real-time publishing of engine, platform, provider, persona, and session metadata ([ReportPortal Setup](docs/subsystems/reportportal-integration.md)).
 * **End-of-run Notifications**: Opt-in Slack + email run notifications fired by teswiz's Runner, CI-provider agnostic and OFF by default ([Notifications Guide](docs/subsystems/run-notifications.md)).
+* **Address Fallback & Network Notes**: teswiz's own outgoing calls (Slack, heartbeat) try each address of a host once before giving up, and record every unreachable address as a network note in the log, the scenario and `network-notes.json` ([Network Guide](docs/subsystems/network-address-fallback.md)).
 * **Unified Scenario Diagnostic Artifacts**: Console logs, rolling debug logs, screenshots, traces, HARs, and cloud provider session links ([Debugging Guide](docs/architecture-and-internals/debugging-tests.md)).
 
 > 📖 **Read more**: [Running Visual Tests](docs/subsystems/visual-ai-applitools.md) • [ReportPortal Setup](docs/subsystems/reportportal-integration.md) • [Run Notifications](docs/subsystems/run-notifications.md) • [Configuration Parameters](docs/configuration/configuration-parameters.md)

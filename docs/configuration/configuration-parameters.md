@@ -102,6 +102,8 @@ For the complete property list and all available defaults, use the
     PARALLEL=1 -> How many tests should be run in parallel?
     PROXY_KEY=HTTP_PROXY -> If proxy should be set, what is the environment variable specifying the proxy?
     PROXY_URL=<proxy_url> -> What is the proxy url to be used if PROXY_KEY is set
+    HTTP_ADDRESS_FALLBACK=true -> When a host has several addresses and one cannot be connected to, try the next one (each once, only before anything is sent). Only false turns it off. Used by teswiz's own calls (Slack notification, heartbeat). See [Address fallback and network notes](../subsystems/network-address-fallback.md)
+    HTTP_CONNECT_TIMEOUT_PER_ADDRESS_SECONDS=5 -> Connect timeout per address, in whole seconds (> 0), when HTTP_ADDRESS_FALLBACK=true
     REMOTE_WEBDRIVER_GRID_PORT=<environment variable name which holds the port to be used for RemoteWebDriver>
     REMOTE_WEBDRIVER_GRID_HOST_NAME=<environment variable name which holds the host name/ip for RemoteWebDriver>
     REPORT_PORTAL_FILE=./src/test/resources/reportportal.properties -> ReportPortal.io configuration
