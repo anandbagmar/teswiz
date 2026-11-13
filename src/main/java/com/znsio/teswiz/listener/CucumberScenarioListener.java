@@ -4,6 +4,8 @@ import com.znsio.teswiz.context.SessionContext;
 import com.znsio.teswiz.context.TestExecutionContext;
 import com.znsio.teswiz.entities.TEST_CONTEXT;
 import com.znsio.teswiz.mobile.server.AppiumServerController;
+import com.znsio.teswiz.network.NetworkNotes;
+import com.znsio.teswiz.network.RunNetworkNotes;
 import com.znsio.teswiz.runner.FileLocations;
 import com.znsio.teswiz.config.browser.PlaywrightBrowserConfigMigrationReporter;
 import com.znsio.teswiz.runner.Visual;
@@ -18,13 +20,17 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.TimeUnit;
 
 public class CucumberScenarioListener implements ConcurrentEventListener {
     private static final Logger LOGGER = LogManager.getLogger(CucumberScenarioListener.class.getName());
+    // Cucumber may create this listener more than once per JVM; the run-wide notes need one scenario forwarder only.
+    private static final AtomicBoolean SCENARIO_NETWORK_NOTES_REGISTERED = new AtomicBoolean();
     private final Map<String, AtomicInteger> numberOfExamplesForScenario = new ConcurrentHashMap<>();
     private final AtomicInteger runningScenarioNumber = new AtomicInteger();
     private final AtomicInteger passedCount = new AtomicInteger();
@@ -49,6 +55,9 @@ public class CucumberScenarioListener implements ConcurrentEventListener {
 
     private void runStartedHandler(TestRunStarted event) {
         runStartedNanos = System.nanoTime();
+        if (SCENARIO_NETWORK_NOTES_REGISTERED.compareAndSet(false, true)) {
+            NetworkNotes.global().onRecord(ScenarioNetworkNotes::record);
+        }
         LOGGER.info("Test run started");
     }
 
@@ -146,6 +155,8 @@ public class CucumberScenarioListener implements ConcurrentEventListener {
             Visual.closeBatch();
             AppiumServerController.destroyAppiumNode();
             PlaywrightBrowserConfigMigrationReporter.emitSummaryIfPresent();
+            RunNetworkNotes.finish(NetworkNotes.global(),
+                    Paths.get(OsUtils.getUserDirectory(), FileLocations.REPORTS_DIRECTORY));
             SessionContext.setReportPortalLaunchURL();
             com.znsio.teswiz.analytics.TelemetryCollector.sendRunCompletedEvent();
         } catch (Exception e) {

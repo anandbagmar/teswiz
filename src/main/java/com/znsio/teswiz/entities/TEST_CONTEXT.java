@@ -37,5 +37,7 @@ public class TEST_CONTEXT {
     public static final String APPLITOOLS_FIGMA_TEST_NAME = "applitoolsFigmaTestName";
     public static final String APPLITOOLS_FIGMA_BASELINE_ENV_NAME = "applitoolsFigmaBaselineEnvName";
     public static final String LLM_VISION_USAGE = "llmVisionUsage";
+    /** The network notes (one line each) recorded while this scenario ran; a {@code List<String>}. */
+    public static final String NETWORK_NOTES = "networkNotes";
     public static final String I = "I";
 }

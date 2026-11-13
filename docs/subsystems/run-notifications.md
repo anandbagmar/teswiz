@@ -103,6 +103,12 @@ execution config.
 | `notify.smtp.auth` | Authenticate to the relay | *(blank)* |
 | `notify.smtp.from` | From address | *(blank)* |
 | `notify.smtp.username` | SMTP username | *(blank)* |
+| `notify.slack.timeout.seconds` | Connect + request timeout for the Slack POST | `20` |
+| `notify.smtp.timeout.seconds` | Timeout for every SMTP phase (connect, read, write) | `15` |
+
+A blank, non-numeric or non-positive timeout uses the default. There is no separate notification proxy: the Slack POST
+goes through the proxy teswiz is already configured with (`PROXY_KEY` / `PROXY_URL`, resolved exactly as `Setup` does
+for the browsers and drivers).
 
 ### Environment overrides
 
@@ -358,3 +364,36 @@ naming the channel that could not be delivered.
 
 The rationale for the default being off: a transient Slack/SMTP blip should not flip a green test run to red. Turn it
 on when you would rather be told loudly that your notification setup is broken.
+
+### Diagnosing a failed delivery
+
+A failed Slack or email delivery logs enough to tell a network problem on the machine running the tests apart from a
+problem at Slack or the mail relay, without re-running:
+
+- **What failed:** the exception type and message, plus the root cause when it differs.
+- **Where:** the destination host (and SMTP port), the timeout used, and the proxy used (Slack). The Slack webhook URL
+  and the SMTP password are secrets and never appear in the log; if an exception echoes one back, it is replaced by
+  `<redacted>`.
+- **Which addresses:** the Slack POST goes through teswiz's shared fallback HTTP client. When `hooks.slack.com` has
+  several addresses and one cannot be reached, the next one is tried (each once, before anything is sent) and a
+  `Network note:` line names the unreachable address. See
+  [Address fallback and network notes](network-address-fallback.md).
+
+```
+WARN NetworkNotes - Network note: hooks.slack.com:443 (slack): 54.0.0.1 unreachable
+     (SocketTimeoutException: connect timed out) -> connected via 54.0.0.2
+```
+
+When every address fails, the note says so and the delivery is logged as failed:
+
+```
+WARN NetworkNotes - Network note: hooks.slack.com:443 (slack): all 2 address(es) unreachable: 54.0.0.1 (...), 54.0.0.2 (...)
+WARN SlackSender - Slack delivery failed; swallowed so the run is unaffected:
+     SocketTimeoutException: connect timed out [host=hooks.slack.com, timeout=20s, proxy=none]
+```
+
+Reading it: some addresses unreachable but one connected means a firewall or route blocks part of the host's address
+range (the delivery still succeeded); every address unreachable means the machine has no route to the host at all
+(often an egress firewall, or a proxy that should be configured). A non-2xx response from Slack is logged with its
+status and host: the network clearly worked. SMTP does not use address fallback: `jakarta.mail` opens the socket
+itself, so a failed email logs what failed, the relay host and port, and the timeout.

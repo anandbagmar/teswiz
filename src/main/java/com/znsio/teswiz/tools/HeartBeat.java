@@ -1,13 +1,18 @@
 package com.znsio.teswiz.tools;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.time.Duration;
 
-import java.net.HttpURLConnection;
-import java.net.URL;
+import com.znsio.teswiz.network.FallbackHttpClient;
+import com.znsio.teswiz.network.HttpRequest;
 
 public class HeartBeat implements Runnable {
-    private static final Logger LOGGER = LogManager.getLogger(HeartBeat.class.getName());
+    // LogManager/Logger are fully-qualified ON PURPOSE (same as JUnitResults): an auto-import-organizer in this
+    // environment rewrites a plain log4j import to java.util.logging.LogManager and drops Logger, breaking the build.
+    private static final org.apache.logging.log4j.Logger LOGGER = org.apache.logging.log4j.LogManager
+            .getLogger(HeartBeat.class.getName());
+    private static final int HTTP_OK = 200;
+    private static final Duration CHECK_TIMEOUT = Duration.ofSeconds(30);
+    private static final String PURPOSE = "heartbeat";
     private final String threadName;
     private final String apiUrl;
     private final int pollingDuration;
@@ -25,33 +30,35 @@ public class HeartBeat implements Runnable {
     public void run() {
         currentThread = Thread.currentThread();
         currentThread.setName(threadName);
-        while(running) { // Continue running as long as the flag is true
+        while (running) { // Continue running as long as the flag is true
             try {
                 String message = "HeartBeat: '%s', API is '%s'. Current count: '%d'";
                 String status = "up";
-                if(!checkHeartBeat()) {
+                if (!checkHeartBeat()) {
                     status = "down";
                 }
                 heartBeatCounter++;
                 message = String.format(message, this.threadName, status, heartBeatCounter);
                 ReportPortalLogger.logInfoMessage(message);
                 Thread.sleep(this.pollingDuration * 1000); // Sleep for x seconds
-            } catch(InterruptedException e) {
+            } catch (InterruptedException e) {
                 // do nothing
             }
         }
     }
 
-    private boolean checkHeartBeat() {
+    /**
+     * One check of the API, through teswiz's shared fallback HTTP client (a host with an unreachable address is
+     * still checked through its other addresses). Redirects are followed, as before.
+     *
+     * @return true when the API answered 200
+     */
+    boolean checkHeartBeat() {
         try {
-            URL url = new URL(apiUrl);
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("GET");
-            connection.connect();
-
-            int responseCode = connection.getResponseCode();
-            return responseCode == HttpURLConnection.HTTP_OK;
-        } catch(Exception e) {
+            HttpRequest request = HttpRequest.get(apiUrl, CHECK_TIMEOUT).followingRedirects();
+            return new FallbackHttpClient(PURPOSE).send(request).status() == HTTP_OK;
+        } catch (Exception e) {
+            LOGGER.debug("HeartBeat check of '{}' failed: {}", threadName, e.getMessage());
             return false;
         }
     }
@@ -63,7 +70,8 @@ public class HeartBeat implements Runnable {
 
     // Method to stop the heartbeat
     public void stopHeartBeat() {
-        String message = String.format("HeartBeat: Stopping heartbeat for user: '%s' with url: '%s' after '%d' counts", this.threadName, this.apiUrl, heartBeatCounter);
+        String message = String.format("HeartBeat: Stopping heartbeat for user: '%s' with url: '%s' after '%d' counts",
+                this.threadName, this.apiUrl, heartBeatCounter);
         ReportPortalLogger.logInfoMessage(message);
         running = false;
         if (this.currentThread != null) {

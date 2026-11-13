@@ -10,6 +10,7 @@ import com.znsio.teswiz.exceptions.EnvironmentSetupException;
 import com.znsio.teswiz.exceptions.InvalidTestDataException;
 import com.znsio.teswiz.filters.EnvironmentIssueFilter;
 import com.znsio.teswiz.filters.apitraffic.ApiTrafficLogging;
+import com.znsio.teswiz.network.AddressFallbackSettings;
 import com.znsio.teswiz.api.ApiEngine;
 import com.znsio.teswiz.web.WebEngine;
 import com.znsio.teswiz.tools.JsonFile;
@@ -422,6 +423,13 @@ public class Setup {
         configsInteger.put(PARALLEL, getOverriddenIntValue(PARALLEL, Integer.parseInt(getStringValueFromPropertiesIfAvailable(PARALLEL, String.valueOf(DEFAULT_PARALLEL)))));
         configs.put(PROXY_KEY, getOverriddenStringValue(PROXY_KEY, getStringValueFromPropertiesIfAvailable(PROXY_KEY, PROXY_KEY)));
         configs.put(PROXY_URL, (null != configs.get(PROXY_KEY)) ? getOverriddenStringValue(configs.get(PROXY_KEY)) : configs.put(PROXY_URL, null));
+        configsBoolean.put(AddressFallbackSettings.ENABLED_KEY, getOverriddenBooleanValue(
+                AddressFallbackSettings.ENABLED_KEY,
+                getBooleanValueFromPropertiesIfAvailable(AddressFallbackSettings.ENABLED_KEY, true)));
+        configsInteger.put(AddressFallbackSettings.TIMEOUT_KEY, getOverriddenIntValue(
+                AddressFallbackSettings.TIMEOUT_KEY,
+                Integer.parseInt(getStringValueFromPropertiesIfAvailable(AddressFallbackSettings.TIMEOUT_KEY,
+                        String.valueOf(AddressFallbackSettings.DEFAULT_CONNECT_TIMEOUT_PER_ADDRESS.toSeconds())))));
 
         configs.put(REMOTE_WEBDRIVER_GRID_PORT_KEY, getStringValueFromPropertiesIfAvailable(REMOTE_WEBDRIVER_GRID_PORT, REMOTE_WEBDRIVER_GRID_PORT));
         configs.put(REMOTE_WEBDRIVER_GRID_HOST_NAME, getOverriddenStringValue(REMOTE_WEBDRIVER_GRID_HOST_NAME, getStringValueFromPropertiesIfAvailable(REMOTE_WEBDRIVER_GRID_HOST_NAME, DEFAULT_WEBDRIVER_GRID_HOST_NAME)));

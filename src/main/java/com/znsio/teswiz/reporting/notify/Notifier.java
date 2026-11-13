@@ -1,11 +1,9 @@
 package com.znsio.teswiz.reporting.notify;
 
+import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Delivers composed {@link Notification}s to Slack and/or email, applying only the generic gates teswiz owns — the
@@ -19,7 +17,10 @@ import org.apache.logging.log4j.Logger;
  */
 public final class Notifier {
 
-    private static final Logger LOGGER = LogManager.getLogger(Notifier.class.getName());
+    // LogManager/Logger are fully-qualified ON PURPOSE (same as JUnitResults): an auto-import-organizer in this
+    // environment rewrites a plain log4j import to java.util.logging.LogManager and drops Logger, breaking the build.
+    private static final org.apache.logging.log4j.Logger LOGGER = org.apache.logging.log4j.LogManager
+            .getLogger(Notifier.class.getName());
 
     private static final String ENABLED_KEY = "notify.enabled";
     private static final String BRANCHES_KEY = "notify.branches";
@@ -30,6 +31,8 @@ public final class Notifier {
     private static final String SMTP_FROM_KEY = "notify.smtp.from";
     private static final String SMTP_USERNAME_KEY = "notify.smtp.username";
     private static final String SMTP_PASSWORD_ENV = "SMTP_PASSWORD";
+    private static final String SLACK_TIMEOUT_KEY = "notify.slack.timeout.seconds";
+    private static final String SMTP_TIMEOUT_KEY = "notify.smtp.timeout.seconds";
 
     private final NotificationSettings settings;
     private final String currentBranch;
@@ -44,7 +47,10 @@ public final class Notifier {
      * @param currentBranch the branch the run is on, for the branch gate
      */
     public Notifier(NotificationSettings settings, String currentBranch) {
-        this(settings, currentBranch, new SlackSender(), new EmailSender(smtpSettings(settings)));
+        this(settings, currentBranch,
+                new SlackSender(timeout(settings, SLACK_TIMEOUT_KEY, SlackSender.DEFAULT_TIMEOUT)),
+                new EmailSender(smtpSettings(settings),
+                        timeout(settings, SMTP_TIMEOUT_KEY, EmailSender.DEFAULT_TIMEOUT)));
     }
 
     /**
@@ -107,6 +113,24 @@ public final class Notifier {
             return true;
         }
         return false;
+    }
+
+    /**
+     * Reads a timeout in whole seconds; a missing, non-numeric or non-positive value means {@code defaultTimeout}, so a
+     * bad setting never stops a notification from being sent.
+     *
+     * @param settings       the resolved notification settings
+     * @param key            the property key holding the timeout in seconds
+     * @param defaultTimeout the timeout to use when the key is not usable
+     * @return the timeout to use
+     */
+    static Duration timeout(NotificationSettings settings, String key, Duration defaultTimeout) {
+        try {
+            long seconds = Long.parseLong(settings.get(key));
+            return seconds > 0 ? Duration.ofSeconds(seconds) : defaultTimeout;
+        } catch (NumberFormatException e) {
+            return defaultTimeout;
+        }
     }
 
     private static EmailSender.SmtpSettings smtpSettings(NotificationSettings settings) {

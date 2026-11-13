@@ -54,10 +54,17 @@ notify.fail.on.error=false
 # destination AND the secret, so your composer supplies it (read it from an env
 # var, never commit it). This flag is a convenience toggle your composer may read.
 #notify.slack.enabled=false
+# Connect + request timeout for the Slack POST, in seconds (default 20). A blank,
+# non-numeric or non-positive value uses the default.
+# The POST goes through the proxy teswiz is configured with (PROXY_KEY / PROXY_URL,
+# exactly as for the rest of teswiz); there is no separate notification proxy.
+#notify.slack.timeout.seconds=20
 
 # --- Email channel (SMTP via jakarta.mail) -----------------------------------
 # Non-secret SMTP facts live here; the password is read from the SMTP_PASSWORD env var.
 #notify.email.enabled=false
+# Timeout for every SMTP phase (connect, read, write), in seconds (default 15).
+#notify.smtp.timeout.seconds=15
 #notify.smtp.host=smtp.example.com
 #notify.smtp.port=587
 #notify.smtp.tls=true
