@@ -1,4 +1,118 @@
 ## 1.0.58
+# Release Notes - teswiz v1.0.58
+
+_Previous release: v1.0.57_
+
+This release makes teswiz's own outgoing calls robust to a host whose addresses are only partly reachable: each
+address is tried once, before anything is sent, and every skipped address is recorded as a network note (log,
+scenario, end-of-run file). App downloads from a URL now use the same fallback. A failed Slack or email notification
+is diagnosable from the log alone, the Slack POST goes through the proxy teswiz is already configured with, and both
+delivery timeouts are configurable. Playwright API engine failures now log the host's resolved addresses.
+
+## ⬆ Upgrade Notes
+
+- **No public API is removed or changed.** New public overloads: `SlackSender(Duration timeout)`,
+  `EmailSender(SmtpSettings, Duration timeout)` and `EmailSender.sessionProperties(SmtpSettings, Duration)`. New
+  public package `com.znsio.teswiz.network` (`FallbackHttpClient`, `HttpRequest`, `HttpResponse`, `AddressFallback`,
+  `AddressFallbackSettings`, `NetworkNote`, `NetworkNotes`, `RunNetworkNotes`, `ProxySettings`, `FailureDetail`,
+  `AddressResolver`), new `listener.ScenarioNetworkNotes` and `TEST_CONTEXT.NETWORK_NOTES`.
+- **New config keys (template order, after `PROXY_URL`):** `HTTP_ADDRESS_FALLBACK` (default `true`) and
+  `HTTP_CONNECT_TIMEOUT_PER_ADDRESS_SECONDS` (default `5`). Add both (commented is fine) to every execution
+  `.properties` file, or `validateConfigurationTemplates` fails.
+- **Behaviour change — address fallback:** the Slack POST, `HeartBeat` and URL-based app downloads
+  (`AppPathResolver`) now go through `FallbackHttpClient` (OkHttp). When a host has several addresses and one cannot
+  be connected to within 5s, the next one is tried. Set `HTTP_ADDRESS_FALLBACK=false` to try only the first address.
+- **Behaviour change — reports:** every run writes `network-notes.json` (`[]` when empty) to the reports directory.
+- **Behaviour change — HeartBeat:** each check now times out after 30s (before: no timeout).
+- **Behaviour change — Slack timeout:** the default connect and request timeout of the Slack POST rises from 10s to
+  20s. Set `notify.slack.timeout.seconds` to change it. The SMTP default stays 15s (`notify.smtp.timeout.seconds`).
+- **Behaviour change — proxy:** the Slack POST now goes through the proxy teswiz resolves from `PROXY_KEY` /
+  `PROXY_URL` (the same contract `Setup` uses for browsers and drivers). With no proxy configured nothing changes.
+- **Behaviour change — app download timeout:** `APP_DOWNLOAD_TIMEOUT_SECONDS` still limits the connect and each read.
+  With address fallback on, each address gets `HTTP_CONNECT_TIMEOUT_PER_ADDRESS_SECONDS` to connect.
+- **Behaviour change — download failure message:** a transfer that fails part-way now reports
+  `Unable to download file '<url>'` (with the cause); a non-200 answer still reports
+  `Unable to connect to url: '<url>'. Got connection error '<status>'`.
+
+## ✨ Improvements
+
+### Address fallback and network notes
+
+A host such as `hooks.slack.com` resolves to many rotating addresses. When an egress firewall blocks only some of
+them, a client that tries just the first address fails intermittently. teswiz's shared `FallbackHttpClient` tries each
+address once (5s connect timeout each), falls back only before anything is sent (so a POST is never sent twice), and
+records a network note for every skipped address. Notes never change a result.
+
+```
+WARN NetworkNotes - Network note: hooks.slack.com:443 (slack): 54.0.0.1 unreachable
+     (SocketTimeoutException: connect timed out) -> connected via 54.0.0.2
+WARN RunNetworkNotes - Network notes for this run: 1 host(s) needed address fallback
+  hooks.slack.com:443  fallbacks=1  unreachable=[54.0.0.1]  used=[54.0.0.2]
+```
+
+Notes also go to the running scenario (ReportPortal log and `TEST_CONTEXT.NETWORK_NOTES`) and to
+`network-notes.json` in the reports directory. OkHttp (`Api`), Playwright and REST Assured already try every address
+natively and record no notes; SMTP (`jakarta.mail`) and telemetry are not covered. See
+`docs/subsystems/network-address-fallback.md`.
+
+### App download uses address fallback ([#82](https://github.com/anandbagmar/teswiz/issues/82))
+
+When `APP_PATH` is a URL, `AppPathResolver` now validates it (HEAD) and downloads it (GET) through
+`FallbackHttpClient`, so a multi-address host (S3, Artifactory, a CDN) with some blocked addresses no longer fails the
+run before any test starts. Skipped addresses are recorded as network notes with purpose `app-download`. The new
+`FallbackHttpClient.download(HttpRequest, Path)` streams the body to a file (never held in memory) and deletes a
+partial file when the transfer fails; `HttpRequest.head(...)` sends a HEAD. Local file paths and cloud references
+(`bs://`, `lt://`) are unchanged.
+
+### Failed notifications say why
+
+A failed Slack or email delivery now logs the exception type and root cause, the destination host (and SMTP port),
+the timeout and the proxy used. The Slack webhook URL and the SMTP password are never logged; an exception that echoes
+one is redacted. Before, a failure logged only the exception message, e.g. `HTTP connect timed out`, which does not
+say what could not be reached.
+
+```
+WARN SlackSender - Slack delivery failed; swallowed so the run is unaffected:
+     SocketTimeoutException: connect timed out [host=hooks.slack.com, timeout=20s, proxy=none]
+```
+
+See "Diagnosing a failed delivery" in `docs/subsystems/run-notifications.md`.
+
+### Configurable delivery timeouts
+
+`notify.slack.timeout.seconds` (default 20) and `notify.smtp.timeout.seconds` (default 15) in
+`notifications.properties`, overridable by `NOTIFY_SLACK_TIMEOUT_SECONDS` / `NOTIFY_SMTP_TIMEOUT_SECONDS`. A blank,
+non-numeric or non-positive value uses the default.
+
+### Playwright API failures show the host's addresses
+
+When a Playwright API engine request fails after all retries, the error log now also lists the IP addresses the
+request's host resolves to:
+
+```
+ERROR PlaywrightApiEngineClient - API request GET https://api.example.com/v1 failed after 3 attempts
+      | Host addresses: api.example.com -> [203.0.113.10, 203.0.113.11] | Cause: Timeout 60000ms exceeded.
+```
+
+An unresolvable host is reported as `unresolved (...)`. This helps tell an unreachable address from a slow server.
+Each attempt still waits the full `TESWIZ_API_TIMEOUT_SECONDS` (default 60), so a call that never answers takes about
+`API_MAX_RETRIES` × that value before it fails.
+
+## 🛠 CI
+
+- **API Engines CI:** sets `TESWIZ_API_TIMEOUT_SECONDS=15`, so a stalled third-party call fails in about 50s instead
+  of about 3 minutes across 3 attempts. Local runs keep the 60s default.
+
+## 📚 Documentation
+
+- New `docs/subsystems/network-address-fallback.md`: how address fallback works, its settings, which connections it
+  covers, and how to use `FallbackHttpClient` from your own code.
+- `docs/configuration/configuration-parameters.md`: `TESWIZ_API_TIMEOUT_SECONDS` is documented as a per-attempt
+  timeout, multiplied by `API_MAX_RETRIES`.
+- `docs/engines/running-api-tests.md`: describes the Playwright request timeout and host address logging.
+- `docs/subsystems/run-notifications.md`: "Diagnosing a failed delivery".
+
+## 1.0.58
 # Release Notes - teswiz v1.0.58 (unreleased — 1.0.58-SNAPSHOT)
 
 _Previous release: v1.0.57_

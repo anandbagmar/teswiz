@@ -15,7 +15,7 @@ Follow this step-by-step guide to integrate **teswiz** into a new or existing Ja
 3. Copy `build.gradle.sample` to your project root, rename it to `build.gradle`, and verify the `teswiz` dependency version:
    ```groovy
    dependencies {
-       implementation 'com.github.anandbagmar:teswiz:1.0.58-SNAPSHOT'
+       implementation 'com.github.anandbagmar:teswiz:1.0.58'
    }
    ```
 4. Describe your project layout in `gradle.properties` instead of editing `build.gradle` (each value below defaults to the teswiz sample layout under `com/znsio/teswiz`):
