@@ -66,6 +66,7 @@ All engines support full payload serialization and data type parity:
 - HTTP operations: `GET`, `POST`, `PUT`, `PATCH`, `DELETE`.
 - Transient Retry Handling: Automatic retries (configurable via `API_MAX_RETRIES`, resolved from an environment variable or `-D` system property first, then `config.properties`, then the default of 3, and never below 1; progressive linear backoff) on network timeouts, connection drops, and gateway server errors (`502 Bad Gateway`, `503 Service Unavailable`, `504 Gateway Timeout`). Application-level status codes (e.g. 200, 400, 401, 404, 422, and 500 Internal Server Error) represent expected application responses or application bugs and return immediately without retry.
 - Traffic logging: Automatic masked HTTP request/response logging under `api-traffic/`.
+- Playwright request timeout: each attempt waits up to `TESWIZ_API_TIMEOUT_SECONDS` (default 60), so a call that never answers takes about `API_MAX_RETRIES` x that value before it fails. Lower it (the API Engines CI workflow uses 15) to fail fast against slow third-party APIs. When every attempt fails, the error log also lists the IP addresses the host resolves to (`Host addresses: <host> -> [...]`), to help tell an unreachable address from a slow server.
 
 > **Calls that are not safe to resend** (for example POSTs that place a bet or void a transaction): set `API_MAX_RETRIES=1` in `config.properties` to fail fast on the first 502/503/504 or exception instead of retrying.
 
