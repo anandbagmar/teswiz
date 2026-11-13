@@ -69,7 +69,7 @@ the log only.
 | Playwright (browsers and `PlaywrightApiManager`) | yes — Playwright's own connection logic tries every address | no |
 | REST Assured (Apache HttpClient) | yes — tries every address natively | no |
 | Email notification (SMTP, `jakarta.mail`) | no — `jakarta.mail` opens the socket itself | no |
-| App download (`AppPathResolver`) | no — not migrated (streams large files) | no |
+| App download (`AppPathResolver`) | no — not migrated yet (streams large files; tracked in [#82](https://github.com/anandbagmar/teswiz/issues/82)) | no |
 | Telemetry (`TelemetryCollector`) | no — not migrated (fire-and-forget, 2s budget) | no |
 
 ## Using it from your own code
