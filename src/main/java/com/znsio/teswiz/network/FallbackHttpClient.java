@@ -1,8 +1,12 @@
 package com.znsio.teswiz.network;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -58,26 +62,51 @@ public final class FallbackHttpClient {
      * @throws IOException when no address could be connected to, or the call failed after connecting
      */
     public HttpResponse send(HttpRequest request) throws IOException {
+        return dispatch(request, new Delivery(FallbackHttpClient::readWholeBody, true));
+    }
+
+    /**
+     * Same address fallback as {@link #send(HttpRequest)}; the body is streamed to {@code target}, never held in
+     * memory. The body is written only for a 2xx status; any other status is returned without creating a file. When
+     * the call fails part-way through the body, the partial {@code target} is deleted.
+     *
+     * @param request the request to send
+     * @param target  the file to write the body to (replaced when it exists)
+     * @return the status and headers, with an empty body
+     * @throws IOException when no address could be connected to, or the call or the write failed
+     */
+    public HttpResponse download(HttpRequest request, Path target) throws IOException {
+        try {
+            return dispatch(request, new Delivery(response -> streamBodyTo(response, target), false));
+        } catch (IOException | RuntimeException e) {
+            Files.deleteIfExists(target);
+            throw e;
+        }
+    }
+
+    private HttpResponse dispatch(HttpRequest request, Delivery delivery) throws IOException {
         HttpUrl url = HttpUrl.get(request.url());
         Request okRequest = toOkHttp(request);
         if (proxy.isConfigured()) {
-            return execute(baseBuilder(request, request.timeout()).proxy(proxy.javaProxy()).build(), okRequest);
+            return execute(baseBuilder(request, request.timeout(), delivery).proxy(proxy.javaProxy()).build(),
+                    okRequest, delivery.reader());
         }
         List<InetAddress> addresses = resolver.resolve(url.host());
         if (!settings.enabled()) {
-            return execute(pinned(request, url.host(), addresses.get(0), request.timeout()), okRequest);
+            return execute(pinned(request, url.host(), addresses.get(0), request.timeout(), delivery), okRequest,
+                    delivery.reader());
         }
         return new AddressFallback(notes).run(purpose, url.host(), url.port(), addresses,
-                address -> attempt(request, okRequest, url.host(), address));
+                address -> attempt(request, okRequest, url.host(), address, delivery));
     }
 
-    private HttpResponse attempt(HttpRequest request, Request okRequest, String host, InetAddress address)
-            throws IOException {
+    private HttpResponse attempt(HttpRequest request, Request okRequest, String host, InetAddress address,
+            Delivery delivery) throws IOException {
         AtomicBoolean sendingStarted = new AtomicBoolean();
-        OkHttpClient client = pinned(request, host, address, settings.connectTimeoutPerAddress()).newBuilder()
-                .eventListener(new SendingStartedListener(sendingStarted)).build();
+        OkHttpClient client = pinned(request, host, address, settings.connectTimeoutPerAddress(), delivery)
+                .newBuilder().eventListener(new SendingStartedListener(sendingStarted)).build();
         try {
-            return execute(client, okRequest);
+            return execute(client, okRequest, delivery.reader());
         } catch (IOException e) {
             if (sendingStarted.get()) {
                 throw e;
@@ -87,22 +116,52 @@ public final class FallbackHttpClient {
     }
 
     private static OkHttpClient pinned(HttpRequest request, String host, InetAddress address,
-            Duration connectTimeout) {
-        return baseBuilder(request, connectTimeout).dns(new PinnedDns(host, address)).build();
+            Duration connectTimeout, Delivery delivery) {
+        return baseBuilder(request, connectTimeout, delivery).dns(new PinnedDns(host, address)).build();
     }
 
-    private static OkHttpClient.Builder baseBuilder(HttpRequest request, Duration connectTimeout) {
+    private static OkHttpClient.Builder baseBuilder(HttpRequest request, Duration connectTimeout,
+            Delivery delivery) {
+        Duration callTimeout = delivery.limitsWholeCall() ? request.timeout() : Duration.ZERO;
         return SHARED.newBuilder().connectTimeout(connectTimeout).readTimeout(request.timeout())
-                .writeTimeout(request.timeout()).callTimeout(request.timeout())
+                .writeTimeout(request.timeout()).callTimeout(callTimeout)
                 .followRedirects(request.followRedirects()).followSslRedirects(request.followRedirects());
     }
 
-    private static HttpResponse execute(OkHttpClient client, Request okRequest) throws IOException {
+    private static HttpResponse execute(OkHttpClient client, Request okRequest, ResponseReader reader)
+            throws IOException {
         try (Response response = client.newCall(okRequest).execute()) {
-            ResponseBody body = response.body();
-            byte[] bytes = body == null ? new byte[0] : body.bytes();
-            return new HttpResponse(response.code(), bytes, response.headers().toMultimap());
+            return reader.read(response);
         }
+    }
+
+    private static HttpResponse readWholeBody(Response response) throws IOException {
+        ResponseBody body = response.body();
+        byte[] bytes = body == null ? new byte[0] : body.bytes();
+        return new HttpResponse(response.code(), bytes, response.headers().toMultimap());
+    }
+
+    private static HttpResponse streamBodyTo(Response response, Path target) throws IOException {
+        ResponseBody body = response.body();
+        if (response.isSuccessful() && body != null) {
+            try (InputStream in = body.byteStream()) {
+                Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
+            }
+        }
+        return new HttpResponse(response.code(), new byte[0], response.headers().toMultimap());
+    }
+
+    /**
+     * How a call's answer is delivered. A download is not limited as a whole (a large app takes as long as it
+     * takes); the timeout then applies to each connect, read and write instead.
+     */
+    private record Delivery(ResponseReader reader, boolean limitsWholeCall) {
+    }
+
+    /** Turns the answer of one call into an {@link HttpResponse}, while the connection is still open. */
+    @FunctionalInterface
+    private interface ResponseReader {
+        HttpResponse read(Response response) throws IOException;
     }
 
     private static Request toOkHttp(HttpRequest request) {

@@ -166,8 +166,8 @@ public class PlaywrightApiEngineClient implements ApiEngineClient {
                     method, url, maxRetries, trafficFileInfo, e.getMessage());
             throw (EnvironmentSetupException) e;
         } else {
-            LOGGER.error("API request {} {} failed after {} attempts{} | Cause: {}",
-                    method, url, maxRetries, trafficFileInfo, e.getMessage());
+            LOGGER.error("API request {} {} failed after {} attempts{} | Host addresses: {} | Cause: {}",
+                    method, url, maxRetries, trafficFileInfo, HostAddressDescriber.describe(url), e.getMessage());
             throw new RuntimeException("Playwright API request failed for " + method + " " + url + " after " + maxRetries + " attempts" + trafficFileInfo + ": " + e.getMessage(), e);
         }
     }

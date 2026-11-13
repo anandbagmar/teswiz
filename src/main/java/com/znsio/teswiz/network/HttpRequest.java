@@ -20,6 +20,7 @@ public record HttpRequest(String method, String url, Map<String, String> headers
         Duration timeout, boolean followRedirects) {
 
     private static final String GET = "GET";
+    private static final String HEAD = "HEAD";
     private static final String POST = "POST";
 
     public HttpRequest {
@@ -29,6 +30,11 @@ public record HttpRequest(String method, String url, Map<String, String> headers
     /** @return a GET of {@code url} that may take up to {@code timeout} */
     public static HttpRequest get(String url, Duration timeout) {
         return new HttpRequest(GET, url, Map.of(), null, null, timeout, false);
+    }
+
+    /** @return a HEAD of {@code url} that may take up to {@code timeout} */
+    public static HttpRequest head(String url, Duration timeout) {
+        return new HttpRequest(HEAD, url, Map.of(), null, null, timeout, false);
     }
 
     /** @return a POST of {@code body} to {@code url} that may take up to {@code timeout} */

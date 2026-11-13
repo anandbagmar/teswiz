@@ -12,6 +12,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
@@ -204,6 +207,161 @@ class FallbackHttpClientTest {
         assertThat(response.status()).isEqualTo(200);
         assertThat(resolved).isEmpty();
         assertThat(notes.notes()).isEmpty();
+    }
+
+    @Test
+    void download_streamsALargeBodyToTheTargetFile_andReturnsAnEmptyBody(@TempDir Path directory)
+            throws IOException {
+        byte[] large = largeContent();
+        server.createContext("/large", exchange -> sendBytes(exchange, large));
+        Path target = directory.resolve("large.bin");
+        FallbackHttpClient client = client(ON, ProxySettings.none(), LOCAL);
+
+        HttpResponse response = client.download(HttpRequest.get(url("/large"), CALL_TIMEOUT), target);
+
+        assertThat(response.status()).isEqualTo(200);
+        assertThat(response.body()).isEmpty();
+        assertThat(response.header("Content-Length")).contains(String.valueOf(large.length));
+        assertThat(Files.readAllBytes(target)).isEqualTo(large);
+    }
+
+    @Test
+    void download_anUnreachableFirstAddress_isSkipped_andRecordsOneNote(@TempDir Path directory)
+            throws IOException {
+        byte[] content = "app".getBytes(StandardCharsets.UTF_8);
+        server.createContext("/app", exchange -> sendBytes(exchange, content));
+        Path target = directory.resolve("app.apk");
+        FallbackHttpClient client = client(ON, ProxySettings.none(), UNREACHABLE, LOCAL);
+
+        HttpResponse response = client.download(HttpRequest.get(url("/app"), CALL_TIMEOUT), target);
+
+        assertThat(response.status()).isEqualTo(200);
+        assertThat(Files.readAllBytes(target)).isEqualTo(content);
+        assertThat(notes.notes()).singleElement().satisfies(note -> {
+            assertThat(note.unreachable()).extracting(NetworkNote.UnreachableAddress::address)
+                    .containsExactly("192.0.2.1");
+            assertThat(note.connectedAddress()).isEqualTo("127.0.0.1");
+        });
+    }
+
+    @Test
+    void download_aFailureAfterTheRequestWasSent_isNotRetried_andLeavesNoPartialFile(@TempDir Path directory)
+            throws IOException {
+        Path target = directory.resolve("partial.bin");
+        try (ServerSocket truncating = new ServerSocket(0, 50, LOCAL)) {
+            AtomicInteger accepted = new AtomicInteger();
+            Thread acceptor = answerWithATruncatedBody(truncating, accepted);
+            FallbackHttpClient client = client(ON, ProxySettings.none(), LOCAL, LOCAL);
+            String brokenUrl = "http://" + HOST + ":" + truncating.getLocalPort() + "/";
+
+            assertThatThrownBy(() -> client.download(HttpRequest.get(brokenUrl, CALL_TIMEOUT), target))
+                    .isInstanceOf(IOException.class);
+
+            acceptor.join(1000);
+            assertThat(accepted).hasValue(1);
+            assertThat(target).doesNotExist();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    @Test
+    void download_withFallbackOff_onlyTheFirstAddressIsTried(@TempDir Path directory) {
+        Path target = directory.resolve("never.bin");
+        FallbackHttpClient client = client(OFF, ProxySettings.none(), UNREACHABLE, LOCAL);
+
+        assertThatThrownBy(() -> client.download(HttpRequest.get(url("/"), Duration.ofMillis(500)), target))
+                .isInstanceOf(IOException.class);
+
+        assertThat(hits).hasValue(0);
+        assertThat(target).doesNotExist();
+    }
+
+    @Test
+    void download_withAProxy_theProxyLooksUpTheHost(@TempDir Path directory) throws IOException {
+        ProxySettings proxy = ProxySettings.resolve(Map.of("PROXY_URL", "http://127.0.0.1:" + port)::get,
+                Map.<String, String>of()::get);
+        Path target = directory.resolve("proxied.txt");
+        FallbackHttpClient client = client(ON, proxy, UNREACHABLE, LOCAL);
+
+        HttpResponse response = client.download(HttpRequest.get(url("/"), CALL_TIMEOUT), target);
+
+        assertThat(response.status()).isEqualTo(200);
+        assertThat(resolved).isEmpty();
+        assertThat(target).exists();
+    }
+
+    @Test
+    void download_followsARedirectWhenAsked(@TempDir Path directory) throws IOException {
+        Path target = directory.resolve("redirected.txt");
+        FallbackHttpClient client = client(ON, ProxySettings.none(), LOCAL);
+
+        HttpResponse response = client.download(
+                HttpRequest.get(url("/redirect"), CALL_TIMEOUT).followingRedirects(), target);
+
+        assertThat(response.status()).isEqualTo(200);
+        assertThat(target).exists();
+    }
+
+    @Test
+    void download_aNonSuccessStatus_writesNoFile(@TempDir Path directory) throws IOException {
+        server.createContext("/missing", exchange -> {
+            exchange.sendResponseHeaders(404, -1);
+            exchange.close();
+        });
+        Path target = directory.resolve("missing.bin");
+        FallbackHttpClient client = client(ON, ProxySettings.none(), LOCAL);
+
+        HttpResponse response = client.download(HttpRequest.get(url("/missing"), CALL_TIMEOUT), target);
+
+        assertThat(response.status()).isEqualTo(404);
+        assertThat(target).doesNotExist();
+    }
+
+    @Test
+    void aHeadRequest_returnsTheStatusWithoutABody() throws IOException {
+        FallbackHttpClient client = client(ON, ProxySettings.none(), LOCAL);
+
+        HttpResponse response = client.send(HttpRequest.head(url("/"), CALL_TIMEOUT));
+
+        assertThat(response.status()).isEqualTo(200);
+        assertThat(response.body()).isEmpty();
+    }
+
+    private static byte[] largeContent() {
+        byte[] content = new byte[3 * 1024 * 1024];
+        for (int index = 0; index < content.length; index++) {
+            content[index] = (byte) (index % 251);
+        }
+        return content;
+    }
+
+    private static void sendBytes(HttpExchange exchange, byte[] content) throws IOException {
+        exchange.sendResponseHeaders(200, content.length);
+        try (OutputStream out = exchange.getResponseBody()) {
+            out.write(content);
+        }
+    }
+
+    private static Thread answerWithATruncatedBody(ServerSocket serverSocket, AtomicInteger accepted) {
+        Thread acceptor = new Thread(() -> {
+            try {
+                while (!serverSocket.isClosed()) {
+                    try (Socket socket = serverSocket.accept()) {
+                        accepted.incrementAndGet();
+                        readRequestHead(socket.getInputStream());
+                        socket.getOutputStream().write(("HTTP/1.1 200 OK\r\nContent-Length: 1000\r\n\r\npartial")
+                                .getBytes(StandardCharsets.US_ASCII));
+                        socket.getOutputStream().flush();
+                    }
+                }
+            } catch (IOException ignored) {
+                // the server socket was closed at the end of the test
+            }
+        });
+        acceptor.setDaemon(true);
+        acceptor.start();
+        return acceptor;
     }
 
     private static Thread closeEachConnectionAfterTheRequest(ServerSocket serverSocket, AtomicInteger accepted) {

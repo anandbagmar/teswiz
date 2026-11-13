@@ -62,6 +62,7 @@ jobs:
           API_ENGINE: "${{ matrix.api_engine }}"
           WEB_ENGINE: "${{ matrix.web_engine }}"
           HIGHLIGHT_ELEMENTS: "false"
+          TESWIZ_API_TIMEOUT_SECONDS: "15"
         run: |
           echo "============================================================"
           echo "🧪 Test Execution Details: ${{ matrix.name }}"
